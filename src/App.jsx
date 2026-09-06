@@ -160,7 +160,7 @@ export default function App() {
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex flex-col justify-between selection:bg-[#D4AF37] selection:text-white">
+    <div className="min-h-screen bg-[#F6F1E8] flex flex-col justify-between selection:bg-[#D4AF37] selection:text-white">
       <div>
         {/* Top Announcement Bar */}
         <AnnouncementBar onNavigateCategory={handleNavigateCategory} />

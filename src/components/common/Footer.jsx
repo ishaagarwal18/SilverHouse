@@ -3,11 +3,11 @@ import { Sparkles, ShieldCheck, Mail, Phone, MapPin, Award, Heart, ArrowRight } 
 
 export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer }) {
   return (
-    <footer className="bg-[#1A1A1A] text-white pt-16 pb-8 border-t-2 border-[#D4AF37]">
+    <footer className="bg-gradient-to-b from-[#2D0207] via-[#200105] to-[#150003] text-white pt-16 pb-8 border-t-2 border-[#D4AF37]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Top Newsletter Bar */}
-        <div className="p-8 rounded-2xl bg-linear-to-r from-white/5 via-white/10 to-white/5 border border-white/10 mb-16 flex flex-col lg:flex-row items-center justify-between gap-6">
+        <div className="p-8 rounded-3xl bg-gradient-to-r from-white/5 via-white/10 to-white/5 border border-[#D4AF37]/30 mb-16 flex flex-col lg:flex-row items-center justify-between gap-6 shadow-xl">
           <div className="max-w-xl">
             <div className="flex items-center space-x-2 text-[#D4AF37] mb-1">
               <Sparkles className="w-4 h-4" />

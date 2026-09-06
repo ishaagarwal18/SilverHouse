@@ -19,6 +19,18 @@
   --color-gold-400: #E6CA65;
   --color-gold-500: #D4AF37; /* Sacred Gold */
   --color-gold-600: #AA820A;
+
+  --color-burgundy-900: #2D0207;
+  --color-burgundy-800: #3B030A;
+  --color-burgundy-700: #4A0711; /* Royal Heritage Maroon */
+  --color-burgundy-600: #600814;
+  --color-burgundy-500: #7D0C1D;
+
+  --color-ivory-50: #FFFDF9;
+  --color-ivory-100: #FAF5EC;
+  --color-ivory-200: #F6F1E8;
+  --color-ivory-300: #EDE4D4;
+  --color-ivory-400: #E2D5BE;
 }
 
 @layer base {

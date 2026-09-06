@@ -1,4 +1,5 @@
 import React from 'react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 
 export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
   const FINISHES = [
@@ -7,7 +8,7 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
       title: 'Shine in Silver',
       buttonLabel: 'FINE SILVER',
       image: '/images/shine_in_silver.jpg',
-      bgGradient: 'from-[#8C6B38]/30 via-[#634823]/60 to-[#2A1D0E]/90',
+      badgeColor: 'border-[#DFCBB5] bg-[#FAF5EB]/90 text-[#301D17]',
       category: 'silver-jewellery'
     },
     {
@@ -15,7 +16,7 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
       title: 'Glow in Rose Gold',
       buttonLabel: 'ROSE GOLD',
       image: '/images/glow_in_rose_gold.jpg',
-      bgGradient: 'from-[#B2705B]/30 via-[#7D4536]/60 to-[#321711]/90',
+      badgeColor: 'border-[#E0A899] bg-[#FFF0ED]/90 text-[#6B2E24]',
       category: 'silver-jewellery'
     },
     {
@@ -23,7 +24,7 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
       title: 'Bold in Oxidised',
       buttonLabel: 'OXIDISED',
       image: '/images/bold_in_oxidised.jpg',
-      bgGradient: 'from-[#7F793E]/30 via-[#514D25]/60 to-[#1F1E0C]/90',
+      badgeColor: 'border-[#AA820A] bg-[#FAF3E0]/90 text-[#4A0711]',
       category: 'silver-jewellery'
     }
   ];
@@ -37,27 +38,33 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
   };
 
   return (
-    <section className="py-14 sm:py-16 bg-[#FDFBF7] border-b border-[#EADFCB]">
+    <section className="py-14 sm:py-16 bg-[#F2EAE0] border-b border-[#DFCBB5]">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-10">
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#600814] tracking-wider uppercase">
+          <div className="flex items-center justify-center space-x-2 text-[#AA820A] mb-1">
+            <Sparkles className="w-4 h-4 text-[#AA820A]" />
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#7A5844]">
+              SIGNATURE METALLIC FINISHES
+            </span>
+          </div>
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A0711] tracking-wider uppercase">
             SHOP BY COLOR
           </h2>
-          <div className="w-16 h-0.5 bg-[#D4AF37] mx-auto mt-2.5 mb-3" />
-          <p className="text-xs sm:text-sm text-silver-600 font-sans">
+          <div className="w-16 h-0.5 bg-[#AA820A] mx-auto mt-2.5 mb-3" />
+          <p className="text-xs sm:text-sm text-[#7A5844] font-sans">
             Choose your signature finish — radiant fine silver, blushing rose gold, or royal antique oxidised craftsmanship.
           </p>
         </div>
 
-        {/* 3 Finish Cards Grid matching Screenshot 5 */}
+        {/* 3 Finish Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {FINISHES.map((finish) => (
             <div
               key={finish.id}
               onClick={() => handleClick(finish)}
-              className="group relative h-[360px] sm:h-[400px] rounded-3xl overflow-hidden border-2 border-[#E5DAC4] shadow-md hover:shadow-2xl hover:border-[#600814]/40 transition-all duration-500 cursor-pointer flex flex-col justify-between p-6"
+              className="group relative h-[360px] sm:h-[400px] rounded-3xl overflow-hidden border-2 border-[#DFCBB5] shadow-md hover:shadow-2xl hover:border-[#AA820A] transition-all duration-500 cursor-pointer flex flex-col justify-between p-6"
             >
               {/* Background Image */}
               <img
@@ -67,22 +74,27 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
               />
 
               {/* Dark Luxury Overlay for Text Readability */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 group-hover:from-black/70 group-hover:to-black/85 transition-all" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/85 group-hover:from-black/70 group-hover:to-black/90 transition-all" />
 
-              {/* Top Title */}
-              <div className="relative z-10 text-center pt-2">
-                <h3 className="font-serif text-2xl sm:text-3xl font-medium tracking-wide text-white drop-shadow-md group-hover:text-[#F3E5AB] transition-colors italic">
-                  {finish.title}
-                </h3>
+              {/* Top Finish Pill Badge */}
+              <div className="relative z-10">
+                <span className={`inline-block px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest border shadow-md ${finish.badgeColor}`}>
+                  {finish.buttonLabel}
+                </span>
               </div>
 
-              {/* Bottom Action Pill Button */}
-              <div className="relative z-10 flex justify-center pb-2">
+              {/* Bottom Finish Title & CTA */}
+              <div className="relative z-10 text-white flex flex-col items-start">
+                <h3 className="font-serif text-2xl sm:text-3xl font-bold mb-3 text-[#FFFDF9] group-hover:text-[#F3E5AB] transition-colors leading-snug">
+                  {finish.title}
+                </h3>
+                
                 <button
                   type="button"
-                  className="w-full py-3.5 bg-[#600814] text-white font-serif text-xs sm:text-sm font-bold tracking-[0.2em] rounded-xl shadow-lg group-hover:bg-[#7D0C1D] group-hover:shadow-xl transition-all duration-300 uppercase cursor-pointer"
+                  className="px-6 py-2.5 rounded-full border-2 border-[#FAF5EB] text-[#FAF5EB] font-serif text-xs font-bold tracking-widest uppercase hover:bg-[#FAF5EB] hover:text-[#4A0711] transition-all duration-300 flex items-center space-x-2 group-hover:shadow-lg cursor-pointer"
                 >
-                  {finish.buttonLabel}
+                  <span>EXPLORE {finish.buttonLabel}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>

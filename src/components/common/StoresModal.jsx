@@ -67,23 +67,23 @@ export default function StoresModal({ isOpen, onClose }) {
         </div>
 
         {/* Stores List */}
-        <div className="p-6 overflow-y-auto space-y-4">
+        <div className="p-6 overflow-y-auto space-y-4 bg-[#FAF5EB]">
           {STORES.map((st, idx) => (
             <div
               key={idx}
-              className="p-5 bg-white rounded-2xl border border-[#E5DAC4] shadow-xs hover:border-[#600814]/40 hover:shadow-md transition-all"
+              className="p-5 bg-[#FFFDF9] rounded-2xl border border-[#DFCBB5] shadow-xs hover:border-[#AA820A] hover:shadow-md transition-all"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-[#F0EBE1] gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-[#F0E6D6] gap-2">
                 <div>
-                  <span className="text-[10px] font-extrabold text-[#AA820A] tracking-wider uppercase bg-[#D4AF37]/15 px-2.5 py-0.5 rounded-full inline-block mb-1">
+                  <span className="text-[10px] font-extrabold text-[#AA820A] tracking-wider uppercase bg-[#AA820A]/15 px-2.5 py-0.5 rounded-full inline-block mb-1 border border-[#AA820A]/30">
                     {st.city}
                   </span>
-                  <h4 className="font-serif font-bold text-base text-[#1A1A1A]">
+                  <h4 className="font-serif font-bold text-base text-[#4A0711]">
                     {st.name}
                   </h4>
                 </div>
                 <div className="flex items-center space-x-1.5 text-xs text-[#600814] font-semibold">
-                  <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#AA820A]" />
                   <span>{st.featured}</span>
                 </div>
               </div>

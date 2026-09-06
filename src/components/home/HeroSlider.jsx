@@ -50,7 +50,7 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
   const slide = SLIDES[currentSlide];
 
   return (
-    <div className="relative w-full h-[300px] sm:h-[350px] md:h-[390px] lg:h-[420px] bg-[#1A1A1A] overflow-hidden">
+    <div className="relative w-full h-[300px] sm:h-[350px] md:h-[390px] lg:h-[420px] bg-[#1A1A1A] overflow-hidden border-b-2 border-[#D4AF37]/40 shadow-md">
       {/* Background Image with Overlay */}
       {SLIDES.map((item, idx) => (
         <div

@@ -16,19 +16,19 @@
 
   <style>
     :root {
-      --bg-warm: #FAF7F2;
-      --bg-card: #FFFFFF;
-      --bg-cream: #FDFBF7;
-      --maroon: #600814;
-      --maroon-dark: #45050E;
-      --maroon-hover: #7D0C1D;
+      --bg-warm: #F6F1E8;
+      --bg-card: #FFFDF9;
+      --bg-cream: #FAF5EB;
+      --maroon: #4A0711;
+      --maroon-dark: #350208;
+      --maroon-hover: #600814;
       --gold: #D4AF37;
       --gold-dark: #AA820A;
       --gold-light: #F3E5AB;
-      --border-warm: #EADFCB;
-      --border-light: #F0E8D8;
-      --text-main: #1A1A1A;
-      --text-muted: #6B7280;
+      --border-warm: #DFCBB5;
+      --border-light: #EADBCE;
+      --text-main: #301D17;
+      --text-muted: #7A5844;
       --radius-sm: 10px;
       --radius-md: 16px;
       --radius-lg: 24px;
@@ -98,12 +98,12 @@
 
     /* Header */
     header.site-header {
-      background: #FFFFFF;
+      background: var(--bg-cream);
       border-bottom: 1px solid var(--border-warm);
       position: sticky;
       top: 0;
       z-index: 50;
-      box-shadow: var(--shadow-sm);
+      box-shadow: 0 4px 20px rgba(74, 7, 17, 0.05);
     }
     .header-inner {
       display: flex;
@@ -121,14 +121,14 @@
       width: 42px;
       height: 42px;
       border-radius: 50%;
-      border: 2px solid var(--maroon);
+      border: 2px solid var(--gold);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--maroon);
-      background: #FFF;
+      color: var(--gold-light);
+      background: linear-gradient(135deg, #4A0711, #2D0207);
       font-size: 20px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      box-shadow: 0 2px 8px rgba(74, 7, 17, 0.15);
       transition: var(--transition);
     }
     .brand-logo:hover .brand-emblem {
