@@ -23,7 +23,7 @@ export default function HomePage({
   onSelectProduct
 }) {
   return (
-    <div className="space-y-0 bg-[#EAE2D5]">
+    <div className="space-y-0 bg-[var(--th-bg)] transition-colors duration-300">
       {/* 1. Hero Showcase Slider */}
       <HeroSlider
         onNavigateCategory={onNavigateCategory}

@@ -30,16 +30,16 @@ export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal 
   const Icon = current.icon;
 
   return (
-    <div className="bg-gradient-to-r from-[#071526] via-[#0B2545] to-[#071526] text-[#F8E6C8] py-2 px-4 select-none border-b border-[#D4AF37]/30 shadow-xs relative z-50">
+    <div className="py-2 px-4 select-none border-b border-[var(--th-accent)]/30 shadow-xs relative z-50 text-[var(--th-card)] transition-colors duration-300" style={{ background: 'var(--th-nav-gradient)' }}>
       <div className="max-w-[1480px] mx-auto flex items-center justify-between text-[11px] sm:text-xs">
         
         {/* Left Side: Live Silver Bullion Ticker */}
-        <div className="hidden lg:flex items-center space-x-2.5 text-[#F5E6BF]">
-          <span className="inline-flex items-center space-x-1.5 bg-[#143A66] px-2.5 py-0.5 rounded-full border border-[#D4AF37]/40 text-[10px] font-bold tracking-wider uppercase text-[#FFFDF9]">
+        <div className="hidden lg:flex items-center space-x-2.5 text-[var(--th-card)]">
+          <span className="inline-flex items-center space-x-1.5 bg-[var(--th-primary)] px-2.5 py-0.5 rounded-full border border-[var(--th-accent)]/40 text-[10px] font-bold tracking-wider uppercase text-white shadow-xs">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>Live Silver Rate</span>
           </span>
-          <span className="font-semibold text-[11px] text-[#EADFCB]">
+          <span className="font-semibold text-[11px] text-[var(--th-card)]/90">
             925: <strong className="text-white">₹98.5/g</strong> | 999: <strong className="text-white">₹105.2/g</strong>
           </span>
         </div>

@@ -1,0 +1,27 @@
+/* Theme 3: Eucalyptus Sage & Celadon (Calm Botanical Zen) */
+:root[data-theme="sage"], [data-theme="sage"] {
+  --th-bg: #E8ECE8;
+  --th-surface-alt: #DDE3DE;
+  --th-card: #F5F8F5;
+  --th-pedestal: #D3DCD4;
+  --th-border: #B6C4B8;
+  --th-border-subtle: #C8D4CA;
+  
+  --th-primary: #2D5548;
+  --th-primary-hover: #386959;
+  --th-primary-light: rgba(45, 85, 72, 0.12);
+  --th-accent: #A38342;
+  --th-accent-light: rgba(163, 131, 66, 0.15);
+  
+  --th-text-main: #162E26;
+  --th-text-muted: #4C655B;
+  
+  --th-nav: #1A372E;
+  --th-nav-gradient: linear-gradient(135deg, #112620 0%, #1A372E 50%, #2D5548 100%);
+  --th-footer-gradient: linear-gradient(180deg, #1A372E 0%, #0F201B 100%);
+  --th-budget-card: linear-gradient(180deg, #2D5548 0%, #224339 50%, #152B24 100%);
+  
+  --th-badge-bg: #2D5548;
+  --th-badge-text: #F5F8F5;
+  --th-btn-text: #FFFFFF;
+}

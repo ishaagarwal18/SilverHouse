@@ -11,6 +11,7 @@ import CartDrawer from './components/cart/CartDrawer';
 import CheckoutModal from './components/cart/CheckoutModal';
 import WishlistDrawer from './components/wishlist/WishlistDrawer';
 import InfoModal from './components/common/InfoModal';
+import ThemeSwitcher from './components/common/ThemeSwitcher';
 import AppRouter from './router/AppRouter';
 import { fetchProducts, fetchCategories } from './services/api';
 import { PRODUCTS, CATEGORIES } from './data/products';
@@ -270,6 +271,7 @@ export default function App() {
         onNavigateCategory={handleNavigateCategory}
       />
 
+      <ThemeSwitcher variant="floating" />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );

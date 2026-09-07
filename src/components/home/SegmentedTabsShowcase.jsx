@@ -52,28 +52,28 @@ export default function SegmentedTabsShowcase({
   }
 
   return (
-    <section className="py-14 sm:py-16 bg-[#DFD4C0] border-b border-[#C5B299]">
+    <section className="py-14 sm:py-16 bg-[var(--th-surface-alt)] border-b border-[var(--th-border)]">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header & Segmented Tabs Switcher */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 pb-4 border-b border-[#C5B299] gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 pb-4 border-b border-[var(--th-border)] gap-6">
           <div>
-            <div className="flex items-center space-x-2 text-[#9A650C] mb-1">
-              <Sparkles className="w-4 h-4 text-[#9A650C]" />
-              <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#4E6073]">
+            <div className="flex items-center space-x-2 text-[var(--th-accent)] mb-1">
+              <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--th-text-muted)]">
                 TAILORED EXCELLENCE
               </span>
             </div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#071526] tracking-tight">
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[var(--th-text-main)] tracking-tight">
               SEGMENTED SHOWCASE
             </h2>
-            <p className="text-xs sm:text-sm text-[#4E6073] mt-1 font-sans">
+            <p className="text-xs sm:text-sm text-[var(--th-text-muted)] mt-1 font-sans">
               Switch effortlessly between distinct handcrafted styles.
             </p>
           </div>
 
           {/* Segmented Interactive Buttons */}
-          <div className="inline-flex p-1.5 rounded-full bg-[#D1C3AD] border border-[#C5B299]">
+          <div className="inline-flex p-1.5 rounded-full bg-[var(--th-card)] border border-[var(--th-border)] shadow-xs">
             {TABS.map((tab) => {
               const isActive = tab.id === activeTab;
               return (
@@ -82,8 +82,8 @@ export default function SegmentedTabsShowcase({
                   onClick={() => setActiveTab(tab.id)}
                   className={`px-6 py-2.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-300 cursor-pointer ${
                     isActive
-                      ? 'bg-[#0B2545] text-[#F8E6C8] shadow-md border border-[#D4AF37]/30'
-                      : 'text-[#071526] hover:bg-[#EAE2D5]/70'
+                      ? 'bg-[var(--th-primary)] text-white shadow-md'
+                      : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)]'
                   }`}
                 >
                   {tab.label}
@@ -104,10 +104,10 @@ export default function SegmentedTabsShowcase({
             return (
               <div
                 key={product.id}
-                className="group relative flex flex-col justify-between bg-[#F8F4EC] rounded-2xl border border-[#C5B299] overflow-hidden hover:shadow-xl hover:border-[#9A650C] transition-all duration-300"
+                className="group relative flex flex-col justify-between bg-[var(--th-card)] rounded-2xl border border-[var(--th-border)] overflow-hidden hover:shadow-xl hover:border-[var(--th-accent)] transition-all duration-300"
               >
                 {/* Image Container */}
-                <div className="relative aspect-square overflow-hidden bg-[#DDD1BE]">
+                <div className="relative aspect-square overflow-hidden bg-[var(--th-pedestal)]">
                   <img
                     src={imgSrc}
                     alt={product.name}
@@ -124,7 +124,7 @@ export default function SegmentedTabsShowcase({
                     className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                       isWishlisted
                         ? 'bg-rose-100 text-rose-700 shadow-md border border-rose-300'
-                        : 'bg-[#EAE2D5]/90 text-[#4E6073] hover:text-[#0B2545] hover:bg-[#EAE2D5] shadow-xs border border-[#C5B299]'
+                        : 'bg-[var(--th-card)]/90 text-[var(--th-text-muted)] hover:text-[var(--th-primary)] hover:bg-[var(--th-card)] shadow-xs border border-[var(--th-border)]'
                     }`}
                     title="Save to Wishlist"
                   >
@@ -135,7 +135,7 @@ export default function SegmentedTabsShowcase({
                   <div className="absolute inset-x-3 bottom-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:block">
                     <button
                       onClick={() => onQuickView && onQuickView(product)}
-                      className="w-full py-2 bg-[#EAE2D5]/95 backdrop-blur-xs text-[#0B2545] text-xs font-bold rounded-xl shadow-md hover:bg-[#0B2545] hover:text-[#F8E6C8] transition-colors uppercase tracking-wider border border-[#C5B299] cursor-pointer"
+                      className="w-full py-2 bg-[var(--th-card)]/95 backdrop-blur-xs text-[var(--th-primary)] text-xs font-bold rounded-xl shadow-md hover:bg-[var(--th-primary)] hover:text-white transition-colors uppercase tracking-wider border border-[var(--th-border)] cursor-pointer"
                     >
                       Quick View
                     </button>
@@ -143,29 +143,29 @@ export default function SegmentedTabsShowcase({
                 </div>
 
                 {/* Details */}
-                <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between bg-[#F8F4EC]">
+                <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between bg-[var(--th-card)]">
                   <div>
-                    <div className="flex items-center justify-between text-[11px] text-[#4E6073] mb-1">
-                      <span className="font-bold text-[#9A650C] uppercase tracking-wider truncate">
+                    <div className="flex items-center justify-between text-[11px] text-[var(--th-text-muted)] mb-1">
+                      <span className="font-bold text-[var(--th-accent)] uppercase tracking-wider truncate">
                         {product.purity || '925 Fine Silver'}
                       </span>
-                      <div className="flex items-center space-x-1 text-[#9A650C] shrink-0">
+                      <div className="flex items-center space-x-1 text-[var(--th-accent)] shrink-0">
                         <Star className="w-3.5 h-3.5 fill-current" />
-                        <span className="font-bold text-xs text-[#071526]">{product.rating || 4.9}</span>
+                        <span className="font-bold text-xs text-[var(--th-text-main)]">{product.rating || 4.9}</span>
                       </div>
                     </div>
 
                     <h3
                       onClick={() => onSelectProduct && onSelectProduct(product)}
-                      className="font-serif text-sm sm:text-base font-bold text-[#071526] group-hover:text-[#0B2545] transition-colors line-clamp-1 cursor-pointer"
+                      className="font-serif text-sm sm:text-base font-bold text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] transition-colors line-clamp-1 cursor-pointer"
                       title={product.name}
                     >
                       {product.name}
                     </h3>
                   </div>
 
-                  <div className="pt-3 mt-3 border-t border-[#C5B299]/40 flex items-center justify-between">
-                    <span className="font-serif font-extrabold text-base sm:text-lg text-[#0B2545]">
+                  <div className="pt-3 mt-3 border-t border-[var(--th-border)]/60 flex items-center justify-between">
+                    <span className="font-serif font-extrabold text-base sm:text-lg text-[var(--th-primary)]">
                       ₹{Number(product.price).toLocaleString('en-IN')}
                     </span>
 
@@ -174,7 +174,7 @@ export default function SegmentedTabsShowcase({
                         e.stopPropagation();
                         onAddToCart && onAddToCart(product, 1);
                       }}
-                      className="w-9 h-9 rounded-full bg-[#0B2545]/10 hover:bg-[#0B2545] text-[#0B2545] hover:text-[#F8E6C8] flex items-center justify-center transition-colors duration-200 cursor-pointer shrink-0 border border-[#0B2545]/20 shadow-xs"
+                      className="w-9 h-9 rounded-full bg-[var(--th-primary)]/10 hover:bg-[var(--th-primary)] text-[var(--th-primary)] hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shrink-0 border border-[var(--th-primary)]/20 shadow-xs"
                       title="Add to Shopping Cart"
                     >
                       <ShoppingBag className="w-4 h-4" />

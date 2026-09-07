@@ -41,13 +41,16 @@ export default function StoresModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl bg-[#EAE2D5] rounded-3xl shadow-2xl border border-[#C5B299] overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-3xl bg-[var(--th-card)] rounded-3xl shadow-2xl border border-[var(--th-border)] overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Modal Header */}
-        <div className="p-6 bg-gradient-to-r from-[#071526] via-[#0B2545] to-[#143A66] text-white flex items-center justify-between">
+        <div
+          className="p-6 text-white flex items-center justify-between"
+          style={{ background: 'var(--th-nav-gradient)' }}
+        >
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
-              <MapPin className="w-5 h-5 text-[#D4AF37]" />
+              <MapPin className="w-5 h-5 text-[var(--th-accent)]" />
             </div>
             <div>
               <h3 className="font-serif text-xl sm:text-2xl font-bold">
@@ -58,48 +61,49 @@ export default function StoresModal({ isOpen, onClose }) {
               </p>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="p-2 text-white/80 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+            className="p-2 text-white/80 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Stores List */}
-        <div className="p-6 overflow-y-auto space-y-4 bg-[#DFD4C0]">
+        <div className="p-6 overflow-y-auto space-y-4 bg-[var(--th-surface-alt)]">
           {STORES.map((st, idx) => (
             <div
               key={idx}
-              className="p-5 bg-[#F8F4EC] rounded-2xl border border-[#C5B299] shadow-xs hover:border-[#9A650C] hover:shadow-md transition-all"
+              className="p-5 bg-[var(--th-card)] rounded-2xl border border-[var(--th-border)] shadow-xs hover:border-[var(--th-accent)] hover:shadow-md transition-all"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-[#C5B299]/40 gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-[var(--th-border)]/50 gap-2">
                 <div>
-                  <span className="text-[10px] font-extrabold text-[#9A650C] tracking-wider uppercase bg-[#9A650C]/15 px-2.5 py-0.5 rounded-full inline-block mb-1 border border-[#9A650C]/30">
+                  <span className="text-[10px] font-extrabold text-[var(--th-accent)] tracking-wider uppercase bg-[var(--th-accent)]/15 px-2.5 py-0.5 rounded-full inline-block mb-1 border border-[var(--th-accent)]/30">
                     {st.city}
                   </span>
-                  <h4 className="font-serif font-bold text-base text-[#071526]">
+                  <h4 className="font-serif font-bold text-base text-[var(--th-text-main)]">
                     {st.name}
                   </h4>
                 </div>
-                <div className="flex items-center space-x-1.5 text-xs text-[#0B2545] font-semibold">
-                  <Sparkles className="w-3.5 h-3.5 text-[#9A650C]" />
+                <div className="flex items-center space-x-1.5 text-xs text-[var(--th-primary)] font-semibold">
+                  <Sparkles className="w-3.5 h-3.5 text-[var(--th-accent)]" />
                   <span>{st.featured}</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[#4E6073]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[var(--th-text-muted)]">
                 <div className="flex items-start space-x-2">
-                  <MapPin className="w-4 h-4 text-[#0B2545] shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-[var(--th-primary)] shrink-0 mt-0.5" />
                   <span>{st.address}</span>
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center space-x-2">
-                    <Phone className="w-4 h-4 text-[#0B2545] shrink-0" />
+                    <Phone className="w-4 h-4 text-[var(--th-primary)] shrink-0" />
                     <span>{st.phone}</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Clock className="w-4 h-4 text-[#0B2545] shrink-0" />
+                    <Clock className="w-4 h-4 text-[var(--th-primary)] shrink-0" />
                     <span>{st.hours}</span>
                   </div>
                 </div>
@@ -109,11 +113,11 @@ export default function StoresModal({ isOpen, onClose }) {
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-[#EAE2D5] border-t border-[#C5B299] flex items-center justify-between text-xs text-[#4E6073]">
+        <div className="p-4 bg-[var(--th-card)] border-t border-[var(--th-border)] flex items-center justify-between text-xs text-[var(--th-text-muted)]">
           <span>Complimentary BIS Hallmarking certificate check available at all stores.</span>
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-[#0B2545] hover:bg-[#143A66] text-[#F8E6C8] font-bold rounded-xl transition-colors cursor-pointer"
+            className="px-5 py-2 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold rounded-xl transition-colors cursor-pointer"
           >
             Close
           </button>

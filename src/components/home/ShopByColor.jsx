@@ -44,22 +44,22 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
   };
 
   return (
-    <section className="py-14 sm:py-16 bg-[#DFD4C0] border-b border-[#C5B299]">
+    <section className="py-14 sm:py-16 bg-[var(--th-surface-alt)] border-b border-[var(--th-border)]">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-10">
-          <div className="flex items-center justify-center space-x-2 text-[#9A650C] mb-1">
-            <Sparkles className="w-4 h-4 text-[#9A650C]" />
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#4E6073]">
+          <div className="flex items-center justify-center space-x-2 text-[var(--th-accent)] mb-1">
+            <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--th-text-muted)]">
               SIGNATURE METALLIC FINISHES
             </span>
           </div>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#071526] tracking-wider uppercase">
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[var(--th-text-main)] tracking-wider uppercase">
             SHOP BY COLOR
           </h2>
-          <div className="w-16 h-0.5 bg-[#9A650C] mx-auto mt-2.5 mb-3" />
-          <p className="text-xs sm:text-sm text-[#4E6073] font-sans">
+          <div className="w-16 h-0.5 bg-[var(--th-accent)] mx-auto mt-2.5 mb-3" />
+          <p className="text-xs sm:text-sm text-[var(--th-text-muted)] font-sans">
             Choose your signature finish — radiant fine silver, blushing rose gold, or royal antique oxidised craftsmanship.
           </p>
         </div>
@@ -70,7 +70,7 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
             <div
               key={finish.id}
               onClick={() => handleClick(finish)}
-              className="group relative h-[360px] sm:h-[400px] rounded-3xl overflow-hidden border-2 border-[#C5B299] shadow-md hover:shadow-2xl hover:border-[#9A650C] transition-all duration-500 cursor-pointer flex flex-col justify-between p-6"
+              className="group relative h-[360px] sm:h-[400px] rounded-3xl overflow-hidden border-2 border-[var(--th-border)] shadow-md hover:shadow-2xl hover:border-[var(--th-accent)] transition-all duration-500 cursor-pointer flex flex-col justify-between p-6"
             >
               {/* Background Image */}
               <img
@@ -79,8 +79,8 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
               />
 
-              {/* Dark Luxury Overlay for Text Readability */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/85 group-hover:from-black/70 group-hover:to-black/90 transition-all" />
+              {/* Luxury Overlay for Text Readability */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/85 group-hover:from-black/60 group-hover:to-black/90 transition-all" />
 
               {/* Top Finish Pill Badge */}
               <div className="relative z-10">
@@ -91,16 +91,16 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
 
               {/* Bottom Finish Title & CTA */}
               <div className="relative z-10 text-white flex flex-col items-start">
-                <h3 className="font-serif text-2xl sm:text-3xl font-bold mb-3 text-[#FFFDF9] group-hover:text-[#F8E6C8] transition-colors leading-snug">
+                <h3 className="font-serif text-2xl sm:text-3xl font-bold mb-3 text-white group-hover:text-[var(--th-accent)] transition-colors leading-snug">
                   {finish.title}
                 </h3>
                 
                 <button
                   type="button"
-                  className="px-6 py-2.5 rounded-full border-2 border-[#F8F4EC] text-[#F8F4EC] font-serif text-xs font-bold tracking-widest uppercase hover:bg-[#0B2545] hover:border-[#0B2545] hover:text-[#F8E6C8] transition-all duration-300 flex items-center space-x-2 group-hover:shadow-lg cursor-pointer"
+                  className="px-6 py-2.5 rounded-full border-2 border-white/80 text-white font-serif text-xs font-bold tracking-widest uppercase hover:bg-[var(--th-primary)] hover:border-[var(--th-primary)] transition-all duration-300 flex items-center space-x-2 group-hover:shadow-lg cursor-pointer"
                 >
-                  <span>EXPLORE {finish.buttonLabel}</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  <span>Explore {finish.colorName}</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>
