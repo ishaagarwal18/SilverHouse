@@ -21,6 +21,7 @@ BEGIN
     DECLARE @FilterMakeType     NVARCHAR(50);
     DECLARE @FilterIdealFor     VARCHAR(20);
     DECLARE @FilterPurity       VARCHAR(30);
+    DECLARE @FilterColor        NVARCHAR(50);
     DECLARE @FilterMinPrice     DECIMAL(18,2);
     DECLARE @FilterMaxPrice     DECIMAL(18,2);
     DECLARE @SearchKeyword      NVARCHAR(100);
@@ -35,6 +36,7 @@ BEGIN
             @FilterMakeType     = COALESCE(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.filters.make_type'))), LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.make_type')))),
             @FilterIdealFor     = COALESCE(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.filters.ideal_for'))), LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.ideal_for')))),
             @FilterPurity       = COALESCE(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.filters.purity'))), LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.purity')))),
+            @FilterColor        = COALESCE(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.filters.color'))), LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.color')))),
             @FilterMinPrice     = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.filters.min_price') AS DECIMAL(18,2)), TRY_CAST(JSON_VALUE(@JSONstr, '$.min_price') AS DECIMAL(18,2))),
             @FilterMaxPrice     = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.filters.max_price') AS DECIMAL(18,2)), TRY_CAST(JSON_VALUE(@JSONstr, '$.max_price') AS DECIMAL(18,2))),
             @SearchKeyword      = COALESCE(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.filters.search'))), LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.search'))));
@@ -63,6 +65,9 @@ BEGIN
         p.labour_cost,
         p.actual_cost,
         p.[priority],
+        ISNULL(p.color, 'Silver') AS color,
+        ISNULL(p.review, 0) AS review,
+        ISNULL(p.sold, 0) AS sold,
 
         -- Category Details
         p.category_id,
@@ -97,6 +102,7 @@ BEGIN
         AND (@FilterMakeType IS NULL OR m.[type] = @FilterMakeType)
         AND (@FilterIdealFor IS NULL OR LOWER(LTRIM(RTRIM(p.ideal_for))) = LOWER(@FilterIdealFor))
         AND (@FilterPurity IS NULL OR p.purity LIKE '%' + @FilterPurity + '%')
+        AND (@FilterColor IS NULL OR LOWER(LTRIM(RTRIM(p.color))) = LOWER(@FilterColor))
         AND (@FilterMinPrice IS NULL OR p.price >= @FilterMinPrice)
         AND (@FilterMaxPrice IS NULL OR p.price <= @FilterMaxPrice)
         AND (

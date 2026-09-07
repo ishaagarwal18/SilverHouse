@@ -1,39 +1,45 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowRight } from 'lucide-react';
 
 export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
+  const navigate = useNavigate();
+
   const FINISHES = [
     {
       id: 'fine-silver',
+      colorName: 'Silver',
       title: 'Shine in Silver',
       buttonLabel: 'FINE SILVER',
       image: '/images/shine_in_silver.jpg',
       badgeColor: 'border-[#DFCBB5] bg-[#FAF5EB]/90 text-[#301D17]',
-      category: 'silver-jewellery'
+      description: 'Radiant 999 and 925 fine pure silver lustres'
     },
     {
       id: 'rose-gold',
+      colorName: 'Rose Gold',
       title: 'Glow in Rose Gold',
       buttonLabel: 'ROSE GOLD',
       image: '/images/glow_in_rose_gold.jpg',
       badgeColor: 'border-[#E0A899] bg-[#FFF0ED]/90 text-[#6B2E24]',
-      category: 'silver-jewellery'
+      description: 'Blushing 18k rose gold plated sterling craftsmanship'
     },
     {
       id: 'oxidised',
+      colorName: 'Oxidised',
       title: 'Bold in Oxidised',
       buttonLabel: 'OXIDISED',
       image: '/images/bold_in_oxidised.jpg',
       badgeColor: 'border-[#AA820A] bg-[#FAF3E0]/90 text-[#4A0711]',
-      category: 'silver-jewellery'
+      description: 'Royal antique dark patina and vintage tribal silver'
     }
   ];
 
   const handleClick = (finish) => {
     if (onSelectFinish) {
-      onSelectFinish(finish.id);
-    } else if (onNavigateCategory) {
-      onNavigateCategory(finish.category || 'all');
+      onSelectFinish(finish.colorName);
+    } else {
+      navigate(`/catalog?color=${encodeURIComponent(finish.colorName)}`);
     }
   };
 

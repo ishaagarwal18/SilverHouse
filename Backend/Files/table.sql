@@ -31,6 +31,9 @@ CREATE TABLE product (
     packaging VARCHAR(50),
     labour_cost DECIMAL(18, 2) DEFAULT 0,
     actual_cost DECIMAL(18, 2) NOT NULL,
+    color VARCHAR(50) DEFAULT 'Silver',
+    review INT DEFAULT 0,
+    sold INT DEFAULT 0,
     
     CONSTRAINT FK_product_category FOREIGN KEY (category_id) REFERENCES category(category_id),
     CONSTRAINT FK_product_make FOREIGN KEY (m_id) REFERENCES make_master(m_id)
@@ -60,6 +63,33 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE dbo.product ADD [priority] INT NOT NULL DEFAULT 0;
+END
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns 
+    WHERE object_id = OBJECT_ID('dbo.product') AND name = 'color'
+)
+BEGIN
+    ALTER TABLE dbo.product ADD color VARCHAR(50) NOT NULL DEFAULT 'Silver';
+END
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns 
+    WHERE object_id = OBJECT_ID('dbo.product') AND name = 'review'
+)
+BEGIN
+    ALTER TABLE dbo.product ADD review INT NOT NULL DEFAULT 0;
+END
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns 
+    WHERE object_id = OBJECT_ID('dbo.product') AND name = 'sold'
+)
+BEGIN
+    ALTER TABLE dbo.product ADD sold INT NOT NULL DEFAULT 0;
 END
 GO
 

@@ -10,7 +10,7 @@ export default function CuratedCollections({ onNavigateCategory }) {
       tag: "FOR HER",
       image: "/images/women_oxidised_collection.jpg",
       category: "women",
-      ctaText: "SHOP NOW"
+      ctaText: "EXPLORE WOMEN"
     },
     {
       id: 'men',
@@ -28,14 +28,14 @@ export default function CuratedCollections({ onNavigateCategory }) {
       tag: "FOR LITTLE ONES",
       image: "/images/hero_baby_nazariya.png",
       category: "kids",
-      ctaText: "DISCOVER KIDS"
+      ctaText: "EXPLORE KIDS"
     }
   ];
 
   return (
     <section className="py-14 sm:py-16 bg-[#F2EAE0] border-b border-[#DFCBB5]">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-12">
           <div className="flex items-center justify-center space-x-2 text-[#AA820A] mb-2">

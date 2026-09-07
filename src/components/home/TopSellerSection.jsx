@@ -1,5 +1,5 @@
-import React from 'react';
-import { Heart, ShoppingBag, Star, Sparkles, ArrowRight } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Heart, ShoppingBag, Star, Sparkles, ArrowRight, ChevronLeft, ChevronRight, Flame } from 'lucide-react';
 
 export default function TopSellerSection({
   products = [],
@@ -10,42 +10,84 @@ export default function TopSellerSection({
   onSelectProduct,
   onNavigateCategory
 }) {
-  // Filter top sellers or bestsellers, or take first 8 items
-  const topSellers = products.filter(p => p.isBestSeller || p.priority >= 50 || p.rating >= 4.8).slice(0, 8);
+  const scrollRef = useRef(null);
+
+  // Requirement 6: Top 10 products sorted by highest sold value
+  const topSellers = [...products]
+    .sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0))
+    .slice(0, 10);
+
+  const scrollLeft = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -320, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+    }
+  };
 
   return (
-    <section className="py-14 sm:py-16 bg-[#FAF5EB] border-b border-[#DFCBB5]">
+    <section className="py-14 sm:py-16 bg-[#FAF5EB] border-b border-[#DFCBB5] relative">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-10 pb-4 border-b border-[#E5DAC4] gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 pb-4 border-b border-[#E5DAC4] gap-4">
           <div>
             <div className="flex items-center space-x-2 text-[#AA820A] mb-1">
               <Sparkles className="w-4 h-4 text-[#AA820A]" />
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#7A5844]">
-                MOST LOVED CREATIONS
+                MOST LOVED CREATIONS • TOP 10 BY POPULARITY
               </span>
             </div>
             <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A0711] tracking-tight">
               TOP SELLERS
             </h2>
             <p className="text-xs sm:text-sm text-[#7A5844] mt-1 font-sans">
-              Discover authentic fine silver creations most celebrated by our patrons.
+              Our 10 most celebrated fine silver creations with verified highest sales across India.
             </p>
           </div>
 
-          <button
-            onClick={() => onNavigateCategory && onNavigateCategory('all')}
-            className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-full border-2 border-[#4A0711] text-[#4A0711] hover:bg-[#4A0711] hover:text-[#F3E5AB] transition-all text-xs font-bold uppercase tracking-wider group cursor-pointer shadow-2xs"
-          >
-            <span>View All</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* Scroll Navigation Arrows */}
+            <div className="flex items-center space-x-1.5 bg-[#FAF5EB]">
+              <button
+                onClick={scrollLeft}
+                className="w-9 h-9 rounded-full border border-[#DFCBB5] bg-[#FFFDF9] hover:bg-[#4A0711] text-[#4A0711] hover:text-[#F3E5AB] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                title="Scroll Left"
+                aria-label="Previous Top Seller"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={scrollRight}
+                className="w-9 h-9 rounded-full border border-[#DFCBB5] bg-[#FFFDF9] hover:bg-[#4A0711] text-[#4A0711] hover:text-[#F3E5AB] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                title="Scroll Right"
+                aria-label="Next Top Seller"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => onNavigateCategory && onNavigateCategory('all')}
+              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-full border-2 border-[#4A0711] text-[#4A0711] hover:bg-[#4A0711] hover:text-[#F3E5AB] transition-all text-xs font-bold uppercase tracking-wider group cursor-pointer shadow-2xs"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
         </div>
 
-        {/* Responsive Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {topSellers.map((product) => {
+        {/* Strictly Single Row Container (No multiple rows) */}
+        <div
+          ref={scrollRef}
+          className="flex overflow-x-auto gap-4 sm:gap-6 pb-4 pt-1 px-1 scroll-smooth snap-x snap-mandatory"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {topSellers.map((product, index) => {
             const isWishlisted = wishlistIds.includes(product.id);
             const rawDiscount = product.originalPrice && product.price
               ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -59,7 +101,7 @@ export default function TopSellerSection({
             return (
               <div
                 key={product.id}
-                className="group relative flex flex-col justify-between bg-[#FFFDF9] rounded-2xl border border-[#DFCBB5] overflow-hidden hover:shadow-xl hover:border-[#AA820A] transition-all duration-300"
+                className="w-[270px] sm:w-[290px] shrink-0 snap-start group relative flex flex-col justify-between bg-[#FFFDF9] rounded-2xl border border-[#DFCBB5] overflow-hidden hover:shadow-xl hover:border-[#AA820A] transition-all duration-300"
               >
                 {/* Image Container with Zoom & Ribbons */}
                 <div className="relative aspect-square overflow-hidden bg-[#F4EFE6]">
@@ -70,10 +112,14 @@ export default function TopSellerSection({
                     onClick={() => onSelectProduct && onSelectProduct(product)}
                   />
 
-                  {/* Discount Ribbon Tag */}
-                  <div className="absolute top-3 left-3 z-10">
+                  {/* Top Rank & Sold Ribbon Tag */}
+                  <div className="absolute top-3 left-3 z-10 flex flex-col space-y-1">
                     <span className="bg-[#4A0711] text-[#F3E5AB] text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center space-x-1 border border-[#D4AF37]/30">
-                      <span>Save {discountPercent}%</span>
+                      <Flame className="w-3 h-3 text-[#D4AF37] fill-[#D4AF37]" />
+                      <span>#{index + 1} Best Seller</span>
+                    </span>
+                    <span className="bg-[#AA820A] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs w-fit">
+                      {product.sold || 500}+ Sold
                     </span>
                   </div>
 
@@ -109,12 +155,12 @@ export default function TopSellerSection({
                   <div>
                     <div className="flex items-center justify-between text-[11px] text-[#7A5844] mb-1">
                       <span className="font-bold text-[#AA820A] uppercase tracking-wider truncate">
-                        {product.purity || '925 Fine Silver'}
+                        {product.purity || '925 Fine Silver'} • {product.color || 'Silver'}
                       </span>
                       <div className="flex items-center space-x-1 text-[#AA820A] shrink-0">
                         <Star className="w-3.5 h-3.5 fill-current" />
                         <span className="font-bold text-xs text-[#301D17]">{product.rating || 4.9}</span>
-                        <span className="text-[10px] text-[#8A766B]">({product.reviewsCount || 42})</span>
+                        <span className="text-[10px] text-[#8A766B]">({product.reviewsCount || product.review || 42})</span>
                       </div>
                     </div>
 
@@ -128,7 +174,7 @@ export default function TopSellerSection({
                     </h3>
                     
                     <p className="text-[11px] text-[#7A5844] font-medium mt-0.5 line-clamp-1">
-                      {product.weightGrams ? `${product.weightGrams}g Pure Silver` : 'Hallmark Certified'} • {product.idealFor || 'Authentic'}
+                      {product.weightGrams ? `${product.weightGrams}g Pure Silver` : 'Hallmark Certified'} • {product.recipient || product.idealFor || 'Authentic'}
                     </p>
                   </div>
 
@@ -146,7 +192,7 @@ export default function TopSellerSection({
                         )}
                       </div>
                       <span className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block -mt-0.5">
-                        In Stock • Express Dispatch
+                        🔥 {product.sold || 500} Sold
                       </span>
                     </div>
 

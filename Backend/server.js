@@ -218,6 +218,9 @@ app.post('/api/data', async (req, res) => {
                         if (!item.category_name && item.category) {
                             item.category_name = item.category;
                         }
+                        item.color = item.color || 'Silver';
+                        item.review = item.review !== undefined ? Number(item.review) : (item.reviewsCount || 0);
+                        item.sold = item.sold !== undefined ? Number(item.sold) : 0;
                         return item;
                     });
                 }

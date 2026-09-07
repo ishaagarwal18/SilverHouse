@@ -51,11 +51,16 @@ export function normalizeProduct(rawItem) {
     isCustomizable: Boolean(rawItem.is_customizable || rawItem.isCustomizable || false),
     recipient: rawItem.ideal_for || rawItem.recipient || 'Gifting, Puja',
     images: images,
+    color: rawItem.color || 'Silver',
+    review: rawItem.review || rawItem.reviews_count || rawItem.reviews || 48,
+    sold: Number(rawItem.sold) || 450,
+    occasions: Array.isArray(rawItem.occasions) ? rawItem.occasions : (rawItem.ideal_for ? [rawItem.ideal_for] : []),
     shortDesc: rawItem.description || rawItem.shortDesc || 'Authentic pure 925 / 999 silver product with BIS Hallmark quality assurance.',
     specs: typeof rawItem.specs === 'object' ? rawItem.specs : {
       "Metal Purity": rawItem.purity || "999 Fine Pure Silver",
       "Weight": rawItem.weight || "10 Grams",
       "Craftsmanship": rawItem.make_type || "Handcrafted Luxury Finish",
+      "Color": rawItem.color || "Silver",
       "Ideal For": rawItem.ideal_for || "Puja, Luxury Gifting"
     }
   };

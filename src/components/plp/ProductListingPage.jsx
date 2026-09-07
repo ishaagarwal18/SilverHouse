@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES, PRODUCTS } from '../../data/products';
 import { fetchProducts } from '../../services/api';
 import {
   Filter, Grid3X3, Grid2X2, LayoutGrid, ChevronRight, SlidersHorizontal,
-  Heart, Eye, ShoppingBag, Star, Sparkles, X, Check, Search, RotateCcw
+  Heart, Eye, ShoppingBag, Star, Sparkles, X, Check, Search, RotateCcw, Flame
 } from 'lucide-react';
 
 export default function ProductListingPage({
@@ -18,7 +18,10 @@ export default function ProductListingPage({
   onNavigateYatraCustomizer
 }) {
   const { categoryId, subcategoryId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  const colorQueryParam = searchParams.get('color');
 
   const categoryList = (categories && categories.length > 0) ? categories : CATEGORIES;
 
@@ -27,6 +30,7 @@ export default function ProductListingPage({
   const [selectedSubcategory, setSelectedSubcategory] = useState(subcategoryId || 'all');
   const [selectedPurity, setSelectedPurity] = useState('all');
   const [selectedRecipient, setSelectedRecipient] = useState('all');
+  const [selectedColor, setSelectedColor] = useState(colorQueryParam || 'all');
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(100000);
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -41,6 +45,13 @@ export default function ProductListingPage({
     setSelectedSubcategory(subcategoryId || 'all');
   }, [categoryId, subcategoryId]);
 
+  // Sync color filter with URL search param if present
+  useEffect(() => {
+    if (colorQueryParam) {
+      setSelectedColor(colorQueryParam);
+    }
+  }, [colorQueryParam]);
+
   // Fetch filtered data directly from Express Backend API
   useEffect(() => {
     let isMounted = true;
@@ -49,6 +60,8 @@ export default function ProductListingPage({
         category: selectedCategory,
         subcategory: selectedSubcategory,
         purity: selectedPurity,
+        color: selectedColor !== 'all' ? selectedColor : undefined,
+        minPrice,
         maxPrice,
         inStockOnly,
         sortBy
@@ -60,7 +73,7 @@ export default function ProductListingPage({
     }
     loadFilteredData();
     return () => { isMounted = false; };
-  }, [selectedCategory, selectedSubcategory, selectedPurity, maxPrice, inStockOnly, sortBy]);
+  }, [selectedCategory, selectedSubcategory, selectedPurity, selectedColor, minPrice, maxPrice, inStockOnly, sortBy]);
 
   const VIRTUAL_CATEGORIES = {
     women: {
@@ -72,13 +85,13 @@ export default function ProductListingPage({
     mens: {
       id: "mens",
       name: "Men's Silver Collection",
-      description: "Bold silver bracelets and rings crafted for men.",
+      description: "Bold silver bracelets, kadhas, and signet rings crafted exclusively for men.",
       heroBanner: "/images/hero_sacred_rudraksha.png"
     },
     kids: {
       id: "kids",
       name: "Kids' Silver Collection",
-      description: "Protective silver nazariya beads and baby bracelets.",
+      description: "Protective silver nazariya beads, baby feeding silver sets, and baby bracelets.",
       heroBanner: "/images/hero_baby_nazariya.png"
     },
     jewellery: {
@@ -103,6 +116,90 @@ export default function ProductListingPage({
 
   const activeCategoryObj = categoryList.find(c => c.id === selectedCategory) || VIRTUAL_CATEGORIES[selectedCategory];
 
+  // Accurate Matchers to eliminate bugs
+  const isMenProduct = (p) => {
+    if (p.category === 'men-silver-collection') return true;
+    const target = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+    // Critical: NEVER match women products!
+    if (target.includes('women')) return false;
+    const words = target.split(/[\s,]+/);
+    return words.includes('men') || words.includes("men's");
+  };
+
+  const isWomenProduct = (p) => {
+    if (['silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets'].includes(p.category)) return true;
+    const target = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+    return target.includes('women');
+  };
+
+  const matchesOccasionOrAudience = (p, filter) => {
+    if (!filter || filter === 'all') return true;
+    const f = filter.toLowerCase().trim();
+
+    if (f === 'puja' || f === 'pooja') {
+      const occs = Array.isArray(p.occasions) ? p.occasions.map(o => o.toLowerCase()) : [];
+      const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+      const cat = (p.category || p.category_slug || '').toLowerCase();
+      const name = (p.name || '').toLowerCase();
+      return (
+        occs.some(o => o.includes('puja') || o.includes('pooja') || o.includes('worship') || o.includes('temple') || o.includes('diwali') || o.includes('navratri')) ||
+        recipient.includes('puja') || recipient.includes('pooja') || recipient.includes('worship') || recipient.includes('devot') || recipient.includes('temple') ||
+        cat === 'silver-religious-idols' || cat === 'silver-pooja-utensils-diya' ||
+        name.includes('idol') || name.includes('murti') || name.includes('diya') || name.includes('thali') || name.includes('kalash') || name.includes('ganesha') || name.includes('laxmi') || name.includes('radha') || name.includes('krishna') || name.includes('hanuman') || name.includes('bell') || name.includes('panchpatra')
+      );
+    }
+
+    if (f === 'men' || f === 'mens') {
+      return isMenProduct(p);
+    }
+
+    if (f === 'women') {
+      return isWomenProduct(p);
+    }
+
+    if (f === 'baby' || f === 'kids') {
+      const occs = Array.isArray(p.occasions) ? p.occasions.map(o => o.toLowerCase()) : [];
+      const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+      const cat = (p.category || '').toLowerCase();
+      const name = (p.name || '').toLowerCase();
+      return (
+        cat === 'kids-nazariya-bracelets' ||
+        occs.some(o => o.includes('baby') || o.includes('kids') || o.includes('birth')) ||
+        recipient.includes('baby') || recipient.includes('kids') || recipient.includes('child') ||
+        name.includes('nazariya') || name.includes('baby')
+      );
+    }
+
+    if (f === 'gifting' || f === 'gift') {
+      const occs = Array.isArray(p.occasions) ? p.occasions.map(o => o.toLowerCase()) : [];
+      const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+      return (
+        p.isCustomizable ||
+        p.category === 'custom-gifting' ||
+        p.category === 'silver-coins-bars' ||
+        recipient.includes('gift') ||
+        occs.some(o => o.includes('gift') || o.includes('wedding') || o.includes('anniversary'))
+      );
+    }
+
+    if (f === 'investment') {
+      const occs = Array.isArray(p.occasions) ? p.occasions.map(o => o.toLowerCase()) : [];
+      const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+      const name = (p.name || '').toLowerCase();
+      return (
+        p.category === 'silver-coins-bars' ||
+        occs.some(o => o.includes('invest')) ||
+        recipient.includes('invest') ||
+        name.includes('coin') ||
+        name.includes('bar')
+      );
+    }
+
+    const occs = Array.isArray(p.occasions) ? p.occasions.map(o => o.toLowerCase()) : [];
+    const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+    return occs.some(o => o.includes(f)) || recipient.includes(f);
+  };
+
   // Fallback / Normalized Filtered List
   const filteredProducts = useMemo(() => {
     const rawList = (backendItems && backendItems.length > 0)
@@ -116,25 +213,22 @@ export default function ProductListingPage({
         p.name.toLowerCase().includes(q) ||
         (p.description || '').toLowerCase().includes(q) ||
         (p.category_name || p.category || '').toLowerCase().includes(q) ||
-        (p.purity || '').toLowerCase().includes(q)
+        (p.purity || '').toLowerCase().includes(q) ||
+        (p.color || '').toLowerCase().includes(q)
       );
     }
 
+    // Category / Collection Filtering
     if (selectedCategory !== 'all') {
       if (selectedCategory === 'women') {
-        result = result.filter(p =>
-          ['silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets'].includes(p.category) ||
-          (p.recipient || p.idealFor || p.ideal_for || '').toString().toLowerCase().includes('women')
-        );
+        result = result.filter(isWomenProduct);
       } else if (selectedCategory === 'mens' || selectedCategory === 'men' || selectedCategory === 'men-silver-collection') {
-        result = result.filter(p =>
-          p.category === 'men-silver-collection' ||
-          (p.recipient || p.idealFor || p.ideal_for || '').toString().toLowerCase().includes('men')
-        );
+        result = result.filter(isMenProduct);
       } else if (selectedCategory === 'kids' || selectedCategory === 'kids-baby' || selectedCategory === 'kids-nazariya-bracelets') {
         result = result.filter(p =>
           p.category === 'kids-nazariya-bracelets' ||
-          (p.recipient || p.idealFor || p.ideal_for || '').toString().toLowerCase().includes('kids')
+          (p.recipient || p.idealFor || p.ideal_for || '').toString().toLowerCase().includes('kids') ||
+          (p.recipient || p.idealFor || p.ideal_for || '').toString().toLowerCase().includes('baby')
         );
       } else if (selectedCategory === 'jewellery') {
         result = result.filter(p =>
@@ -154,24 +248,36 @@ export default function ProductListingPage({
         result = result.filter(p => p.category === selectedCategory || p.category_slug === selectedCategory);
       }
     }
+
+    // Subcategory Filter
     if (selectedSubcategory !== 'all') {
       result = result.filter(p => p.subcategory === selectedSubcategory);
     }
+
+    // Purity Filter
     if (selectedPurity !== 'all') {
       result = result.filter(p => p.purityCode === selectedPurity);
     }
-    if (selectedRecipient !== 'all') {
-      result = result.filter(p => {
-        const val = (p.recipient || p.ideal_for || '').toString().toLowerCase();
-        const target = selectedRecipient.toLowerCase();
-        return val.includes(target) || val === 'all';
-      });
+
+    // Color / Finish Filter
+    if (selectedColor !== 'all') {
+      result = result.filter(p => (p.color || '').toLowerCase() === selectedColor.toLowerCase());
     }
+
+    // Occasion / Target Audience Filter
+    if (selectedRecipient !== 'all') {
+      result = result.filter(p => matchesOccasionOrAudience(p, selectedRecipient));
+    }
+
+    // In-Stock Only
     if (inStockOnly) {
       result = result.filter(p => p.inStock);
     }
-    result = result.filter(p => p.price <= maxPrice);
 
+    // Dual To-From Price Filter
+    result = result.filter(p => p.price >= minPrice && p.price <= maxPrice);
+
+    // Sorting
     if (sortBy === 'price-low') {
       result.sort((a, b) => a.price - b.price);
     } else if (sortBy === 'price-high') {
@@ -179,11 +285,11 @@ export default function ProductListingPage({
     } else if (sortBy === 'rating') {
       result.sort((a, b) => b.rating - a.rating);
     } else if (sortBy === 'newest') {
-      result.sort((a, b) => b.reviewsCount - a.reviewsCount);
+      result.sort((a, b) => (b.sold || 0) - (a.sold || 0));
     }
 
     return result;
-  }, [backendItems, products, searchQuery, selectedCategory, selectedSubcategory, selectedPurity, selectedRecipient, maxPrice, inStockOnly, sortBy]);
+  }, [backendItems, products, searchQuery, selectedCategory, selectedSubcategory, selectedPurity, selectedColor, selectedRecipient, minPrice, maxPrice, inStockOnly, sortBy]);
 
   const categoryCounts = useMemo(() => {
     const rawList = (products && products.length > 0) ? products : PRODUCTS;
@@ -191,8 +297,8 @@ export default function ProductListingPage({
     rawList.forEach(p => {
       counts[p.category] = (counts[p.category] || 0) + 1;
     });
-    counts['women'] = rawList.filter(p => ['silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets'].includes(p.category)).length;
-    counts['mens'] = rawList.filter(p => p.category === 'men-silver-collection').length;
+    counts['women'] = rawList.filter(isWomenProduct).length;
+    counts['mens'] = rawList.filter(isMenProduct).length;
     counts['kids'] = rawList.filter(p => p.category === 'kids-nazariya-bracelets').length;
     counts['jewellery'] = rawList.filter(p => ['silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets', 'men-silver-collection', 'kids-nazariya-bracelets'].includes(p.category)).length;
     return counts;
@@ -214,10 +320,12 @@ export default function ProductListingPage({
     setSelectedSubcategory('all');
     setSelectedPurity('all');
     setSelectedRecipient('all');
+    setSelectedColor('all');
+    setMinPrice(0);
     setMaxPrice(100000);
     setInStockOnly(false);
     setSortBy('featured');
-    if (categoryId) {
+    if (categoryId || searchParams.get('color')) {
       navigate('/catalog');
     }
   };
@@ -317,12 +425,18 @@ export default function ProductListingPage({
             </span>
 
             {/* Active Filter Badges */}
-            {(selectedCategory !== 'all' || selectedPurity !== 'all' || selectedRecipient !== 'all' || searchQuery || inStockOnly || maxPrice < 100000) && (
+            {(selectedCategory !== 'all' || selectedPurity !== 'all' || selectedColor !== 'all' || selectedRecipient !== 'all' || searchQuery || inStockOnly || minPrice > 0 || maxPrice < 100000) && (
               <div className="flex items-center space-x-1.5 flex-wrap">
                 {selectedCategory !== 'all' && (
                   <span className="bg-[#D4AF37]/15 text-[#AA820A] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
                     <span>Category: {activeCategoryObj?.name || selectedCategory}</span>
                     <button onClick={() => handleCategorySelect('all')} className="hover:text-black ml-1"><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                {selectedColor !== 'all' && (
+                  <span className="bg-[#FAF3E0] border border-[#AA820A] text-[#4A0711] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                    <span>Finish: {selectedColor}</span>
+                    <button onClick={() => setSelectedColor('all')} className="hover:text-black ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
                 {selectedPurity !== 'all' && (
@@ -331,9 +445,15 @@ export default function ProductListingPage({
                     <button onClick={() => setSelectedPurity('all')} className="hover:text-black ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
+                {(minPrice > 0 || maxPrice < 100000) && (
+                  <span className="bg-[#D4AF37]/15 text-[#AA820A] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                    <span>₹{minPrice.toLocaleString('en-IN')} - ₹{maxPrice.toLocaleString('en-IN')}</span>
+                    <button onClick={() => { setMinPrice(0); setMaxPrice(100000); }} className="hover:text-black ml-1"><X className="w-3 h-3" /></button>
+                  </span>
+                )}
                 {selectedRecipient !== 'all' && (
                   <span className="bg-[#D4AF37]/15 text-[#AA820A] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
-                    <span>Audience: {selectedRecipient}</span>
+                    <span>Occasion: {selectedRecipient}</span>
                     <button onClick={() => setSelectedRecipient('all')} className="hover:text-black ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
@@ -516,6 +636,46 @@ export default function ProductListingPage({
               </div>
             </div>
 
+            {/* Requirement 2: Color / Metallic Finish Filter */}
+            <div className="border-t border-silver-100 pt-4">
+              <label className="text-[11px] font-bold text-silver-500 uppercase tracking-wider block mb-2.5">
+                Signature Finish / Color
+              </label>
+              <div className="space-y-1.5 text-xs">
+                {[
+                  { id: 'all', label: 'All Colors & Finishes', colorDot: 'bg-gradient-to-r from-silver-300 to-amber-200' },
+                  { id: 'Silver', label: 'Fine Silver (999/925)', colorDot: 'bg-gradient-to-br from-slate-100 to-slate-300 border border-slate-400' },
+                  { id: 'Rose Gold', label: 'Rose Gold Plated', colorDot: 'bg-gradient-to-br from-rose-300 to-rose-400 border border-rose-500' },
+                  { id: 'Oxidised', label: 'Bold Oxidised Silver', colorDot: 'bg-gradient-to-br from-neutral-700 to-black border border-neutral-600' }
+                ].map((finish) => {
+                  const isSelected = selectedColor.toLowerCase() === finish.id.toLowerCase();
+                  const count = finish.id === 'all'
+                    ? (products?.length || PRODUCTS.length)
+                    : (products || PRODUCTS).filter(p => (p.color || '').toLowerCase() === finish.id.toLowerCase()).length;
+
+                  return (
+                    <label
+                      key={finish.id}
+                      onClick={() => setSelectedColor(finish.id)}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${isSelected
+                        ? 'bg-[#1A1A1A] text-white font-bold shadow-xs'
+                        : 'text-silver-700 hover:bg-silver-100'
+                        }`}
+                    >
+                      <div className="flex items-center space-x-2.5">
+                        <span className={`w-3.5 h-3.5 rounded-full shrink-0 shadow-2xs ${finish.colorDot}`} />
+                        <span>{finish.label}</span>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isSelected ? 'bg-[#D4AF37] text-black' : 'bg-silver-100 text-silver-600'
+                        }`}>
+                        {count}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Silver Purity Radio Group */}
             <div className="border-t border-silver-100 pt-4">
               <label className="text-[11px] font-bold text-silver-500 uppercase tracking-wider block mb-2.5">
@@ -545,44 +705,84 @@ export default function ProductListingPage({
               </div>
             </div>
 
-            {/* Price Range Slider & Presets */}
+            {/* Requirement 4: Dual To-From Price Range Slider */}
             <div className="border-t border-silver-100 pt-4">
               <div className="flex justify-between items-center mb-2 text-xs">
                 <label className="text-[11px] font-bold text-silver-500 uppercase tracking-wider">
-                  Max Price Filter
+                  Price Filter (To - From)
                 </label>
-                <span className="font-bold text-[#1A1A1A] bg-[#D4AF37]/15 text-[#AA820A] px-2 py-0.5 rounded text-xs">
-                  ≤ ₹{maxPrice.toLocaleString('en-IN')}
+                <span className="font-bold text-[#1A1A1A] bg-[#D4AF37]/15 text-[#AA820A] px-2 py-0.5 rounded text-[11px]">
+                  ₹{minPrice.toLocaleString('en-IN')} - ₹{maxPrice.toLocaleString('en-IN')}
                 </span>
               </div>
-              <input
-                type="range"
-                min="1000"
-                max="100000"
-                step="1000"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="w-full accent-[#D4AF37] cursor-pointer"
-              />
+
+              {/* Sliders Container */}
+              <div className="space-y-3 mt-3">
+                <div>
+                  <div className="flex justify-between text-[11px] text-silver-600 mb-1 font-medium">
+                    <span>From (Min Price):</span>
+                    <span className="font-bold text-[#1A1A1A]">₹{minPrice.toLocaleString('en-IN')}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="50000"
+                    step="500"
+                    value={minPrice}
+                    onChange={(e) => {
+                      const val = Math.min(Number(e.target.value), maxPrice - 500);
+                      setMinPrice(val >= 0 ? val : 0);
+                    }}
+                    className="w-full accent-[#D4AF37] cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-[11px] text-silver-600 mb-1 font-medium">
+                    <span>To (Max Price):</span>
+                    <span className="font-bold text-[#1A1A1A]">₹{maxPrice.toLocaleString('en-IN')}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1000"
+                    max="100000"
+                    step="1000"
+                    value={maxPrice}
+                    onChange={(e) => {
+                      const val = Math.max(Number(e.target.value), minPrice + 500);
+                      setMaxPrice(val <= 100000 ? val : 100000);
+                    }}
+                    className="w-full accent-[#D4AF37] cursor-pointer"
+                  />
+                </div>
+              </div>
+
               <div className="flex justify-between text-[10px] text-silver-400 mt-1 mb-3">
-                <span>₹1,000</span>
+                <span>₹0</span>
+                <span>₹50,000</span>
                 <span>₹1,00,000</span>
               </div>
 
               {/* Price Tier Presets */}
               <div className="grid grid-cols-2 gap-1.5 text-[11px]">
                 {[
-                  { label: 'Under ₹2.5k', max: 2500 },
-                  { label: 'Under ₹5k', max: 5000 },
-                  { label: 'Under ₹10k', max: 10000 },
-                  { label: 'All Prices', max: 100000 }
+                  { label: 'Under ₹2.5k', min: 0, max: 2500 },
+                  { label: '₹2.5k - ₹5k', min: 2500, max: 5000 },
+                  { label: '₹5k - ₹15k', min: 5000, max: 15000 },
+                  { label: '₹15k - ₹30k', min: 15000, max: 30000 },
+                  { label: '₹30k+', min: 30000, max: 100000 },
+                  { label: 'All Prices', min: 0, max: 100000 }
                 ].map((tier) => (
                   <button
                     key={tier.label}
-                    onClick={() => setMaxPrice(tier.max)}
-                    className={`py-1 px-2 rounded text-center font-semibold transition-colors ${maxPrice === tier.max
-                      ? 'bg-[#1A1A1A] text-white'
-                      : 'bg-silver-100 text-silver-700 hover:bg-silver-200'
+                    onClick={() => {
+                      setMinPrice(tier.min);
+                      setMaxPrice(tier.max);
+                    }}
+                    className={`py-1 px-2 rounded text-center font-semibold transition-colors cursor-pointer ${
+                      minPrice === tier.min && maxPrice === tier.max
+                        ? 'bg-[#1A1A1A] text-white'
+                        : 'bg-silver-100 text-silver-700 hover:bg-silver-200'
                       }`}
                   >
                     {tier.label}
@@ -591,24 +791,35 @@ export default function ProductListingPage({
               </div>
             </div>
 
-            {/* Target Audience / Recipient Radio Badges */}
+            {/* Requirement 5: Target Audience / Occasion Filter */}
             <div className="border-t border-silver-100 pt-4">
               <label className="text-[11px] font-bold text-silver-500 uppercase tracking-wider block mb-2.5">
                 Target Audience / Occasion
               </label>
               <div className="flex flex-wrap gap-1.5 text-xs">
-                {['all', 'Puja', 'Baby', 'Kids', 'Gifting', 'Investment'].map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => setSelectedRecipient(tag)}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center space-x-1 cursor-pointer ${selectedRecipient === tag
-                      ? 'bg-[#D4AF37] text-black shadow-xs'
-                      : 'bg-silver-100 text-silver-700 hover:bg-silver-200'
-                      }`}
-                  >
-                    <span>{tag === 'all' ? 'All Audiences' : tag}</span>
-                  </button>
-                ))}
+                {[
+                  { id: 'all', label: 'All Items' },
+                  { id: 'Puja', label: '🪔 Puja & Devotion' },
+                  { id: 'Men', label: 'Men' },
+                  { id: 'Women', label: 'Women' },
+                  { id: 'Baby', label: 'Baby & Kids' },
+                  { id: 'Gifting', label: 'Luxury Gifting' },
+                  { id: 'Investment', label: 'Silver Coins' }
+                ].map((tag) => {
+                  const isSelected = selectedRecipient.toLowerCase() === tag.id.toLowerCase();
+                  return (
+                    <button
+                      key={tag.id}
+                      onClick={() => setSelectedRecipient(tag.id)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center space-x-1 cursor-pointer ${isSelected
+                        ? 'bg-[#D4AF37] text-black shadow-xs'
+                        : 'bg-silver-100 text-silver-700 hover:bg-silver-200'
+                        }`}
+                    >
+                      <span>{tag.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -724,6 +935,14 @@ export default function ProductListingPage({
                           <span className="bg-[#1A1A1A]/90 backdrop-blur-xs text-[#D4AF37] text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
                             {product.purityCode === '999' ? '999 Pure' : '925 Sterling'}
                           </span>
+                          {product.color && product.color !== 'Silver' && (
+                            <span className="bg-[#4A0711] text-[#F3E5AB] text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
+                              {product.color}
+                            </span>
+                          )}
+                          <span className="bg-[#AA820A] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs w-fit">
+                            🔥 {product.sold || 450}+ Sold
+                          </span>
                           {discountPct && (
                             <span className="bg-[#D4AF37] text-black text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
                               {discountPct}% OFF
@@ -764,10 +983,15 @@ export default function ProductListingPage({
                       <div className="p-4 flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex items-center justify-between text-[11px] text-silver-500 mb-1">
-                            <span className="font-semibold text-silver-700">Weight: {product.weightGrams}g</span>
-                            <div className="flex items-center space-x-1 text-[#D4AF37]">
-                              <Star className="w-3 h-3 fill-[#D4AF37]" />
+                            <span className="font-semibold text-silver-700">
+                              {product.color || 'Silver'} • {product.weightGrams}g
+                            </span>
+                            <div className="flex items-center space-x-1 text-[#AA820A]">
+                              <Star className="w-3 h-3 fill-[#D4AF37] text-[#D4AF37]" />
                               <span className="font-bold text-[#1A1A1A]">{product.rating}</span>
+                              <span className="text-[10px] text-silver-500">
+                                ({product.reviewsCount || product.review || 48})
+                              </span>
                             </div>
                           </div>
 
