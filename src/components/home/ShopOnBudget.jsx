@@ -46,22 +46,22 @@ export default function ShopOnBudget({ onSelectBudget, onNavigateCategory }) {
   };
 
   return (
-    <section className="py-14 sm:py-16 bg-[#FAF5EB] border-b border-[#DFCBB5]">
+    <section className="py-14 sm:py-16 bg-[#EAE2D5] border-b border-[#C5B299]">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="flex items-center justify-center space-x-2 text-[#AA820A] mb-1">
-            <Sparkles className="w-4 h-4 text-[#AA820A]" />
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#7A5844]">
+          <div className="flex items-center justify-center space-x-2 text-[#9A650C] mb-1">
+            <Sparkles className="w-4 h-4 text-[#9A650C]" />
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#4E6073]">
               CELEBRATE WITHIN YOUR MEANS
             </span>
           </div>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#4A0711] tracking-wider uppercase">
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#071526] tracking-wider uppercase">
             SHOP ON BUDGET
           </h2>
-          <div className="w-16 h-0.5 bg-[#AA820A] mx-auto mt-2.5 mb-3" />
-          <p className="text-xs sm:text-sm text-[#7A5844] font-sans">
+          <div className="w-16 h-0.5 bg-[#9A650C] mx-auto mt-2.5 mb-3" />
+          <p className="text-xs sm:text-sm text-[#4E6073] font-sans">
             Handcrafted pure silver gifts for every celebration, thoughtfully curated to fit your budget.
           </p>
         </div>
@@ -72,26 +72,26 @@ export default function ShopOnBudget({ onSelectBudget, onNavigateCategory }) {
             <div
               key={tier.id}
               onClick={() => handleTierClick(tier)}
-              className="group relative h-64 sm:h-72 rounded-3xl overflow-hidden cursor-pointer shadow-md hover:shadow-2xl transition-all duration-500 bg-gradient-to-b from-[#4A0711] via-[#350208] to-[#200105] border-2 border-[#AA820A]/40 hover:border-[#D4AF37] flex items-center justify-center p-6 text-center transform hover:-translate-y-1.5"
+              className="group relative h-64 sm:h-72 rounded-3xl overflow-hidden cursor-pointer shadow-md hover:shadow-2xl transition-all duration-500 bg-gradient-to-b from-[#0B2545] via-[#081C35] to-[#040E1B] border-2 border-[#D4AF37]/40 hover:border-[#D4AF37] flex items-center justify-center p-6 text-center transform hover:-translate-y-1.5"
             >
               {/* Background Glow */}
               <div className="absolute inset-0 opacity-25 group-hover:opacity-35 transition-opacity bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-200/20 via-transparent to-transparent pointer-events-none" />
 
               {/* Subtle Arch Outline */}
-              <div className="absolute inset-x-7 top-4 bottom-4 rounded-t-full border border-amber-300/15 pointer-events-none" />
+              <div className="absolute inset-x-7 top-4 bottom-4 rounded-t-full border border-amber-300/20 pointer-events-none" />
 
               {/* Decorative Satin Ribbon Graphic */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-                <div className="absolute -left-4 w-28 h-16 bg-gradient-to-r from-[#7D0C1D] to-[#AA1A2C] rounded-full rotate-[-25deg] blur-[1px] shadow-lg opacity-85 group-hover:rotate-[-20deg] transition-transform duration-500" />
-                <div className="absolute -right-4 w-28 h-16 bg-gradient-to-l from-[#7D0C1D] to-[#AA1A2C] rounded-full rotate-[25deg] blur-[1px] shadow-lg opacity-85 group-hover:rotate-[20deg] transition-transform duration-500" />
-                <div className="absolute w-44 h-24 bg-gradient-to-tr from-[#600814] via-[#AA1A2C] to-[#600814] rounded-full opacity-60 blur-xs" />
+                <div className="absolute -left-4 w-28 h-16 bg-gradient-to-r from-[#143A66] to-[#1E4D82] rounded-full rotate-[-25deg] blur-[1px] shadow-lg opacity-85 group-hover:rotate-[-20deg] transition-transform duration-500" />
+                <div className="absolute -right-4 w-28 h-16 bg-gradient-to-l from-[#143A66] to-[#1E4D82] rounded-full rotate-[25deg] blur-[1px] shadow-lg opacity-85 group-hover:rotate-[20deg] transition-transform duration-500" />
+                <div className="absolute w-44 h-24 bg-gradient-to-tr from-[#071526] via-[#143A66] to-[#071526] rounded-full opacity-60 blur-xs" />
               </div>
 
               {/* Central Scalloped Ornate Badge */}
-              <div className="relative z-10 w-44 h-44 sm:w-48 sm:h-48 rounded-[38px] bg-gradient-to-b from-[#C44A5C] via-[#A63042] to-[#801B2B] shadow-2xl p-2 flex flex-col items-center justify-center border-2 border-[#F6D5DC]/80 group-hover:scale-105 transition-transform duration-300">
+              <div className="relative z-10 w-44 h-44 sm:w-48 sm:h-48 rounded-[38px] bg-gradient-to-b from-[#143A66] via-[#0E2E54] to-[#071526] shadow-2xl p-2 flex flex-col items-center justify-center border-2 border-[#D4AF37]/80 group-hover:scale-105 transition-transform duration-300">
 
                 {/* Inner Decorative Scalloped Border Ring */}
-                <div className="w-full h-full rounded-[32px] border border-white/40 bg-gradient-to-b from-white/15 to-transparent flex flex-col items-center justify-center px-4 py-2 relative overflow-hidden">
+                <div className="w-full h-full rounded-[32px] border border-[#D4AF37]/40 bg-gradient-to-b from-[#D4AF37]/15 to-transparent flex flex-col items-center justify-center px-4 py-2 relative overflow-hidden">
 
                   {/* Watermark */}
                   <svg className="absolute w-28 h-28 text-white/10 fill-current pointer-events-none -bottom-4" viewBox="0 0 24 24">
@@ -99,7 +99,7 @@ export default function ShopOnBudget({ onSelectBudget, onNavigateCategory }) {
                   </svg>
 
                   {/* Prefix Text */}
-                  <span className="font-serif text-[#FDFBF7] font-medium text-xs sm:text-sm tracking-wide drop-shadow-sm">
+                  <span className="font-serif text-[#F8E6C8] font-medium text-xs sm:text-sm tracking-wide drop-shadow-sm">
                     {tier.prefix}
                   </span>
 
@@ -109,7 +109,7 @@ export default function ShopOnBudget({ onSelectBudget, onNavigateCategory }) {
                   </span>
 
                   {/* Tagline on hover */}
-                  <span className="text-[10px] font-bold text-[#F3E5AB] uppercase tracking-widest mt-2 opacity-95">
+                  <span className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-widest mt-2 opacity-95">
                     {tier.tag}
                   </span>
                 </div>

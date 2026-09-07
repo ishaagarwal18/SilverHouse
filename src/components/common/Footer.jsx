@@ -3,7 +3,7 @@ import { Sparkles, ShieldCheck, Mail, Phone, MapPin, Award, Heart, ArrowRight } 
 
 export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer }) {
   return (
-    <footer className="bg-gradient-to-b from-[#2D0207] via-[#200105] to-[#150003] text-white pt-16 pb-8 border-t-2 border-[#D4AF37]">
+    <footer className="bg-gradient-to-b from-[#071526] via-[#0B2545] to-[#040C16] text-white pt-16 pb-8 border-t-2 border-[#D4AF37]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Top Newsletter Bar */}

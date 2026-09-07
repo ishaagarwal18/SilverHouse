@@ -9,7 +9,7 @@ const SLIDES = [
     subtitle: "Handcrafted 925 & 999 Pure Silver Idols of Lord Ganesha & Goddess Lakshmi. BIS Hallmarked with Anti-Tarnish Protection.",
     ctaText: "Explore Silver Murti",
     categoryId: "silver-religious-idols",
-    bgImage: "/images/hero_silver_idols.png",
+    bgImage: "/uploads/stock-photo-brass-metal-art-handmade-indian-god-krishna-sculpture-souvenir-made-YKb3jgW7pXtZP0ov.jpg",
     badge: "100% Pure Hallmarked"
   },
   {
@@ -50,21 +50,20 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
   const slide = SLIDES[currentSlide];
 
   return (
-    <div className="relative w-full h-[300px] sm:h-[350px] md:h-[390px] lg:h-[420px] bg-[#1A1A1A] overflow-hidden border-b-2 border-[#D4AF37]/40 shadow-md">
+    <div className="relative w-full h-[300px] sm:h-[350px] md:h-[390px] lg:h-[420px] bg-gradient-to-r from-[#071526] via-[#0B2545] to-[#143A66] overflow-hidden border-b-2 border-[#D4AF37]/40 shadow-md">
       {/* Background Image with Overlay */}
       {SLIDES.map((item, idx) => (
         <div
           key={item.id}
-          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-            idx === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'
-          }`}
+          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'
+            }`}
         >
           <img
             src={item.bgImage}
             alt={item.title}
             className="w-full h-full object-cover object-center brightness-60"
           />
-          <div className="absolute inset-0 bg-linear-to-r from-black/80 via-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#071526]/90 via-[#0B2545]/70 to-transparent" />
         </div>
       ))}
 
@@ -132,9 +131,8 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
           <button
             key={idx}
             onClick={() => setCurrentSlide(idx)}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              idx === currentSlide ? 'w-8 bg-[#D4AF37]' : 'w-2 bg-white/40 hover:bg-white'
-            }`}
+            className={`h-2 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-8 bg-[#D4AF37]' : 'w-2 bg-white/40 hover:bg-white'
+              }`}
           />
         ))}
       </div>
