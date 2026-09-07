@@ -15,56 +15,61 @@
 
     <style>
         :root {
-            --bg: #f8fafc;
-            --surface: #ffffff;
-            --surface-card: #f1f5f9;
-            --surface-hover: #e2e8f0;
-            --border: #e2e8f0;
-            --border-focus: #6366f1;
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --primary-glow: rgba(79, 70, 229, 0.2);
-            --accent: #0284c7;
-            --success: #10b981;
-            --danger: #ef4444;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --sidebar-width: 290px;
-            --radius: 14px;
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            --input-bg: #ffffff;
-            --input-text: #0f172a;
-            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            --card-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
-            --topbar-border: #e2e8f0;
-            --bg-gradient: radial-gradient(circle at top center, rgba(99, 102, 241, 0.08), transparent 45%);
-            --header-bg: rgba(255, 255, 255, 0.85);
-            --card-media-bg: #f1f5f9;
+            /* HIGH-CONTRAST LIGHT LUXURY PALETTE (Cashmere Sand & Royal Midnight Sapphire) */
+            --bg: #EAE2D5;                   /* Warm Cashmere Sand (rich, warm, NOT plain white) */
+            --sidebar-bg: #DFD4C0;           /* Distinct tinted stone parchment sidebar */
+            --surface: #F8F4EC;              /* Warm Alabaster Silk for cards (soft cream, high contrast) */
+            --surface-card: #D8CCB9;         /* High-contrast chip & pill background */
+            --surface-hover: #CDC0AC;        /* Hover state for interactive chips */
+            --border: #C5B299;               /* Crisp warm taupe border for sharp definition */
+            --border-focus: #0B2545;
+            --primary: #0B2545;              /* Royal Midnight Sapphire - high contrast on light sand */
+            --primary-hover: #143A66;
+            --primary-glow: rgba(11, 37, 69, 0.2);
+            --accent: #9A650C;               /* Heritage Burnished Gold */
+            --accent-gold: #D4AF37;
+            --success: #15803d;
+            --danger: #b91c1c;
+            --text-main: #071526;            /* Deep obsidian sapphire text (maximum contrast & legibility) */
+            --text-muted: #4E6073;           /* Slate navy subtext */
+            --sidebar-width: 300px;
+            --radius: 16px;
+            --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            --input-bg: #EDE5D6;
+            --input-text: #071526;
+            --shadow: 0 4px 20px rgba(11, 37, 69, 0.08);
+            --card-shadow: 0 6px 22px rgba(11, 37, 69, 0.09);
+            --topbar-border: #C5B299;
+            --bg-gradient: radial-gradient(circle at 50% 0%, rgba(11, 37, 69, 0.04), transparent 60%);
+            --header-bg: rgba(223, 212, 192, 0.94);
+            --card-media-bg: #DDD1BE;        /* Warm Pedestal plinth that makes 925 silver gleam */
         }
 
         [data-theme="dark"] {
-            --bg: #0b0f19;
-            --surface: #111827;
-            --surface-card: #1f2937;
-            --surface-hover: #374151;
-            --border: #374151;
-            --border-focus: #6366f1;
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --primary-glow: rgba(99, 102, 241, 0.25);
-            --accent: #38bdf8;
+            --bg: #07121E;
+            --sidebar-bg: #0B192A;
+            --surface: #0E2034;
+            --surface-card: #152B44;
+            --surface-hover: #1D3958;
+            --border: #224266;
+            --border-focus: #4B90D6;
+            --primary: #4B90D6;
+            --primary-hover: #60A5FA;
+            --primary-glow: rgba(75, 144, 214, 0.3);
+            --accent: #E5B25D;
+            --accent-gold: #F5C77E;
             --success: #10b981;
             --danger: #ef4444;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --input-bg: #1f2937;
-            --input-text: #ffffff;
-            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
-            --topbar-border: rgba(255, 255, 255, 0.06);
-            --bg-gradient: radial-gradient(circle at top center, rgba(99, 102, 241, 0.07), transparent 45%);
-            --header-bg: rgba(17, 24, 39, 0.85);
-            --card-media-bg: #0f172a;
+            --text-main: #F4EFEB;
+            --text-muted: #95A9BF;
+            --input-bg: #152B44;
+            --input-text: #F4EFEB;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+            --card-shadow: 0 4px 22px rgba(0, 0, 0, 0.4);
+            --topbar-border: rgba(229, 178, 93, 0.15);
+            --bg-gradient: radial-gradient(circle at 50% 0%, rgba(75, 144, 214, 0.08), transparent 50%);
+            --header-bg: rgba(11, 25, 42, 0.94);
+            --card-media-bg: #0A1624;
         }
 
         * {
@@ -83,16 +88,33 @@
             overflow: hidden;
         }
 
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(11, 37, 69, 0.22);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(11, 37, 69, 0.38);
+        }
+
         /* ================= SIDEBAR FILTER PANEL ================= */
         .sidebar-filter {
             width: var(--sidebar-width);
             min-width: var(--sidebar-width);
-            background: var(--surface);
+            max-width: var(--sidebar-width);
+            background: var(--sidebar-bg, #DFD4C0);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            padding: 20px 18px;
-            gap: 20px;
+            padding: 22px 20px;
+            gap: 18px;
             z-index: 20;
             overflow-y: auto;
             height: 100vh;
@@ -117,14 +139,15 @@
         .brand-logo {
             width: 38px;
             height: 38px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
+            background: linear-gradient(135deg, #0B2545, #1B4573);
+            border: 1px solid rgba(212, 175, 55, 0.5);
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 20px;
-            color: #fff;
-            box-shadow: 0 4px 12px var(--primary-glow);
+            color: #F5E8C7;
+            box-shadow: 0 4px 14px rgba(11, 37, 69, 0.25);
         }
 
         .brand-title {
@@ -300,6 +323,85 @@
             color: var(--text-muted);
         }
 
+        /* ================= SINGLE TRACK DUAL-THUMB SLIDER ================= */
+        .dual-slider-wrap {
+            position: relative;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin-top: 6px;
+        }
+
+        .dual-slider-track {
+            position: absolute;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--surface-hover);
+            border: 1px solid var(--border);
+            z-index: 1;
+        }
+
+        .dual-slider-range {
+            position: absolute;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--primary);
+            z-index: 2;
+        }
+
+        .dual-slider-wrap input[type="range"] {
+            position: absolute;
+            width: 100%;
+            height: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            pointer-events: none;
+            -webkit-appearance: none;
+            appearance: none;
+            margin: 0;
+            padding: 0;
+            border: none;
+            z-index: 3;
+        }
+
+        .dual-slider-wrap input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid var(--surface);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+
+        .dual-slider-wrap input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: var(--accent);
+        }
+
+        .dual-slider-wrap input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.25);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+        }
+
+        .dual-slider-wrap input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid var(--surface);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
         .search-field {
             position: relative;
         }
@@ -320,9 +422,9 @@
         .btn-reset-sidebar {
             margin-top: 10px;
             width: 100%;
-            background: rgba(239, 68, 68, 0.08);
+            background: rgba(185, 28, 28, 0.08);
             color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(185, 28, 28, 0.2);
             padding: 10px 14px;
             border-radius: 8px;
             font-size: 12.5px;
@@ -336,7 +438,7 @@
         }
 
         .btn-reset-sidebar:hover {
-            background: rgba(239, 68, 68, 0.16);
+            background: rgba(185, 28, 28, 0.16);
         }
 
         /* ================= MAIN CONTENT VIEW ================= */
@@ -367,6 +469,7 @@
             font-size: 22px;
             font-weight: 800;
             letter-spacing: -0.5px;
+            color: var(--text-main);
         }
 
         .title-box p {
@@ -410,11 +513,12 @@
             flex: 1;
         }
 
-        /* ================= PRODUCTS GRID ================= */
+        /* ================= PRODUCTS GRID & CARDS ================= */
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+            gap: 26px;
+            align-items: stretch;
         }
 
         .product-card {
@@ -426,13 +530,15 @@
             transition: var(--transition);
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
             position: relative;
+            height: 100%;
         }
 
         .product-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(99, 102, 241, 0.4);
-            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.12);
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: 0 14px 28px rgba(11, 37, 69, 0.14);
         }
 
         .card-media {
@@ -441,6 +547,7 @@
             height: 250px;
             background: var(--card-media-bg);
             overflow: hidden;
+            flex-shrink: 0;
         }
 
         .card-media img {
@@ -451,58 +558,126 @@
         }
 
         .product-card:hover .card-media img {
-            transform: scale(1.04);
+            transform: scale(1.05);
         }
 
+        /* CORNER BADGES: Exactly 4 separate corners, strictly non-overlapping */
         .badge-discount {
             position: absolute;
             top: 12px;
             left: 12px;
-            background: linear-gradient(135deg, #ef4444, #f97316);
-            color: #fff;
-            font-size: 10.5px;
+            background: linear-gradient(135deg, #DC2626, #991B1B);
+            color: #ffffff;
+            font-size: 10px;
             font-weight: 800;
             padding: 4px 8px;
             border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             z-index: 2;
-        }
-
-        .badge-category {
-            position: absolute;
-            bottom: 12px;
-            left: 12px;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            font-size: 10.5px;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 6px;
-            z-index: 2;
+            width: auto;
+            height: auto;
+            line-height: 1.2;
+            pointer-events: none;
         }
 
         .badge-purity {
             position: absolute;
             top: 12px;
             right: 12px;
-            background: rgba(56, 189, 248, 0.15);
+            background: rgba(11, 37, 69, 0.90);
             backdrop-filter: blur(8px);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            color: var(--accent);
-            font-size: 10.5px;
-            font-weight: 700;
-            padding: 3px 8px;
+            border: 1px solid rgba(212, 175, 55, 0.6);
+            color: #F8E6C8;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            padding: 4px 8px;
             border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             z-index: 2;
+            width: auto;
+            height: auto;
+            line-height: 1.2;
+            pointer-events: none;
         }
 
+        .badge-finish {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(248, 244, 236, 0.96);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(11, 37, 69, 0.25);
+            color: var(--primary);
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 4px 9px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+            width: auto;
+            height: auto;
+            line-height: 1.2;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            pointer-events: none;
+        }
+        [data-theme="dark"] .badge-finish {
+            background: rgba(14, 32, 52, 0.95);
+            border-color: rgba(212, 175, 55, 0.4);
+            color: #F8E6C8;
+        }
+
+        .badge-sold {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(154, 101, 12, 0.95);
+            backdrop-filter: blur(8px);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 4px 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            z-index: 2;
+            width: auto;
+            height: auto;
+            line-height: 1.2;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            pointer-events: none;
+        }
+
+        /* CARD BODY */
         .card-body {
-            padding: 18px;
+            padding: 16px 18px 18px;
             display: flex;
             flex-direction: column;
             flex: 1;
-            gap: 10px;
+            gap: 8px;
+        }
+
+        .product-kicker {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+
+        .kicker-sep {
+            color: var(--border);
+        }
+
+        .kicker-audience {
+            color: var(--text-muted);
+            font-weight: 600;
         }
 
         .product-title {
@@ -514,7 +689,48 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            height: 42px;
+            min-height: 42px;
+        }
+
+        .product-social {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11.5px;
+        }
+
+        .rating-stars {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            color: #D97706;
+            font-weight: 700;
+        }
+
+        .rating-stars i {
+            color: #EAB308;
+            font-size: 13px;
+        }
+
+        .review-count {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .social-sep {
+            color: var(--border);
+        }
+
+        .sold-indicator {
+            color: var(--text-muted);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .sold-indicator i {
+            color: #EA580C;
         }
 
         .product-desc {
@@ -525,14 +741,15 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            margin-bottom: 2px;
         }
 
         .specs-row {
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-top: 2px;
             flex-wrap: wrap;
+            margin-top: 2px;
         }
 
         .spec-pill {
@@ -543,34 +760,34 @@
             border: 1px solid var(--border);
             padding: 3px 8px;
             border-radius: 6px;
-            font-size: 10.5px;
+            font-size: 11px;
             color: var(--text-muted);
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .spec-pill i {
             color: var(--primary);
         }
 
-        .spec-pill.audience-pill {
-            color: var(--accent);
-            border-color: rgba(56, 189, 248, 0.25);
-            background: rgba(56, 189, 248, 0.06);
-        }
-
         .price-section {
             display: flex;
-            align-items: baseline;
-            gap: 6px;
+            align-items: center;
+            justify-content: space-between;
             margin-top: auto;
             padding-top: 12px;
             border-top: 1px solid var(--border);
         }
 
+        .price-wrap {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
         .final-price {
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 800;
-            color: var(--text-main);
+            color: var(--primary);
         }
 
         .original-price {
@@ -580,20 +797,57 @@
         }
 
         .stock-tag {
-            margin-left: auto;
-            font-size: 10.5px;
+            font-size: 11px;
             font-weight: 700;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 5px;
+            padding: 3px 8px;
+            border-radius: 12px;
         }
 
-        .in-stock {
+        .stock-tag.in-stock {
+            background: rgba(21, 128, 61, 0.1);
             color: var(--success);
         }
 
-        .out-of-stock {
+        .stock-tag.out-of-stock {
+            background: rgba(185, 28, 28, 0.1);
             color: var(--danger);
+        }
+
+        .stock-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .card-action {
+            margin-top: 8px;
+        }
+
+        .btn-card-action {
+            width: 100%;
+            background: var(--primary);
+            color: #ffffff;
+            border: 1px solid var(--primary);
+            padding: 9px 14px;
+            border-radius: 9px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: var(--transition);
+        }
+
+        .btn-card-action:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 4px 14px var(--primary-glow);
+            transform: translateY(-1px);
         }
 
         .empty-state {
@@ -609,6 +863,37 @@
             font-size: 48px;
             color: var(--text-muted);
             margin-bottom: 12px;
+        }
+
+        /* Toast notifications */
+        .toast-notification {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 9999;
+            animation: slideUp 0.3s ease forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
@@ -657,44 +942,50 @@
                 </div>
             </div>
 
-            <!-- 3. Category Filter (Radio Group) -->
+            <!-- 3. Signature Color / Finish Filter (Radio Group) -->
+            <div class="filter-field">
+                <label>Signature Color / Finish</label>
+                <div class="radio-group" id="colorOptions"></div>
+            </div>
+
+            <!-- 4. Category Filter (Radio Group) -->
             <div class="filter-field">
                 <label>Categories & Collections</label>
                 <div class="radio-group" id="categoryOptions"></div>
             </div>
 
-            <!-- 4. Silver Purity Filter (Radio Group) -->
+            <!-- 5. Silver Purity Filter (Radio Group) -->
             <div class="filter-field">
                 <label>Silver Purity</label>
                 <div class="radio-group" id="purityOptions"></div>
             </div>
 
-            <!-- 5. Craft / Make Type Filter (Radio Group) -->
+            <!-- 6. Craft / Make Type Filter (Radio Group) -->
             <div class="filter-field">
                 <label>Craft / Make Type</label>
                 <div class="radio-group" id="makeOptions"></div>
             </div>
 
-            <!-- 6. Price Range Filter (Slider + Tier Pills) -->
+            <!-- 7. Price Filter (Single Track Dual-Thumb Slider) -->
             <div class="filter-field">
                 <div style="display:flex; justify-content: space-between; align-items:center;">
-                    <label>Max Price Filter</label>
-                    <span id="priceValBadge" style="font-size:11px; font-weight:700; color:var(--primary);">≤
-                        ₹1,00,000</span>
+                    <label>Price Range (To - From)</label>
+                    <span id="priceValBadge" style="font-size:11.5px; font-weight:700; color:var(--primary);">₹0 - ₹1,00,000</span>
                 </div>
-                <div class="range-box" style="margin-top:6px;">
-                    <input type="range" id="maxPriceInput" min="1000" max="100000" step="1000" value="100000"
-                        oninput="onMaxPriceChange(this.value)" />
+                <div class="dual-slider-wrap">
+                    <div class="dual-slider-track"></div>
+                    <div class="dual-slider-range" id="sliderRangeHighlight" style="left:0%; width:100%;"></div>
+                    <input type="range" id="minPriceInput" min="0" max="100000" step="500" value="0" oninput="onDualPriceInput('min', this.value)" />
+                    <input type="range" id="maxPriceInput" min="0" max="100000" step="500" value="100000" oninput="onDualPriceInput('max', this.value)" />
                 </div>
-                <div class="pill-group" style="margin-top:8px;">
-                    <button class="pill-btn price-pill active" onclick="setPricePreset(100000)">All</button>
-                    <button class="pill-btn price-pill" onclick="setPricePreset(2500)">Under ₹2.5k</button>
-                    <button class="pill-btn price-pill" onclick="setPricePreset(5000)">Under ₹5k</button>
-                    <button class="pill-btn price-pill" onclick="setPricePreset(10000)">Under ₹10k</button>
+                <div style="display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-muted); margin-top:2px;">
+                    <span id="minPriceLabel">₹0</span>
+                    <span>₹50,000</span>
+                    <span id="maxPriceLabel">₹1,00,000</span>
                 </div>
             </div>
 
-            <!-- 7. Stock Availability Filter (Checkbox) -->
+            <!-- 8. Stock Availability Filter (Checkbox) -->
             <div class="filter-field">
                 <label class="checkbox-item" id="stockCheckboxItem" style="margin-top:4px;">
                     <span style="display:flex; align-items:center; gap:8px;">
@@ -704,7 +995,7 @@
                 </label>
             </div>
 
-            <!-- 8. Sort Order (Radio Group) -->
+            <!-- 9. Sort Order (Radio Group) -->
             <div class="filter-field">
                 <label>Sort By Order</label>
                 <div class="radio-group" id="sortOptions">
@@ -713,6 +1004,13 @@
                             <input type="radio" name="sort_radio" value="default" checked
                                 onchange="onSortRadioChange('default')" />
                             <span>Newest First</span>
+                        </span>
+                    </label>
+                    <label class="radio-item">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                            <input type="radio" name="sort_radio" value="sold_desc"
+                                onchange="onSortRadioChange('sold_desc')" />
+                            <span>🔥 Top Sellers (Highest Sold)</span>
                         </span>
                     </label>
                     <label class="radio-item">
@@ -758,7 +1056,7 @@
                     <i class="ph-bold ph-moon" id="themeIcon"></i>
                     <span id="themeToggleText">Dark Mode</span>
                 </button>
-                <a href="/index.html" class="btn btn-secondary">
+                <a href="/api/data" class="btn btn-secondary" title="Open Admin Studio Dashboard">
                     <i class="ph-bold ph-gear"></i>
                     <span>Admin Studio</span>
                 </a>
@@ -775,9 +1073,11 @@
         let filteredProducts = [];
 
         let selectedAudience = '';
+        let selectedColor = '';
         let selectedCategory = '';
         let selectedPurity = '';
         let selectedMake = '';
+        let minPrice = 0;
         let maxPrice = 100000;
         let stockOnly = false;
         let selectedSort = 'default';
@@ -841,6 +1141,32 @@
         }
 
         function populateFilterOptions(products) {
+            // Color / Signature Finish options
+            const colorContainer = document.getElementById('colorOptions');
+            if (colorContainer) {
+                const finishes = [
+                    { id: '', label: 'All Colors & Finishes' },
+                    { id: 'Silver', label: 'Fine Silver' },
+                    { id: 'Rose Gold', label: 'Rose Gold Plated' },
+                    { id: 'Oxidised', label: 'Bold Oxidised' }
+                ];
+                let colorHTML = '';
+                finishes.forEach(f => {
+                    const count = f.id ? products.filter(p => (p.color || 'Silver').toLowerCase() === f.id.toLowerCase()).length : products.length;
+                    const isChecked = selectedColor.toLowerCase() === f.id.toLowerCase();
+                    colorHTML += `
+                        <label class="radio-item ${isChecked ? 'active' : ''}">
+                            <span style="display:flex; align-items:center; gap:8px;">
+                                <input type="radio" name="color_radio" value="${f.id}" ${isChecked ? 'checked' : ''} onchange="onColorRadioChange('${f.id}')" />
+                                <span>${f.label}</span>
+                            </span>
+                            <span class="count-badge">${count}</span>
+                        </label>
+                    `;
+                });
+                colorContainer.innerHTML = colorHTML;
+            }
+
             // Category options
             const catContainer = document.getElementById('categoryOptions');
             if (catContainer) {
@@ -936,6 +1262,12 @@
             applyAllFilters();
         }
 
+        function onColorRadioChange(val) {
+            selectedColor = val;
+            populateFilterOptions(allProducts);
+            applyAllFilters();
+        }
+
         function onCategoryRadioChange(val) {
             selectedCategory = val;
             populateFilterOptions(allProducts);
@@ -954,25 +1286,45 @@
             applyAllFilters();
         }
 
-        function onMaxPriceChange(val) {
-            maxPrice = Number(val);
-            document.getElementById('priceValBadge').innerText = `≤ ₹${maxPrice.toLocaleString('en-IN')}`;
-            applyAllFilters();
-        }
+        function onDualPriceInput(handle, val) {
+            val = Number(val);
+            const minInput = document.getElementById('minPriceInput');
+            const maxInput = document.getElementById('maxPriceInput');
+            const highlight = document.getElementById('sliderRangeHighlight');
+            const badge = document.getElementById('priceValBadge');
+            const minLabel = document.getElementById('minPriceLabel');
+            const maxLabel = document.getElementById('maxPriceLabel');
 
-        function setPricePreset(val) {
-            maxPrice = val;
-            const input = document.getElementById('maxPriceInput');
-            if (input) input.value = val;
-            document.getElementById('priceValBadge').innerText = `≤ ₹${val.toLocaleString('en-IN')}`;
-            document.querySelectorAll('.price-pill').forEach(btn => {
-                const isMatch = (val === 100000 && btn.innerText.includes('All')) ||
-                    (val === 2500 && btn.innerText.includes('2.5k')) ||
-                    (val === 5000 && btn.innerText.includes('5k')) ||
-                    (val === 10000 && btn.innerText.includes('10k'));
-                if (isMatch) btn.classList.add('active');
-                else btn.classList.remove('active');
-            });
+            if (handle === 'min') {
+                minPrice = Math.min(val, maxPrice - 500);
+                if (minInput) minInput.value = minPrice;
+                if (minInput && maxInput) {
+                    minInput.style.zIndex = '5';
+                    maxInput.style.zIndex = '4';
+                }
+            } else {
+                maxPrice = Math.max(val, minPrice + 500);
+                if (maxInput) maxInput.value = maxPrice;
+                if (minInput && maxInput) {
+                    maxInput.style.zIndex = '5';
+                    minInput.style.zIndex = '4';
+                }
+            }
+
+            const minPercent = (minPrice / 100000) * 100;
+            const maxPercent = (maxPrice / 100000) * 100;
+
+            if (highlight) {
+                highlight.style.left = minPercent + '%';
+                highlight.style.width = (maxPercent - minPercent) + '%';
+            }
+
+            if (badge) {
+                badge.innerText = `₹${minPrice.toLocaleString('en-IN')} - ₹${maxPrice.toLocaleString('en-IN')}`;
+            }
+            if (minLabel) minLabel.innerText = `₹${minPrice.toLocaleString('en-IN')}`;
+            if (maxLabel) maxLabel.innerText = `₹${maxPrice.toLocaleString('en-IN')}`;
+
             applyAllFilters();
         }
 
@@ -1038,41 +1390,91 @@
 
                 const productName = p.product_name || p.title || p.name || 'Silver Jewelry Item';
                 const catName = p.category_name || p.category || p.category_slug || 'Silver';
+                const productColor = p.color || 'Silver';
+                const productSold = p.sold || 450;
+                const productReview = p.review || 48;
+                const productAudience = p.ideal_for || 'Unisex';
 
                 const card = document.createElement('div');
                 card.className = 'product-card';
                 card.innerHTML = `
                     <div class="card-media">
                         ${hasDiscount ? `<span class="badge-discount">${p.discount}% OFF</span>` : ''}
-                        <span class="badge-category">${catName}</span>
-                        <span class="badge-purity">${p.purity || '92.5'}</span>
+                        <span class="badge-purity">${p.purity || '92.5'} Fine</span>
+                        <span class="badge-finish"><i class="ph-bold ph-sparkle"></i> ${productColor}</span>
+                        <span class="badge-sold"><i class="ph-bold ph-flame"></i> ${productSold}+ Sold</span>
                         <img src="${imgUrl}" alt="${productName}" loading="lazy" />
                     </div>
 
                     <div class="card-body">
+                        <div class="product-kicker">
+                            <span>${catName.toUpperCase()}</span>
+                            <span class="kicker-sep">•</span>
+                            <span class="kicker-audience">${productAudience}</span>
+                        </div>
+
                         <h3 class="product-title" title="${productName}">${productName}</h3>
-                        <p class="product-desc">${p.description || 'Authentic pure silver jewelry design.'}</p>
+
+                        <div class="product-social">
+                            <span class="rating-stars">
+                                <i class="ph-fill ph-star"></i>
+                                <strong>4.9</strong>
+                                <span class="review-count">(${productReview} reviews)</span>
+                            </span>
+                            <span class="social-sep">•</span>
+                            <span class="sold-indicator"><i class="ph-bold ph-trend-up"></i> Trending</span>
+                        </div>
+
+                        <p class="product-desc">${p.description || 'Authentic pure handcrafted sterling silver treasure piece.'}</p>
 
                         <div class="specs-row">
-                            <span class="spec-pill"><i class="ph-bold ph-scales"></i> ${p.weight || 'N/A'}</span>
-                            <span class="spec-pill audience-pill"><i class="ph-bold ph-user"></i> ${p.ideal_for || 'ALL'}</span>
+                            <span class="spec-pill"><i class="ph-bold ph-scales"></i> ${p.weight || 'Fine Silver'}</span>
                             ${p.make_type ? `<span class="spec-pill"><i class="ph-bold ph-hammer"></i> ${p.make_type}</span>` : ''}
                         </div>
 
                         <div class="price-section">
-                            <div>
+                            <div class="price-wrap">
                                 <span class="final-price">₹${finalPriceFormatted}</span>
                                 ${hasDiscount ? `<span class="original-price">₹${origPriceFormatted}</span>` : ''}
                             </div>
                             <span class="stock-tag ${inStock ? 'in-stock' : 'out-of-stock'}">
-                                <i class="ph-fill ph-circle"></i>
+                                <span class="stock-dot"></span>
                                 ${inStock ? `${p.quantity} In Stock` : 'Sold Out'}
                             </span>
+                        </div>
+
+                        <div class="card-action">
+                            <button class="btn-card-action" onclick="showCatalogToast('${productName.replace(/'/g, "\\'")}', '₹${finalPriceFormatted}')">
+                                <i class="ph-bold ph-shopping-bag"></i> Add to Bag
+                            </button>
                         </div>
                     </div>
                 `;
                 grid.appendChild(card);
             });
+        }
+
+        function showCatalogToast(itemName, itemPrice) {
+            const existingToast = document.querySelector('.toast-notification');
+            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.innerHTML = `
+                <i class="ph-fill ph-check-circle" style="color:var(--success); font-size:20px;"></i>
+                <div>
+                    <div><strong>${itemName}</strong></div>
+                    <div style="font-size:11.5px; color:var(--text-muted);">${itemPrice} • Added to shopping bag</div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         function applyAllFilters() {
@@ -1083,33 +1485,40 @@
                 // 1. Search Query Filter
                 const matchesSearch = !searchQuery ||
                     (p.product_name && p.product_name.toLowerCase().includes(searchQuery)) ||
-                    (p.description && p.description.toLowerCase().includes(searchQuery));
+                    (p.description && p.description.toLowerCase().includes(searchQuery)) ||
+                    (p.color && p.color.toLowerCase().includes(searchQuery));
 
                 // 2. Strict Audience Filter
                 const pAudience = (p.ideal_for || '').trim();
                 const matchesAudience = !selectedAudience || (pAudience.toLowerCase() === selectedAudience.toLowerCase());
 
-                // 3. Category Filter
-                const matchesCategory = !selectedCategory || p.category_name === selectedCategory;
+                // 3. Color Filter
+                const pColor = (p.color || 'Silver').toLowerCase();
+                const matchesColor = !selectedColor || (pColor === selectedColor.toLowerCase());
 
-                // 4. Purity Filter
+                // 4. Category Filter
+                const matchesCategory = !selectedCategory || (p.category_name === selectedCategory || p.category === selectedCategory);
+
+                // 5. Purity Filter
                 const matchesPurity = !selectedPurity || p.purity === selectedPurity;
 
-                // 5. Make Filter
+                // 6. Make Filter
                 const matchesMake = !selectedMake || p.make_type === selectedMake;
 
-                // 6. Price Filter
+                // 7. Dual-Thumb Single-Track Price Filter
                 const effectivePrice = p.final_price !== undefined ? Number(p.final_price) : Number(p.price);
-                const matchesPrice = effectivePrice <= maxPrice;
+                const matchesPrice = effectivePrice >= minPrice && effectivePrice <= maxPrice;
 
-                // 7. Stock Availability Filter
+                // 8. Stock Availability Filter
                 const matchesStock = !stockOnly || Number(p.quantity) > 0;
 
-                return matchesSearch && matchesAudience && matchesCategory && matchesPurity && matchesMake && matchesPrice && matchesStock;
+                return matchesSearch && matchesAudience && matchesColor && matchesCategory && matchesPurity && matchesMake && matchesPrice && matchesStock;
             });
 
-            // 8. Sorting
-            if (selectedSort === 'price_asc') {
+            // Sorting
+            if (selectedSort === 'sold_desc') {
+                filteredProducts.sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0));
+            } else if (selectedSort === 'price_asc') {
                 filteredProducts.sort((a, b) => (a.final_price || a.price) - (b.final_price || b.price));
             } else if (selectedSort === 'price_desc') {
                 filteredProducts.sort((a, b) => (b.final_price || b.price) - (a.final_price || a.price));
@@ -1125,18 +1534,32 @@
         function resetFilters() {
             document.getElementById('searchInput').value = '';
             selectedAudience = '';
+            selectedColor = '';
             selectedCategory = '';
             selectedPurity = '';
             selectedMake = '';
+            minPrice = 0;
             maxPrice = 100000;
             stockOnly = false;
             selectedSort = 'default';
 
-            const maxPriceInput = document.getElementById('maxPriceInput');
-            if (maxPriceInput) maxPriceInput.value = 100000;
+            const minInput = document.getElementById('minPriceInput');
+            if (minInput) minInput.value = 0;
+            const maxInput = document.getElementById('maxPriceInput');
+            if (maxInput) maxInput.value = 100000;
+
+            const highlight = document.getElementById('sliderRangeHighlight');
+            if (highlight) {
+                highlight.style.left = '0%';
+                highlight.style.width = '100%';
+            }
 
             const priceValBadge = document.getElementById('priceValBadge');
-            if (priceValBadge) priceValBadge.innerText = '≤ ₹1,00,000';
+            if (priceValBadge) priceValBadge.innerText = '₹0 - ₹1,00,000';
+            const minLabel = document.getElementById('minPriceLabel');
+            if (minLabel) minLabel.innerText = '₹0';
+            const maxLabel = document.getElementById('maxPriceLabel');
+            if (maxLabel) maxLabel.innerText = '₹1,00,000';
 
             const stockCheckbox = document.getElementById('stockCheckbox');
             if (stockCheckbox) stockCheckbox.checked = false;

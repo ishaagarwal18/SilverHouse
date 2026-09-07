@@ -42,6 +42,9 @@ BEGIN
     DECLARE @LabourCost DECIMAL(18,2);
     DECLARE @ActualCost DECIMAL(18,2);
     DECLARE @Priority INT;
+    DECLARE @Color VARCHAR(50);
+    DECLARE @Review INT;
+    DECLARE @Sold INT;
 
     -- Extract JSON fields
     IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
@@ -61,7 +64,10 @@ BEGIN
             @Packaging      = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.packaging'))),
             @LabourCost     = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.labour_cost') AS DECIMAL(18,2)),
             @ActualCost     = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.actual_cost') AS DECIMAL(18,2)),
-            @Priority       = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.priority') AS INT);
+            @Priority       = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.priority') AS INT),
+            @Color          = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.color'))),
+            @Review         = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.review') AS INT),
+            @Sold           = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.sold') AS INT);
 
         IF @Title IS NULL OR @Title = ''
             SET @Title = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.name')));
@@ -132,6 +138,9 @@ BEGIN
         IF @IdealFor IS NULL OR LEN(@IdealFor) = 0 SET @IdealFor = 'ALL';
         IF @ActualCost IS NULL OR @ActualCost < 0 SET @ActualCost = ISNULL(@Price, 0.00);
         IF @Priority IS NULL SET @Priority = 0;
+        IF @Color IS NULL OR LEN(@Color) = 0 SET @Color = 'Silver';
+        IF @Review IS NULL SET @Review = 0;
+        IF @Sold IS NULL SET @Sold = 0;
 
         IF @InputProductId IS NOT NULL AND @InputProductId > 0
         BEGIN
@@ -150,12 +159,14 @@ BEGIN
         INSERT INTO dbo.product (
             product_id, category_id, m_id, purity, [weight], 
             title, [description], price, discount, quantity, 
-            ideal_for, packaging, labour_cost, actual_cost, [priority]
+            ideal_for, packaging, labour_cost, actual_cost, [priority],
+            color, review, sold
         )
         VALUES (
             @NewProductId, @CategoryId, @MakeId, @Purity, @Weight,
             @Title, @Description, @Price, @Discount, @Quantity,
-            @IdealFor, @Packaging, @LabourCost, @ActualCost, @Priority
+            @IdealFor, @Packaging, @LabourCost, @ActualCost, @Priority,
+            @Color, @Review, @Sold
         );
 
         SELECT @NewProductId AS NewProductId, 'Product added successfully' AS [Message];
@@ -199,7 +210,10 @@ BEGIN
             packaging     = CASE WHEN @Packaging IS NOT NULL THEN @Packaging ELSE packaging END,
             labour_cost   = CASE WHEN @LabourCost IS NOT NULL THEN @LabourCost ELSE labour_cost END,
             actual_cost   = ISNULL(@ActualCost, actual_cost),
-            [priority]    = ISNULL(@Priority, [priority])
+            [priority]    = ISNULL(@Priority, [priority]),
+            color         = ISNULL(@Color, color),
+            review        = CASE WHEN @Review IS NOT NULL THEN @Review ELSE review END,
+            sold          = CASE WHEN @Sold IS NOT NULL THEN @Sold ELSE sold END
         WHERE product_id = @TargetId;
 
         SELECT @TargetId AS ProductId, 'Product updated successfully' AS [Message];
