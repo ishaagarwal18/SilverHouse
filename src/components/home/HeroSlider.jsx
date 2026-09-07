@@ -9,7 +9,7 @@ const SLIDES = [
     subtitle: "Handcrafted 925 & 999 Pure Silver Idols of Lord Ganesha & Goddess Lakshmi. BIS Hallmarked with Anti-Tarnish Protection.",
     ctaText: "Explore Silver Murti",
     categoryId: "silver-religious-idols",
-    bgImage: "/uploads/stock-photo-brass-metal-art-handmade-indian-god-krishna-sculpture-souvenir-made-YKb3jgW7pXtZP0ov.jpg",
+    bgImage: "/images/hero_silver_idols.png",
     badge: "100% Pure Hallmarked"
   },
   {
@@ -50,8 +50,8 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
   const slide = SLIDES[currentSlide];
 
   return (
-    <div className="relative w-full h-[300px] sm:h-[350px] md:h-[390px] lg:h-[420px] bg-gradient-to-r from-[#071526] via-[#0B2545] to-[#143A66] overflow-hidden border-b-2 border-[#D4AF37]/40 shadow-md">
-      {/* Background Image with Overlay */}
+    <div className="relative w-full h-[300px] sm:h-[350px] md:h-[390px] lg:h-[420px] bg-gradient-to-r from-[#071526] via-[#0B2545] to-[#143A66] overflow-hidden border-b-2 border-[#D4AF37]/40">
+      {/* Background Image without shadow overlay */}
       {SLIDES.map((item, idx) => (
         <div
           key={item.id}
@@ -61,15 +61,17 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
           <img
             src={item.bgImage}
             alt={item.title}
-            className="w-full h-full object-cover object-center brightness-60"
+            className="w-full h-full object-cover object-center"
+            onError={(e) => {
+              e.currentTarget.src = '/images/hero_silver_idols.png';
+            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#071526]/90 via-[#0B2545]/70 to-transparent" />
         </div>
       ))}
 
       {/* Content Container */}
-      <div className="relative max-w-7xl mx-auto h-full px-6 lg:px-8 flex items-center z-10">
-        <div className="max-w-2xl text-white space-y-2.5 sm:space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-500">
+      <div className="relative max-w-7xl mx-auto h-full px-6 lg:px-8 flex items-center z-10 pointer-events-none">
+        <div className="max-w-2xl text-white space-y-2.5 sm:space-y-3 bg-[#0B2545]/80 backdrop-blur-md p-5 sm:p-7 rounded-2xl border border-[#D4AF37]/30 pointer-events-auto">
           <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md border border-[#D4AF37]/50 px-3 py-1 rounded-full">
             <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
             <span className="text-[10px] sm:text-xs font-bold tracking-widest text-[#D4AF37] uppercase">
@@ -94,7 +96,7 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
                   onNavigateCategory(slide.categoryId);
                 }
               }}
-              className="px-6 py-2.5 sm:px-7 sm:py-3 bg-linear-to-r from-[#D4AF37] to-[#AA820A] hover:from-[#E6CA65] hover:to-[#D4AF37] text-black font-bold text-xs sm:text-sm rounded-lg transition-all shadow-md hover:shadow-[#D4AF37]/30 flex items-center space-x-2 group cursor-pointer"
+              className="px-6 py-2.5 sm:px-7 sm:py-3 bg-gradient-to-r from-[#D4AF37] to-[#AA820A] hover:from-[#E6CA65] hover:to-[#D4AF37] text-black font-bold text-xs sm:text-sm rounded-lg transition-all flex items-center space-x-2 group cursor-pointer"
             >
               <span>{slide.ctaText}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
