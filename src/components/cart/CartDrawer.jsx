@@ -177,7 +177,7 @@ export default function CartDrawer({
                       </button>
                     </div>
 
-                    <span className="font-bold text-sm text-[#1A1A1A]">
+                    <span className="font-bold text-sm text-[var(--th-primary)] font-outfit tracking-tight">
                       ₹{(item.product.price * item.quantity).toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -226,16 +226,16 @@ export default function CartDrawer({
             <div className="text-xs space-y-1.5 text-silver-600 pt-1">
               <div className="flex justify-between">
                 <span>Subtotal ({cartItems.length} items):</span>
-                <span className="font-semibold text-[#1A1A1A]">₹{subtotal.toLocaleString('en-IN')}</span>
+                <span className="font-semibold text-[#1A1A1A] font-outfit">₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
                 <span>Total Net Silver Weight:</span>
-                <span className="font-semibold text-[#D4AF37]">{totalSilverWeight} Grams</span>
+                <span className="font-semibold text-[#D4AF37] font-outfit">{totalSilverWeight} Grams</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-600 font-semibold">
                   <span>Promo Discount:</span>
-                  <span>- ₹{discountAmount.toLocaleString('en-IN')}</span>
+                  <span className="font-outfit">- ₹{discountAmount.toLocaleString('en-IN')}</span>
                 </div>
               )}
               <div className="flex justify-between">
@@ -244,7 +244,7 @@ export default function CartDrawer({
               </div>
               <div className="flex justify-between text-sm font-bold text-[#1A1A1A] pt-2 border-t border-silver-200">
                 <span>Total Payable Amount:</span>
-                <span className="text-[#1A1A1A] text-base">₹{finalTotal.toLocaleString('en-IN')}</span>
+                <span className="text-[var(--th-primary)] text-base font-outfit font-bold">₹{finalTotal.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
@@ -256,7 +256,7 @@ export default function CartDrawer({
               }}
               className="w-full py-3.5 bg-linear-to-r from-[#D4AF37] to-[#AA820A] hover:from-[#E6CA65] hover:to-[#D4AF37] text-black font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center space-x-2"
             >
-              <span>Proceed to Checkout • ₹{finalTotal.toLocaleString('en-IN')}</span>
+              <span>Proceed to Checkout • <strong className="font-outfit">₹{finalTotal.toLocaleString('en-IN')}</strong></span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

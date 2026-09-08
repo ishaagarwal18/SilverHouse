@@ -38,6 +38,7 @@
   --font-serif: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
   --font-cormorant: 'Cormorant Garamond', Georgia, serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-outfit: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
   --color-silver-50: #F8F9FA;
   --color-silver-100: #E9ECEF;
@@ -145,4 +146,16 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #D4AF37;
+}
+
+/* Modern Luxury Price Typography */
+.font-outfit {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+.price-tag {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }

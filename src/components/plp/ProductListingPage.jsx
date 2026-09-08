@@ -960,7 +960,7 @@ export default function ProductListingPage({
                 <label className="text-[11px] font-bold text-[#4E6073] uppercase tracking-wider">
                   Price Range (To - From)
                 </label>
-                <span className="font-bold bg-[#0B2545]/15 text-[#0B2545] px-2 py-0.5 rounded text-[11px]">
+                <span className="font-bold bg-[#0B2545]/15 text-[#0B2545] px-2 py-0.5 rounded text-[11px] font-outfit">
                   ₹{minPrice.toLocaleString('en-IN')} - ₹{maxPrice.toLocaleString('en-IN')}
                 </span>
               </div>
@@ -1007,7 +1007,7 @@ export default function ProductListingPage({
                 />
               </div>
 
-              <div className="flex justify-between text-[10px] text-[#4E6073] mt-1">
+              <div className="flex justify-between text-[10px] text-[#4E6073] mt-1 font-outfit">
                 <span>₹{minPrice.toLocaleString('en-IN')}</span>
                 <span className="text-[#4E6073]">₹50k</span>
                 <span>₹{maxPrice.toLocaleString('en-IN')}</span>
@@ -1228,11 +1228,11 @@ export default function ProductListingPage({
 
                         <div>
                           <div className="flex items-baseline space-x-2 my-2">
-                            <span className="text-base font-bold text-[#0B2545]">
+                            <span className="text-base font-bold text-[var(--th-primary)] font-outfit tracking-tight">
                               ₹{product.price.toLocaleString('en-IN')}
                             </span>
                             {product.originalPrice && (
-                              <span className="text-xs text-[#4E6073] line-through">
+                              <span className="text-xs text-[var(--th-text-muted)] line-through font-outfit font-medium">
                                 ₹{product.originalPrice.toLocaleString('en-IN')}
                               </span>
                             )}

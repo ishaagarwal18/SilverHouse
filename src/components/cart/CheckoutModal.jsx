@@ -204,7 +204,7 @@ export default function CheckoutModal({
 
               <div className="pt-4 flex items-center justify-between border-t border-silver-200">
                 <span className="text-xs text-silver-600">
-                  Total Payable: <strong className="text-[#1A1A1A]">₹{totalAmount.toLocaleString('en-IN')}</strong>
+                  Total Payable: <strong className="text-[#1A1A1A] font-outfit">₹{totalAmount.toLocaleString('en-IN')}</strong>
                 </span>
                 <button
                   type="submit"
@@ -297,7 +297,7 @@ export default function CheckoutModal({
               <div className="p-4 bg-silver-50 rounded-xl border border-silver-200 text-xs space-y-1">
                 <div className="flex justify-between font-bold text-[#1A1A1A]">
                   <span>Total Amount to Pay:</span>
-                  <span>₹{totalAmount.toLocaleString('en-IN')}</span>
+                  <span className="font-outfit">₹{totalAmount.toLocaleString('en-IN')}</span>
                 </div>
                 <p className="text-[10px] text-silver-500">Includes 100% Transit Insurance & BIS Hallmark Certificate</p>
               </div>
@@ -316,7 +316,7 @@ export default function CheckoutModal({
                   className="px-8 py-3.5 bg-linear-to-r from-[#D4AF37] to-[#AA820A] text-black font-bold text-xs rounded-xl shadow-lg hover:shadow-[#D4AF37]/30 transition-all flex items-center space-x-2"
                 >
                   <Lock className="w-4 h-4" />
-                  <span>Place Order • ₹{totalAmount.toLocaleString('en-IN')}</span>
+                  <span>Place Order • <span className="font-outfit">₹{totalAmount.toLocaleString('en-IN')}</span></span>
                 </button>
               </div>
             </div>

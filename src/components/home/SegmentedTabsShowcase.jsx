@@ -165,7 +165,7 @@ export default function SegmentedTabsShowcase({
                   </div>
 
                   <div className="pt-3 mt-3 border-t border-[var(--th-border)]/60 flex items-center justify-between">
-                    <span className="font-serif font-extrabold text-base sm:text-lg text-[var(--th-primary)]">
+                    <span className="font-outfit font-bold text-base sm:text-lg text-[var(--th-primary)] tracking-tight">
                       ₹{Number(product.price).toLocaleString('en-IN')}
                     </span>
 

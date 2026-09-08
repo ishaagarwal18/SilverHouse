@@ -86,11 +86,11 @@ export default function QuickViewModal({
 
             {/* Price & Weight */}
             <div className="flex items-baseline space-x-3 my-3">
-              <span className="text-2xl font-bold text-[#1A1A1A]">
+              <span className="text-2xl font-bold text-[var(--th-primary)] font-outfit tracking-tight">
                 ₹{product.price.toLocaleString('en-IN')}
               </span>
               {product.originalPrice && (
-                <span className="text-sm text-silver-400 line-through">
+                <span className="text-sm text-silver-400 line-through font-outfit font-medium">
                   ₹{product.originalPrice.toLocaleString('en-IN')}
                 </span>
               )}

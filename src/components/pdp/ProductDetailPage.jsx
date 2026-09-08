@@ -232,11 +232,11 @@ export default function ProductDetailPage({
               <div className="p-4 rounded-xl bg-silver-50 border border-silver-200 flex items-center justify-between my-4">
                 <div>
                   <div className="flex items-baseline space-x-3">
-                    <span className="text-3xl font-bold text-[#1A1A1A]">
+                    <span className="text-3xl font-bold text-[var(--th-primary)] font-outfit tracking-tight">
                       ₹{currentProduct.price.toLocaleString('en-IN')}
                     </span>
                     {currentProduct.originalPrice && (
-                      <span className="text-sm text-silver-400 line-through">
+                      <span className="text-sm text-silver-400 line-through font-outfit font-medium">
                         ₹{currentProduct.originalPrice.toLocaleString('en-IN')}
                       </span>
                     )}
@@ -451,7 +451,7 @@ export default function ProductDetailPage({
                     {rel.purity}
                   </span>
                   <h4 className="font-semibold text-xs text-[#1A1A1A] mt-2 line-clamp-1">{rel.name}</h4>
-                  <p className="font-bold text-sm text-[#1A1A1A] mt-1">₹{rel.price.toLocaleString('en-IN')}</p>
+                  <p className="font-bold text-sm text-[#1A1A1A] font-outfit tracking-tight mt-1">₹{rel.price.toLocaleString('en-IN')}</p>
                 </div>
               ))}
             </div>

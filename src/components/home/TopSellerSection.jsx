@@ -182,11 +182,11 @@ export default function TopSellerSection({
                   <div className="pt-3 mt-3 border-t border-[var(--th-border)]/60 flex items-center justify-between">
                     <div>
                       <div className="flex items-baseline space-x-1.5">
-                        <span className="font-serif font-extrabold text-base sm:text-lg text-[var(--th-primary)]">
+                        <span className="font-outfit font-bold text-base sm:text-lg text-[var(--th-primary)] tracking-tight">
                           ₹{Number(product.price).toLocaleString('en-IN')}
                         </span>
                         {product.originalPrice && (
-                          <span className="text-xs text-[var(--th-text-muted)] line-through font-medium">
+                          <span className="text-xs text-[var(--th-text-muted)] line-through font-outfit font-medium">
                             ₹{Number(product.originalPrice).toLocaleString('en-IN')}
                           </span>
                         )}

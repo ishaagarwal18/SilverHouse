@@ -98,7 +98,7 @@ export default function ShopOnBudget({ onSelectBudget, onNavigateCategory }) {
                   </span>
 
                   {/* Amount Text */}
-                  <span className="font-sans font-extrabold text-white text-base sm:text-lg tracking-wider mt-1 drop-shadow-md">
+                  <span className="font-outfit font-extrabold text-white text-base sm:text-lg tracking-wider mt-1 drop-shadow-md">
                     {tier.amount}
                   </span>
 

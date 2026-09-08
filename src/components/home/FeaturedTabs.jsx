@@ -168,11 +168,11 @@ export default function FeaturedTabs({
                   <div>
                     {/* Price Block */}
                     <div className="flex items-baseline space-x-2 my-2">
-                      <span className="text-base font-bold text-[#1A1A1A]">
+                      <span className="text-base font-bold font-outfit text-[#1A1A1A] tracking-tight">
                         ₹{product.price.toLocaleString('en-IN')}
                       </span>
                       {product.originalPrice && (
-                        <span className="text-xs text-silver-400 line-through">
+                        <span className="text-xs text-silver-400 line-through font-outfit">
                           ₹{product.originalPrice.toLocaleString('en-IN')}
                         </span>
                       )}

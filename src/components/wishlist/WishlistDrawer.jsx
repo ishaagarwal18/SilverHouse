@@ -75,7 +75,7 @@ export default function WishlistDrawer({
                     <h4 className="font-semibold text-xs text-[#1A1A1A] group-hover:text-[#AA820A] transition-colors line-clamp-1">
                       {product.name}
                     </h4>
-                    <p className="font-bold text-sm text-[#1A1A1A] mt-0.5">
+                    <p className="font-bold text-sm text-[var(--th-primary)] font-outfit tracking-tight mt-0.5">
                       ₹{product.price.toLocaleString('en-IN')}
                     </p>
                   </div>

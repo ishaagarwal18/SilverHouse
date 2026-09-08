@@ -5,7 +5,7 @@ export default function SilverTreasureSection({ onNavigateCategory, onNavigateYa
   return (
     <section className="py-14 sm:py-16 bg-[var(--th-bg)] border-b border-[var(--th-border)]">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-12">
           <span className="text-xs font-bold text-[var(--th-accent)] tracking-[0.25em] uppercase bg-[var(--th-accent)]/15 px-3.5 py-1 rounded-full inline-block mb-3 border border-[var(--th-accent)]/30">
@@ -22,7 +22,7 @@ export default function SilverTreasureSection({ onNavigateCategory, onNavigateYa
 
         {/* 2 Large Feature Banner Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          
+
           {/* Card 1: Divine Blessings in 925 Silver Idols */}
           <div
             onClick={() => onNavigateCategory && onNavigateCategory('silver-religious-idols')}
@@ -71,7 +71,7 @@ export default function SilverTreasureSection({ onNavigateCategory, onNavigateYa
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent group-hover:from-black/95 transition-all" />
 
             <div className="relative z-10 text-white">
-              <span className="inline-flex items-center space-x-1.5 bg-[var(--th-accent)] text-white font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full mb-3 border border-white/20">
+              <span className="inline-flex items-center space-x-1.5 bg-[var(--th-primary)] text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3 border border-white/20">
                 <ShieldCheck className="w-3 h-3 text-white" />
                 <span>SACRED DINING & ARTIFACTS</span>
               </span>

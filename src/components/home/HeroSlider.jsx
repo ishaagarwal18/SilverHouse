@@ -26,7 +26,7 @@ const SLIDES = [
     id: 3,
     tag: "HANDCRAFTED PERSONALIZED ART",
     title: "Custom Made-On-Order Yatra Shrine Lockets",
-    subtitle: "Preserve your sacred pilgrimage memories. Encase your deity photo and family gotra engraving in solid 925 sterling silver.",
+    subtitle: "Rooted in tradition, sanctified by devotion. Engrave your Gotra alongside your beloved deity in timeless sterling silver.",
     ctaText: "Customize Your Locket",
     categoryId: "custom-gifting",
     bgImage: "/images/hero_yatra_locket.png",

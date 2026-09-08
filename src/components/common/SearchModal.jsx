@@ -119,9 +119,9 @@ export default function SearchModal({ isOpen, products, onClose, onSelectProduct
                     </div>
 
                     <div className="text-right">
-                      <p className="text-sm font-bold text-[#1A1A1A]">₹{product.price.toLocaleString('en-IN')}</p>
+                      <p className="text-sm font-bold text-[#1A1A1A] font-outfit tracking-tight">₹{product.price.toLocaleString('en-IN')}</p>
                       {product.originalPrice && (
-                        <p className="text-xs text-silver-400 line-through">₹{product.originalPrice.toLocaleString('en-IN')}</p>
+                        <p className="text-xs text-silver-400 line-through font-outfit">₹{product.originalPrice.toLocaleString('en-IN')}</p>
                       )}
                     </div>
                   </div>
