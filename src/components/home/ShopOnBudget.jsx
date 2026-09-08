@@ -33,7 +33,7 @@ export default function ShopOnBudget({ onSelectBudget, onNavigateCategory }) {
       amount: '₹ 4999',
       min: 4999,
       max: 999999,
-      tag: 'Heirloom Treasures'
+      tag: 'Premium Collection'
     }
   ];
 

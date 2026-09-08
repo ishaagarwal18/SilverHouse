@@ -21,7 +21,7 @@ export default function PolicyBadges() {
     {
       icon: RefreshCw,
       title: "Easy 15 Days Return",
-      subtitle: "No Questions Asked Instant Refunds"
+      subtitle: "Quick Refunds & Easy Replacements"
     }
   ];
 

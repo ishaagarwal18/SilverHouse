@@ -12,11 +12,11 @@ export default function Testimonials() {
           <div className="flex items-center justify-center space-x-2 text-[var(--th-accent)] mb-1">
             <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
             <span className="text-xs font-bold text-[var(--th-accent)] tracking-[0.2em] uppercase bg-[var(--th-accent)]/15 px-3.5 py-1 rounded-full inline-block border border-[var(--th-accent)]/30">
-              VERIFIED PATRON REVIEWS
+              VERIFIED CUSTOMER REVIEWS
             </span>
           </div>
           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[var(--th-text-main)] mt-2">
-            Loved by 50,000+ Patrons Across India
+            Loved by 50,000+ People Across India
           </h2>
           <div className="w-16 h-0.5 bg-[var(--th-accent)] mx-auto mt-3 mb-4" />
           <p className="text-xs sm:text-sm text-[var(--th-text-muted)] font-sans">
