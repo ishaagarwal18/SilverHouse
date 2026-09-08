@@ -1,5 +1,6 @@
 import React from 'react';
 import HeroSlider from './HeroSlider';
+import CategoryShowcaseStrip from './CategoryShowcaseStrip';
 import PolicyBadges from './PolicyBadges';
 import TopSellerSection from './TopSellerSection';
 import ShopByColor from './ShopByColor';
@@ -30,7 +31,12 @@ export default function HomePage({
         onNavigateYatraCustomizer={onNavigateYatraCustomizer}
       />
 
-      {/* 2. Policy & Trust Badges Section */}
+      {/* 2. Visual Category Showcase Strip */}
+      <CategoryShowcaseStrip
+        onNavigateCategory={onNavigateCategory}
+      />
+
+      {/* 3. Policy & Trust Badges Section */}
       <PolicyBadges />
 
       {/* 3. Top Seller Section */}

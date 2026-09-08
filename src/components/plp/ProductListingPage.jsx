@@ -86,7 +86,19 @@ export default function ProductListingPage({
       id: "mens",
       name: "Men's Silver Collection",
       description: "Bold silver bracelets, kadhas, and signet rings crafted exclusively for men.",
-      heroBanner: "/images/hero_sacred_rudraksha.png"
+      heroBanner: "/images/categories/cat_men_in_silver.jpg"
+    },
+    'men-in-silver': {
+      id: "men-in-silver",
+      name: "Men's Silver Collection",
+      description: "Bold silver bracelets, kadhas, and signet rings crafted exclusively for men.",
+      heroBanner: "/images/categories/cat_men_in_silver.jpg"
+    },
+    'men-silver-collection': {
+      id: "men-silver-collection",
+      name: "Men's Silver Collection",
+      description: "Bold silver bracelets, kadhas, and signet rings crafted exclusively for men.",
+      heroBanner: "/images/categories/cat_men_in_silver.jpg"
     },
     kids: {
       id: "kids",
@@ -108,9 +120,147 @@ export default function ProductListingPage({
     },
     'custom-yatra-lockets': {
       id: "custom-yatra-lockets",
-      name: "Personalized Sacred Yatra Lockets",
+      name: "Sacred Yantra & Personalized Yatra Lockets",
       description: "Preserve pilgrimage memories with deity photos and gotra laser engraving on solid 925 sterling silver.",
-      heroBanner: "/images/hero_yatra_locket.png"
+      heroBanner: "/images/categories/cat_yantra.jpg"
+    },
+    'yantra': {
+      id: "yantra",
+      name: "Sacred Yantra & Custom Yatra Lockets",
+      description: "Consecrated Sri Yantra, Mahamrityunjaya kavach, and personalized pilgrimage shrine lockets in pure silver.",
+      heroBanner: "/images/categories/cat_yantra.jpg"
+    },
+    'rings': {
+      id: "rings",
+      name: "Silver Rings",
+      description: "Sparkling cubic zirconia solitaires, floral bands, and luxury 925 sterling silver rings.",
+      heroBanner: "/images/categories/cat_rings.jpg"
+    },
+    'silver-rings': {
+      id: "silver-rings",
+      name: "Silver Rings",
+      description: "Sparkling cubic zirconia solitaires, floral bands, and luxury 925 sterling silver rings.",
+      heroBanner: "/images/categories/cat_rings.jpg"
+    },
+    'bracelet': {
+      id: "bracelet",
+      name: "Silver Bracelets & Kadas",
+      description: "Artisanal 925 sterling silver tennis bracelets, charm cuffs, and traditional kadas.",
+      heroBanner: "/images/categories/cat_bracelets.jpg"
+    },
+    'bracelets': {
+      id: "bracelets",
+      name: "Silver Bracelets & Kadas",
+      description: "Artisanal 925 sterling silver tennis bracelets, charm cuffs, and traditional kadas.",
+      heroBanner: "/images/categories/cat_bracelets.jpg"
+    },
+    'idols': {
+      id: "idols",
+      name: "Silver Religious Idols",
+      description: "Pure 999 fine silver devotional murti, Ganesha, Laxmi, and sacred temple deities.",
+      heroBanner: "/images/categories/cat_idols.jpg"
+    },
+    'silver-idols': {
+      id: "silver-idols",
+      name: "Silver Religious Idols",
+      description: "Pure 999 fine silver devotional murti, Ganesha, Laxmi, and sacred temple deities.",
+      heroBanner: "/images/categories/cat_idols.jpg"
+    },
+    'silver-religious-idols': {
+      id: "silver-religious-idols",
+      name: "Silver Religious Idols",
+      description: "Pure 999 fine silver devotional murti, Ganesha, Laxmi, and sacred temple deities.",
+      heroBanner: "/images/categories/cat_idols.jpg"
+    },
+    'utensils': {
+      id: "utensils",
+      name: "Silver Utensils & Pooja Articles",
+      description: "Sacred pure 999 and 925 silver pooja kalash, akhand diya, panchpatra, and puja thali vessels.",
+      heroBanner: "/images/categories/cat_utensils.jpg"
+    },
+    'silver-utensils-pooja': {
+      id: "silver-utensils-pooja",
+      name: "Silver Utensils & Pooja Articles",
+      description: "Sacred pure 999 and 925 silver pooja kalash, akhand diya, panchpatra, and puja thali vessels.",
+      heroBanner: "/images/categories/cat_utensils.jpg"
+    },
+    'pendants': {
+      id: "pendants",
+      name: "Silver Pendants & Lockets",
+      description: "Radiant solitaire halos, devotional lockets, and sacred yatra pendants in 925 sterling silver.",
+      heroBanner: "/images/categories/cat_pendants.jpg"
+    },
+    'silver-earrings': {
+      id: "silver-earrings",
+      name: "Silver Earrings",
+      description: "Sparkling snowflake studs, classic solitaires, and antique silver jhumkas.",
+      heroBanner: "/images/categories/cat_earrings.jpg"
+    },
+    'earrings': {
+      id: "earrings",
+      name: "Silver Earrings",
+      description: "Sparkling snowflake studs, classic solitaires, and antique silver jhumkas.",
+      heroBanner: "/images/categories/cat_earrings.jpg"
+    },
+    'earings': {
+      id: "earings",
+      name: "Silver Earrings",
+      description: "Sparkling snowflake studs, classic solitaires, and antique silver jhumkas.",
+      heroBanner: "/images/categories/cat_earrings.jpg"
+    },
+    'chain': {
+      id: "chain",
+      name: "Pure Silver Chains",
+      description: "Heavy Cuban links, sleek Italian curb chains, and radiant everyday 925 silver chains.",
+      heroBanner: "/images/categories/cat_silver_chains.jpg"
+    },
+    'chains': {
+      id: "chains",
+      name: "Pure Silver Chains",
+      description: "Heavy Cuban links, sleek Italian curb chains, and radiant everyday 925 silver chains.",
+      heroBanner: "/images/categories/cat_silver_chains.jpg"
+    },
+    'silver-chains': {
+      id: "silver-chains",
+      name: "Pure Silver Chains",
+      description: "Heavy Cuban links, sleek Italian curb chains, and radiant everyday 925 silver chains.",
+      heroBanner: "/images/categories/cat_silver_chains.jpg"
+    },
+    'nazariya': {
+      id: "nazariya",
+      name: "Kids Nazariya & Bracelets",
+      description: "Protective black bead silver nazariya, evil eye charm bracelets, and baby kada pairs.",
+      heroBanner: "/images/categories/cat_nazariya.jpg"
+    },
+    'kids-nazariya-bracelets': {
+      id: "kids-nazariya-bracelets",
+      name: "Kids Nazariya & Bracelets",
+      description: "Protective black bead silver nazariya, evil eye charm bracelets, and baby kada pairs.",
+      heroBanner: "/images/categories/cat_nazariya.jpg"
+    },
+    'anklets': {
+      id: "anklets",
+      name: "Silver Payal & Anklets",
+      description: "Ethnic bridal payals, chiming ghungroo bells, and lightweight daily wear sterling anklets.",
+      heroBanner: "/images/categories/cat_anklets.jpg"
+    },
+    'silver-payal-anklets': {
+      id: "silver-payal-anklets",
+      name: "Silver Payal & Anklets",
+      description: "Ethnic bridal payals, chiming ghungroo bells, and lightweight daily wear sterling anklets.",
+      heroBanner: "/images/categories/cat_anklets.jpg"
+    },
+    'silver-sets': {
+      id: "silver-sets",
+      name: "Silver Sets & Pairs",
+      description: "Matching ruby bridal sets, bangle pairs, and sacred murti worship sets.",
+      heroBanner: "/images/categories/cat_sets.jpg"
+    },
+    'sets': {
+      id: "sets",
+      name: "Silver Sets & Pairs",
+      description: "Matching ruby bridal sets, bangle pairs, and sacred murti worship sets.",
+      heroBanner: "/images/categories/cat_sets.jpg"
     }
   };
 
@@ -222,27 +372,104 @@ export default function ProductListingPage({
     if (selectedCategory !== 'all') {
       if (selectedCategory === 'women') {
         result = result.filter(isWomenProduct);
-      } else if (selectedCategory === 'mens' || selectedCategory === 'men' || selectedCategory === 'men-silver-collection') {
+      } else if (selectedCategory === 'mens' || selectedCategory === 'men' || selectedCategory === 'men-silver-collection' || selectedCategory === 'men-in-silver') {
         result = result.filter(isMenProduct);
-      } else if (selectedCategory === 'kids' || selectedCategory === 'kids-baby' || selectedCategory === 'kids-nazariya-bracelets') {
+      } else if (selectedCategory === 'kids' || selectedCategory === 'kids-baby' || selectedCategory === 'kids-nazariya-bracelets' || selectedCategory === 'nazariya') {
         result = result.filter(p =>
           p.category === 'kids-nazariya-bracelets' ||
-          (p.recipient || p.idealFor || p.ideal_for || '').toString().toLowerCase().includes('kids') ||
-          (p.recipient || p.idealFor || p.ideal_for || '').toString().toLowerCase().includes('baby')
+          p.category_slug === 'kids-nazariya-bracelets' ||
+          p.category_slug === 'nazariya' ||
+          (p.name || '').toLowerCase().includes('nazariya') ||
+          ((p.name || '').toLowerCase().includes('baby') && (p.name || '').toLowerCase().includes('kada'))
         );
       } else if (selectedCategory === 'jewellery') {
         result = result.filter(p =>
           ['silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets', 'men-silver-collection', 'kids-nazariya-bracelets'].includes(p.category)
         );
-      } else if (selectedCategory === 'silver-idols' || selectedCategory === 'silver-religious-idols') {
-        result = result.filter(p => p.category === 'silver-religious-idols' || p.category_slug === 'silver-religious-idols');
-      } else if (selectedCategory === 'custom-gifting' || selectedCategory === 'custom-yatra-lockets') {
+      } else if (selectedCategory === 'idols' || selectedCategory === 'silver-idols' || selectedCategory === 'silver-religious-idols') {
         result = result.filter(p =>
-          p.category === 'silver-pendants-chains' ||
+          p.category === 'silver-religious-idols' ||
+          p.category_slug === 'silver-religious-idols' ||
+          p.category_slug === 'idols' ||
+          (p.name || '').toLowerCase().includes('idol') ||
+          (p.name || '').toLowerCase().includes('murti') ||
+          (p.name || '').toLowerCase().includes('statue')
+        );
+      } else if (selectedCategory === 'utensils' || selectedCategory === 'silver-utensils-pooja' || selectedCategory === 'silver-pooja-utensils-diya') {
+        result = result.filter(p =>
+          p.category === 'silver-utensils-pooja' ||
+          p.category === 'silver-pooja-utensils-diya' ||
+          p.category_slug === 'utensils' ||
+          (p.name || '').toLowerCase().includes('kalash') ||
+          (p.name || '').toLowerCase().includes('diya') ||
+          (p.name || '').toLowerCase().includes('utensil') ||
+          (p.name || '').toLowerCase().includes('panchpatra') ||
+          (p.name || '').toLowerCase().includes('thali')
+        );
+      } else if (selectedCategory === 'yantra' || selectedCategory === 'custom-yatra-lockets' || selectedCategory === 'custom-gifting' || selectedCategory === 'yatra') {
+        result = result.filter(p =>
+          p.category === 'custom-yatra-lockets' ||
+          p.category_slug === 'yantra' ||
+          (p.name || '').toLowerCase().includes('yantra') ||
+          (p.name || '').toLowerCase().includes('yatra') ||
+          (p.name || '').toLowerCase().includes('kavach') ||
           (p.subcategory || '').includes('locket') ||
-          p.isCustomizable ||
-          (p.name || '').toLowerCase().includes('locket') ||
-          (p.description || '').toLowerCase().includes('locket')
+          p.isCustomizable
+        );
+      } else if (selectedCategory === 'rings' || selectedCategory === 'silver-rings') {
+        result = result.filter(p =>
+          (p.category === 'silver-rings' || p.category_slug === 'silver-rings' || p.category_slug === 'rings' || (p.name || '').toLowerCase().includes('ring')) &&
+          !(p.name || '').toLowerCase().includes('earring')
+        );
+      } else if (selectedCategory === 'bracelet' || selectedCategory === 'bracelets') {
+        result = result.filter(p =>
+          (p.category === 'silver-bangles-kadas' ||
+          p.category_slug === 'bracelets' ||
+          p.category_slug === 'silver-bangles-kadas' ||
+          (p.name || '').toLowerCase().includes('bracelet') ||
+          (p.name || '').toLowerCase().includes('kada') ||
+          (p.name || '').toLowerCase().includes('bangle')) &&
+          !(p.recipient || '').toLowerCase().includes('kids') &&
+          !(p.name || '').toLowerCase().includes('baby')
+        );
+      } else if (selectedCategory === 'pendants') {
+        result = result.filter(p =>
+          (p.category === 'silver-pendants-chains' ||
+          p.category_slug === 'pendants' ||
+          (p.name || '').toLowerCase().includes('pendant')) &&
+          !(p.name || '').toLowerCase().includes('cuban link chain')
+        );
+      } else if (selectedCategory === 'silver-earrings' || selectedCategory === 'earrings' || selectedCategory === 'earings') {
+        result = result.filter(p =>
+          p.category === 'silver-earrings' ||
+          p.category_slug === 'silver-earrings' ||
+          p.category_slug === 'earrings' ||
+          (p.name || '').toLowerCase().includes('earring') ||
+          (p.name || '').toLowerCase().includes('stud') ||
+          (p.name || '').toLowerCase().includes('jhumka')
+        );
+      } else if (selectedCategory === 'silver-chains' || selectedCategory === 'chains' || selectedCategory === 'chain') {
+        result = result.filter(p =>
+          p.category === 'silver-chains' ||
+          p.category_slug === 'silver-chains' ||
+          p.category_slug === 'chains' ||
+          (p.name || '').toLowerCase().includes('chain') ||
+          (p.description || '').toLowerCase().includes('chain')
+        );
+      } else if (selectedCategory === 'silver-sets' || selectedCategory === 'sets') {
+        result = result.filter(p =>
+          p.category === 'silver-sets' ||
+          (p.name || '').toLowerCase().includes('set') ||
+          (p.name || '').toLowerCase().includes('pair') ||
+          (p.description || '').toLowerCase().includes('set')
+        );
+      } else if (selectedCategory === 'anklets' || selectedCategory === 'silver-payal-anklets' || selectedCategory === 'payal') {
+        result = result.filter(p =>
+          p.category === 'silver-payal-anklets' ||
+          p.category_slug === 'silver-payal-anklets' ||
+          p.category_slug === 'anklets' ||
+          (p.name || '').toLowerCase().includes('payal') ||
+          (p.name || '').toLowerCase().includes('anklet')
         );
       } else {
         result = result.filter(p => p.category === selectedCategory || p.category_slug === selectedCategory);
@@ -299,8 +526,19 @@ export default function ProductListingPage({
     });
     counts['women'] = rawList.filter(isWomenProduct).length;
     counts['mens'] = rawList.filter(isMenProduct).length;
+    counts['men-silver-collection'] = rawList.filter(isMenProduct).length;
     counts['kids'] = rawList.filter(p => p.category === 'kids-nazariya-bracelets').length;
+    counts['nazariya'] = rawList.filter(p => p.category === 'kids-nazariya-bracelets').length;
     counts['jewellery'] = rawList.filter(p => ['silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets', 'men-silver-collection', 'kids-nazariya-bracelets'].includes(p.category)).length;
+    counts['rings'] = rawList.filter(p => (p.category === 'silver-rings' || (p.name || '').toLowerCase().includes('ring')) && !(p.name || '').toLowerCase().includes('earring')).length;
+    counts['bracelets'] = rawList.filter(p => p.category === 'silver-bangles-kadas' || (p.name || '').toLowerCase().includes('bracelet') || (p.name || '').toLowerCase().includes('kada')).length;
+    counts['idols'] = rawList.filter(p => p.category === 'silver-religious-idols' || (p.name || '').toLowerCase().includes('idol') || (p.name || '').toLowerCase().includes('murti')).length;
+    counts['utensils'] = rawList.filter(p => p.category === 'silver-utensils-pooja' || (p.name || '').toLowerCase().includes('kalash') || (p.name || '').toLowerCase().includes('diya')).length;
+    counts['earrings'] = rawList.filter(p => p.category === 'silver-earrings' || (p.name || '').toLowerCase().includes('earring')).length;
+    counts['pendants'] = rawList.filter(p => p.category === 'silver-pendants-chains' && !(p.name || '').toLowerCase().includes('cuban link chain')).length;
+    counts['chains'] = rawList.filter(p => p.category === 'silver-chains' || (p.name || '').toLowerCase().includes('chain')).length;
+    counts['yantra'] = rawList.filter(p => p.category === 'custom-yatra-lockets' || (p.name || '').toLowerCase().includes('yantra') || (p.name || '').toLowerCase().includes('locket')).length;
+    counts['anklets'] = rawList.filter(p => p.category === 'silver-payal-anklets' || (p.name || '').toLowerCase().includes('payal') || (p.name || '').toLowerCase().includes('anklet')).length;
     return counts;
   }, [products]);
 
@@ -331,27 +569,27 @@ export default function ProductListingPage({
   };
 
   return (
-    <div className="bg-[#EAE2D5] min-h-screen pb-20">
+    <div className="bg-[var(--th-bg)] min-h-screen pb-20 transition-colors duration-300">
 
       {/* Category Hero Header Banner */}
-      <div className="bg-gradient-to-r from-[#071526] via-[#0B2545] to-[#143A66] text-white py-12 px-4 sm:px-6 lg:px-8 border-b border-[#D4AF37]/40 relative overflow-hidden">
+      <div className="bg-[var(--th-nav-gradient)] text-white py-12 px-4 sm:px-6 lg:px-8 border-b border-[var(--th-border)] relative overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
 
           {/* Breadcrumbs */}
           <nav className="flex items-center space-x-2 text-xs text-silver-300 mb-4">
             <button
               onClick={() => navigate('/')}
-              className="hover:text-[#D4AF37] cursor-pointer transition-colors"
+              className="hover:text-[var(--th-accent)] cursor-pointer transition-colors"
             >
               Home
             </button>
             <ChevronRight className="w-3 h-3 text-silver-400" />
             {selectedCategory === 'all' ? (
-              <span className="text-[#D4AF37] font-semibold">Catalog</span>
+              <span className="text-[var(--th-accent)] font-semibold">Catalog</span>
             ) : (
               <button
                 onClick={() => handleCategorySelect('all')}
-                className="hover:text-[#D4AF37] cursor-pointer text-silver-200 transition-colors"
+                className="hover:text-[var(--th-accent)] cursor-pointer text-silver-200 transition-colors"
               >
                 Catalog
               </button>
@@ -360,14 +598,14 @@ export default function ProductListingPage({
               <>
                 <ChevronRight className="w-3 h-3 text-silver-400" />
                 {selectedSubcategory === 'all' ? (
-                  <span className="text-[#D4AF37] font-semibold">{activeCategoryObj.name}</span>
+                  <span className="text-[var(--th-accent)] font-semibold">{activeCategoryObj.name}</span>
                 ) : (
                   <button
                     onClick={() => {
                       setSelectedSubcategory('all');
                       navigate(`/category/${selectedCategory}`);
                     }}
-                    className="hover:text-[#D4AF37] cursor-pointer text-silver-200 transition-colors"
+                    className="hover:text-[var(--th-accent)] cursor-pointer text-silver-200 transition-colors"
                   >
                     {activeCategoryObj.name}
                   </button>
@@ -377,7 +615,7 @@ export default function ProductListingPage({
             {selectedSubcategory !== 'all' && (
               <>
                 <ChevronRight className="w-3 h-3 text-silver-400" />
-                <span className="text-[#D4AF37] font-semibold capitalize">
+                <span className="text-[var(--th-accent)] font-semibold capitalize">
                   {selectedSubcategory.replace(/-/g, ' ')}
                 </span>
               </>
@@ -386,7 +624,7 @@ export default function ProductListingPage({
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <span className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full">
+              <span className="text-[10px] font-bold text-[var(--th-accent)] uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full">
                 100% HALLMARKED PURE SILVER
               </span>
               <h1 className="font-serif text-3xl sm:text-5xl font-bold mt-2 text-white">
@@ -397,8 +635,8 @@ export default function ProductListingPage({
               </p>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-xs font-semibold text-[#D4AF37] flex items-center space-x-2 shrink-0">
-              <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+            <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-xs font-semibold text-[var(--th-accent)] flex items-center space-x-2 shrink-0">
+              <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
               <span>Showing {filteredProducts.length} Sacred Items</span>
             </div>
           </div>
@@ -408,7 +646,7 @@ export default function ProductListingPage({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
 
         {/* Top Controls Bar */}
-        <div className="bg-[#DFD4C0] p-4 rounded-xl border border-[#C5B299] shadow-sm mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="bg-[var(--th-card)] p-4 rounded-xl border border-[var(--th-border)] shadow-sm mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
 
           {/* Left: Mobile Filter Button & Active Filter Chips */}
           <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start flex-wrap gap-y-2">

@@ -860,9 +860,9 @@
             const headers = Object.keys(rows[0]);
             let headRow = '<tr>';
             headers.forEach(h => {
-                let colTitle = h.replace('_', ' ');
+                let colTitle = h.replace(/_/g, ' ');
                 if (activeEntity === 'product') {
-                    if (h === 'category_id') colTitle = 'Category Name';
+                    if (h === 'category_id') colTitle = rows[0].category_name !== undefined ? 'Category ID' : 'Category Name';
                     if (h === 'm_id') colTitle = 'Make Master';
                     if (h === 'title') colTitle = 'Product Name';
                 }
@@ -897,7 +897,7 @@
 
                     if (h.toLowerCase().includes('url') && val !== '-') {
                         rowHtml += `<td><img src="${val}" class="img-thumb" onerror="this.src='https://via.placeholder.com/44x44/111827/9ca3af?text=N/A'"/>${showBadge ? badgeHtml : ''}</td>`;
-                    } else if (activeEntity === 'product' && h === 'category_id' && val !== '-') {
+                    } else if (activeEntity === 'product' && h === 'category_id' && rows[0].category_name === undefined && val !== '-') {
                         const catName = categoriesMap[val] || val;
                         rowHtml += `<td>${catName}${showBadge ? badgeHtml : ''}</td>`;
                     } else if (activeEntity === 'product' && h === 'm_id' && val !== '-') {

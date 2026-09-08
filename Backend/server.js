@@ -303,10 +303,14 @@ app.post('/api/data', async (req, res) => {
 });
 
 // 2. Static assets & HTML views
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 app.get('/catalog', (req, res) => {
@@ -314,7 +318,7 @@ app.get('/catalog', (req, res) => {
 });
 
 app.get('/api/data', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 app.get('/api/:file', (req, res, next) => {

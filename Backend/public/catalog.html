@@ -16,22 +16,32 @@
     <style>
         :root {
             /* HIGH-CONTRAST LIGHT LUXURY PALETTE (Cashmere Sand & Royal Midnight Sapphire) */
-            --bg: #EAE2D5;                   /* Warm Cashmere Sand (rich, warm, NOT plain white) */
-            --sidebar-bg: #DFD4C0;           /* Distinct tinted stone parchment sidebar */
-            --surface: #F8F4EC;              /* Warm Alabaster Silk for cards (soft cream, high contrast) */
-            --surface-card: #D8CCB9;         /* High-contrast chip & pill background */
-            --surface-hover: #CDC0AC;        /* Hover state for interactive chips */
-            --border: #C5B299;               /* Crisp warm taupe border for sharp definition */
+            --bg: #EAE2D5;
+            /* Warm Cashmere Sand (rich, warm, NOT plain white) */
+            --sidebar-bg: #DFD4C0;
+            /* Distinct tinted stone parchment sidebar */
+            --surface: #F8F4EC;
+            /* Warm Alabaster Silk for cards (soft cream, high contrast) */
+            --surface-card: #D8CCB9;
+            /* High-contrast chip & pill background */
+            --surface-hover: #CDC0AC;
+            /* Hover state for interactive chips */
+            --border: #C5B299;
+            /* Crisp warm taupe border for sharp definition */
             --border-focus: #0B2545;
-            --primary: #0B2545;              /* Royal Midnight Sapphire - high contrast on light sand */
+            --primary: #0B2545;
+            /* Royal Midnight Sapphire - high contrast on light sand */
             --primary-hover: #143A66;
             --primary-glow: rgba(11, 37, 69, 0.2);
-            --accent: #9A650C;               /* Heritage Burnished Gold */
+            --accent: #9A650C;
+            /* Heritage Burnished Gold */
             --accent-gold: #D4AF37;
             --success: #15803d;
             --danger: #b91c1c;
-            --text-main: #071526;            /* Deep obsidian sapphire text (maximum contrast & legibility) */
-            --text-muted: #4E6073;           /* Slate navy subtext */
+            --text-main: #071526;
+            /* Deep obsidian sapphire text (maximum contrast & legibility) */
+            --text-muted: #4E6073;
+            /* Slate navy subtext */
             --sidebar-width: 300px;
             --radius: 16px;
             --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
@@ -42,7 +52,8 @@
             --topbar-border: #C5B299;
             --bg-gradient: radial-gradient(circle at 50% 0%, rgba(11, 37, 69, 0.04), transparent 60%);
             --header-bg: rgba(223, 212, 192, 0.94);
-            --card-media-bg: #DDD1BE;        /* Warm Pedestal plinth that makes 925 silver gleam */
+            --card-media-bg: #DDD1BE;
+            /* Warm Pedestal plinth that makes 925 silver gleam */
         }
 
         [data-theme="dark"] {
@@ -93,13 +104,16 @@
             width: 7px;
             height: 7px;
         }
+
         ::-webkit-scrollbar-track {
             background: transparent;
         }
+
         ::-webkit-scrollbar-thumb {
             background: rgba(11, 37, 69, 0.22);
             border-radius: 4px;
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(11, 37, 69, 0.38);
         }
@@ -623,6 +637,7 @@
             gap: 4px;
             pointer-events: none;
         }
+
         [data-theme="dark"] .badge-finish {
             background: rgba(14, 32, 52, 0.95);
             border-color: rgba(212, 175, 55, 0.4);
@@ -890,6 +905,7 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -970,15 +986,19 @@
             <div class="filter-field">
                 <div style="display:flex; justify-content: space-between; align-items:center;">
                     <label>Price Range (To - From)</label>
-                    <span id="priceValBadge" style="font-size:11.5px; font-weight:700; color:var(--primary);">₹0 - ₹1,00,000</span>
+                    <span id="priceValBadge" style="font-size:11.5px; font-weight:700; color:var(--primary);">₹0 -
+                        ₹1,00,000</span>
                 </div>
                 <div class="dual-slider-wrap">
                     <div class="dual-slider-track"></div>
                     <div class="dual-slider-range" id="sliderRangeHighlight" style="left:0%; width:100%;"></div>
-                    <input type="range" id="minPriceInput" min="0" max="100000" step="500" value="0" oninput="onDualPriceInput('min', this.value)" />
-                    <input type="range" id="maxPriceInput" min="0" max="100000" step="500" value="100000" oninput="onDualPriceInput('max', this.value)" />
+                    <input type="range" id="minPriceInput" min="0" max="100000" step="500" value="0"
+                        oninput="onDualPriceInput('min', this.value)" />
+                    <input type="range" id="maxPriceInput" min="0" max="100000" step="500" value="100000"
+                        oninput="onDualPriceInput('max', this.value)" />
                 </div>
-                <div style="display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-muted); margin-top:2px;">
+                <div
+                    style="display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-muted); margin-top:2px;">
                     <span id="minPriceLabel">₹0</span>
                     <span>₹50,000</span>
                     <span id="maxPriceLabel">₹1,00,000</span>

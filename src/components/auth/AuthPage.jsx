@@ -51,7 +51,7 @@ export default function AuthPage({ onTriggerToast }) {
           
           setTimeout(() => {
             if (result.isAdmin) {
-              window.location.href = 'http://localhost:5000';
+              window.location.href = 'http://localhost:5000/api/data';
             } else {
               navigate('/');
             }
