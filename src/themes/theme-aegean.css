@@ -17,10 +17,10 @@
   --th-text-main: #142F37;
   --th-text-muted: #4F6B72;
 
-  --th-nav: #13343D;
-  --th-nav-gradient: linear-gradient(135deg, #0E272E 0%, #13343D 50%, #1F4E5B 100%);
-  --th-footer-gradient: linear-gradient(180deg, #13343D 0%, #0E272E 100%);
-  --th-budget-card: linear-gradient(180deg, #1F4E5B 0%, #173D47 50%, #0F2A31 100%);
+  --th-nav: #0A1B20;
+  --th-nav-gradient: linear-gradient(135deg, #050E12 0%, #0A1B20 50%, #112D36 100%);
+  --th-footer-gradient: linear-gradient(180deg, #0A1B20 0%, #050E12 100%);
+  --th-budget-card: linear-gradient(180deg, #112D36 0%, #0D242B 50%, #061216 100%);
 
   --th-badge-bg: #1F4E5B;
   --th-badge-text: #F4F8F8;

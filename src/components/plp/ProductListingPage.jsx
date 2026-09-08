@@ -424,19 +424,19 @@ export default function ProductListingPage({
       } else if (selectedCategory === 'bracelet' || selectedCategory === 'bracelets') {
         result = result.filter(p =>
           (p.category === 'silver-bangles-kadas' ||
-          p.category_slug === 'bracelets' ||
-          p.category_slug === 'silver-bangles-kadas' ||
-          (p.name || '').toLowerCase().includes('bracelet') ||
-          (p.name || '').toLowerCase().includes('kada') ||
-          (p.name || '').toLowerCase().includes('bangle')) &&
+            p.category_slug === 'bracelets' ||
+            p.category_slug === 'silver-bangles-kadas' ||
+            (p.name || '').toLowerCase().includes('bracelet') ||
+            (p.name || '').toLowerCase().includes('kada') ||
+            (p.name || '').toLowerCase().includes('bangle')) &&
           !(p.recipient || '').toLowerCase().includes('kids') &&
           !(p.name || '').toLowerCase().includes('baby')
         );
       } else if (selectedCategory === 'pendants') {
         result = result.filter(p =>
           (p.category === 'silver-pendants-chains' ||
-          p.category_slug === 'pendants' ||
-          (p.name || '').toLowerCase().includes('pendant')) &&
+            p.category_slug === 'pendants' ||
+            (p.name || '').toLowerCase().includes('pendant')) &&
           !(p.name || '').toLowerCase().includes('cuban link chain')
         );
       } else if (selectedCategory === 'silver-earrings' || selectedCategory === 'earrings' || selectedCategory === 'earings') {
@@ -572,31 +572,42 @@ export default function ProductListingPage({
     <div className="bg-[var(--th-bg)] min-h-screen pb-20 transition-colors duration-300">
 
       {/* Category Hero Header Banner */}
-      <div className="bg-[var(--th-nav-gradient)] text-white py-12 px-4 sm:px-6 lg:px-8 border-b border-[var(--th-border)] relative overflow-hidden">
+      <div
+        className="relative text-white py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-b border-[#D4AF37]/35 overflow-hidden shadow-2xl bg-[#081726]"
+        style={{
+          background: 'var(--th-nav-gradient, linear-gradient(135deg, #071526 0%, #0B2545 50%, #143A66 100%))',
+          backgroundColor: 'var(--th-nav, #071526)'
+        }}
+      >
+        {/* Deep dark luxury overlay & ambient aura ensuring rich, dark contrast */}
+        <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+        <div className="absolute -right-16 -top-16 w-96 h-96 rounded-full bg-[var(--th-accent)]/15 blur-3xl pointer-events-none" />
+        <div className="absolute -left-16 -bottom-16 w-96 h-96 rounded-full bg-[var(--th-primary)]/30 blur-3xl pointer-events-none" />
+
         <div className="max-w-7xl mx-auto relative z-10">
 
           {/* Breadcrumbs */}
-          <nav className="flex items-center space-x-2 text-xs text-silver-300 mb-4">
+          <nav className="flex items-center space-x-2 text-xs text-white/70 mb-4">
             <button
               onClick={() => navigate('/')}
-              className="hover:text-[var(--th-accent)] cursor-pointer transition-colors"
+              className="hover:text-[var(--th-accent)] cursor-pointer transition-colors text-white/80"
             >
               Home
             </button>
-            <ChevronRight className="w-3 h-3 text-silver-400" />
+            <ChevronRight className="w-3 h-3 text-white/50" />
             {selectedCategory === 'all' ? (
               <span className="text-[var(--th-accent)] font-semibold">Catalog</span>
             ) : (
               <button
                 onClick={() => handleCategorySelect('all')}
-                className="hover:text-[var(--th-accent)] cursor-pointer text-silver-200 transition-colors"
+                className="hover:text-[var(--th-accent)] cursor-pointer text-white/80 transition-colors"
               >
                 Catalog
               </button>
             )}
             {activeCategoryObj && selectedCategory !== 'all' && (
               <>
-                <ChevronRight className="w-3 h-3 text-silver-400" />
+                <ChevronRight className="w-3 h-3 text-white/50" />
                 {selectedSubcategory === 'all' ? (
                   <span className="text-[var(--th-accent)] font-semibold">{activeCategoryObj.name}</span>
                 ) : (
@@ -605,7 +616,7 @@ export default function ProductListingPage({
                       setSelectedSubcategory('all');
                       navigate(`/category/${selectedCategory}`);
                     }}
-                    className="hover:text-[var(--th-accent)] cursor-pointer text-silver-200 transition-colors"
+                    className="hover:text-[var(--th-accent)] cursor-pointer text-white/80 transition-colors"
                   >
                     {activeCategoryObj.name}
                   </button>
@@ -614,7 +625,7 @@ export default function ProductListingPage({
             )}
             {selectedSubcategory !== 'all' && (
               <>
-                <ChevronRight className="w-3 h-3 text-silver-400" />
+                <ChevronRight className="w-3 h-3 text-white/50" />
                 <span className="text-[var(--th-accent)] font-semibold capitalize">
                   {selectedSubcategory.replace(/-/g, ' ')}
                 </span>
@@ -624,18 +635,18 @@ export default function ProductListingPage({
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <span className="text-[10px] font-bold text-[var(--th-accent)] uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full">
+              <span className="text-[10px] font-bold text-[var(--th-accent)] uppercase tracking-widest bg-black/50 border border-[var(--th-accent)]/40 px-3.5 py-1 rounded-full shadow-xs inline-flex items-center">
                 100% HALLMARKED PURE SILVER
               </span>
-              <h1 className="font-serif text-3xl sm:text-5xl font-bold mt-2 text-white">
+              <h1 className="font-serif text-3xl sm:text-5xl font-bold mt-3 text-white tracking-tight drop-shadow-md">
                 {activeCategoryObj ? activeCategoryObj.name : "All Sacred Silver Artifacts"}
               </h1>
-              <p className="text-xs sm:text-sm text-silver-300 max-w-2xl mt-2 font-normal">
+              <p className="text-xs sm:text-sm text-white/85 max-w-2xl mt-2.5 font-normal leading-relaxed">
                 {activeCategoryObj ? activeCategoryObj.description : "Explore our complete range of certified 925 sterling silver and 999 fine silver murti, coins, utensils, rudraksha & custom lockets."}
               </p>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-xs font-semibold text-[var(--th-accent)] flex items-center space-x-2 shrink-0">
+            <div className="bg-black/40 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 text-xs font-semibold text-[var(--th-accent)] flex items-center space-x-2 shrink-0 shadow-lg">
               <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
               <span>Showing {filteredProducts.length} Sacred Items</span>
             </div>
