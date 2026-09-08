@@ -52,13 +52,6 @@ const CATEGORY_ITEMS = [
     description: 'Cuban Links & Pure Silver Chains'
   },
   {
-    id: 'men-in-silver',
-    label: 'Men In Silver',
-    image: '/images/categories/cat_men_in_silver.jpg',
-    targetCategory: 'men-silver-collection',
-    description: 'Bold Masculine Rings & Kadas'
-  },
-  {
     id: 'nazariya',
     label: 'Nazariya',
     image: '/images/categories/cat_nazariya.jpg',
@@ -122,11 +115,10 @@ export default function CategoryShowcaseStrip({ onNavigateCategory }) {
           onClick={() => handleScroll('left')}
           disabled={!canScrollLeft}
           aria-label="Scroll left"
-          className={`absolute left-1 sm:left-2 top-[42%] -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[var(--th-card)] shadow-lg border border-[var(--th-border)] flex items-center justify-center text-[var(--th-text-main)] transition-all duration-200 ${
-            canScrollLeft
+          className={`absolute left-1 sm:left-2 top-[42%] -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[var(--th-card)] shadow-lg border border-[var(--th-border)] flex items-center justify-center text-[var(--th-text-main)] transition-all duration-200 ${canScrollLeft
               ? 'opacity-100 hover:scale-110 hover:bg-[var(--th-primary)] hover:text-white hover:border-[var(--th-primary)] cursor-pointer shadow-md'
               : 'opacity-0 pointer-events-none'
-          }`}
+            }`}
         >
           <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
         </button>
@@ -162,7 +154,7 @@ export default function CategoryShowcaseStrip({ onNavigateCategory }) {
               <span className="mt-2.5 sm:mt-3 text-xs sm:text-sm md:text-[15px] font-medium tracking-tight text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] text-center transition-colors duration-200">
                 {item.label}
               </span>
-              
+
               {/* Dynamic Theme Accent Underline Glow */}
               <span className="h-0.5 w-0 group-hover:w-5 bg-[var(--th-accent)] rounded-full transition-all duration-300 mt-1 opacity-0 group-hover:opacity-100" />
             </button>
@@ -174,11 +166,10 @@ export default function CategoryShowcaseStrip({ onNavigateCategory }) {
           onClick={() => handleScroll('right')}
           disabled={!canScrollRight}
           aria-label="Scroll right"
-          className={`absolute right-1 sm:right-2 top-[42%] -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[var(--th-card)] shadow-lg border border-[var(--th-border)] flex items-center justify-center text-[var(--th-text-main)] transition-all duration-200 ${
-            canScrollRight
+          className={`absolute right-1 sm:right-2 top-[42%] -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-[var(--th-card)] shadow-lg border border-[var(--th-border)] flex items-center justify-center text-[var(--th-text-main)] transition-all duration-200 ${canScrollRight
               ? 'opacity-100 hover:scale-110 hover:bg-[var(--th-primary)] hover:text-white hover:border-[var(--th-primary)] cursor-pointer shadow-md'
               : 'opacity-0 pointer-events-none'
-          }`}
+            }`}
         >
           <ChevronRight className="w-5 h-5 stroke-[2.5]" />
         </button>

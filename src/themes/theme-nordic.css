@@ -1,26 +1,27 @@
 /* Theme 2: Nordic Slate & Ice Blue (Cool Dusty Denim) */
-:root[data-theme="nordic"], [data-theme="nordic"] {
-  --th-bg: #E9ECEF;
-  --th-surface-alt: #DFE4E8;
+:root[data-theme="nordic"],
+[data-theme="nordic"] {
+  --th-bg: #ffffff;
+  --th-surface-alt: #ffffff;
   --th-card: #F6F8FA;
   --th-pedestal: #D5DCE2;
   --th-border: #BAC4CE;
   --th-border-subtle: #CBD5DF;
-  
+
   --th-primary: #2E4C6D;
   --th-primary-hover: #395E86;
   --th-primary-light: rgba(46, 76, 109, 0.12);
   --th-accent: #B08D57;
   --th-accent-light: rgba(176, 141, 87, 0.15);
-  
+
   --th-text-main: #192A3E;
   --th-text-muted: #506173;
-  
+
   --th-nav: #1C3046;
   --th-nav-gradient: linear-gradient(135deg, #132233 0%, #1C3046 50%, #2E4C6D 100%);
   --th-footer-gradient: linear-gradient(180deg, #1C3046 0%, #111D2B 100%);
   --th-budget-card: linear-gradient(180deg, #2E4C6D 0%, #243C56 50%, #172739 100%);
-  
+
   --th-badge-bg: #2E4C6D;
   --th-badge-text: #F6F8FA;
   --th-btn-text: #FFFFFF;

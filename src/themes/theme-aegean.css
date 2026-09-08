@@ -1,26 +1,27 @@
 /* Theme 1: Muted Aegean & Sea Mist (Calm Mineral Teal) */
-:root[data-theme="aegean"], [data-theme="aegean"] {
-  --th-bg: #E8EFF0;
-  --th-surface-alt: #DCE7E8;
-  --th-card: #F4F8F8;
-  --th-pedestal: #D4DFE0;
-  --th-border: #B5C8CA;
-  --th-border-subtle: #C9D8DA;
-  
+:root[data-theme="aegean"],
+[data-theme="aegean"] {
+  --th-bg: #ffffff;
+  --th-surface-alt: #ffffff;
+  --th-card: #ffffff;
+  --th-pedestal: #ffffff;
+  --th-border: #7b9594;
+  --th-border-subtle: #e8e8e8;
+
   --th-primary: #1F4E5B;
   --th-primary-hover: #286677;
   --th-primary-light: rgba(31, 78, 91, 0.12);
   --th-accent: #B89340;
   --th-accent-light: rgba(184, 147, 64, 0.15);
-  
+
   --th-text-main: #142F37;
   --th-text-muted: #4F6B72;
-  
+
   --th-nav: #13343D;
   --th-nav-gradient: linear-gradient(135deg, #0E272E 0%, #13343D 50%, #1F4E5B 100%);
   --th-footer-gradient: linear-gradient(180deg, #13343D 0%, #0E272E 100%);
   --th-budget-card: linear-gradient(180deg, #1F4E5B 0%, #173D47 50%, #0F2A31 100%);
-  
+
   --th-badge-bg: #1F4E5B;
   --th-badge-text: #F4F8F8;
   --th-btn-text: #FFFFFF;

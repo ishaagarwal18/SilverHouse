@@ -81,7 +81,7 @@ export default function Header({
   return (
     <header className="sticky top-0 z-40 bg-[var(--th-surface-alt)]/95 backdrop-blur-md border-b border-[var(--th-border)] shadow-xs transition-colors duration-300">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Main Navbar Row */}
         <div className="flex items-center justify-between h-20 gap-4">
 
@@ -101,7 +101,7 @@ export default function Header({
               className="group text-left flex items-center space-x-3 focus:outline-hidden cursor-pointer shrink-0"
             >
               {/* Opulent Circular Crest */}
-              <div 
+              <div
                 className="w-11 h-11 rounded-full border-2 border-[var(--th-accent)] flex items-center justify-center shadow-md group-hover:scale-105 transition-all duration-300 text-white"
                 style={{ background: 'var(--th-nav-gradient)' }}
               >
@@ -123,7 +123,7 @@ export default function Header({
 
           {/* Center: Integrated Luxury Search Bar */}
           <div className="hidden md:flex flex-1 max-w-md lg:max-w-lg xl:max-w-xl mx-2">
-            <div 
+            <div
               onClick={onOpenSearch}
               className="w-full h-10 px-4 rounded-full bg-[var(--th-card)] border border-[var(--th-border)] hover:border-[var(--th-primary)] shadow-inner flex items-center justify-between cursor-pointer transition-all duration-200 group"
             >
@@ -140,9 +140,6 @@ export default function Header({
 
           {/* Right Action Utilities (Theme Switcher, Pincode, Stores, Account, Wishlist, Cart) */}
           <div className="flex items-center space-x-2 sm:space-x-3">
-            
-            {/* Theme Selector (Header Pill) */}
-            <ThemeSwitcher variant="header" />
 
             {/* Delivery Pincode Pill (Desktop) */}
             <div className="hidden xl:flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-[var(--th-card)] border border-[var(--th-border)] text-xs text-[var(--th-text-main)]">
@@ -159,7 +156,7 @@ export default function Header({
                   className="w-14 text-xs font-bold bg-[var(--th-card)] px-1 py-0.5 rounded border border-[var(--th-primary)] outline-hidden text-[var(--th-text-main)]"
                 />
               ) : (
-                <span 
+                <span
                   onClick={() => setIsPincodeEditing(true)}
                   className="cursor-pointer hover:underline font-semibold"
                   title="Click to change pincode"
@@ -168,18 +165,6 @@ export default function Header({
                 </span>
               )}
             </div>
-
-            {/* Stores Locator Trigger */}
-            <button
-              onClick={() => setIsStoresModalOpen(true)}
-              className="p-2 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer group"
-              title="Flagship Stores"
-            >
-              <Store className="w-5 h-5 text-[var(--th-accent)] group-hover:scale-110 transition-transform" />
-              <span className="hidden lg:inline-block text-xs font-bold uppercase tracking-wider text-[var(--th-text-main)]">
-                Stores
-              </span>
-            </button>
 
             {/* Mobile Search Button (Visible on phones) */}
             <button
@@ -215,7 +200,7 @@ export default function Header({
                 >
                   <User className="w-5 h-5 text-[var(--th-accent)] group-hover:scale-110 transition-transform" />
                   <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-wider text-[var(--th-text-main)]">
-                    Account
+
                   </span>
                 </button>
               )}
@@ -296,7 +281,7 @@ export default function Header({
 
         {/* Secondary Row: Desktop Category Navigation Links */}
         <nav className="hidden lg:flex items-center justify-center space-x-2 xl:space-x-4 border-t border-[var(--th-border)]/80 py-2.5">
-          
+
           {/* SHOP ALL (MegaMenu Trigger) */}
           <div
             className="relative"

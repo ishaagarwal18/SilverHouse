@@ -1,26 +1,27 @@
 /* Theme 4: Soft Lavender Mist & Smoky Amethyst (Aesthetic Violet-Slate) */
-:root[data-theme="lavender"], [data-theme="lavender"] {
-  --th-bg: #ECE9EE;
-  --th-surface-alt: #E1DDE5;
+:root[data-theme="lavender"],
+[data-theme="lavender"] {
+  --th-bg: #ffffff;
+  --th-surface-alt: #ffffff;
   --th-card: #F8F6FA;
   --th-pedestal: #D8D2DE;
   --th-border: #C2BAC9;
   --th-border-subtle: #D4CDDB;
-  
+
   --th-primary: #4A3E56;
   --th-primary-hover: #5C4E6B;
   --th-primary-light: rgba(74, 62, 86, 0.12);
   --th-accent: #AA8238;
   --th-accent-light: rgba(170, 130, 56, 0.15);
-  
+
   --th-text-main: #271F30;
   --th-text-muted: #60566A;
-  
+
   --th-nav: #2B2234;
   --th-nav-gradient: linear-gradient(135deg, #1C1523 0%, #2B2234 50%, #4A3E56 100%);
   --th-footer-gradient: linear-gradient(180deg, #2B2234 0%, #17111D 100%);
   --th-budget-card: linear-gradient(180deg, #4A3E56 0%, #3B3145 50%, #261F2D 100%);
-  
+
   --th-badge-bg: #4A3E56;
   --th-badge-text: #F8F6FA;
   --th-btn-text: #FFFFFF;
