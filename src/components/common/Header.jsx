@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MegaMenu from './MegaMenu';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Heart, ShoppingBag, User, Menu, Sparkles, ChevronDown, LogOut, Building2, Store, MapPin } from 'lucide-react';
+import { fetchUserAddresses } from '../../services/api';
+import { 
+  Search, Heart, ShoppingBag, User, Menu, Sparkles, ChevronDown, 
+  LogOut, Building2, Store, MapPin, Check, Plus, Home 
+} from 'lucide-react';
 import StoresModal from './StoresModal';
 import ThemeSwitcher from './ThemeSwitcher';
 
@@ -24,11 +28,34 @@ export default function Header({
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isStoresModalOpen, setIsStoresModalOpen] = useState(false);
-  const [pincode, setPincode] = useState('110001');
-  const [isPincodeEditing, setIsPincodeEditing] = useState(false);
+  
+  // Dynamic Delivery Location State
+  const [pincode, setPincode] = useState(() => localStorage.getItem('silverhouse_pincode') || '110001');
+  const [isLocationPopoverOpen, setIsLocationPopoverOpen] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [activeAddress, setActiveAddress] = useState(null);
+  const [pincodeInput, setPincodeInput] = useState('');
 
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
+
+  // Load user's saved addresses to display active delivery destination
+  useEffect(() => {
+    if (isAuthenticated && user?.userId) {
+      fetchUserAddresses(user.userId).then(list => {
+        if (Array.isArray(list) && list.length > 0) {
+          setSavedAddresses(list);
+          setActiveAddress(list[0]);
+        } else {
+          setSavedAddresses([]);
+          setActiveAddress(null);
+        }
+      }).catch(err => console.warn('Could not fetch addresses for header:', err));
+    } else {
+      setSavedAddresses([]);
+      setActiveAddress(null);
+    }
+  }, [isAuthenticated, user]);
 
   const DROPDOWNS = {
     jewellery: [
@@ -141,28 +168,161 @@ export default function Header({
           {/* Right Action Utilities (Theme Switcher, Pincode, Stores, Account, Wishlist, Cart) */}
           <div className="flex items-center space-x-2 sm:space-x-3">
 
-            {/* Delivery Pincode Pill (Desktop) */}
-            <div className="hidden xl:flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-[var(--th-card)] border border-[var(--th-border)] text-xs text-[var(--th-text-main)]">
-              <MapPin className="w-3.5 h-3.5 text-[var(--th-accent)] shrink-0" />
-              {isPincodeEditing ? (
-                <input
-                  type="text"
-                  maxLength={6}
-                  value={pincode}
-                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
-                  onBlur={() => setIsPincodeEditing(false)}
-                  onKeyDown={(e) => e.key === 'Enter' && setIsPincodeEditing(false)}
-                  autoFocus
-                  className="w-14 text-xs font-bold bg-[var(--th-card)] px-1 py-0.5 rounded border border-[var(--th-primary)] outline-hidden text-[var(--th-text-main)]"
-                />
-              ) : (
-                <span
-                  onClick={() => setIsPincodeEditing(true)}
-                  className="cursor-pointer hover:underline font-semibold"
-                  title="Click to change pincode"
-                >
-                  Deliver to: <strong className="text-[var(--th-primary)]">{pincode}</strong>
+            {/* Delivery Location Pill & Popover (Desktop) */}
+            <div className="relative hidden xl:block">
+              <button
+                onClick={() => setIsLocationPopoverOpen(!isLocationPopoverOpen)}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-[var(--th-card)] border border-[var(--th-border)] hover:border-[var(--th-accent)] text-xs text-[var(--th-text-main)] transition-all cursor-pointer shadow-2xs group"
+                title="Change delivery location"
+              >
+                <MapPin className="w-3.5 h-3.5 text-[var(--th-accent)] shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="font-semibold text-xs truncate max-w-[160px]">
+                  Deliver to: <strong className="text-[var(--th-primary)] font-bold">{activeAddress ? `${activeAddress.address_name || activeAddress.city} ${activeAddress.pincode}` : pincode}</strong>
                 </span>
+                <ChevronDown className="w-3 h-3 text-[var(--th-text-muted)] group-hover:text-[var(--th-primary)] transition-transform" />
+              </button>
+
+              {/* Location Popover Dialog */}
+              {isLocationPopoverOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-[var(--th-card)] rounded-2xl shadow-2xl border border-[var(--th-border)] p-4 z-50 animate-in fade-in slide-in-from-top-2 text-left">
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--th-border)]/60 mb-3">
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="w-4 h-4 text-[var(--th-accent)]" />
+                      <h4 className="font-serif font-bold text-sm text-[var(--th-text-main)]">
+                        Choose Delivery Location
+                      </h4>
+                    </div>
+                    <button
+                      onClick={() => setIsLocationPopoverOpen(false)}
+                      className="text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] p-1 rounded-lg cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* If user is logged in */}
+                  {isAuthenticated ? (
+                    <div className="space-y-3">
+                      {savedAddresses.length > 0 ? (
+                        <>
+                          <p className="text-[11px] text-[var(--th-text-muted)] font-medium">
+                            Select from your saved addresses:
+                          </p>
+                          <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                            {savedAddresses.map(addr => {
+                              const isSelected = activeAddress?.address_id === addr.address_id;
+                              return (
+                                <div
+                                  key={addr.address_id}
+                                  onClick={() => {
+                                    setActiveAddress(addr);
+                                    setPincode(addr.pincode);
+                                    localStorage.setItem('silverhouse_pincode', addr.pincode);
+                                    setIsLocationPopoverOpen(false);
+                                  }}
+                                  className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-start justify-between ${
+                                    isSelected
+                                      ? 'border-[var(--th-primary)] bg-[var(--th-primary)]/10 text-[var(--th-primary)] font-bold'
+                                      : 'border-[var(--th-border)] hover:bg-[var(--th-surface-alt)] text-[var(--th-text-main)]'
+                                  }`}
+                                >
+                                  <div>
+                                    <div className="flex items-center space-x-1.5 mb-0.5">
+                                      <span className="font-bold">{addr.recipient_name}</span>
+                                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-[var(--th-text-muted)] uppercase">
+                                        {addr.address_name || 'Home'}
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-[var(--th-text-muted)] line-clamp-1 font-normal">
+                                      {addr.city}, {addr.state} - {addr.pincode}
+                                    </p>
+                                  </div>
+                                  {isSelected && <Check className="w-4 h-4 text-[var(--th-primary)] shrink-0 mt-0.5" />}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setIsLocationPopoverOpen(false);
+                              navigate('/addresses');
+                            }}
+                            className="w-full py-2 px-3 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] hover:bg-[var(--th-card)] text-xs font-bold text-[var(--th-primary)] flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add or Manage Addresses</span>
+                          </button>
+                        </>
+                      ) : (
+                        <div className="text-center py-3">
+                          <p className="text-xs text-[var(--th-text-muted)] mb-3">
+                            You have no saved delivery addresses yet.
+                          </p>
+                          <button
+                            onClick={() => {
+                              setIsLocationPopoverOpen(false);
+                              navigate('/addresses');
+                            }}
+                            className="w-full py-2 px-3 rounded-xl bg-[var(--th-primary)] text-white text-xs font-bold uppercase tracking-wider shadow-xs hover:bg-[var(--th-primary-hover)] transition-colors cursor-pointer"
+                          >
+                            + Add New Address
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Guest View */
+                    <div className="space-y-3">
+                      <p className="text-xs text-[var(--th-text-muted)] leading-relaxed">
+                        Sign in to see your saved delivery addresses and check delivery speed.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setIsLocationPopoverOpen(false);
+                          navigate('/login?redirect=/');
+                        }}
+                        className="w-full py-2 px-3 rounded-xl bg-[var(--th-primary)] text-white text-xs font-bold uppercase tracking-wider shadow-xs hover:bg-[var(--th-primary-hover)] transition-colors cursor-pointer"
+                      >
+                        Sign In to View Addresses
+                      </button>
+
+                      <div className="relative flex py-1 items-center">
+                        <div className="flex-grow border-t border-[var(--th-border)]"></div>
+                        <span className="flex-shrink mx-2 text-[10px] uppercase tracking-wider text-[var(--th-text-muted)]">or enter pincode</span>
+                        <div className="flex-grow border-t border-[var(--th-border)]"></div>
+                      </div>
+
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          if (/^\d{6}$/.test(pincodeInput.trim())) {
+                            setPincode(pincodeInput.trim());
+                            localStorage.setItem('silverhouse_pincode', pincodeInput.trim());
+                            setIsLocationPopoverOpen(false);
+                          } else {
+                            alert('Please enter a valid 6-digit Indian PIN code.');
+                          }
+                        }}
+                        className="flex space-x-2"
+                      >
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={pincodeInput}
+                          onChange={(e) => setPincodeInput(e.target.value.replace(/\D/g, ''))}
+                          placeholder="e.g. 110001"
+                          className="flex-1 bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl px-3 py-1.5 text-xs text-[var(--th-text-main)] outline-none font-mono"
+                        />
+                        <button
+                          type="submit"
+                          className="px-3 py-1.5 bg-[var(--th-surface-alt)] hover:bg-[var(--th-primary)] hover:text-white border border-[var(--th-border)] rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Apply
+                        </button>
+                      </form>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
