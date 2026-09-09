@@ -6,7 +6,7 @@ export default function Testimonials() {
   return (
     <section className="py-16 sm:py-20 bg-[var(--th-bg)] border-b border-[var(--th-border)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Title */}
         <div className="text-center max-w-2xl mx-auto mb-14">
           <div className="flex items-center justify-center space-x-2 text-[var(--th-accent)] mb-1">
@@ -33,7 +33,7 @@ export default function Testimonials() {
             >
               <div>
                 <Quote className="w-8 h-8 text-[var(--th-accent)]/40 mb-2" />
-                
+
                 {/* Rating */}
                 <div className="flex items-center space-x-1 text-[var(--th-accent)] mb-3">
                   {[...Array(review.rating)].map((_, i) => (

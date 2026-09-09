@@ -663,58 +663,58 @@ export default function ProductListingPage({
           <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start flex-wrap gap-y-2">
             <button
               onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
-              className="lg:hidden px-4 py-2 bg-[#D8CCB9] text-[#071526] text-xs font-bold rounded-lg flex items-center space-x-2 border border-[#C5B299]"
+              className="lg:hidden px-4 py-2 bg-[var(--th-primary-light)] text-[var(--th-text-main)] text-xs font-bold rounded-lg flex items-center space-x-2 border border-[var(--th-border)] transition-colors hover:bg-[var(--th-primary)] hover:text-white"
             >
-              <SlidersHorizontal className="w-4 h-4 text-[#0B2545]" />
+              <SlidersHorizontal className="w-4 h-4 text-[var(--th-primary)]" />
               <span>Filter Catalog ({filteredProducts.length})</span>
             </button>
 
-            <span className="text-xs text-[#4E6073] font-semibold hidden sm:inline-block">
-              Showing <span className="text-[#071526] font-bold">{filteredProducts.length}</span> Products Found
+            <span className="text-xs text-[var(--th-text-muted)] font-semibold hidden sm:inline-block">
+              Showing <span className="text-[var(--th-text-main)] font-bold">{filteredProducts.length}</span> Products Found
             </span>
 
             {/* Active Filter Badges */}
             {(selectedCategory !== 'all' || selectedPurity !== 'all' || selectedColor !== 'all' || selectedRecipient !== 'all' || searchQuery || inStockOnly || minPrice > 0 || maxPrice < 100000) && (
               <div className="flex items-center space-x-1.5 flex-wrap">
                 {selectedCategory !== 'all' && (
-                  <span className="bg-[#D4AF37]/15 text-[#AA820A] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                  <span className="bg-[var(--th-accent-light)] border border-[var(--th-accent)]/40 text-[var(--th-accent)] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs">
                     <span>Category: {activeCategoryObj?.name || selectedCategory}</span>
-                    <button onClick={() => handleCategorySelect('all')} className="hover:text-black ml-1"><X className="w-3 h-3" /></button>
+                    <button onClick={() => handleCategorySelect('all')} className="hover:opacity-75 ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
                 {selectedColor !== 'all' && (
-                  <span className="bg-[#D8CCB9] border border-[#C5B299] text-[#0B2545] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                  <span className="bg-[var(--th-primary-light)] border border-[var(--th-border)] text-[var(--th-primary)] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs">
                     <span>Finish: {selectedColor}</span>
-                    <button onClick={() => setSelectedColor('all')} className="hover:text-black ml-1"><X className="w-3 h-3" /></button>
+                    <button onClick={() => setSelectedColor('all')} className="hover:opacity-75 ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
                 {selectedPurity !== 'all' && (
-                  <span className="bg-[#D8CCB9] border border-[#C5B299] text-[#0B2545] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                  <span className="bg-[var(--th-primary-light)] border border-[var(--th-border)] text-[var(--th-primary)] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs">
                     <span>Purity: {selectedPurity}</span>
-                    <button onClick={() => setSelectedPurity('all')} className="hover:text-black ml-1"><X className="w-3 h-3" /></button>
+                    <button onClick={() => setSelectedPurity('all')} className="hover:opacity-75 ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
                 {(minPrice > 0 || maxPrice < 100000) && (
-                  <span className="bg-[#D8CCB9] border border-[#C5B299] text-[#0B2545] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                  <span className="bg-[var(--th-primary-light)] border border-[var(--th-border)] text-[var(--th-primary)] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs font-outfit">
                     <span>₹{minPrice.toLocaleString('en-IN')} - ₹{maxPrice.toLocaleString('en-IN')}</span>
-                    <button onClick={() => { setMinPrice(0); setMaxPrice(100000); }} className="hover:text-black ml-1"><X className="w-3 h-3" /></button>
+                    <button onClick={() => { setMinPrice(0); setMaxPrice(100000); }} className="hover:opacity-75 ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
                 {selectedRecipient !== 'all' && (
-                  <span className="bg-[#D8CCB9] border border-[#C5B299] text-[#0B2545] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                  <span className="bg-[var(--th-primary-light)] border border-[var(--th-border)] text-[var(--th-primary)] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs">
                     <span>Occasion: {selectedRecipient}</span>
-                    <button onClick={() => setSelectedRecipient('all')} className="hover:text-black ml-1"><X className="w-3 h-3" /></button>
+                    <button onClick={() => setSelectedRecipient('all')} className="hover:opacity-75 ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
                 {searchQuery && (
-                  <span className="bg-[#D8CCB9] border border-[#C5B299] text-[#071526] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                  <span className="bg-[var(--th-primary-light)] border border-[var(--th-border)] text-[var(--th-text-main)] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs">
                     <span>"{searchQuery}"</span>
                     <button onClick={() => setSearchQuery('')} className="hover:text-red-600 ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
                 <button
                   onClick={resetFilters}
-                  className="text-[11px] font-bold text-red-600 hover:underline flex items-center space-x-1 ml-1"
+                  className="text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline flex items-center space-x-1 ml-1"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>Clear All</span>
@@ -725,25 +725,25 @@ export default function ProductListingPage({
 
           {/* Right: Grid Switcher */}
           <div className="flex items-center space-x-4 w-full sm:w-auto justify-end">
-            <span className="text-xs text-[#4E6073] font-medium hidden md:inline">Layout:</span>
-            <div className="flex items-center space-x-1 bg-[#D8CCB9] p-1 rounded-lg border border-[#C5B299]">
+            <span className="text-xs text-[var(--th-text-muted)] font-medium hidden md:inline">Layout:</span>
+            <div className="flex items-center space-x-1 bg-[var(--th-primary-light)] p-1 rounded-lg border border-[var(--th-border)]">
               <button
                 onClick={() => setGridCols(2)}
-                className={`p-1.5 rounded transition-colors ${gridCols === 2 ? 'bg-[#0B2545] text-white shadow-xs' : 'text-[#4E6073] hover:text-[#071526]'}`}
+                className={`p-1.5 rounded transition-colors ${gridCols === 2 ? 'bg-[var(--th-primary)] text-white shadow-xs' : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'}`}
                 title="2 Columns View"
               >
                 <Grid2X2 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setGridCols(3)}
-                className={`p-1.5 rounded transition-colors ${gridCols === 3 ? 'bg-[#0B2545] text-white shadow-xs' : 'text-[#4E6073] hover:text-[#071526]'}`}
+                className={`p-1.5 rounded transition-colors ${gridCols === 3 ? 'bg-[var(--th-primary)] text-white shadow-xs' : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'}`}
                 title="3 Columns View"
               >
                 <Grid3X3 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setGridCols(4)}
-                className={`p-1.5 rounded transition-colors ${gridCols === 4 ? 'bg-[#0B2545] text-white shadow-xs' : 'text-[#4E6073] hover:text-[#071526]'}`}
+                className={`p-1.5 rounded transition-colors ${gridCols === 4 ? 'bg-[var(--th-primary)] text-white shadow-xs' : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'}`}
                 title="4 Columns View"
               >
                 <LayoutGrid className="w-4 h-4" />
@@ -756,14 +756,14 @@ export default function ProductListingPage({
         <div className="flex gap-8 items-start">
 
           {/* Interactive Sidebar Filters (Desktop) */}
-          <aside className={`w-72 bg-[#DFD4C0] p-6 rounded-2xl border border-[#C5B299] shadow-sm space-y-6 shrink-0 ${isMobileFilterOpen ? 'fixed inset-y-0 left-0 z-50 overflow-y-auto w-80 shadow-2xl block bg-[#DFD4C0]' : 'hidden lg:block sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto'
+          <aside className={`w-72 bg-[var(--th-card)] p-6 rounded-2xl border border-[var(--th-border)] shadow-sm space-y-6 shrink-0 transition-colors ${isMobileFilterOpen ? 'fixed inset-y-0 left-0 z-50 overflow-y-auto w-80 shadow-2xl block bg-[var(--th-card)]' : 'hidden lg:block sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto'
             }`}>
-            <div className="flex items-center justify-between border-b border-[#C5B299] pb-3">
-              <h3 className="font-serif font-bold text-base text-[#071526] flex items-center space-x-2">
-                <Filter className="w-4 h-4 text-[#0B2545]" />
+            <div className="flex items-center justify-between border-b border-[var(--th-border-subtle)] pb-3">
+              <h3 className="font-serif font-bold text-base text-[var(--th-text-main)] flex items-center space-x-2">
+                <Filter className="w-4 h-4 text-[var(--th-primary)]" />
                 <span>Filter Catalog</span>
               </h3>
-              <button onClick={resetFilters} className="text-xs text-[#0B2545] hover:underline font-semibold flex items-center space-x-1">
+              <button onClick={resetFilters} className="text-xs text-[var(--th-primary)] hover:text-[var(--th-primary-hover)] hover:underline font-semibold flex items-center space-x-1">
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset</span>
               </button>
@@ -771,22 +771,22 @@ export default function ProductListingPage({
 
             {/* Search Keyword Filter */}
             <div>
-              <label className="text-[11px] font-bold text-[#4E6073] uppercase tracking-wider block mb-2">
+              <label className="text-[11px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider block mb-2">
                 Search Keyword
               </label>
               <div className="relative">
-                <Search className="w-4 h-4 text-[#4E6073] absolute left-3 top-2.5" />
+                <Search className="w-4 h-4 text-[var(--th-text-muted)] absolute left-3 top-2.5" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search item, style..."
-                  className="w-full bg-[#EDE5D6] border border-[#C5B299] rounded-lg pl-9 pr-8 py-2 text-xs text-[#071526] placeholder-[#4E6073] focus:outline-hidden focus:border-[#0B2545] focus:bg-[#F8F4EC] transition-colors"
+                  className="w-full bg-white border border-[var(--th-border)] rounded-lg pl-9 pr-8 py-2 text-xs text-[var(--th-text-main)] placeholder-[var(--th-text-muted)] focus:outline-hidden focus:border-[var(--th-primary)] focus:ring-1 focus:ring-[var(--th-primary)] transition-all"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-2.5 text-silver-400 hover:text-black"
+                    className="absolute right-2.5 top-2.5 text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -795,8 +795,8 @@ export default function ProductListingPage({
             </div>
 
             {/* Category Radio / Checkbox List */}
-            <div className="border-t border-silver-100 pt-4">
-              <label className="text-[11px] font-bold text-[#4E6073] uppercase tracking-wider block mb-2.5">
+            <div className="border-t border-[var(--th-border-subtle)] pt-4">
+              <label className="text-[11px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider block mb-2.5">
                 Categories & Collections
               </label>
               <div className="space-y-1.5 text-xs max-h-56 overflow-y-auto pr-1">
@@ -804,8 +804,8 @@ export default function ProductListingPage({
                 <label
                   onClick={() => handleCategorySelect('all')}
                   className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${selectedCategory === 'all'
-                    ? 'bg-[#0B2545] text-white font-bold shadow-xs'
-                    : 'text-[#071526] hover:bg-[#CDC0AC]'
+                    ? 'bg-[var(--th-primary)] text-white font-bold shadow-xs'
+                    : 'text-[var(--th-text-main)] hover:bg-[var(--th-primary-light)]'
                     }`}
                 >
                   <div className="flex items-center space-x-2">
@@ -814,11 +814,11 @@ export default function ProductListingPage({
                       name="category_filter"
                       checked={selectedCategory === 'all'}
                       onChange={() => handleCategorySelect('all')}
-                      className="accent-[#0B2545] w-3.5 h-3.5 cursor-pointer"
+                      className="accent-[var(--th-primary)] w-3.5 h-3.5 cursor-pointer"
                     />
                     <span>All Categories</span>
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedCategory === 'all' ? 'bg-[#D4AF37] text-[#071526]' : 'bg-[#D8CCB9] text-[#4E6073]'
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedCategory === 'all' ? 'bg-[var(--th-accent)] text-white' : 'bg-[var(--th-primary-light)] text-[var(--th-text-muted)]'
                     }`}>
                     {categoryCounts.all || 0}
                   </span>
@@ -835,8 +835,8 @@ export default function ProductListingPage({
                     key={item.id}
                     onClick={() => handleCategorySelect(item.id)}
                     className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${selectedCategory === item.id
-                      ? 'bg-[#0B2545] text-white font-bold shadow-xs'
-                      : 'text-[#071526] hover:bg-[#CDC0AC]'
+                      ? 'bg-[var(--th-primary)] text-white font-bold shadow-xs'
+                      : 'text-[var(--th-text-main)] hover:bg-[var(--th-primary-light)]'
                       }`}
                   >
                     <div className="flex items-center space-x-2">
@@ -845,11 +845,11 @@ export default function ProductListingPage({
                         name="category_filter"
                         checked={selectedCategory === item.id}
                         onChange={() => handleCategorySelect(item.id)}
-                        className="accent-[#0B2545] w-3.5 h-3.5 cursor-pointer"
+                        className="accent-[var(--th-primary)] w-3.5 h-3.5 cursor-pointer"
                       />
                       <span>{item.label}</span>
                     </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedCategory === item.id ? 'bg-[#D4AF37] text-[#071526]' : 'bg-[#D8CCB9] text-[#4E6073]'
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedCategory === item.id ? 'bg-[var(--th-accent)] text-white' : 'bg-[var(--th-primary-light)] text-[var(--th-text-muted)]'
                       }`}>
                       {categoryCounts[item.id] || 0}
                     </span>
@@ -862,8 +862,8 @@ export default function ProductListingPage({
                     key={cat.id}
                     onClick={() => handleCategorySelect(cat.id)}
                     className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${selectedCategory === cat.id
-                      ? 'bg-[#0B2545] text-white font-bold shadow-xs'
-                      : 'text-[#071526] hover:bg-[#CDC0AC]'
+                      ? 'bg-[var(--th-primary)] text-white font-bold shadow-xs'
+                      : 'text-[var(--th-text-main)] hover:bg-[var(--th-primary-light)]'
                       }`}
                   >
                     <div className="flex items-center space-x-2">
@@ -872,11 +872,11 @@ export default function ProductListingPage({
                         name="category_filter"
                         checked={selectedCategory === cat.id}
                         onChange={() => handleCategorySelect(cat.id)}
-                        className="accent-[#0B2545] w-3.5 h-3.5 cursor-pointer"
+                        className="accent-[var(--th-primary)] w-3.5 h-3.5 cursor-pointer"
                       />
                       <span>{cat.name}</span>
                     </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedCategory === cat.id ? 'bg-[#D4AF37] text-[#071526]' : 'bg-[#D8CCB9] text-[#4E6073]'
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedCategory === cat.id ? 'bg-[var(--th-accent)] text-white' : 'bg-[var(--th-primary-light)] text-[var(--th-text-muted)]'
                       }`}>
                       {categoryCounts[cat.id] || 0}
                     </span>
@@ -886,8 +886,8 @@ export default function ProductListingPage({
             </div>
 
             {/* Requirement 2: Color / Metallic Finish Filter */}
-            <div className="border-t border-[#C5B299] pt-4">
-              <label className="text-[11px] font-bold text-[#4E6073] uppercase tracking-wider block mb-2.5">
+            <div className="border-t border-[var(--th-border-subtle)] pt-4">
+              <label className="text-[11px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider block mb-2.5">
                 Signature Finish / Color
               </label>
               <div className="space-y-1.5 text-xs">
@@ -907,15 +907,15 @@ export default function ProductListingPage({
                       key={finish.id}
                       onClick={() => setSelectedColor(finish.id)}
                       className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${isSelected
-                        ? 'bg-[#0B2545] text-white font-bold shadow-xs'
-                        : 'text-[#071526] hover:bg-[#CDC0AC]'
+                        ? 'bg-[var(--th-primary)] text-white font-bold shadow-xs'
+                        : 'text-[var(--th-text-main)] hover:bg-[var(--th-primary-light)]'
                         }`}
                     >
                       <div className="flex items-center space-x-2.5">
                         <span className={`w-3.5 h-3.5 rounded-full shrink-0 shadow-2xs ${finish.colorDot}`} />
                         <span>{finish.label}</span>
                       </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isSelected ? 'bg-[#D4AF37] text-[#071526]' : 'bg-[#D8CCB9] text-[#4E6073]'
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isSelected ? 'bg-[var(--th-accent)] text-white' : 'bg-[var(--th-primary-light)] text-[var(--th-text-muted)]'
                         }`}>
                         {count}
                       </span>
@@ -926,8 +926,8 @@ export default function ProductListingPage({
             </div>
 
             {/* Silver Purity Radio Group */}
-            <div className="border-t border-[#C5B299] pt-4">
-              <label className="text-[11px] font-bold text-[#4E6073] uppercase tracking-wider block mb-2.5">
+            <div className="border-t border-[var(--th-border-subtle)] pt-4">
+              <label className="text-[11px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider block mb-2.5">
                 Silver Purity
               </label>
               <div className="space-y-2 text-xs">
@@ -938,7 +938,7 @@ export default function ProductListingPage({
                 ].map((purity) => (
                   <label
                     key={purity.id}
-                    className={`flex items-center space-x-2.5 p-2 rounded-lg cursor-pointer font-medium transition-colors ${selectedPurity === purity.id ? 'bg-[#0B2545] text-white font-bold' : 'text-[#071526] hover:bg-[#CDC0AC]'
+                    className={`flex items-center space-x-2.5 p-2 rounded-lg cursor-pointer font-medium transition-colors ${selectedPurity === purity.id ? 'bg-[var(--th-primary)] text-white font-bold' : 'text-[var(--th-text-main)] hover:bg-[var(--th-primary-light)]'
                       }`}
                   >
                     <input
@@ -946,7 +946,7 @@ export default function ProductListingPage({
                       name="purity_filter"
                       checked={selectedPurity === purity.id}
                       onChange={() => setSelectedPurity(purity.id)}
-                      className="accent-[#0B2545] w-4 h-4 cursor-pointer"
+                      className="accent-[var(--th-primary)] w-4 h-4 cursor-pointer"
                     />
                     <span>{purity.label}</span>
                   </label>
@@ -955,12 +955,12 @@ export default function ProductListingPage({
             </div>
 
             {/* Price Filter (Single Track with Both To and From Handles) */}
-            <div className="border-t border-[#C5B299] pt-4">
+            <div className="border-t border-[var(--th-border-subtle)] pt-4">
               <div className="flex justify-between items-center mb-2 text-xs">
-                <label className="text-[11px] font-bold text-[#4E6073] uppercase tracking-wider">
+                <label className="text-[11px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider">
                   Price Range (To - From)
                 </label>
-                <span className="font-bold bg-[#0B2545]/15 text-[#0B2545] px-2 py-0.5 rounded text-[11px] font-outfit">
+                <span className="font-bold bg-[var(--th-primary-light)] text-[var(--th-primary)] border border-[var(--th-border)] px-2 py-0.5 rounded text-[11px] font-outfit">
                   ₹{minPrice.toLocaleString('en-IN')} - ₹{maxPrice.toLocaleString('en-IN')}
                 </span>
               </div>
@@ -968,10 +968,10 @@ export default function ProductListingPage({
               {/* Single Track Dual-Thumb Container */}
               <div className="relative h-8 flex items-center w-full mt-2">
                 {/* Background Track Line */}
-                <div className="absolute w-full h-1.5 bg-[#C5B299] rounded-full" />
+                <div className="absolute w-full h-1.5 bg-[var(--th-border)] rounded-full" />
                 {/* Colored Active Highlight Between From and To */}
                 <div
-                  className="absolute h-1.5 bg-[#0B2545] rounded-full transition-all"
+                  className="absolute h-1.5 bg-[var(--th-primary)] rounded-full transition-all"
                   style={{
                     left: `${(minPrice / 100000) * 100}%`,
                     width: `${Math.max(0, ((maxPrice - minPrice) / 100000) * 100)}%`
@@ -988,7 +988,7 @@ export default function ProductListingPage({
                     const val = Math.min(Number(e.target.value), maxPrice - 500);
                     setMinPrice(val >= 0 ? val : 0);
                   }}
-                  className="absolute w-full h-1.5 bg-transparent pointer-events-none appearance-none z-10 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:h-4.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#0B2545] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#F8F4EC] [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4.5 [&::-moz-range-thumb]:h-4.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#0B2545] [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#F8F4EC] [&::-moz-range-thumb]:cursor-pointer"
+                  className="absolute w-full h-1.5 bg-transparent pointer-events-none appearance-none z-10 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:h-4.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--th-primary)] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4.5 [&::-moz-range-thumb]:h-4.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--th-primary)] [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:cursor-pointer"
                   title={`From: ₹${minPrice.toLocaleString('en-IN')}`}
                 />
                 {/* To (Max) Thumb */}
@@ -1002,21 +1002,21 @@ export default function ProductListingPage({
                     const val = Math.max(Number(e.target.value), minPrice + 500);
                     setMaxPrice(val <= 100000 ? val : 100000);
                   }}
-                  className="absolute w-full h-1.5 bg-transparent pointer-events-none appearance-none z-20 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:h-4.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#9A650C] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#F8F4EC] [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4.5 [&::-moz-range-thumb]:h-4.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#9A650C] [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#F8F4EC] [&::-moz-range-thumb]:cursor-pointer"
+                  className="absolute w-full h-1.5 bg-transparent pointer-events-none appearance-none z-20 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:h-4.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--th-accent)] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4.5 [&::-moz-range-thumb]:h-4.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--th-accent)] [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:cursor-pointer"
                   title={`To: ₹${maxPrice.toLocaleString('en-IN')}`}
                 />
               </div>
 
-              <div className="flex justify-between text-[10px] text-[#4E6073] mt-1 font-outfit">
+              <div className="flex justify-between text-[10px] text-[var(--th-text-muted)] mt-1 font-outfit">
                 <span>₹{minPrice.toLocaleString('en-IN')}</span>
-                <span className="text-[#4E6073]">₹50k</span>
+                <span>₹50k</span>
                 <span>₹{maxPrice.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
             {/* Requirement 5: Target Audience / Occasion Filter */}
-            <div className="border-t border-[#C5B299] pt-4">
-              <label className="text-[11px] font-bold text-[#4E6073] uppercase tracking-wider block mb-2.5">
+            <div className="border-t border-[var(--th-border-subtle)] pt-4">
+              <label className="text-[11px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider block mb-2.5">
                 Target Audience / Occasion
               </label>
               <div className="flex flex-wrap gap-1.5 text-xs">
@@ -1035,8 +1035,8 @@ export default function ProductListingPage({
                       key={tag.id}
                       onClick={() => setSelectedRecipient(tag.id)}
                       className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center space-x-1 cursor-pointer ${isSelected
-                        ? 'bg-[#0B2545] text-white shadow-xs'
-                        : 'bg-[#D8CCB9] text-[#071526] hover:bg-[#CDC0AC]'
+                        ? 'bg-[var(--th-primary)] text-white shadow-xs'
+                        : 'bg-[var(--th-primary-light)] text-[var(--th-text-main)] hover:bg-[var(--th-border)]/50'
                         }`}
                     >
                       <span>{tag.label}</span>
@@ -1047,21 +1047,21 @@ export default function ProductListingPage({
             </div>
 
             {/* Ready Stock Checkbox Switch */}
-            <div className="border-t border-[#C5B299] pt-4">
-              <label className="flex items-center space-x-3 cursor-pointer p-2 rounded-lg bg-[#D8CCB9] hover:bg-[#CDC0AC] transition-colors">
+            <div className="border-t border-[var(--th-border-subtle)] pt-4">
+              <label className="flex items-center space-x-3 cursor-pointer p-2.5 rounded-lg bg-[var(--th-primary-light)] hover:bg-[var(--th-border)]/50 transition-colors">
                 <input
                   type="checkbox"
                   checked={inStockOnly}
                   onChange={(e) => setInStockOnly(e.target.checked)}
-                  className="accent-[#0B2545] w-4 h-4 rounded cursor-pointer"
+                  className="accent-[var(--th-primary)] w-4 h-4 rounded cursor-pointer"
                 />
-                <span className="text-xs font-bold text-[#071526]">Ready in Stock Only</span>
+                <span className="text-xs font-bold text-[var(--th-text-main)]">Ready in Stock Only</span>
               </label>
             </div>
 
             {/* Sort Options Radio List in Sidebar */}
-            <div className="border-t border-[#C5B299] pt-4">
-              <label className="text-[11px] font-bold text-[#4E6073] uppercase tracking-wider block mb-2.5">
+            <div className="border-t border-[var(--th-border-subtle)] pt-4">
+              <label className="text-[11px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider block mb-2.5">
                 Sort By Order
               </label>
               <div className="space-y-1.5 text-xs">
@@ -1075,8 +1075,8 @@ export default function ProductListingPage({
                   <label
                     key={option.id}
                     className={`flex items-center space-x-2.5 p-2 rounded-lg cursor-pointer transition-colors ${sortBy === option.id
-                      ? 'bg-[#0B2545] text-white font-bold'
-                      : 'text-[#071526] hover:bg-[#CDC0AC]'
+                      ? 'bg-[var(--th-primary)] text-white font-bold'
+                      : 'text-[var(--th-text-main)] hover:bg-[var(--th-primary-light)]'
                       }`}
                   >
                     <input
@@ -1084,7 +1084,7 @@ export default function ProductListingPage({
                       name="sort_filter"
                       checked={sortBy === option.id}
                       onChange={() => setSortBy(option.id)}
-                      className="accent-[#0B2545] w-3.5 h-3.5 cursor-pointer"
+                      className="accent-[var(--th-primary)] w-3.5 h-3.5 cursor-pointer"
                     />
                     <span>{option.label}</span>
                   </label>
@@ -1096,7 +1096,7 @@ export default function ProductListingPage({
             {isMobileFilterOpen && (
               <button
                 onClick={() => setIsMobileFilterOpen(false)}
-                className="w-full py-3 bg-[#0B2545] text-white font-bold text-xs rounded-lg mt-6"
+                className="w-full py-3 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold text-xs rounded-lg mt-6 shadow-md transition-colors"
               >
                 Apply Filters ({filteredProducts.length})
               </button>
@@ -1106,15 +1106,15 @@ export default function ProductListingPage({
           {/* Product Grid Area */}
           <div className="flex-1">
             {filteredProducts.length === 0 ? (
-              <div className="bg-[#F8F4EC] p-12 rounded-2xl border border-[#C5B299] text-center">
-                <Sparkles className="w-12 h-12 text-[#9A650C] mx-auto mb-3" />
-                <h3 className="font-serif text-xl font-bold text-[#071526]">No Silver Artifacts Match Filters</h3>
-                <p className="text-xs text-[#4E6073] mt-1 max-w-sm mx-auto">
+              <div className="bg-[var(--th-card)] p-12 rounded-2xl border border-[var(--th-border)] text-center shadow-xs">
+                <Sparkles className="w-12 h-12 text-[var(--th-accent)] mx-auto mb-3" />
+                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">No Silver Artifacts Match Filters</h3>
+                <p className="text-xs text-[var(--th-text-muted)] mt-1 max-w-sm mx-auto">
                   Try adjusting your price range or purity filter options to see available products.
                 </p>
                 <button
                   onClick={resetFilters}
-                  className="mt-4 px-6 py-2.5 bg-[#0B2545] text-white text-xs font-semibold rounded-lg hover:bg-[#143A66] transition-colors"
+                  className="mt-4 px-6 py-2.5 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white text-xs font-semibold rounded-lg transition-colors shadow-sm cursor-pointer"
                 >
                   Reset All Filters
                 </button>
@@ -1133,11 +1133,11 @@ export default function ProductListingPage({
                   return (
                     <div
                       key={product.id}
-                      className="group bg-[#F8F4EC] rounded-2xl border border-[#C5B299] hover:border-[#0B2545] overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative"
+                      className="group bg-[var(--th-card)] rounded-2xl border border-[var(--th-border)] hover:border-[var(--th-primary)] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative"
                     >
                       {/* Image Preview */}
                       <div
-                        className="relative aspect-square bg-[#DDD1BE] overflow-hidden cursor-pointer"
+                        className="relative aspect-square bg-[var(--th-pedestal)] overflow-hidden cursor-pointer"
                         onClick={() => onSelectProduct(product)}
                       >
                         <img
@@ -1155,15 +1155,15 @@ export default function ProductListingPage({
 
                         {/* Top Badges */}
                         <div className="absolute top-3 left-3 flex flex-col space-y-1 z-10">
-                          <span className="bg-[#0B2545]/90 backdrop-blur-xs text-[#F8E6C8] border border-[#D4AF37]/50 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                          <span className="bg-[var(--th-primary)]/90 backdrop-blur-xs text-[var(--th-badge-text)] border border-[var(--th-accent)]/50 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
                             {product.purityCode === '999' ? '999 Pure' : '925 Sterling'}
                           </span>
                           {product.color && product.color !== 'Silver' && (
-                            <span className="bg-[#0B2545] text-[#F8E6C8] border border-[#C5B299] text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
+                            <span className="bg-[var(--th-primary)] text-[var(--th-badge-text)] border border-[var(--th-border)] text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
                               {product.color}
                             </span>
                           )}
-                          <span className="bg-[#9A650C] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs w-fit">
+                          <span className="bg-[var(--th-accent)] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs w-fit">
                             🔥 {product.sold || 450}+ Sold
                           </span>
                           {discountPct && (
@@ -1181,7 +1181,7 @@ export default function ProductListingPage({
                           }}
                           className={`absolute top-3 right-3 z-10 p-2 rounded-full backdrop-blur-md transition-all shadow-md ${isWishlisted
                             ? 'bg-rose-600 text-white'
-                            : 'bg-[#F8F4EC]/90 text-[#0B2545] hover:bg-[#0B2545] hover:text-white'
+                            : 'bg-white/90 text-[var(--th-primary)] hover:bg-[var(--th-primary)] hover:text-white'
                             }`}
                         >
                           <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-white' : ''}`} />
@@ -1194,7 +1194,7 @@ export default function ProductListingPage({
                               e.stopPropagation();
                               onQuickView(product);
                             }}
-                            className="w-full py-2 bg-[#F8F4EC]/95 backdrop-blur-xs hover:bg-[#0B2545] text-[#071526] hover:text-white text-xs font-semibold rounded-lg shadow-lg transition-colors flex items-center justify-center space-x-1.5"
+                            className="w-full py-2 bg-white/95 backdrop-blur-xs hover:bg-[var(--th-primary)] text-[var(--th-text-main)] hover:text-white text-xs font-semibold rounded-lg shadow-lg transition-colors flex items-center justify-center space-x-1.5"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             <span>Quick View</span>
@@ -1205,14 +1205,14 @@ export default function ProductListingPage({
                       {/* Info Area */}
                       <div className="p-4 flex-1 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center justify-between text-[11px] text-[#4E6073] mb-1">
-                            <span className="font-semibold text-[#071526]">
+                          <div className="flex items-center justify-between text-[11px] text-[var(--th-text-muted)] mb-1">
+                            <span className="font-semibold text-[var(--th-text-main)]">
                               {product.color || 'Silver'} • {product.weightGrams}g
                             </span>
-                            <div className="flex items-center space-x-1 text-[#9A650C]">
-                              <Star className="w-3 h-3 fill-[#D4AF37] text-[#D4AF37]" />
-                              <span className="font-bold text-[#071526]">{product.rating}</span>
-                              <span className="text-[10px] text-[#4E6073]">
+                            <div className="flex items-center space-x-1 text-[var(--th-accent)]">
+                              <Star className="w-3 h-3 fill-[var(--th-accent)] text-[var(--th-accent)]" />
+                              <span className="font-bold text-[var(--th-text-main)]">{product.rating}</span>
+                              <span className="text-[10px] text-[var(--th-text-muted)]">
                                 ({product.reviewsCount || product.review || 48})
                               </span>
                             </div>
@@ -1220,7 +1220,7 @@ export default function ProductListingPage({
 
                           <h3
                             onClick={() => onSelectProduct(product)}
-                            className="font-semibold text-sm text-[#071526] hover:text-[#0B2545] transition-colors line-clamp-2 cursor-pointer mb-2"
+                            className="font-semibold text-sm text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-colors line-clamp-2 cursor-pointer mb-2"
                           >
                             {product.name}
                           </h3>
@@ -1241,15 +1241,15 @@ export default function ProductListingPage({
                           {product.isYatraLocket ? (
                             <button
                               onClick={onNavigateYatraCustomizer}
-                              className="w-full py-2.5 bg-gradient-to-r from-[#0B2545] to-[#143A66] hover:from-[#D4AF37] hover:to-[#9A650C] text-white hover:text-[#071526] font-semibold text-xs rounded-lg transition-all flex items-center justify-center space-x-1.5"
+                              className="w-full py-2.5 bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] hover:from-[var(--th-accent)] hover:to-[#9A650C] text-white hover:text-white font-semibold text-xs rounded-lg transition-all flex items-center justify-center space-x-1.5"
                             >
-                              <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                              <Sparkles className="w-3.5 h-3.5 text-[var(--th-accent)]" />
                               <span>Customize Locket</span>
                             </button>
                           ) : (
                             <button
                               onClick={() => onAddToCart(product, 1)}
-                              className="w-full py-2.5 bg-[#0B2545] hover:bg-[#143A66] text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center space-x-1.5 cursor-pointer shadow-sm hover:shadow-md"
+                              className="w-full py-2.5 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs hover:shadow-md"
                             >
                               <ShoppingBag className="w-3.5 h-3.5" />
                               <span>Add to Cart</span>
