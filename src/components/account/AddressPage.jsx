@@ -103,7 +103,7 @@ export default function AddressPage({ onTriggerToast }) {
       const result = await addUserAddress(payload);
       if (result && result.success) {
         if (onTriggerToast) {
-          onTriggerToast('📍 New Delivery Address Saved Successfully!');
+          onTriggerToast('success', 'Address Saved', 'New delivery address added to your account successfully.');
         }
         setIsModalOpen(false);
         // Reset form
@@ -120,10 +120,18 @@ export default function AddressPage({ onTriggerToast }) {
         });
         await loadAddresses();
       } else {
-        setError(result?.error || 'Failed to save address. Please check your inputs.');
+        const errMsg = result?.error || 'Failed to save address. Please check your inputs.';
+        setError(errMsg);
+        if (onTriggerToast) {
+          onTriggerToast('error', 'Address Error', errMsg);
+        }
       }
     } catch (err) {
-      setError(err.message || 'An error occurred while saving your address.');
+      const errMsg = err.message || 'An error occurred while saving your address.';
+      setError(errMsg);
+      if (onTriggerToast) {
+        onTriggerToast('error', 'Address Error', errMsg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -136,11 +144,16 @@ export default function AddressPage({ onTriggerToast }) {
       const result = await deleteUserAddress(addressId);
       if (result && result.success) {
         if (onTriggerToast) {
-          onTriggerToast('🗑️ Address removed.');
+          onTriggerToast('info', 'Address Removed', 'The delivery address was removed from your account.');
         }
         setAddresses(prev => prev.filter(a => a.address_id !== addressId));
       } else {
-        alert(result?.error || 'Failed to delete address.');
+        const errMsg = result?.error || 'Failed to delete address.';
+        if (onTriggerToast) {
+          onTriggerToast('error', 'Delete Failed', errMsg);
+        } else {
+          alert(errMsg);
+        }
       }
     } catch (err) {
       console.error('Delete address error:', err);

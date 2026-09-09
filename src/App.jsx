@@ -83,8 +83,35 @@ export default function App() {
   // Toast Notifications State
   const [toasts, setToasts] = useState([]);
 
-  const triggerToast = (type, title, message) => {
-    const id = Date.now();
+  const triggerToast = (arg1, arg2, arg3) => {
+    let type = 'success';
+    let title = '';
+    let message = '';
+
+    if (arg3 !== undefined) {
+      // Called as: triggerToast(type, title, message)
+      type = arg1 || 'success';
+      title = arg2 || '';
+      message = arg3 || '';
+    } else if (arg2 !== undefined) {
+      // Called as: triggerToast(type, message) OR triggerToast(title, message)
+      if (['success', 'info', 'error', 'warning'].includes(arg1)) {
+        type = arg1;
+        title = arg1 === 'success' ? 'Success' : arg1 === 'error' ? 'Notice' : 'Info';
+        message = arg2;
+      } else {
+        type = 'success';
+        title = arg1;
+        message = arg2;
+      }
+    } else if (arg1) {
+      // Called as: triggerToast(message)
+      type = 'success';
+      title = 'Notification';
+      message = arg1;
+    }
+
+    const id = Date.now() + Math.random();
     setToasts((prev) => [...prev, { id, type, title, message }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));

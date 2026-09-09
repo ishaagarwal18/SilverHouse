@@ -51,15 +51,17 @@ export default function AuthPage({ onTriggerToast }) {
         if (result.success) {
           if (onTriggerToast) {
             onTriggerToast(
+              'success',
+              result.isAdmin ? 'Admin Authenticated' : 'Welcome Back',
               result.isAdmin
                 ? '👑 Admin Privileges Verified! Opening Admin Studio...'
-                : '✨ Welcome back to SilverHouse!'
+                : '✨ You have successfully signed in to SilverHouse.'
             );
           }
           
           setTimeout(() => {
-            if (result.isAdmin && redirectTarget === '/') {
-              window.location.href = 'http://localhost:5000/api/data';
+            if (result.isAdmin) {
+              navigate('/admin');
             } else {
               navigate(redirectTarget);
             }
@@ -69,7 +71,7 @@ export default function AuthPage({ onTriggerToast }) {
         const result = await register({ fullName, email, phone, password });
         if (result.success) {
           if (onTriggerToast) {
-            onTriggerToast('🎉 Account created successfully! Welcome to SilverHouse.');
+            onTriggerToast('success', 'Account Created', '🎉 Welcome to SilverHouse! Your account is ready.');
           }
           setTimeout(() => {
             navigate(redirectTarget);
@@ -86,7 +88,7 @@ export default function AuthPage({ onTriggerToast }) {
   const handleLogout = () => {
     logout();
     if (onTriggerToast) {
-      onTriggerToast('👋 You have been logged out securely.');
+      onTriggerToast('info', 'Logged Out', '👋 You have been logged out securely.');
     }
   };
 
