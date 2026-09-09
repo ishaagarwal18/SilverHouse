@@ -57,9 +57,9 @@ export default function ProductListingPage({
     let isMounted = true;
     async function loadFilteredData() {
       const activeFilters = {
-        category: selectedCategory,
-        subcategory: selectedSubcategory,
-        purity: selectedPurity,
+        category: selectedCategory && selectedCategory !== 'all' && !['women', 'mens', 'kids', 'jewellery'].includes(selectedCategory) ? selectedCategory : undefined,
+        subcategory: selectedSubcategory !== 'all' ? selectedSubcategory : undefined,
+        purity: selectedPurity !== 'all' ? selectedPurity : undefined,
         color: selectedColor !== 'all' ? selectedColor : undefined,
         minPrice,
         maxPrice,
@@ -483,7 +483,15 @@ export default function ProductListingPage({
 
     // Purity Filter
     if (selectedPurity !== 'all') {
-      result = result.filter(p => p.purityCode === selectedPurity);
+      result = result.filter(p => {
+        if (selectedPurity === '999') {
+          return p.purityCode === '999' || String(p.purity).includes('999') || String(p.purity).includes('99.9');
+        }
+        if (selectedPurity === '925') {
+          return p.purityCode === '925' || String(p.purity).includes('925') || String(p.purity).includes('92.5');
+        }
+        return p.purityCode === selectedPurity;
+      });
     }
 
     // Color / Finish Filter
@@ -573,7 +581,7 @@ export default function ProductListingPage({
 
       {/* Category Hero Header Banner */}
       <div
-        className="relative text-white py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-b border-[#D4AF37]/35 overflow-hidden shadow-2xl bg-[#081726]"
+        className="relative text-white py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-b border-[#D4AF37]/35 overflow-hidden  bg-[#081726]"
         style={{
           background: 'var(--th-nav-gradient, linear-gradient(135deg, #071526 0%, #0B2545 50%, #143A66 100%))',
           backgroundColor: 'var(--th-nav, #071526)'
@@ -635,7 +643,7 @@ export default function ProductListingPage({
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <span className="text-[10px] font-bold text-[var(--th-accent)] uppercase tracking-widest bg-black/50 border border-[var(--th-accent)]/40 px-3.5 py-1 rounded-full shadow-xs inline-flex items-center">
+              <span className="text-[10px] font-bold text-[var(--th-accent)] uppercase tracking-widest bg-black/50 border border-[var(--th-accent)]/40 px-3.5 py-1 rounded-full inline-flex items-center">
                 100% HALLMARKED PURE SILVER
               </span>
               <h1 className="font-serif text-3xl sm:text-5xl font-bold mt-3 text-white tracking-tight drop-shadow-md">
@@ -646,7 +654,7 @@ export default function ProductListingPage({
               </p>
             </div>
 
-            <div className="bg-black/40 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 text-xs font-semibold text-[var(--th-accent)] flex items-center space-x-2 shrink-0 shadow-lg">
+            <div className="bg-black/40 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 text-xs font-semibold text-[var(--th-accent)] flex items-center space-x-2 shrink-0">
               <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
               <span>Showing {filteredProducts.length} Sacred Items</span>
             </div>
@@ -654,10 +662,10 @@ export default function ProductListingPage({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <div className=" mx-auto px-4 sm:px-6 lg:px-8 pt-8">
 
         {/* Top Controls Bar */}
-        <div className="bg-[var(--th-card)] p-4 rounded-xl border border-[var(--th-border)] shadow-sm mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="bg-[var(--th-card)] p-4 rounded-xl border border-[var(--th-border)] mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
 
           {/* Left: Mobile Filter Button & Active Filter Chips */}
           <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start flex-wrap gap-y-2">
@@ -1126,9 +1134,11 @@ export default function ProductListingPage({
                 }`}>
                 {filteredProducts.map((product) => {
                   const isWishlisted = wishlistIds.includes(product.id);
-                  const discountPct = product.originalPrice
-                    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-                    : null;
+                  const discountPct = product.discount !== undefined && product.discount !== null && Number(product.discount) > 0
+                    ? Number(product.discount)
+                    : (product.originalPrice && product.originalPrice > product.price
+                        ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+                        : null);
 
                   return (
                     <div
@@ -1156,17 +1166,19 @@ export default function ProductListingPage({
                         {/* Top Badges */}
                         <div className="absolute top-3 left-3 flex flex-col space-y-1 z-10">
                           <span className="bg-[var(--th-primary)]/90 backdrop-blur-xs text-[var(--th-badge-text)] border border-[var(--th-accent)]/50 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
-                            {product.purityCode === '999' ? '999 Pure' : '925 Sterling'}
+                            {product.purity || (product.purityCode === '999' ? '999 Pure' : '925 Sterling')}
                           </span>
                           {product.color && product.color !== 'Silver' && (
                             <span className="bg-[var(--th-primary)] text-[var(--th-badge-text)] border border-[var(--th-border)] text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
                               {product.color}
                             </span>
                           )}
-                          <span className="bg-[var(--th-accent)] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs w-fit">
-                            🔥 {product.sold || 450}+ Sold
-                          </span>
-                          {discountPct && (
+                          {product.sold !== undefined && Number(product.sold) > 0 && (
+                            <span className="bg-[var(--th-accent)] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs w-fit">
+                              🔥 {product.sold}+ Sold
+                            </span>
+                          )}
+                          {discountPct !== null && discountPct > 0 && (
                             <span className="bg-[#DC2626] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
                               {discountPct}% OFF
                             </span>
@@ -1213,7 +1225,7 @@ export default function ProductListingPage({
                               <Star className="w-3 h-3 fill-[var(--th-accent)] text-[var(--th-accent)]" />
                               <span className="font-bold text-[var(--th-text-main)]">{product.rating}</span>
                               <span className="text-[10px] text-[var(--th-text-muted)]">
-                                ({product.reviewsCount || product.review || 48})
+                                ({product.reviewsCount !== undefined ? product.reviewsCount : (product.review !== undefined ? product.review : 0)})
                               </span>
                             </div>
                           </div>
@@ -1231,7 +1243,7 @@ export default function ProductListingPage({
                             <span className="text-base font-bold text-[var(--th-primary)] font-outfit tracking-tight">
                               ₹{product.price.toLocaleString('en-IN')}
                             </span>
-                            {product.originalPrice && (
+                            {product.originalPrice && product.originalPrice > product.price && (
                               <span className="text-xs text-[var(--th-text-muted)] line-through font-outfit font-medium">
                                 ₹{product.originalPrice.toLocaleString('en-IN')}
                               </span>

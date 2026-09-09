@@ -37,9 +37,11 @@ export default function ProductDetailPage({
 
   if (!currentProduct) return null;
 
-  const discountPct = currentProduct.originalPrice
-    ? Math.round(((currentProduct.originalPrice - currentProduct.price) / currentProduct.originalPrice) * 100)
-    : null;
+  const discountPct = currentProduct.discount !== undefined && currentProduct.discount !== null && Number(currentProduct.discount) > 0
+    ? Number(currentProduct.discount)
+    : (currentProduct.originalPrice && currentProduct.originalPrice > currentProduct.price
+        ? Math.round(((currentProduct.originalPrice - currentProduct.price) / currentProduct.originalPrice) * 100)
+        : null);
 
   const relatedProducts = productList.filter(p => p.category === currentProduct.category && p.id !== currentProduct.id).slice(0, 4);
 
@@ -138,7 +140,7 @@ export default function ProductDetailPage({
                   <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
                   <span>{currentProduct.purity}</span>
                 </span>
-                {discountPct && (
+                {discountPct !== null && discountPct > 0 && (
                   <span className="bg-[#D4AF37] text-black text-xs font-bold px-3 py-1 rounded-full shadow-md">
                     {discountPct}% OFF FESTIVE DISCOUNT
                   </span>
@@ -235,7 +237,7 @@ export default function ProductDetailPage({
                     <span className="text-3xl font-bold text-[var(--th-primary)] font-outfit tracking-tight">
                       ₹{currentProduct.price.toLocaleString('en-IN')}
                     </span>
-                    {currentProduct.originalPrice && (
+                    {currentProduct.originalPrice && currentProduct.originalPrice > currentProduct.price && (
                       <span className="text-sm text-silver-400 line-through font-outfit font-medium">
                         ₹{currentProduct.originalPrice.toLocaleString('en-IN')}
                       </span>

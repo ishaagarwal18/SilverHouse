@@ -31,34 +31,56 @@ export function normalizeProduct(rawItem) {
   const rawPrice = Number(rawItem.price) || Number(rawItem.original_price) || 1000;
   const discount = Number(rawItem.discount) || 0;
   const finalPrice = rawItem.final_price !== undefined && rawItem.final_price !== null
-    ? Number(rawItem.final_price)
+    ? Math.round(Number(rawItem.final_price))
     : (discount > 0 ? Math.round(rawPrice * (1 - discount / 100)) : rawPrice);
+
+  // Derive purity & purityCode accurately from DB 'purity' or 'purity_code'
+  const rawPurity = String(rawItem.purity || rawItem.purity_code || rawItem.purityCode || '').trim();
+  let purityCode = '925';
+  if (rawPurity.includes('999') || rawPurity.includes('99.9')) {
+    purityCode = '999';
+  } else if (rawPurity.includes('925') || rawPurity.includes('92.5')) {
+    purityCode = '925';
+  } else if (rawItem.purity_code) {
+    purityCode = String(rawItem.purity_code);
+  }
+
+  const purity = rawItem.purity && String(rawItem.purity).trim() !== ''
+    ? String(rawItem.purity).trim()
+    : (purityCode === '999' ? '999 Pure Silver' : '925 Sterling Silver');
+
+  // Exact database values for sold and review count (no manual default overrides)
+  const sold = rawItem.sold !== undefined && rawItem.sold !== null ? Number(rawItem.sold) : 0;
+  const reviewCount = rawItem.review !== undefined && rawItem.review !== null
+    ? Number(rawItem.review)
+    : (rawItem.reviews_count !== undefined && rawItem.reviews_count !== null ? Number(rawItem.reviews_count) : (Number(rawItem.reviews) || 0));
 
   return {
     id: String(rawItem.id || rawItem.product_id || rawItem.code || Math.random().toString(36).substring(2, 9)),
     name: rawItem.product_name || rawItem.name || 'Pure Silver Item',
     category: (rawItem.slug || rawItem.category_slug || rawItem.category_name || rawItem.category || 'silver-coins-bars').toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
     subcategory: (rawItem.subcategory_name || rawItem.subcategory || 'all').toLowerCase().replace(/\s+/g, '-'),
-    purity: rawItem.purity || '999 Fine Pure Silver',
-    purityCode: rawItem.purity_code || '999',
+    purity: purity,
+    purityCode: purityCode,
     weightGrams: parseFloat(rawItem.weight) || 10,
     price: finalPrice,
-    originalPrice: discount > 0 ? rawPrice : Math.round(finalPrice * 1.15),
-    rating: Number(rawItem.rating) || 4.9,
-    reviewsCount: Number(rawItem.reviews_count || rawItem.reviews) || 48,
+    originalPrice: discount > 0 ? rawPrice : null,
+    discount: discount,
+    rating: Number(rawItem.rating) || 4.8,
+    reviewsCount: reviewCount,
+    review: reviewCount,
+    sold: sold,
     inStock: rawItem.quantity !== undefined ? Number(rawItem.quantity) > 0 : true,
-    isBestSeller: Boolean(rawItem.is_bestseller || rawItem.isBestSeller || true),
+    isBestSeller: Boolean(rawItem.is_bestseller || rawItem.isBestSeller || false),
     isCustomizable: Boolean(rawItem.is_customizable || rawItem.isCustomizable || false),
     recipient: rawItem.ideal_for || rawItem.recipient || 'Gifting, Puja',
     images: images,
     color: rawItem.color || 'Silver',
-    review: rawItem.review || rawItem.reviews_count || rawItem.reviews || 48,
-    sold: Number(rawItem.sold) || 450,
     occasions: Array.isArray(rawItem.occasions) ? rawItem.occasions : (rawItem.ideal_for ? [rawItem.ideal_for] : []),
-    shortDesc: rawItem.description || rawItem.shortDesc || 'Authentic pure 925 / 999 silver product with BIS Hallmark quality assurance.',
+    shortDesc: rawItem.description || rawItem.shortDesc || 'Authentic pure silver product with BIS Hallmark quality assurance.',
     specs: typeof rawItem.specs === 'object' ? rawItem.specs : {
-      "Metal Purity": rawItem.purity || "999 Fine Pure Silver",
-      "Weight": rawItem.weight || "10 Grams",
+      "Metal Purity": purity,
+      "Weight": rawItem.weight ? `${rawItem.weight}` : "10 Grams",
       "Craftsmanship": rawItem.make_type || "Handcrafted Luxury Finish",
       "Color": rawItem.color || "Silver",
       "Ideal For": rawItem.ideal_for || "Puja, Luxury Gifting"
