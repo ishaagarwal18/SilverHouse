@@ -79,6 +79,7 @@ export default function HomePage({
         wishlistIds={wishlistIds}
         onQuickView={onQuickView}
         onSelectProduct={onSelectProduct}
+        onNavigateCategory={onNavigateCategory}
       />
 
       {/* 9. Silver Coins & Bars Section */}
