@@ -1030,7 +1030,7 @@ export default function ProductListingPage({
               <div className="flex flex-wrap gap-1.5 text-xs">
                 {[
                   { id: 'all', label: 'All Items' },
-                  { id: 'Puja', label: '🪔 Puja & Devotion' },
+                  { id: 'Puja', label: 'Puja & Devotion' },
                   { id: 'Men', label: 'Men' },
                   { id: 'Women', label: 'Women' },
                   { id: 'Baby', label: 'Baby & Kids' },
@@ -1137,8 +1137,8 @@ export default function ProductListingPage({
                   const discountPct = product.discount !== undefined && product.discount !== null && Number(product.discount) > 0
                     ? Number(product.discount)
                     : (product.originalPrice && product.originalPrice > product.price
-                        ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-                        : null);
+                      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+                      : null);
 
                   return (
                     <div
