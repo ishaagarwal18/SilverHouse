@@ -19,9 +19,12 @@ export default function SegmentedTabsShowcase({
       label: 'For Men',
       targetCategory: 'mens',
       filter: (p) => {
-        const cat = (p.category || '').toLowerCase();
-        const ideal = (p.ideal_for || p.idealFor || '').toLowerCase();
-        return cat.includes('men') || ideal.includes('men');
+        const cat = (p.category || p.category_slug || '').toLowerCase();
+        const ideal = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+        if (cat === 'men-silver-collection' || cat === 'men' || cat === 'mens') return true;
+        if (ideal.includes('women')) return false;
+        const words = ideal.split(/[\s,]+/);
+        return words.includes('men') || words.includes("men's") || (cat.includes('men') && !cat.includes('women'));
       }
     },
     {
@@ -29,8 +32,26 @@ export default function SegmentedTabsShowcase({
       label: 'For Women',
       targetCategory: 'women',
       filter: (p) => {
-        const cat = (p.category || '').toLowerCase();
-        const ideal = (p.ideal_for || p.idealFor || '').toLowerCase();
+        const cat = (p.category || p.category_slug || '').toLowerCase();
+        const ideal = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+        if (ideal.includes('women')) return true;
+        if (
+          [
+            'silver-rings',
+            'silver-pendants-chains',
+            'silver-bangles-kadas',
+            'silver-payal-anklets',
+            'rings',
+            'earrings',
+            'earings',
+            'anklets',
+            'pendants',
+            'bracelets',
+            'sets'
+          ].includes(cat)
+        ) {
+          return true;
+        }
         return (
           cat.includes('ring') ||
           cat.includes('payal') ||
@@ -38,8 +59,7 @@ export default function SegmentedTabsShowcase({
           cat.includes('women') ||
           cat.includes('anklet') ||
           cat.includes('earring') ||
-          cat.includes('necklace') ||
-          ideal.includes('women')
+          cat.includes('necklace')
         );
       }
     },
@@ -48,9 +68,21 @@ export default function SegmentedTabsShowcase({
       label: 'For Kids',
       targetCategory: 'kids',
       filter: (p) => {
-        const cat = (p.category || '').toLowerCase();
-        const ideal = (p.ideal_for || p.idealFor || '').toLowerCase();
-        return cat.includes('kid') || cat.includes('baby') || cat.includes('nazariya') || ideal.includes('kids');
+        const cat = (p.category || p.category_slug || '').toLowerCase();
+        const ideal = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+        const name = (p.name || '').toLowerCase();
+        const occs = Array.isArray(p.occasions) ? p.occasions.map((o) => o.toLowerCase()) : [];
+        return (
+          cat === 'kids-nazariya-bracelets' ||
+          cat === 'kids' ||
+          cat === 'nazariya' ||
+          ideal.includes('baby') ||
+          ideal.includes('kids') ||
+          ideal.includes('child') ||
+          name.includes('nazariya') ||
+          name.includes('baby') ||
+          occs.some((o) => o.includes('baby') || o.includes('kids'))
+        );
       }
     }
   ];
@@ -58,19 +90,8 @@ export default function SegmentedTabsShowcase({
   const currentTabObj = TABS.find((t) => t.id === activeTab) || TABS[0];
   const filtered = products.filter(currentTabObj.filter);
 
-  // Guarantee exactly 8 products displayed per tab
-  let items = [...filtered];
-  if (items.length < 8) {
-    const seenIds = new Set(items.map((p) => p.id));
-    for (const p of products) {
-      if (!seenIds.has(p.id)) {
-        items.push(p);
-        seenIds.add(p.id);
-        if (items.length >= 8) break;
-      }
-    }
-  }
-  items = items.slice(0, 8);
+  // Strictly display authentic database products for this category (up to 8, never mix)
+  const items = filtered.slice(0, 8);
 
   const scrollSlider = (direction) => {
     if (sliderRef.current) {
@@ -96,14 +117,14 @@ export default function SegmentedTabsShowcase({
             <div className="flex items-center space-x-2 text-[var(--th-accent)] mb-1">
               <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--th-text-muted)]">
-                TAILORED EXCELLENCE • 8 CURATED ESSENTIALS
+                TAILORED EXCELLENCE
               </span>
             </div>
             <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[var(--th-text-main)] tracking-tight">
               SEGMENTED SHOWCASE
             </h2>
             <p className="text-xs sm:text-sm text-[var(--th-text-muted)] mt-1 font-sans">
-              Switch effortlessly between distinct handcrafted styles and explore top 8 picks.
+              Switch effortlessly between distinct handcrafted styles directly from our collection.
             </p>
           </div>
 
@@ -129,39 +150,49 @@ export default function SegmentedTabsShowcase({
               })}
             </div>
 
-            {/* Slider Arrow Controls */}
-            <div className="flex items-center space-x-1.5">
-              <button
-                onClick={() => scrollSlider('left')}
-                className="w-10 h-10 rounded-full border border-[var(--th-border)] bg-[var(--th-card)] hover:bg-[var(--th-primary)] text-[var(--th-primary)] hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-xs"
-                title="Scroll Left"
-                aria-label="Scroll Left"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => scrollSlider('right')}
-                className="w-10 h-10 rounded-full border border-[var(--th-border)] bg-[var(--th-card)] hover:bg-[var(--th-primary)] text-[var(--th-primary)] hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-xs"
-                title="Scroll Right"
-                aria-label="Scroll Right"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+            {/* Slider Arrow Controls (visible when items exceed screen capacity) */}
+            {items.length > 3 && (
+              <div className="flex items-center space-x-1.5">
+                <button
+                  onClick={() => scrollSlider('left')}
+                  className="w-10 h-10 rounded-full border border-[var(--th-border)] bg-[var(--th-card)] hover:bg-[var(--th-primary)] text-[var(--th-primary)] hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-xs"
+                  title="Scroll Left"
+                  aria-label="Scroll Left"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => scrollSlider('right')}
+                  className="w-10 h-10 rounded-full border border-[var(--th-border)] bg-[var(--th-card)] hover:bg-[var(--th-primary)] text-[var(--th-primary)] hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-xs"
+                  title="Scroll Right"
+                  aria-label="Scroll Right"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Slider Container with 8 Products */}
+        {/* Slider Container with authentic database products */}
         <div className="relative group/slider">
-          {/* Subtle Side Floating Navigation Buttons */}
-          <button
-            onClick={() => scrollSlider('left')}
-            className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full border border-[var(--th-border)] bg-[var(--th-card)]/95 backdrop-blur-xs text-[var(--th-text-main)] hover:bg-[var(--th-primary)] hover:text-white items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105 opacity-0 group-hover/slider:opacity-100"
-            title="Previous Items"
-            aria-label="Previous Items"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+          {items.length === 0 ? (
+            <div className="py-12 text-center text-[var(--th-text-muted)] text-sm font-sans">
+              No products available in {currentTabObj.label} at the moment.
+            </div>
+          ) : (
+            <>
+              {/* Subtle Side Floating Navigation Buttons */}
+              {items.length > 3 && (
+                <button
+                  onClick={() => scrollSlider('left')}
+                  className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full border border-[var(--th-border)] bg-[var(--th-card)]/95 backdrop-blur-xs text-[var(--th-text-main)] hover:bg-[var(--th-primary)] hover:text-white items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105 opacity-0 group-hover/slider:opacity-100"
+                  title="Previous Items"
+                  aria-label="Previous Items"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              )}
 
           <div
             ref={sliderRef}
@@ -281,14 +312,18 @@ export default function SegmentedTabsShowcase({
             })}
           </div>
 
-          <button
-            onClick={() => scrollSlider('right')}
-            className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full border border-[var(--th-border)] bg-[var(--th-card)]/95 backdrop-blur-xs text-[var(--th-text-main)] hover:bg-[var(--th-primary)] hover:text-white items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105 opacity-0 group-hover/slider:opacity-100"
-            title="Next Items"
-            aria-label="Next Items"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          {items.length > 3 && (
+            <button
+              onClick={() => scrollSlider('right')}
+              className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full border border-[var(--th-border)] bg-[var(--th-card)]/95 backdrop-blur-xs text-[var(--th-text-main)] hover:bg-[var(--th-primary)] hover:text-white items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105 opacity-0 group-hover/slider:opacity-100"
+              title="Next Items"
+              aria-label="Next Items"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
+            </>
+          )}
         </div>
 
         {/* View More CTA Button */}
