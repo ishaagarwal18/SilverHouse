@@ -79,7 +79,7 @@ export default function AuthPage({ onTriggerToast }) {
   };
 
   return (
-    <div className="h-[calc(100vh-68px)] min-h-[480px] max-h-screen bg-[var(--th-bg)] text-[var(--th-text-main)] flex items-center justify-center p-3 sm:p-4 relative overflow-hidden font-sans transition-colors duration-300">
+    <div className="min-h-[calc(100vh-130px)] bg-[var(--th-bg)] text-[var(--th-text-main)] flex flex-col items-center justify-start pt-3 sm:pt-5 pb-8 px-3 sm:px-4 relative font-sans transition-colors duration-300">
 
       {/* Subtle Ambient Background Glows */}
       <div className="absolute top-0 left-1/4 w-80 h-80 bg-[var(--th-primary)]/10 rounded-full blur-[100px] pointer-events-none" />
