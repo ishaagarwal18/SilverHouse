@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { fetchUserAddresses } from '../../services/api';
 import { 
   Search, Heart, ShoppingBag, User, Menu, Sparkles, ChevronDown, 
-  LogOut, Building2, Store, MapPin, Check, Plus, Home 
+  LogOut, Building2, Store, MapPin, Check, Plus, Home, X 
 } from 'lucide-react';
 import StoresModal from './StoresModal';
 import ThemeSwitcher from './ThemeSwitcher';
