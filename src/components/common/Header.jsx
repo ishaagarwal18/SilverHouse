@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MegaMenu from './MegaMenu';
 import { useAuth } from '../../context/AuthContext';
@@ -41,6 +41,53 @@ export default function Header({
 
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
+
+  // Refs for click-outside dismissal
+  const userMenuRef = useRef(null);
+  const locationPopoverRef = useRef(null);
+
+  // Close popovers and dropdowns when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+      if (locationPopoverRef.current && !locationPopoverRef.current.contains(event.target)) {
+        setIsLocationPopoverOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsUserMenuOpen(false);
+        setIsLocationPopoverOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
+
+  const toggleLocationPopover = () => {
+    setIsLocationPopoverOpen(prev => {
+      if (!prev) setIsUserMenuOpen(false);
+      return !prev;
+    });
+  };
+
+  const toggleUserMenu = () => {
+    setIsUserMenuOpen(prev => {
+      if (!prev) setIsLocationPopoverOpen(false);
+      return !prev;
+    });
+  };
 
   // Load user's saved addresses to display active delivery destination
   const loadAddressesForHeader = () => {
@@ -186,9 +233,9 @@ export default function Header({
           <div className="flex items-center space-x-2 sm:space-x-3">
 
             {/* Delivery Location Pill & Popover (Desktop) */}
-            <div className="relative hidden xl:block">
+            <div ref={locationPopoverRef} className="relative hidden xl:block">
               <button
-                onClick={() => setIsLocationPopoverOpen(!isLocationPopoverOpen)}
+                onClick={toggleLocationPopover}
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-[var(--th-card)] border border-[var(--th-border)] hover:border-[var(--th-accent)] text-xs text-[var(--th-text-main)] transition-all cursor-pointer shadow-2xs group"
                 title={activeAddress || pincode ? "Change delivery location" : "Add delivery address"}
               >
@@ -363,10 +410,10 @@ export default function Header({
             </button>
 
             {/* User Account & Profile Dropdown */}
-            <div className="relative">
+            <div ref={userMenuRef} className="relative">
               {isAuthenticated ? (
                 <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  onClick={toggleUserMenu}
                   className="flex items-center space-x-1.5 p-1 rounded-full hover:bg-[var(--th-card)] transition-colors focus:outline-hidden cursor-pointer"
                   title={user.fullName || 'User Profile'}
                 >
