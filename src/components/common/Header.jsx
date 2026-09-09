@@ -30,7 +30,10 @@ export default function Header({
   const [isStoresModalOpen, setIsStoresModalOpen] = useState(false);
   
   // Dynamic Delivery Location State
-  const [pincode, setPincode] = useState(() => localStorage.getItem('silverhouse_pincode') || '110001');
+  const [pincode, setPincode] = useState(() => {
+    const saved = localStorage.getItem('silverhouse_pincode');
+    return saved && saved !== '110001' ? saved : '';
+  });
   const [isLocationPopoverOpen, setIsLocationPopoverOpen] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [activeAddress, setActiveAddress] = useState(null);
@@ -40,12 +43,18 @@ export default function Header({
   const navigate = useNavigate();
 
   // Load user's saved addresses to display active delivery destination
-  useEffect(() => {
+  const loadAddressesForHeader = () => {
     if (isAuthenticated && user?.userId) {
       fetchUserAddresses(user.userId).then(list => {
         if (Array.isArray(list) && list.length > 0) {
           setSavedAddresses(list);
-          setActiveAddress(list[0]);
+          const savedId = localStorage.getItem('silverhouse_active_address_id');
+          const found = list.find(a => String(a.address_id) === String(savedId));
+          const chosen = found || list[0];
+          setActiveAddress(chosen);
+          if (chosen?.pincode) {
+            setPincode(chosen.pincode);
+          }
         } else {
           setSavedAddresses([]);
           setActiveAddress(null);
@@ -55,6 +64,14 @@ export default function Header({
       setSavedAddresses([]);
       setActiveAddress(null);
     }
+  };
+
+  useEffect(() => {
+    loadAddressesForHeader();
+    window.addEventListener('silverhouse_address_updated', loadAddressesForHeader);
+    return () => {
+      window.removeEventListener('silverhouse_address_updated', loadAddressesForHeader);
+    };
   }, [isAuthenticated, user]);
 
   const DROPDOWNS = {
@@ -173,11 +190,20 @@ export default function Header({
               <button
                 onClick={() => setIsLocationPopoverOpen(!isLocationPopoverOpen)}
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-[var(--th-card)] border border-[var(--th-border)] hover:border-[var(--th-accent)] text-xs text-[var(--th-text-main)] transition-all cursor-pointer shadow-2xs group"
-                title="Change delivery location"
+                title={activeAddress || pincode ? "Change delivery location" : "Add delivery address"}
               >
                 <MapPin className="w-3.5 h-3.5 text-[var(--th-accent)] shrink-0 group-hover:scale-110 transition-transform" />
-                <span className="font-semibold text-xs truncate max-w-[160px]">
-                  Deliver to: <strong className="text-[var(--th-primary)] font-bold">{activeAddress ? `${activeAddress.address_name || activeAddress.city} ${activeAddress.pincode}` : pincode}</strong>
+                <span className="font-semibold text-xs truncate max-w-[175px]">
+                  {activeAddress ? (
+                    <>Deliver to: <strong className="text-[var(--th-primary)] font-bold">{activeAddress.address_name || activeAddress.city}</strong></>
+                  ) : pincode ? (
+                    <>Deliver to: <strong className="text-[var(--th-primary)] font-bold">{pincode}</strong></>
+                  ) : (
+                    <span className="text-[var(--th-text-muted)] group-hover:text-[var(--th-primary)] font-semibold flex items-center space-x-1">
+                      <Plus className="w-3 h-3 text-[var(--th-accent)] inline mr-0.5" />
+                      Add Address
+                    </span>
+                  )}
                 </span>
                 <ChevronDown className="w-3 h-3 text-[var(--th-text-muted)] group-hover:text-[var(--th-primary)] transition-transform" />
               </button>
@@ -189,7 +215,7 @@ export default function Header({
                     <div className="flex items-center space-x-2">
                       <MapPin className="w-4 h-4 text-[var(--th-accent)]" />
                       <h4 className="font-serif font-bold text-sm text-[var(--th-text-main)]">
-                        Choose Delivery Location
+                        {activeAddress ? 'Delivery Location' : 'Add Delivery Address'}
                       </h4>
                     </div>
                     <button
@@ -218,6 +244,7 @@ export default function Header({
                                     setActiveAddress(addr);
                                     setPincode(addr.pincode);
                                     localStorage.setItem('silverhouse_pincode', addr.pincode);
+                                    localStorage.setItem('silverhouse_active_address_id', addr.address_id);
                                     setIsLocationPopoverOpen(false);
                                   }}
                                   className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-start justify-between ${
@@ -279,11 +306,11 @@ export default function Header({
                       <button
                         onClick={() => {
                           setIsLocationPopoverOpen(false);
-                          navigate('/login?redirect=/');
+                          navigate('/login?redirect=/addresses');
                         }}
                         className="w-full py-2 px-3 rounded-xl bg-[var(--th-primary)] text-white text-xs font-bold uppercase tracking-wider shadow-xs hover:bg-[var(--th-primary-hover)] transition-colors cursor-pointer"
                       >
-                        Sign In to View Addresses
+                        Sign In to Add Address
                       </button>
 
                       <div className="relative flex py-1 items-center">

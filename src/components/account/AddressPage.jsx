@@ -26,6 +26,8 @@ export default function AddressPage({ onTriggerToast }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [addressToDelete, setAddressToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -105,6 +107,7 @@ export default function AddressPage({ onTriggerToast }) {
         if (onTriggerToast) {
           onTriggerToast('success', 'Address Saved', 'New delivery address added to your account successfully.');
         }
+        window.dispatchEvent(new Event('silverhouse_address_updated'));
         setIsModalOpen(false);
         // Reset form
         setFormData({
@@ -137,16 +140,19 @@ export default function AddressPage({ onTriggerToast }) {
     }
   };
 
-  const handleDeleteAddress = async (addressId) => {
-    if (!window.confirm('Are you sure you want to remove this delivery address?')) return;
+  const confirmDeleteAddress = async () => {
+    if (!addressToDelete) return;
+    setIsDeleting(true);
 
     try {
-      const result = await deleteUserAddress(addressId);
+      const result = await deleteUserAddress(addressToDelete.address_id);
       if (result && result.success) {
         if (onTriggerToast) {
-          onTriggerToast('info', 'Address Removed', 'The delivery address was removed from your account.');
+          onTriggerToast('info', 'Address Removed', `The ${addressToDelete.address_name || 'Home'} address was removed from your account.`);
         }
-        setAddresses(prev => prev.filter(a => a.address_id !== addressId));
+        setAddresses(prev => prev.filter(a => a.address_id !== addressToDelete.address_id));
+        window.dispatchEvent(new Event('silverhouse_address_updated'));
+        setAddressToDelete(null);
       } else {
         const errMsg = result?.error || 'Failed to delete address.';
         if (onTriggerToast) {
@@ -157,6 +163,11 @@ export default function AddressPage({ onTriggerToast }) {
       }
     } catch (err) {
       console.error('Delete address error:', err);
+      if (onTriggerToast) {
+        onTriggerToast('error', 'Delete Error', err.message || 'Failed to delete address');
+      }
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -273,8 +284,8 @@ export default function AddressPage({ onTriggerToast }) {
                       </span>
 
                       <button
-                        onClick={() => handleDeleteAddress(addr.address_id)}
-                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                        onClick={() => setAddressToDelete(addr)}
+                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50/80 hover:text-rose-700 transition-colors cursor-pointer"
                         title="Delete Address"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -532,6 +543,65 @@ export default function AddressPage({ onTriggerToast }) {
                 </div>
 
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* 4. CUSTOM DELETE CONFIRMATION ALERT CARD */}
+        {addressToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+              onClick={() => !isDeleting && setAddressToDelete(null)}
+            />
+
+            {/* Alert Confirmation Card */}
+            <div className="relative w-full max-w-sm bg-[var(--th-card)] border border-[var(--th-border)] rounded-3xl shadow-2xl p-6 z-10 animate-in zoom-in-95 duration-200 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 flex items-center justify-center mx-auto mb-3.5 shadow-xs">
+                <Trash2 className="w-7 h-7" />
+              </div>
+
+              <h3 className="text-base font-bold text-[var(--th-text-main)] mb-1">
+                Confirm Address Removal
+              </h3>
+
+              {/* Exact Alert Message Requested by User */}
+              <div className="my-3 py-2.5 px-3 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                <p className="text-xs font-bold text-rose-600">
+                  You are deleting {addressToDelete.address_name || 'Home'} address
+                </p>
+              </div>
+
+              <p className="text-xs text-[var(--th-text-muted)] mb-5 leading-relaxed">
+                <strong className="text-[var(--th-text-main)]">{addressToDelete.recipient_name}</strong>
+                <br />
+                {addressToDelete.Block ? `${addressToDelete.Block}, ` : ''}{addressToDelete.street}, {addressToDelete.city} - {addressToDelete.pincode}
+              </p>
+
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setAddressToDelete(null)}
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] hover:bg-[var(--th-card)] text-xs font-bold text-[var(--th-text-main)] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={confirmDeleteAddress}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+                >
+                  {isDeleting ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span>Yes, Delete</span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
