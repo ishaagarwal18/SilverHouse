@@ -138,11 +138,10 @@ export default function SegmentedTabsShowcase({
                   <button
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`px-5 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-300 cursor-pointer ${
-                      isActive
-                        ? 'bg-[var(--th-primary)] text-white shadow-md'
-                        : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)]'
-                    }`}
+                    className={`px-5 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-300 cursor-pointer ${isActive
+                      ? 'bg-[var(--th-primary)] text-white shadow-md'
+                      : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)]'
+                      }`}
                   >
                     {tab.label}
                   </button>
@@ -151,7 +150,7 @@ export default function SegmentedTabsShowcase({
             </div>
 
             {/* Slider Arrow Controls (visible when items exceed screen capacity) */}
-            {items.length > 3 && (
+            {items.length > 4 && (
               <div className="flex items-center space-x-1.5">
                 <button
                   onClick={() => scrollSlider('left')}
@@ -183,7 +182,7 @@ export default function SegmentedTabsShowcase({
           ) : (
             <>
               {/* Subtle Side Floating Navigation Buttons */}
-              {items.length > 3 && (
+              {items.length > 4 && (
                 <button
                   onClick={() => scrollSlider('left')}
                   className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full border border-[var(--th-border)] bg-[var(--th-card)]/95 backdrop-blur-xs text-[var(--th-text-main)] hover:bg-[var(--th-primary)] hover:text-white items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105 opacity-0 group-hover/slider:opacity-100"
@@ -194,134 +193,133 @@ export default function SegmentedTabsShowcase({
                 </button>
               )}
 
-          <div
-            ref={sliderRef}
-            className="flex overflow-x-auto gap-4 sm:gap-6 pb-4 pt-1 px-1 scroll-smooth snap-x snap-mandatory"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {items.map((product) => {
-              const isWishlisted = wishlistIds.includes(product.id);
-              const imgSrc =
-                Array.isArray(product.images) && product.images.length > 0 && product.images[0]
-                  ? product.images[0]
-                  : '/images/hero_silver_coins.png';
+              <div
+                ref={sliderRef}
+                className="flex overflow-x-auto gap-4 sm:gap-6 pb-4 pt-1 px-1 scroll-smooth snap-x snap-mandatory"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {items.map((product) => {
+                  const isWishlisted = wishlistIds.includes(product.id);
+                  const imgSrc =
+                    Array.isArray(product.images) && product.images.length > 0 && product.images[0]
+                      ? product.images[0]
+                      : '/images/hero_silver_coins.png';
 
-              const hasDiscount = product.originalPrice && product.originalPrice > product.price;
-              const discountPercent = hasDiscount
-                ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-                : (product.discount ? Number(product.discount) : 0);
+                  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+                  const discountPercent = hasDiscount
+                    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+                    : (product.discount ? Number(product.discount) : 0);
 
-              return (
-                <div
-                  key={product.id}
-                  className="w-[260px] sm:w-[280px] lg:w-[300px] shrink-0 snap-start group/card relative flex flex-col justify-between bg-[var(--th-card)] rounded-2xl border border-[var(--th-border)] overflow-hidden hover:shadow-xl hover:border-[var(--th-accent)] transition-all duration-300"
-                >
-                  {/* Image Container */}
-                  <div className="relative aspect-square overflow-hidden bg-[var(--th-pedestal)]">
-                    <img
-                      src={imgSrc}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500 cursor-pointer"
-                      onClick={() => onSelectProduct && onSelectProduct(product)}
-                    />
-
-                    {/* Discount Badge */}
-                    {discountPercent > 0 && (
-                      <span className="absolute top-3 left-3 z-10 bg-emerald-700 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
-                        {discountPercent}% OFF
-                      </span>
-                    )}
-
-                    {/* Wishlist Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleWishlist && onToggleWishlist(product);
-                      }}
-                      className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                        isWishlisted
-                          ? 'bg-rose-100 text-rose-700 shadow-md border border-rose-300'
-                          : 'bg-[var(--th-card)]/90 text-[var(--th-text-muted)] hover:text-[var(--th-primary)] hover:bg-[var(--th-card)] shadow-xs border border-[var(--th-border)]'
-                      }`}
-                      title="Save to Wishlist"
+                  return (
+                    <div
+                      key={product.id}
+                      className="w-[260px] sm:w-[280px] lg:w-[300px] shrink-0 snap-start group/card relative flex flex-col justify-between bg-[var(--th-card)] rounded-2xl border border-[var(--th-border)] overflow-hidden hover:shadow-xl hover:border-[var(--th-accent)] transition-all duration-300"
                     >
-                      <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current text-rose-700' : ''}`} />
-                    </button>
+                      {/* Image Container */}
+                      <div className="relative aspect-square overflow-hidden bg-[var(--th-pedestal)]">
+                        <img
+                          src={imgSrc}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500 cursor-pointer"
+                          onClick={() => onSelectProduct && onSelectProduct(product)}
+                        />
 
-                    {/* Quick View Button */}
-                    <div className="absolute inset-x-3 bottom-3 z-10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 hidden sm:block">
-                      <button
-                        onClick={() => onQuickView && onQuickView(product)}
-                        className="w-full py-2 bg-[var(--th-card)]/95 backdrop-blur-xs text-[var(--th-primary)] text-xs font-bold rounded-xl shadow-md hover:bg-[var(--th-primary)] hover:text-white transition-colors uppercase tracking-wider border border-[var(--th-border)] cursor-pointer"
-                      >
-                        Quick View
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Details */}
-                  <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between bg-[var(--th-card)]">
-                    <div>
-                      <div className="flex items-center justify-between text-[11px] text-[var(--th-text-muted)] mb-1">
-                        <span className="font-bold text-[var(--th-accent)] uppercase tracking-wider truncate">
-                          {product.purity || '925 Fine Silver'}
-                        </span>
-                        <div className="flex items-center space-x-1 text-[var(--th-accent)] shrink-0">
-                          <Star className="w-3.5 h-3.5 fill-current" />
-                          <span className="font-bold text-xs text-[var(--th-text-main)]">
-                            {product.rating || 4.9}
+                        {/* Discount Badge */}
+                        {discountPercent > 0 && (
+                          <span className="absolute top-3 left-3 z-10 bg-emerald-700 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
+                            {discountPercent}% OFF
                           </span>
+                        )}
+
+                        {/* Wishlist Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleWishlist && onToggleWishlist(product);
+                          }}
+                          className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${isWishlisted
+                            ? 'bg-rose-100 text-rose-700 shadow-md border border-rose-300'
+                            : 'bg-[var(--th-card)]/90 text-[var(--th-text-muted)] hover:text-[var(--th-primary)] hover:bg-[var(--th-card)] shadow-xs border border-[var(--th-border)]'
+                            }`}
+                          title="Save to Wishlist"
+                        >
+                          <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current text-rose-700' : ''}`} />
+                        </button>
+
+                        {/* Quick View Button */}
+                        <div className="absolute inset-x-3 bottom-3 z-10 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 hidden sm:block">
+                          <button
+                            onClick={() => onQuickView && onQuickView(product)}
+                            className="w-full py-2 bg-[var(--th-card)]/95 backdrop-blur-xs text-[var(--th-primary)] text-xs font-bold rounded-xl shadow-md hover:bg-[var(--th-primary)] hover:text-white transition-colors uppercase tracking-wider border border-[var(--th-border)] cursor-pointer"
+                          >
+                            Quick View
+                          </button>
                         </div>
                       </div>
 
-                      <h3
-                        onClick={() => onSelectProduct && onSelectProduct(product)}
-                        className="font-serif text-sm sm:text-base font-bold text-[var(--th-text-main)] group-hover/card:text-[var(--th-primary)] transition-colors line-clamp-1 cursor-pointer"
-                        title={product.name}
-                      >
-                        {product.name}
-                      </h3>
-                    </div>
+                      {/* Details */}
+                      <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between bg-[var(--th-card)]">
+                        <div>
+                          <div className="flex items-center justify-between text-[11px] text-[var(--th-text-muted)] mb-1">
+                            <span className="font-bold text-[var(--th-accent)] uppercase tracking-wider truncate">
+                              {product.purity || '925 Fine Silver'}
+                            </span>
+                            <div className="flex items-center space-x-1 text-[var(--th-accent)] shrink-0">
+                              <Star className="w-3.5 h-3.5 fill-current" />
+                              <span className="font-bold text-xs text-[var(--th-text-main)]">
+                                {product.rating || 4.9}
+                              </span>
+                            </div>
+                          </div>
 
-                    <div className="pt-3 mt-3 border-t border-[var(--th-border)]/60 flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="font-outfit font-bold text-base sm:text-lg text-[var(--th-primary)] tracking-tight">
-                          ₹{Number(product.price).toLocaleString('en-IN')}
-                        </span>
-                        {hasDiscount && (
-                          <span className="text-[11px] text-[var(--th-text-muted)] line-through">
-                            ₹{Number(product.originalPrice).toLocaleString('en-IN')}
-                          </span>
-                        )}
+                          <h3
+                            onClick={() => onSelectProduct && onSelectProduct(product)}
+                            className="font-serif text-sm sm:text-base font-bold text-[var(--th-text-main)] group-hover/card:text-[var(--th-primary)] transition-colors line-clamp-1 cursor-pointer"
+                            title={product.name}
+                          >
+                            {product.name}
+                          </h3>
+                        </div>
+
+                        <div className="pt-3 mt-3 border-t border-[var(--th-border)]/60 flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <span className="font-outfit font-bold text-base sm:text-lg text-[var(--th-primary)] tracking-tight">
+                              ₹{Number(product.price).toLocaleString('en-IN')}
+                            </span>
+                            {hasDiscount && (
+                              <span className="text-[11px] text-[var(--th-text-muted)] line-through">
+                                ₹{Number(product.originalPrice).toLocaleString('en-IN')}
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAddToCart && onAddToCart(product, 1);
+                            }}
+                            className="w-9 h-9 rounded-full bg-[var(--th-primary)]/10 hover:bg-[var(--th-primary)] text-[var(--th-primary)] hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shrink-0 border border-[var(--th-primary)]/20 shadow-xs"
+                            title="Add to Shopping Cart"
+                          >
+                            <ShoppingBag className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onAddToCart && onAddToCart(product, 1);
-                        }}
-                        className="w-9 h-9 rounded-full bg-[var(--th-primary)]/10 hover:bg-[var(--th-primary)] text-[var(--th-primary)] hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shrink-0 border border-[var(--th-primary)]/20 shadow-xs"
-                        title="Add to Shopping Cart"
-                      >
-                        <ShoppingBag className="w-4 h-4" />
-                      </button>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
 
-          {items.length > 3 && (
-            <button
-              onClick={() => scrollSlider('right')}
-              className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full border border-[var(--th-border)] bg-[var(--th-card)]/95 backdrop-blur-xs text-[var(--th-text-main)] hover:bg-[var(--th-primary)] hover:text-white items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105 opacity-0 group-hover/slider:opacity-100"
-              title="Next Items"
-              aria-label="Next Items"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          )}
+              {items.length > 4 && (
+                <button
+                  onClick={() => scrollSlider('right')}
+                  className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full border border-[var(--th-border)] bg-[var(--th-card)]/95 backdrop-blur-xs text-[var(--th-text-main)] hover:bg-[var(--th-primary)] hover:text-white items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105 opacity-0 group-hover/slider:opacity-100"
+                  title="Next Items"
+                  aria-label="Next Items"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
             </>
           )}
         </div>

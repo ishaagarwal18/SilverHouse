@@ -4,6 +4,7 @@ import HomePage from '../components/home/HomePage';
 import ProductListingPage from '../components/plp/ProductListingPage';
 import ProductDetailPage from '../components/pdp/ProductDetailPage';
 import AuthPage from '../components/auth/AuthPage';
+import AddressPage from '../components/account/AddressPage';
 
 export default function AppRouter({
   products,
@@ -49,6 +50,10 @@ export default function AppRouter({
       {/* Login & Register Auth Route */}
       <Route path="/login" element={<AuthPage onTriggerToast={onTriggerToast} />} />
       <Route path="/register" element={<AuthPage onTriggerToast={onTriggerToast} />} />
+
+      {/* Saved Addresses Route */}
+      <Route path="/addresses" element={<AddressPage onTriggerToast={onTriggerToast} />} />
+      <Route path="/account/addresses" element={<AddressPage onTriggerToast={onTriggerToast} />} />
 
       {/* Home Page */}
       <Route

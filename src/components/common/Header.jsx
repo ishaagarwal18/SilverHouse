@@ -219,6 +219,28 @@ export default function Header({
                   </div>
 
                   <div className="space-y-1">
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        navigate('/login');
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
+                    >
+                      <User className="w-4 h-4 text-[var(--th-accent)]" />
+                      <span>My Account Profile</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        navigate('/addresses');
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
+                    >
+                      <MapPin className="w-4 h-4 text-[var(--th-accent)]" />
+                      <span>Saved Addresses</span>
+                    </button>
+
                     {isAdmin && (
                       <a
                         href="http://localhost:5000/api/data"

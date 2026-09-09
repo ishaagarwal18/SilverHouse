@@ -179,3 +179,85 @@ export async function postApiData(payload) {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Fetches all saved addresses for a given user from dbo.address via SP_address.
+ */
+export async function fetchUserAddresses(userId) {
+  if (!userId) return [];
+  try {
+    const json = await postApiData({
+      proc_name: 'address',
+      opr: 'SELECT',
+      table_values: { user_id: userId }
+    });
+
+    if (json && json.success && Array.isArray(json.data)) {
+      return json.data;
+    }
+  } catch (err) {
+    console.warn('[API Service] Error fetching user addresses:', err);
+  }
+  return [];
+}
+
+/**
+ * Adds a new address for a user to dbo.address.
+ */
+export async function addUserAddress(addressData) {
+  try {
+    const payload = {
+      proc_name: 'address',
+      opr: 'ADD',
+      table_values: {
+        user_id: addressData.userId || addressData.user_id,
+        address_name: addressData.address_name || addressData.addressName || 'Home',
+        recipient_name: addressData.recipient_name || addressData.recipientName,
+        Block: addressData.Block || addressData.block,
+        street: addressData.street,
+        area: addressData.area,
+        city: addressData.city,
+        state: addressData.state,
+        pincode: addressData.pincode,
+        country: addressData.country || 'India'
+      }
+    };
+    return await postApiData(payload);
+  } catch (err) {
+    console.error('[API Service] Error adding address:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Updates an existing address in dbo.address.
+ */
+export async function updateUserAddress(addressId, addressData) {
+  try {
+    return await postApiData({
+      proc_name: 'address',
+      opr: 'UPDATE',
+      condition: String(addressId),
+      table_values: addressData
+    });
+  } catch (err) {
+    console.error('[API Service] Error updating address:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Deletes an address from dbo.address by ID.
+ */
+export async function deleteUserAddress(addressId) {
+  try {
+    return await postApiData({
+      proc_name: 'address',
+      opr: 'DELETE',
+      condition: String(addressId)
+    });
+  } catch (err) {
+    console.error('[API Service] Error deleting address:', err);
+    return { success: false, error: err.message };
+  }
+}

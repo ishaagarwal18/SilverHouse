@@ -26,7 +26,23 @@ export default function App() {
 
   // Cart & Wishlist State
   const [cartItems, setCartItems] = useState([]);
-  const [wishlistIds, setWishlistIds] = useState(['coin-laxmi-ganesh-999-10g', 'idol-pure-ganesha-sitting-50g']);
+  const [wishlistIds, setWishlistIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('silverhouse_wishlist');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Sync wishlist to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('silverhouse_wishlist', JSON.stringify(wishlistIds));
+    } catch (e) {
+      console.warn('Failed to save wishlist', e);
+    }
+  }, [wishlistIds]);
 
   // Fetch backend data on app mount
   useEffect(() => {
