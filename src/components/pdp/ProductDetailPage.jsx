@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { PRODUCTS, PINCODES } from '../../data/products';
 import {
   Star, ShieldCheck, Award, Truck, Heart, ShoppingBag,
-  Sparkles, Upload, CheckCircle2, ChevronDown, ChevronRight, RefreshCw, FileText
+  Sparkles, Upload, CheckCircle2, ChevronDown, ChevronRight, RefreshCw, FileText, ArrowLeft
 } from 'lucide-react';
 
 export default function ProductDetailPage({
@@ -86,16 +86,25 @@ export default function ProductDetailPage({
   return (
     <div className="bg-[#FAFAFA] min-h-screen pb-20">
 
-      {/* Category Breadcrumb */}
-      <div className="bg-silver-100 border-b border-silver-200 py-3 px-4 sm:px-6 lg:px-8">
+      {/* Category Breadcrumb & Back Button */}
+      <div className="bg-silver-100 border-b border-silver-200 py-2.5 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex items-center justify-between text-xs text-silver-600">
-          <nav className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3 overflow-x-auto">
             <button
-              onClick={() => navigate('/')}
-              className="hover:text-[#D4AF37] font-medium transition-colors cursor-pointer"
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-white hover:bg-silver-50 border border-silver-300 text-xs font-bold text-silver-800 hover:text-[#D4AF37] hover:border-[#D4AF37] transition-all cursor-pointer shadow-2xs group shrink-0"
+              title="Go back to previous page"
             >
-              Home
+              <ArrowLeft className="w-3.5 h-3.5 text-[#D4AF37] group-hover:-translate-x-0.5 transition-transform" />
+              <span>Back</span>
             </button>
+            <nav className="flex items-center space-x-2">
+              <button
+                onClick={() => navigate('/')}
+                className="hover:text-[#D4AF37] font-medium transition-colors cursor-pointer"
+              >
+                Home
+              </button>
             <ChevronRight className="w-3 h-3 text-silver-400" />
             <button
               onClick={() => navigate('/catalog')}
@@ -119,6 +128,7 @@ export default function ProductDetailPage({
           </nav>
         </div>
       </div>
+    </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">

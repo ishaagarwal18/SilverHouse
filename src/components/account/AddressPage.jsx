@@ -5,7 +5,7 @@ import { fetchUserAddresses, addUserAddress, deleteUserAddress } from '../../ser
 import { 
   MapPin, Plus, Trash2, Home, Building2, Tag, 
   Sparkles, ShieldCheck, ArrowRight, X, AlertCircle, 
-  CheckCircle2, Lock, User, Navigation
+  CheckCircle2, Lock, User, Navigation, ArrowLeft 
 } from 'lucide-react';
 
 const INDIAN_STATES = [
@@ -207,9 +207,20 @@ export default function AddressPage({ onTriggerToast }) {
 
   // 2. AUTHENTICATED ADDRESS MANAGEMENT VIEW
   return (
-    <div className="min-h-screen bg-[var(--th-bg)] py-12 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-[var(--th-bg)] py-10 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
       <div className="max-w-5xl mx-auto">
         
+        {/* Back Button */}
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-card)] text-xs font-bold text-[var(--th-text-main)] hover:text-[var(--th-primary)] hover:border-[var(--th-accent)] transition-all cursor-pointer shadow-2xs mb-4 group"
+          title="Go back to previous page"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
+          <span>Back</span>
+        </button>
+
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between pb-6 mb-8 border-b border-[var(--th-border)] gap-4">
           <div>

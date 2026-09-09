@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import MegaMenu from './MegaMenu';
 import { useAuth } from '../../context/AuthContext';
 import { fetchUserAddresses } from '../../services/api';
 import { 
   Search, Heart, ShoppingBag, User, Menu, Sparkles, ChevronDown, 
-  LogOut, Building2, Store, MapPin, Check, Plus, Home, X 
+  LogOut, Building2, Store, MapPin, Check, Plus, Home, X, ArrowLeft 
 } from 'lucide-react';
 import StoresModal from './StoresModal';
 import ThemeSwitcher from './ThemeSwitcher';
@@ -41,6 +41,7 @@ export default function Header({
 
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Refs for click-outside dismissal
   const userMenuRef = useRef(null);
@@ -176,8 +177,8 @@ export default function Header({
         {/* Main Navbar Row */}
         <div className="flex items-center justify-between h-20 gap-4">
 
-          {/* Left: Mobile Menu Trigger + Brand Logo */}
-          <div className="flex items-center space-x-3">
+          {/* Left: Mobile Menu Trigger + Back Button + Brand Logo */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
             <button
               onClick={onOpenMobileMenu}
               className="p-2 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl lg:hidden focus:outline-hidden cursor-pointer"
@@ -185,6 +186,19 @@ export default function Header({
             >
               <Menu className="w-6 h-6" />
             </button>
+
+            {/* Header Back Button (Visible when navigated away from home) */}
+            {location.pathname !== '/' && (
+              <button
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-full bg-[var(--th-card)] hover:bg-[var(--th-surface-alt)] border border-[var(--th-border)] hover:border-[var(--th-primary)] text-xs font-bold text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-all cursor-pointer shadow-2xs group shrink-0"
+                title="Go back to previous page"
+                aria-label="Go back"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
+                <span className="hidden sm:inline">Back</span>
+              </button>
+            )}
 
             {/* Brand Logo (SILVERHOUSE) */}
             <button

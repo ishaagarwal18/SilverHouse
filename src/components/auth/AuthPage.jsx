@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   Sparkles, Lock, Mail, User, Phone, Eye, EyeOff, ShieldCheck,
-  ArrowRight, AlertCircle, Building2, LogOut, MapPin, ShoppingBag, ChevronRight
+  ArrowRight, AlertCircle, Building2, LogOut, MapPin, ShoppingBag, ChevronRight, ArrowLeft
 } from 'lucide-react';
 
 export default function AuthPage({ onTriggerToast }) {
@@ -86,6 +86,17 @@ export default function AuthPage({ onTriggerToast }) {
       <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-[var(--th-accent)]/15 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
+
+        {/* Back Button */}
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center space-x-1.5 text-xs font-bold text-[var(--th-text-muted)] hover:text-[var(--th-primary)] mb-2 px-2.5 py-1 rounded-lg hover:bg-[var(--th-card)] border border-transparent hover:border-[var(--th-border)] transition-all cursor-pointer group"
+          title="Go back to previous page"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
+          <span>Back</span>
+        </button>
 
         {/* 1. LOGGED-IN VIEW: User Profile Dashboard & Logout */}
         {isAuthenticated && user ? (

@@ -4,7 +4,7 @@ import { CATEGORIES, PRODUCTS } from '../../data/products';
 import { fetchProducts } from '../../services/api';
 import {
   Filter, Grid3X3, Grid2X2, LayoutGrid, ChevronRight, SlidersHorizontal,
-  Heart, Eye, ShoppingBag, Star, Sparkles, X, Check, Search, RotateCcw, Flame
+  Heart, Eye, ShoppingBag, Star, Sparkles, X, Check, Search, RotateCcw, Flame, ArrowLeft
 } from 'lucide-react';
 
 export default function ProductListingPage({
@@ -594,14 +594,23 @@ export default function ProductListingPage({
 
         <div className="max-w-7xl mx-auto relative z-10">
 
-          {/* Breadcrumbs */}
-          <nav className="flex items-center space-x-2 text-xs text-white/70 mb-4">
+          {/* Back Button & Breadcrumbs */}
+          <div className="flex items-center space-x-3 mb-4">
             <button
-              onClick={() => navigate('/')}
-              className="hover:text-[var(--th-accent)] cursor-pointer transition-colors text-white/80"
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition-all cursor-pointer backdrop-blur-md group shrink-0"
+              title="Go back to previous page"
             >
-              Home
+              <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
+              <span>Back</span>
             </button>
+            <nav className="flex items-center space-x-2 text-xs text-white/70 overflow-x-auto">
+              <button
+                onClick={() => navigate('/')}
+                className="hover:text-[var(--th-accent)] cursor-pointer transition-colors text-white/80"
+              >
+                Home
+              </button>
             <ChevronRight className="w-3 h-3 text-white/50" />
             {selectedCategory === 'all' ? (
               <span className="text-[var(--th-accent)] font-semibold">Catalog</span>
@@ -640,6 +649,7 @@ export default function ProductListingPage({
               </>
             )}
           </nav>
+        </div>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
