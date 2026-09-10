@@ -25,7 +25,7 @@ export default function SilverTreasureSection({ onNavigateCategory, onNavigateYa
 
           {/* Card 1: Divine Blessings in 925 Silver Idols */}
           <div
-            onClick={() => onNavigateCategory && onNavigateCategory('silver-religious-idols')}
+            onClick={() => onNavigateCategory && onNavigateCategory('silver-idols')}
             className="group relative h-[360px] sm:h-[400px] rounded-3xl overflow-hidden shadow-xl border-2 border-[var(--th-border)] hover:border-[var(--th-accent)] cursor-pointer flex flex-col justify-end p-6 sm:p-7 transition-all duration-500"
           >
             <img
@@ -60,7 +60,7 @@ export default function SilverTreasureSection({ onNavigateCategory, onNavigateYa
 
           {/* Card 2: Purity Served in 925 Silver Utensils */}
           <div
-            onClick={() => onNavigateCategory && onNavigateCategory('all')}
+            onClick={() => onNavigateCategory && onNavigateCategory('pooja-articles')}
             className="group relative h-[360px] sm:h-[400px] rounded-3xl overflow-hidden shadow-xl border-2 border-[var(--th-border)] hover:border-[var(--th-accent)] cursor-pointer flex flex-col justify-end p-6 sm:p-7 transition-all duration-500"
           >
             <img

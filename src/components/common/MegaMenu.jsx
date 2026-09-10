@@ -62,25 +62,48 @@ export default function MegaMenu({ categories, onSelectCategory, onSelectSubcate
               {activeCategory?.description}
             </p>
 
-            <div className="grid grid-cols-2 gap-4">
-              {(activeCategory?.subcategories || []).map((sub) => (
+            {(activeCategory?.subcategories && activeCategory.subcategories.length > 0) ? (
+              <div className="grid grid-cols-2 gap-4">
+                {activeCategory.subcategories.map((sub) => (
+                  <button
+                    key={sub.id}
+                    onClick={() => {
+                      onSelectSubcategory(activeCategory.id, sub.id);
+                      onClose();
+                    }}
+                    className="group p-3.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)] hover:shadow-md transition-all text-left flex flex-col justify-between cursor-pointer"
+                  >
+                    <span className="text-sm font-semibold text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] transition-colors">
+                      {sub.name}
+                    </span>
+                    <span className="mt-2 text-[11px] text-[var(--th-text-muted)] flex items-center group-hover:translate-x-1 group-hover:text-[var(--th-accent)] transition-all">
+                      Explore Collection <ArrowRight className="w-3 h-3 ml-1 text-[var(--th-accent)]" />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 rounded-2xl border border-[var(--th-border)] bg-[var(--th-surface-alt)]/50 flex items-center justify-between gap-6">
+                <div>
+                  <h4 className="font-serif text-lg font-bold text-[var(--th-text-main)] mb-1">
+                    Authentic {activeCategory?.name}
+                  </h4>
+                  <p className="text-xs text-[var(--th-text-muted)] max-w-md">
+                    {activeCategory?.description || '100% BIS Hallmarked authentic fine silver creations.'}
+                  </p>
+                </div>
                 <button
-                  key={sub.id}
                   onClick={() => {
-                    onSelectSubcategory(activeCategory.id, sub.id);
+                    onSelectCategory(activeCategory?.id || activeCategory?.slug);
                     onClose();
                   }}
-                  className="group p-3.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)] hover:shadow-md transition-all text-left flex flex-col justify-between cursor-pointer"
+                  className="px-6 py-2.5 rounded-full bg-[var(--th-primary)] text-white text-xs font-bold uppercase tracking-wider hover:bg-[var(--th-primary-hover)] transition-all flex items-center space-x-2 shrink-0 cursor-pointer shadow-xs"
                 >
-                  <span className="text-sm font-semibold text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] transition-colors">
-                    {sub.name}
-                  </span>
-                  <span className="mt-2 text-[11px] text-[var(--th-text-muted)] flex items-center group-hover:translate-x-1 group-hover:text-[var(--th-accent)] transition-all">
-                    Explore Collection <ArrowRight className="w-3 h-3 ml-1 text-[var(--th-accent)]" />
-                  </span>
+                  <span>Explore {activeCategory?.name}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
-              ))}
-            </div>
+              </div>
+            )}
 
             {/* Purity Guarantee Badge Pill */}
             <div className="mt-8 pt-4 border-t border-[var(--th-border)] flex items-center space-x-6 text-xs text-[var(--th-text-muted)]">

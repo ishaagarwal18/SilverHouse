@@ -437,10 +437,12 @@ export default function ProductListingPage({
           (p.category === 'silver-rings' || p.category_slug === 'silver-rings' || p.category_slug === 'rings' || (p.name || '').toLowerCase().includes('ring')) &&
           !(p.name || '').toLowerCase().includes('earring')
         );
-      } else if (selectedCategory === 'bracelet' || selectedCategory === 'bracelets') {
+      } else if (selectedCategory === 'bracelet' || selectedCategory === 'bracelets' || selectedCategory === 'bangles-bracelets') {
         result = result.filter(p =>
           (p.category === 'silver-bangles-kadas' ||
+            p.category === 'bangles-bracelets' ||
             p.category_slug === 'bracelets' ||
+            p.category_slug === 'bangles-bracelets' ||
             p.category_slug === 'silver-bangles-kadas' ||
             (p.name || '').toLowerCase().includes('bracelet') ||
             (p.name || '').toLowerCase().includes('kada') ||
@@ -479,13 +481,30 @@ export default function ProductListingPage({
           (p.name || '').toLowerCase().includes('pair') ||
           (p.description || '').toLowerCase().includes('set')
         );
-      } else if (selectedCategory === 'anklets' || selectedCategory === 'silver-payal-anklets' || selectedCategory === 'payal') {
+      } else if (selectedCategory === 'anklets' || selectedCategory === 'silver-payal-anklets' || selectedCategory === 'payal' || selectedCategory === 'anklets-payal') {
         result = result.filter(p =>
           p.category === 'silver-payal-anklets' ||
+          p.category === 'anklets-payal' ||
           p.category_slug === 'silver-payal-anklets' ||
+          p.category_slug === 'anklets-payal' ||
           p.category_slug === 'anklets' ||
           (p.name || '').toLowerCase().includes('payal') ||
           (p.name || '').toLowerCase().includes('anklet')
+        );
+      } else if (selectedCategory === 'coins' || selectedCategory === 'silver-coins' || selectedCategory === 'silver-coins-bars') {
+        result = result.filter(p =>
+          p.category === 'silver-coins' ||
+          p.category === 'silver-coins-bars' ||
+          p.category_slug === 'silver-coins' ||
+          (p.name || '').toLowerCase().includes('coin') ||
+          (p.name || '').toLowerCase().includes('bar')
+        );
+      } else if (selectedCategory === 'baby-silver') {
+        result = result.filter(p =>
+          p.category === 'baby-silver' ||
+          p.category_slug === 'baby-silver' ||
+          (p.name || '').toLowerCase().includes('baby') ||
+          (p.recipient || '').toLowerCase().includes('kids')
         );
       } else {
         result = result.filter(p => p.category === selectedCategory || p.category_slug === selectedCategory);
