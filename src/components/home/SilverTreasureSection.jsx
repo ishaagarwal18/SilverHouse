@@ -29,7 +29,7 @@ export default function SilverTreasureSection({ onNavigateCategory, onNavigateYa
             className="group relative h-[360px] sm:h-[400px] rounded-3xl overflow-hidden shadow-xl border-2 border-[var(--th-border)] hover:border-[var(--th-accent)] cursor-pointer flex flex-col justify-end p-6 sm:p-7 transition-all duration-500"
           >
             <img
-              src="/images/silver_cow_calf_idol.jpg"
+              src="/images/section/silver_cow_calf_idol.jpg"
               alt="Divine Blessings in 925 Silver Idols"
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
             />
@@ -64,7 +64,7 @@ export default function SilverTreasureSection({ onNavigateCategory, onNavigateYa
             className="group relative h-[360px] sm:h-[400px] rounded-3xl overflow-hidden shadow-xl border-2 border-[var(--th-border)] hover:border-[var(--th-accent)] cursor-pointer flex flex-col justify-end p-6 sm:p-7 transition-all duration-500"
           >
             <img
-              src="/images/silver_utensils_pooja.jpg"
+              src="/images/section/silver_utensils_pooja.jpg"
               alt="Purity Served in 925 Silver Utensils"
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
             />

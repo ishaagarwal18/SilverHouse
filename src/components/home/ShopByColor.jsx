@@ -11,7 +11,7 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
       colorName: 'Silver',
       title: 'Shine in Silver',
       buttonLabel: 'FINE SILVER',
-      image: '/images/shine_in_silver.jpg',
+      image: '/images/section/shine_in_silver.jpg',
       badgeColor: 'border-[#C5B299] bg-[#F8F4EC]/90 text-[#071526]',
       description: 'Radiant 999 and 925 fine pure silver lustres'
     },
@@ -20,7 +20,7 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
       colorName: 'Rose Gold',
       title: 'Glow in Rose Gold',
       buttonLabel: 'ROSE GOLD',
-      image: '/images/glow_in_rose_gold.jpg',
+      image: '/images/section/glow_in_rose_gold.jpg',
       badgeColor: 'border-[#E0A899] bg-[#FFF0ED]/90 text-[#6B2E24]',
       description: 'Blushing 18k rose gold plated sterling craftsmanship'
     },
@@ -29,7 +29,7 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
       colorName: 'Oxidised',
       title: 'Bold in Oxidised',
       buttonLabel: 'OXIDISED',
-      image: '/images/bold_in_oxidised.jpg',
+      image: '/images/section/bold_in_oxidised.jpg',
       badgeColor: 'border-[#9A650C] bg-[#F8F4EC]/90 text-[#0B2545]',
       description: 'Royal antique dark patina and vintage tribal silver'
     }
@@ -46,7 +46,7 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
   return (
     <section className="py-14 sm:py-16 bg-[var(--th-surface-alt)] border-b border-[var(--th-border)]">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-10">
           <div className="flex items-center justify-center space-x-2 text-[var(--th-accent)] mb-1">
@@ -94,7 +94,7 @@ export default function ShopByColor({ onSelectFinish, onNavigateCategory }) {
                 <h3 className="font-serif text-2xl sm:text-3xl font-bold mb-3 text-white group-hover:text-[var(--th-accent)] transition-colors leading-snug">
                   {finish.title}
                 </h3>
-                
+
                 <button
                   type="button"
                   className="px-6 py-2.5 rounded-full border-2 border-white/80 text-white font-serif text-xs font-bold tracking-widest uppercase hover:bg-[var(--th-primary)] hover:border-[var(--th-primary)] transition-all duration-300 flex items-center space-x-2 group-hover:shadow-lg cursor-pointer"

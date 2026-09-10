@@ -132,7 +132,10 @@ export async function fetchCategories() {
         name: cat.name || 'Category',
         shortName: cat.name || 'Category',
         description: cat.description || 'Sacred 925 & 999 Pure Silver Items',
-        idealFor: cat.ideal_for || 'All'
+        idealFor: cat.ideal_for || 'All',
+        image_id: cat.image_id || null,
+        image_url: cat.image_url || null,
+        image: cat.image_url || null
       }));
     }
   } catch (err) {

@@ -627,45 +627,45 @@ export default function ProductListingPage({
               >
                 Home
               </button>
-            <ChevronRight className="w-3 h-3 text-white/50" />
-            {selectedCategory === 'all' ? (
-              <span className="text-[var(--th-accent)] font-semibold">Catalog</span>
-            ) : (
-              <button
-                onClick={() => handleCategorySelect('all')}
-                className="hover:text-[var(--th-accent)] cursor-pointer text-white/80 transition-colors"
-              >
-                Catalog
-              </button>
-            )}
-            {activeCategoryObj && selectedCategory !== 'all' && (
-              <>
-                <ChevronRight className="w-3 h-3 text-white/50" />
-                {selectedSubcategory === 'all' ? (
-                  <span className="text-[var(--th-accent)] font-semibold">{activeCategoryObj.name}</span>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setSelectedSubcategory('all');
-                      navigate(`/category/${selectedCategory}`);
-                    }}
-                    className="hover:text-[var(--th-accent)] cursor-pointer text-white/80 transition-colors"
-                  >
-                    {activeCategoryObj.name}
-                  </button>
-                )}
-              </>
-            )}
-            {selectedSubcategory !== 'all' && (
-              <>
-                <ChevronRight className="w-3 h-3 text-white/50" />
-                <span className="text-[var(--th-accent)] font-semibold capitalize">
-                  {selectedSubcategory.replace(/-/g, ' ')}
-                </span>
-              </>
-            )}
-          </nav>
-        </div>
+              <ChevronRight className="w-3 h-3 text-white/50" />
+              {selectedCategory === 'all' ? (
+                <span className="text-[var(--th-accent)] font-semibold">Catalog</span>
+              ) : (
+                <button
+                  onClick={() => handleCategorySelect('all')}
+                  className="hover:text-[var(--th-accent)] cursor-pointer text-white/80 transition-colors"
+                >
+                  Catalog
+                </button>
+              )}
+              {activeCategoryObj && selectedCategory !== 'all' && (
+                <>
+                  <ChevronRight className="w-3 h-3 text-white/50" />
+                  {selectedSubcategory === 'all' ? (
+                    <span className="text-[var(--th-accent)] font-semibold">{activeCategoryObj.name}</span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setSelectedSubcategory('all');
+                        navigate(`/category/${selectedCategory}`);
+                      }}
+                      className="hover:text-[var(--th-accent)] cursor-pointer text-white/80 transition-colors"
+                    >
+                      {activeCategoryObj.name}
+                    </button>
+                  )}
+                </>
+              )}
+              {selectedSubcategory !== 'all' && (
+                <>
+                  <ChevronRight className="w-3 h-3 text-white/50" />
+                  <span className="text-[var(--th-accent)] font-semibold capitalize">
+                    {selectedSubcategory.replace(/-/g, ' ')}
+                  </span>
+                </>
+              )}
+            </nav>
+          </div>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
@@ -1191,19 +1191,13 @@ export default function ProductListingPage({
 
                         {/* Top Badges */}
                         <div className="absolute top-3 left-3 flex flex-col space-y-1 z-10">
-                          <span className="bg-[var(--th-primary)]/90 backdrop-blur-xs text-[var(--th-badge-text)] border border-[var(--th-accent)]/50 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
-                            {product.purity || (product.purityCode === '999' ? '999 Pure' : '925 Sterling')}
-                          </span>
+
                           {product.color && product.color !== 'Silver' && (
                             <span className="bg-[var(--th-primary)] text-[var(--th-badge-text)] border border-[var(--th-border)] text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
                               {product.color}
                             </span>
                           )}
-                          {product.sold !== undefined && Number(product.sold) > 0 && (
-                            <span className="bg-[var(--th-accent)] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs w-fit">
-                              🔥 {product.sold}+ Sold
-                            </span>
-                          )}
+
                           {discountPct !== null && discountPct > 0 && (
                             <span className="bg-[#DC2626] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
                               {discountPct}% OFF

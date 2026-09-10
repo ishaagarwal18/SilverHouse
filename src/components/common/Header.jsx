@@ -3,9 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import MegaMenu from './MegaMenu';
 import { useAuth } from '../../context/AuthContext';
 import { fetchUserAddresses } from '../../services/api';
-import { 
-  Search, Heart, ShoppingBag, User, Menu, Sparkles, ChevronDown, 
-  LogOut, Building2, Store, MapPin, Check, Plus, Home, X, ArrowLeft, Package 
+import {
+  Search, Heart, ShoppingBag, User, Menu, Sparkles, ChevronDown,
+  LogOut, Building2, Store, MapPin, Check, Plus, Home, X, ArrowLeft, Package
 } from 'lucide-react';
 import StoresModal from './StoresModal';
 import ThemeSwitcher from './ThemeSwitcher';
@@ -28,7 +28,7 @@ export default function Header({
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isStoresModalOpen, setIsStoresModalOpen] = useState(false);
-  
+
   // Dynamic Delivery Location State
   const [pincode, setPincode] = useState(() => {
     const saved = localStorage.getItem('silverhouse_pincode');
@@ -308,11 +308,10 @@ export default function Header({
                                     localStorage.setItem('silverhouse_active_address_id', addr.address_id);
                                     setIsLocationPopoverOpen(false);
                                   }}
-                                  className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-start justify-between ${
-                                    isSelected
+                                  className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-start justify-between ${isSelected
                                       ? 'border-[var(--th-primary)] bg-[var(--th-primary)]/10 text-[var(--th-primary)] font-bold'
                                       : 'border-[var(--th-border)] hover:bg-[var(--th-surface-alt)] text-[var(--th-text-main)]'
-                                  }`}
+                                    }`}
                                 >
                                   <div>
                                     <div className="flex items-center space-x-1.5 mb-0.5">

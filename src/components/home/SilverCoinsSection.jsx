@@ -24,7 +24,7 @@ export default function SilverCoinsSection({ onNavigateCategory, onNavigateYatra
   return (
     <section className="py-14 sm:py-16 bg-[var(--th-bg)] border-b border-[var(--th-border)]">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-12">
           <span className="text-xs font-bold text-[var(--th-accent)] tracking-[0.25em] uppercase bg-[var(--th-accent)]/15 px-3.5 py-1 rounded-full inline-block mb-3 border border-[var(--th-accent)]/30">
@@ -41,9 +41,9 @@ export default function SilverCoinsSection({ onNavigateCategory, onNavigateYatra
 
         {/* 2-Column Banner Showcase */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          
+
           {/* Left Large Visual: Personalized Silver Photo Coins & Keepsakes (Clickable Photo & Container) */}
-          <div 
+          <div
             onClick={() => onNavigateCategory && onNavigateCategory('silver-coins-bars')}
             className="lg:col-span-7 relative h-[360px] sm:h-[400px] rounded-3xl overflow-hidden border-2 border-[var(--th-border)] hover:border-[var(--th-accent)] shadow-xl group transition-all duration-500 cursor-pointer"
             title="Explore Silver Coins & Bars Collection"
@@ -52,7 +52,7 @@ export default function SilverCoinsSection({ onNavigateCategory, onNavigateYatra
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigateCategory && onNavigateCategory('silver-coins-bars'); }}
           >
             <img
-              src="/images/personalized_silver_coin.jpg"
+              src="/images/section/personalized_silver_coin.jpg"
               alt="Personalized Pure 999 Silver Gifts"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             />
@@ -84,7 +84,7 @@ export default function SilverCoinsSection({ onNavigateCategory, onNavigateYatra
               <h3 className="font-serif text-xl sm:text-2xl font-bold text-[var(--th-text-main)] mb-4">
                 Assay Certified Silver Bullion
               </h3>
-              
+
               <div className="space-y-4">
                 {HIGHLIGHTS.map((item, idx) => (
                   <div key={idx} className="flex items-start space-x-3.5">

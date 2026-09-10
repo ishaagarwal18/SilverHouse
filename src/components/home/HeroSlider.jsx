@@ -19,7 +19,7 @@ const SLIDES = [
     subtitle: "Keep your little ones safe with hypoallergenic 925 sterling silver bracelets, black beads & jingling ghungroo bangles.",
     ctaText: "Shop Kids Collection",
     categoryId: "kids-nazariya-bracelets",
-    bgImage: "/images/hero_baby_nazariya.png",
+    bgImage: "/images/section/hero_baby_nazariya.png",
     badge: "Hypoallergenic 925"
   },
   {
@@ -29,7 +29,7 @@ const SLIDES = [
     subtitle: "Rooted in tradition, sanctified by devotion. Engrave your Gotra alongside your beloved deity in timeless sterling silver.",
     ctaText: "Customize Your Locket",
     categoryId: "custom-gifting",
-    bgImage: "/images/hero_yatra_locket.png",
+    bgImage: "/images/yatra_locket.png",
     badge: "Made On Order"
   }
 ];

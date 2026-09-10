@@ -74,10 +74,20 @@ const CATEGORY_ITEMS = [
   }
 ];
 
-export default function CategoryShowcaseStrip({ onNavigateCategory }) {
+export default function CategoryShowcaseStrip({ categories, onNavigateCategory }) {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const displayItems = (categories && categories.length > 0)
+    ? categories.map(c => ({
+        id: c.slug || String(c.category_id || c.id),
+        label: c.name,
+        image: c.image_url || c.image || `/images/categories/cat_${(c.slug || c.id || '').replace(/-/g, '_')}.jpg`,
+        targetCategory: c.slug || c.id,
+        description: c.description || c.name
+      }))
+    : CATEGORY_ITEMS;
 
   const checkScroll = () => {
     if (scrollRef.current) {
@@ -133,7 +143,7 @@ export default function CategoryShowcaseStrip({ onNavigateCategory }) {
             msOverflowStyle: 'none'
           }}
         >
-          {CATEGORY_ITEMS.map((item) => (
+          {displayItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleCategoryClick(item)}

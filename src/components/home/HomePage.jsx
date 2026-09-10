@@ -33,6 +33,7 @@ export default function HomePage({
 
       {/* 2. Visual Category Showcase Strip */}
       <CategoryShowcaseStrip
+        categories={categories}
         onNavigateCategory={onNavigateCategory}
       />
 

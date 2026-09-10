@@ -186,6 +186,33 @@ app.post('/api/data', async (req, res) => {
         let normalizedProc = (proc_name || '').trim().toLowerCase();
         if (normalizedProc === 'order') normalizedProc = 'orders';
 
+        // Direct handler for querying categories with joined image_url
+        if (normalizedProc === 'category' && opr.toUpperCase() === 'SELECT') {
+            try {
+                const catResult = await pool.request().query(`
+                    SELECT 
+                        c.category_id,
+                        c.name,
+                        c.description,
+                        c.slug,
+                        c.ideal_for,
+                        c.image_id,
+                        i.image_url
+                    FROM dbo.category c
+                    LEFT JOIN dbo.image i ON c.image_id = i.image_id
+                    ORDER BY c.category_id ASC;
+                `);
+                return res.status(200).json({
+                    success: true,
+                    status: 'OK',
+                    total: catResult.recordset.length,
+                    data: catResult.recordset
+                });
+            } catch (err) {
+                console.warn('[Category Select Fallback]:', err.message);
+            }
+        }
+
         // Direct handler for creating orders and order items from checkout
         if (normalizedProc === 'orders' && (opr.toUpperCase() === 'ADD' || opr.toUpperCase() === 'INSERT')) {
             try {

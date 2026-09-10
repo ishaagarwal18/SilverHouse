@@ -8,7 +8,7 @@ export default function CuratedCollections({ onNavigateCategory }) {
       title: "Celebrate Her Strength in Silver",
       subtitle: "Oxidised 925 Silver Jewellery Collection",
       tag: "FOR HER",
-      image: "/images/women_oxidised_collection.jpg",
+      image: "/images/section/women_oxidised_collection.jpg",
       category: "women",
       ctaText: "EXPLORE WOMEN"
     },
@@ -17,7 +17,7 @@ export default function CuratedCollections({ onNavigateCategory }) {
       title: "Timeless Men's Sterling Heritage",
       subtitle: "Solid Royal Kadas, Cuban Chains & Rings",
       tag: "FOR HIM",
-      image: "/uploads/316_royal_men_silver_kada.jpg",
+      image: "/images/section/316_royal_men_silver_kada.jpg",
       category: "mens",
       ctaText: "EXPLORE MEN"
     },
@@ -26,7 +26,7 @@ export default function CuratedCollections({ onNavigateCategory }) {
       title: "Charming Kid's Pure Silver Charms",
       subtitle: "Protective Nazariya, Baby Kadas & Ghungroo",
       tag: "FOR LITTLE ONES",
-      image: "/images/hero_baby_nazariya.png",
+      image: "/images/section/hero_baby_nazariya.png",
       category: "kids",
       ctaText: "EXPLORE KIDS"
     }
