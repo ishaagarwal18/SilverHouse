@@ -199,7 +199,7 @@ export default function SegmentedTabsShowcase({
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {items.map((product) => {
-                  const isWishlisted = wishlistIds.includes(product.id);
+                  const isWishlisted = wishlistIds.some(id => String(id) === String(product.id));
                   const imgSrc =
                     Array.isArray(product.images) && product.images.length > 0 && product.images[0]
                       ? product.images[0]

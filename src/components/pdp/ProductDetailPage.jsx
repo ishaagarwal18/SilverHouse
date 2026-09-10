@@ -81,7 +81,7 @@ export default function ProductDetailPage({
     }
   };
 
-  const isCurrentWishlisted = isWishlisted || wishlistIds?.includes(currentProduct.id);
+  const isCurrentWishlisted = isWishlisted || wishlistIds?.some(id => String(id) === String(currentProduct.id));
 
   return (
     <div className="bg-[#FAFAFA] min-h-screen pb-20">

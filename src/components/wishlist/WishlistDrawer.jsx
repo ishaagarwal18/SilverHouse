@@ -14,7 +14,7 @@ export default function WishlistDrawer({
   if (!isOpen) return null;
 
   const productList = (products && products.length > 0) ? products : PRODUCTS;
-  const wishlistedProducts = productList.filter(p => wishlistIds.includes(p.id));
+  const wishlistedProducts = productList.filter(p => wishlistIds.some(id => String(id) === String(p.id)));
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">

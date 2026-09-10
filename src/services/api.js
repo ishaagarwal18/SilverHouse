@@ -264,3 +264,62 @@ export async function deleteUserAddress(addressId) {
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Fetches saved wishlist items for a given user from dbo.wishlist.
+ */
+export async function fetchUserWishlist(userId) {
+  try {
+    const json = await postApiData({
+      proc_name: 'wishlist',
+      opr: 'SELECT',
+      condition: String(userId)
+    });
+    if (json && json.success && Array.isArray(json.data)) {
+      return json.data;
+    }
+    return [];
+  } catch (err) {
+    console.warn('[API Service] Could not fetch user wishlist:', err.message);
+    return [];
+  }
+}
+
+/**
+ * Inserts an item into dbo.wishlist in the database.
+ */
+export async function addToWishlistApi(userId, productId) {
+  try {
+    return await postApiData({
+      proc_name: 'wishlist',
+      opr: 'ADD',
+      table_values: {
+        user_id: Number(userId),
+        product_id: Number(productId)
+      }
+    });
+  } catch (err) {
+    console.error('[API Service] Error adding to wishlist:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Removes an item from dbo.wishlist in the database.
+ */
+export async function removeFromWishlistApi(userId, productId) {
+  try {
+    return await postApiData({
+      proc_name: 'wishlist',
+      opr: 'DELETE',
+      table_values: {
+        user_id: Number(userId),
+        product_id: Number(productId)
+      }
+    });
+  } catch (err) {
+    console.error('[API Service] Error removing from wishlist:', err);
+    return { success: false, error: err.message };
+  }
+}
+

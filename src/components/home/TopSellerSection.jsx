@@ -88,7 +88,7 @@ export default function TopSellerSection({
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {topSellers.map((product, index) => {
-            const isWishlisted = wishlistIds.includes(product.id);
+            const isWishlisted = wishlistIds.some(id => String(id) === String(product.id));
             const rawDiscount = product.originalPrice && product.price
               ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
               : 0;

@@ -45,7 +45,7 @@ export default function ExploreCatalogGrid({
         {/* 16-Product Responsive Grid (4x4 on Desktop, 2x8 on Mobile) */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {catalog16.map((product, index) => {
-            const isWishlisted = wishlistIds.includes(product.id);
+            const isWishlisted = wishlistIds.some(id => String(id) === String(product.id));
             const imgSrc = (Array.isArray(product.images) && product.images.length > 0 && product.images[0])
               ? product.images[0]
               : '/images/hero_silver_coins.png';

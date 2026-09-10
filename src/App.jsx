@@ -13,12 +13,15 @@ import WishlistDrawer from './components/wishlist/WishlistDrawer';
 import InfoModal from './components/common/InfoModal';
 import ThemeSwitcher from './components/common/ThemeSwitcher';
 import AppRouter from './router/AppRouter';
-import { fetchProducts, fetchCategories } from './services/api';
+import { useAuth } from './context/AuthContext';
+import { fetchProducts, fetchCategories, fetchUserWishlist, addToWishlistApi, removeFromWishlistApi } from './services/api';
 import { PRODUCTS, CATEGORIES } from './data/products';
 
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isAuthenticated } = useAuth();
+  const effectiveUserId = user?.userId || 1;
 
   // Datasets loaded live from Backend API
   const [products, setProducts] = useState(PRODUCTS);
@@ -43,6 +46,22 @@ export default function App() {
       console.warn('Failed to save wishlist', e);
     }
   }, [wishlistIds]);
+
+  // Sync wishlist from SQL Server database table dbo.wishlist
+  useEffect(() => {
+    async function loadWishlistFromDb() {
+      try {
+        const dbWishlist = await fetchUserWishlist(effectiveUserId);
+        if (Array.isArray(dbWishlist) && dbWishlist.length > 0) {
+          const dbIds = dbWishlist.map(w => String(w.product_id));
+          setWishlistIds(dbIds);
+        }
+      } catch (err) {
+        console.warn('Could not load wishlist from DB:', err);
+      }
+    }
+    loadWishlistFromDb();
+  }, [effectiveUserId]);
 
   // Fetch backend data on app mount
   useEffect(() => {
@@ -184,14 +203,35 @@ export default function App() {
     }
   };
 
-  // Wishlist Operations
-  const handleToggleWishlist = (product) => {
-    if (wishlistIds.includes(product.id)) {
-      setWishlistIds((prev) => prev.filter(id => id !== product.id));
-      triggerToast('info', 'Removed from Wishlist', `${product.name} removed from your saved items.`);
+  // Wishlist Operations - Synchronized with SQL Server database table dbo.wishlist
+  const handleToggleWishlist = async (product) => {
+    if (!product) return;
+    const prodId = String(product.id || product.product_id);
+    const prodTitle = product.name || product.title || product.product_name || 'Sacred Creation';
+    const isAlreadyWishlisted = wishlistIds.some(id => String(id) === prodId);
+
+    if (isAlreadyWishlisted) {
+      // Optimistic state update
+      setWishlistIds((prev) => prev.filter(id => String(id) !== prodId));
+      triggerToast('info', 'Removed from Wishlist', `${prodTitle} removed from your saved items.`);
+
+      // Sync removal directly to database table dbo.wishlist
+      try {
+        await removeFromWishlistApi(effectiveUserId, prodId);
+      } catch (err) {
+        console.error('Failed to remove item from DB wishlist:', err);
+      }
     } else {
-      setWishlistIds((prev) => [...prev, product.id]);
-      triggerToast('success', 'Saved to Wishlist', `${product.name} added to your wishlist.`);
+      // Optimistic state update
+      setWishlistIds((prev) => [...prev, prodId]);
+      triggerToast('success', 'Saved to Wishlist', `${prodTitle} added to your wishlist.`);
+
+      // Sync addition directly to database table dbo.wishlist
+      try {
+        await addToWishlistApi(effectiveUserId, prodId);
+      } catch (err) {
+        console.error('Failed to add item to DB wishlist:', err);
+      }
     }
   };
 

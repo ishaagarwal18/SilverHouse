@@ -1178,7 +1178,7 @@ export default function ProductListingPage({
                   'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4'
                 }`}>
                 {filteredProducts.map((product) => {
-                  const isWishlisted = wishlistIds.includes(product.id);
+                  const isWishlisted = wishlistIds.some(id => String(id) === String(product.id));
                   const discountPct = product.discount !== undefined && product.discount !== null && Number(product.discount) > 0
                     ? Number(product.discount)
                     : (product.originalPrice && product.originalPrice > product.price
