@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 
 export default function ShopOnBudget({ onSelectBudget, onNavigateCategory }) {
+  const navigate = useNavigate();
+
   const TIERS = [
     {
       id: 'under-1499',
@@ -40,8 +43,8 @@ export default function ShopOnBudget({ onSelectBudget, onNavigateCategory }) {
   const handleTierClick = (tier) => {
     if (onSelectBudget) {
       onSelectBudget(tier.min, tier.max);
-    } else if (onNavigateCategory) {
-      onNavigateCategory('all');
+    } else {
+      navigate(`/catalog?minPrice=${tier.min}&maxPrice=${tier.max}`);
     }
   };
 

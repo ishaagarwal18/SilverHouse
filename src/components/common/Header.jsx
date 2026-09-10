@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { fetchUserAddresses } from '../../services/api';
 import { 
   Search, Heart, ShoppingBag, User, Menu, Sparkles, ChevronDown, 
-  LogOut, Building2, Store, MapPin, Check, Plus, Home, X, ArrowLeft 
+  LogOut, Building2, Store, MapPin, Check, Plus, Home, X, ArrowLeft, Package 
 } from 'lucide-react';
 import StoresModal from './StoresModal';
 import ThemeSwitcher from './ThemeSwitcher';
@@ -177,7 +177,7 @@ export default function Header({
         {/* Main Navbar Row */}
         <div className="flex items-center justify-between h-20 gap-4">
 
-          {/* Left: Mobile Menu Trigger + Back Button + Brand Logo */}
+          {/* Left: Mobile Menu Trigger + Brand Logo (Stays completely stationary) */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             <button
               onClick={onOpenMobileMenu}
@@ -186,19 +186,6 @@ export default function Header({
             >
               <Menu className="w-6 h-6" />
             </button>
-
-            {/* Header Back Button (Visible when navigated away from home) */}
-            {location.pathname !== '/' && (
-              <button
-                onClick={() => navigate(-1)}
-                className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-full bg-[var(--th-card)] hover:bg-[var(--th-surface-alt)] border border-[var(--th-border)] hover:border-[var(--th-primary)] text-xs font-bold text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-all cursor-pointer shadow-2xs group shrink-0"
-                title="Go back to previous page"
-                aria-label="Go back"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
-                <span className="hidden sm:inline">Back</span>
-              </button>
-            )}
 
             {/* Brand Logo (SILVERHOUSE) */}
             <button
@@ -243,8 +230,21 @@ export default function Header({
             </div>
           </div>
 
-          {/* Right Action Utilities (Theme Switcher, Pincode, Stores, Account, Wishlist, Cart) */}
+          {/* Right Action Utilities (Back Button, Theme Switcher, Pincode, Stores, Account, Wishlist, Cart) */}
           <div className="flex items-center space-x-2 sm:space-x-3">
+
+            {/* Navbar Back Button (Visible in navbar when navigated away from home without shifting brand logo) */}
+            {location.pathname !== '/' && (
+              <button
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-full bg-[var(--th-card)] hover:bg-[var(--th-surface-alt)] border border-[var(--th-border)] hover:border-[var(--th-primary)] text-xs font-bold text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-all cursor-pointer shadow-2xs group shrink-0"
+                title="Go back to previous page"
+                aria-label="Go back"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
+                <span>Back</span>
+              </button>
+            )}
 
             {/* Delivery Location Pill & Popover (Desktop) */}
             <div ref={locationPopoverRef} className="relative hidden xl:block">
@@ -476,6 +476,17 @@ export default function Header({
                     >
                       <User className="w-4 h-4 text-[var(--th-accent)]" />
                       <span>My Account Profile</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        navigate('/orders');
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
+                    >
+                      <Package className="w-4 h-4 text-[var(--th-accent)]" />
+                      <span>My Orders</span>
                     </button>
 
                     <button

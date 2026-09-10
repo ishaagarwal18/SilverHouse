@@ -687,6 +687,26 @@
                     <span>Product Images</span>
                 </li>
             </ul>
+
+            <div class="nav-label" style="margin-top: 24px;">Commerce & Users</div>
+            <ul class="nav-menu">
+                <li class="nav-item" onclick="navigate('orders')">
+                    <i class="ph-bold ph-package"></i>
+                    <span>Orders</span>
+                </li>
+                <li class="nav-item" onclick="navigate('wishlist')">
+                    <i class="ph-bold ph-heart"></i>
+                    <span>Wishlist</span>
+                </li>
+                <li class="nav-item" onclick="navigate('user')">
+                    <i class="ph-bold ph-users"></i>
+                    <span>Users</span>
+                </li>
+                <li class="nav-item" onclick="navigate('address')">
+                    <i class="ph-bold ph-map-pin"></i>
+                    <span>Addresses</span>
+                </li>
+            </ul>
         </div>
     </aside>
 
@@ -750,7 +770,12 @@
             category: 'category_id',
             image: 'image_id',
             make_master: 'm_id',
-            product_image: 'product_id'
+            product_image: 'product_id',
+            orders: 'order_id',
+            order: 'order_id',
+            wishlist: 'wishlist_id',
+            user: 'user_id',
+            address: 'address_id'
         };
 
         async function loadDropdownOptions() {
@@ -816,11 +841,25 @@
 
             // Update active nav button
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            if (window.event && window.event.currentTarget) {
+                window.event.currentTarget.classList.add('active');
+            }
 
             // Update titles
             const cleanName = procName.replace('_', ' ').toUpperCase();
             document.getElementById('pageTitle').innerText = cleanName;
+            const desc = document.getElementById('pageDescription');
+            if (desc) desc.innerText = `Manage, inspect and review ${cleanName} live table data`;
+
+            const actionControls = document.querySelector('.action-controls');
+            if (actionControls) {
+                if (['orders', 'order', 'user', 'address', 'wishlist'].includes(procName)) {
+                    actionControls.style.display = 'none';
+                } else {
+                    actionControls.style.display = 'flex';
+                }
+            }
+
             const btnAdd = document.getElementById('btnAddText');
             if (btnAdd) btnAdd.innerText = `+ Add ${cleanName.slice(0, -1)}`;
 
@@ -895,8 +934,17 @@
                     let val = row[h] !== null && row[h] !== undefined ? row[h] : '-';
                     const showBadge = (idx === 0 && badgeHtml);
 
-                    if (h.toLowerCase().includes('url') && val !== '-') {
+                    if (h === 'password_hash') {
+                        rowHtml += `<td><span style="font-family:monospace;letter-spacing:2px;color:var(--text-muted)">••••••••</span>${showBadge ? badgeHtml : ''}</td>`;
+                    } else if (h.toLowerCase().includes('url') && val !== '-') {
                         rowHtml += `<td><img src="${val}" class="img-thumb" onerror="this.src='https://via.placeholder.com/44x44/111827/9ca3af?text=N/A'"/>${showBadge ? badgeHtml : ''}</td>`;
+                    } else if (h === 'payment_status' && val !== '-') {
+                        const isPaid = String(val).toUpperCase() === 'PAID';
+                        rowHtml += `<td><span style="padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: bold; text-transform: uppercase; background: ${isPaid ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; color: ${isPaid ? '#10b981' : '#f59e0b'}; border: 1px solid ${isPaid ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'};">${val}</span>${showBadge ? badgeHtml : ''}</td>`;
+                    } else if ((h.includes('amount') || h.includes('payable') || h.includes('price')) && !isNaN(Number(val)) && val !== '-') {
+                        rowHtml += `<td style="font-family:monospace;font-weight:600">₹${Number(val).toLocaleString('en-IN')}${showBadge ? badgeHtml : ''}</td>`;
+                    } else if (h === 'items' && Array.isArray(val)) {
+                        rowHtml += `<td><span title="${val.map(i => `${i.product_name || i.name} (${i.quantity}x)`).join(', ')}" style="cursor:help;font-weight:600">${val.length} item(s)</span>${showBadge ? badgeHtml : ''}</td>`;
                     } else if (activeEntity === 'product' && h === 'category_id' && rows[0].category_name === undefined && val !== '-') {
                         const catName = categoriesMap[val] || val;
                         rowHtml += `<td>${catName}${showBadge ? badgeHtml : ''}</td>`;
@@ -910,7 +958,7 @@
 
                 const rowId = row[PK_MAP[activeEntity]];
                 rowHtml += `<td style="text-align:right">
-          ${activeEntity !== 'product_image' ? `<button class="btn-action-edit" onclick="openEditModal(${rowId})">Edit</button>` : ''}
+          ${(activeEntity !== 'product_image' && !['orders', 'order', 'user', 'address', 'wishlist'].includes(activeEntity)) ? `<button class="btn-action-edit" onclick="openEditModal(${rowId})">Edit</button>` : ''}
           <button class="btn-action-del" onclick="deleteRecord(${rowId}, ${row.image_id || null})">Delete</button>
         </td></tr>`;
 

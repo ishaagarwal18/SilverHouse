@@ -22,6 +22,8 @@ export default function ProductListingPage({
   const navigate = useNavigate();
 
   const colorQueryParam = searchParams.get('color');
+  const minPriceQuery = searchParams.get('minPrice');
+  const maxPriceQuery = searchParams.get('maxPrice');
 
   const categoryList = (categories && categories.length > 0) ? categories : CATEGORIES;
 
@@ -31,8 +33,8 @@ export default function ProductListingPage({
   const [selectedPurity, setSelectedPurity] = useState('all');
   const [selectedRecipient, setSelectedRecipient] = useState('all');
   const [selectedColor, setSelectedColor] = useState(colorQueryParam || 'all');
-  const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(100000);
+  const [minPrice, setMinPrice] = useState(() => (minPriceQuery !== null && !isNaN(Number(minPriceQuery)) ? Number(minPriceQuery) : 0));
+  const [maxPrice, setMaxPrice] = useState(() => (maxPriceQuery !== null && !isNaN(Number(maxPriceQuery)) ? Number(maxPriceQuery) : 100000));
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState('featured');
   const [gridCols, setGridCols] = useState(4); // 2, 3, 4
@@ -51,6 +53,20 @@ export default function ProductListingPage({
       setSelectedColor(colorQueryParam);
     }
   }, [colorQueryParam]);
+
+  // Sync budget/price filters with URL search params if present
+  useEffect(() => {
+    if (minPriceQuery !== null && !isNaN(Number(minPriceQuery))) {
+      setMinPrice(Number(minPriceQuery));
+    } else if (minPriceQuery === null) {
+      setMinPrice(0);
+    }
+    if (maxPriceQuery !== null && !isNaN(Number(maxPriceQuery))) {
+      setMaxPrice(Number(maxPriceQuery));
+    } else if (maxPriceQuery === null) {
+      setMaxPrice(100000);
+    }
+  }, [minPriceQuery, maxPriceQuery]);
 
   // Fetch filtered data directly from Express Backend API
   useEffect(() => {

@@ -24,6 +24,15 @@ export default function CheckoutModal({
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
 
+  // Reset checkout step whenever modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setStep(1);
+      setOrderId('');
+      setPaymentMethod('upi');
+    }
+  }, [isOpen]);
+
   // Shipping Form State (used when entering a new address or as guest)
   const [formData, setFormData] = useState({
     fullName: '',
@@ -131,14 +140,54 @@ export default function CheckoutModal({
     setStep(2);
   };
 
+  const handleClose = () => {
+    setStep(1);
+    setOrderId('');
+    onClose();
+  };
+
   const handleCompleteOrder = async () => {
     const generatedID = 'SH-' + Math.floor(100000 + Math.random() * 900000);
     setOrderId(generatedID);
     setStep(3);
 
     const effective = getEffectiveAddress();
+    const finalAmount = totalAmount - discountAmount;
 
-    // Send order record payload to backend Express API
+    const orderData = {
+      order_id: Date.now(),
+      order_number: generatedID,
+      user_id: user?.userId || null,
+      customer_name: effective.fullName,
+      customer_email: effective.email,
+      customer_phone: effective.phone,
+      delivery_address: effective.fullAddress,
+      total_amount: totalAmount,
+      discount_amount: discountAmount,
+      final_payable: finalAmount,
+      payment_status: paymentMethod === 'cod' ? 'PENDING' : 'PAID',
+      payment_method: paymentMethod,
+      created_at: new Date().toISOString(),
+      items: cartItems.map(item => ({
+        product_id: item.product.id,
+        product_name: item.product.name,
+        quantity: item.quantity,
+        unit_price: item.product.price,
+        subtotal: item.product.price * item.quantity,
+        image: item.product.image || (item.product.images && item.product.images[0]) || ''
+      }))
+    };
+
+    // 1. Cache immediately in localStorage for instant display on /orders
+    try {
+      const existing = JSON.parse(localStorage.getItem('silverhouse_orders') || '[]');
+      localStorage.setItem('silverhouse_orders', JSON.stringify([orderData, ...existing]));
+      window.dispatchEvent(new Event('orders_updated'));
+    } catch (e) {
+      console.warn('Could not save order locally:', e);
+    }
+
+    // 2. Send order record payload to backend Express API
     const orderPayload = {
       proc_name: 'orders',
       opr: 'INSERT',
@@ -152,14 +201,10 @@ export default function CheckoutModal({
         delivery_address: effective.fullAddress,
         total_amount: totalAmount,
         discount_amount: discountAmount,
+        final_payable: finalAmount,
         payment_status: paymentMethod === 'cod' ? 'PENDING' : 'PAID',
         payment_method: paymentMethod,
-        items: cartItems.map(item => ({
-          id: item.product.id,
-          name: item.product.name,
-          qty: item.quantity,
-          price: item.product.price
-        }))
+        items: orderData.items
       }
     };
 
@@ -175,7 +220,7 @@ export default function CheckoutModal({
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* Modal Container */}
@@ -196,7 +241,7 @@ export default function CheckoutModal({
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] rounded-lg cursor-pointer">
+          <button onClick={handleClose} className="p-2 text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] rounded-lg cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -559,7 +604,7 @@ export default function CheckoutModal({
               <div className="pt-4 flex justify-center space-x-4">
                 <button
                   onClick={() => {
-                    onClose();
+                    handleClose();
                     onNavigateHome();
                   }}
                   className="px-6 py-3 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors cursor-pointer shadow-md"

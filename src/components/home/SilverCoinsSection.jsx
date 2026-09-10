@@ -42,8 +42,15 @@ export default function SilverCoinsSection({ onNavigateCategory, onNavigateYatra
         {/* 2-Column Banner Showcase */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
-          {/* Left Large Visual: Personalized Silver Photo Coins & Keepsakes */}
-          <div className="lg:col-span-7 relative h-[360px] sm:h-[400px] rounded-3xl overflow-hidden border-2 border-[var(--th-border)] hover:border-[var(--th-accent)] shadow-xl group transition-all duration-500">
+          {/* Left Large Visual: Personalized Silver Photo Coins & Keepsakes (Clickable Photo & Container) */}
+          <div 
+            onClick={() => onNavigateCategory && onNavigateCategory('silver-coins-bars')}
+            className="lg:col-span-7 relative h-[360px] sm:h-[400px] rounded-3xl overflow-hidden border-2 border-[var(--th-border)] hover:border-[var(--th-accent)] shadow-xl group transition-all duration-500 cursor-pointer"
+            title="Explore Silver Coins & Bars Collection"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigateCategory && onNavigateCategory('silver-coins-bars'); }}
+          >
             <img
               src="/images/personalized_silver_coin.jpg"
               alt="Personalized Pure 999 Silver Gifts"

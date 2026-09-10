@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   Sparkles, Lock, Mail, User, Phone, Eye, EyeOff, ShieldCheck,
-  ArrowRight, AlertCircle, Building2, LogOut, MapPin, ShoppingBag, ChevronRight, ArrowLeft
+  ArrowRight, AlertCircle, Building2, LogOut, MapPin, ShoppingBag, ChevronRight, ArrowLeft, Package
 } from 'lucide-react';
 
 export default function AuthPage({ onTriggerToast }) {
@@ -87,20 +87,25 @@ export default function AuthPage({ onTriggerToast }) {
 
       <div className="w-full max-w-md relative z-10">
 
-        {/* Back Button */}
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center space-x-1.5 text-xs font-bold text-[var(--th-text-muted)] hover:text-[var(--th-primary)] mb-2 px-2.5 py-1 rounded-lg hover:bg-[var(--th-card)] border border-transparent hover:border-[var(--th-border)] transition-all cursor-pointer group"
-          title="Go back to previous page"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
-          <span>Back</span>
-        </button>
-
         {/* 1. LOGGED-IN VIEW: User Profile Dashboard & Logout */}
         {isAuthenticated && user ? (
           <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-2xl shadow-xl overflow-hidden p-5 sm:p-6 backdrop-blur-md">
+
+            {/* Back Button Inside Card */}
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[var(--th-border)]/60">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center space-x-1.5 text-xs font-bold text-[var(--th-text-muted)] hover:text-[var(--th-primary)] px-2.5 py-1 rounded-lg hover:bg-[var(--th-surface-alt)] border border-[var(--th-border)] transition-all cursor-pointer group"
+                title="Go back to previous page"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
+                <span>Back</span>
+              </button>
+              <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--th-text-muted)]">
+                Patron Dashboard
+              </span>
+            </div>
 
             {/* User Profile Header */}
             <div className="flex items-center space-x-3 pb-4 border-b border-[var(--th-border)]/70">
@@ -132,6 +137,27 @@ export default function AuthPage({ onTriggerToast }) {
               <h3 className="text-[10px] font-bold uppercase tracking-wider text-[var(--th-text-muted)]">
                 Account Essentials
               </h3>
+
+              {/* My Orders Card */}
+              <button
+                onClick={() => navigate('/orders')}
+                className="w-full p-3 rounded-xl bg-[var(--th-surface-alt)] hover:bg-[var(--th-surface-alt)]/80 border border-[var(--th-border)] flex items-center justify-between text-left transition-all hover:border-[var(--th-accent)] cursor-pointer group"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--th-card)] border border-[var(--th-border)] text-[var(--th-accent)] flex items-center justify-center shadow-xs shrink-0">
+                    <Package className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-bold text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] transition-colors">
+                      My Orders
+                    </h4>
+                    <p className="text-[10px] text-[var(--th-text-muted)] truncate">
+                      Track delivery, invoices & past purchases
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[var(--th-text-muted)] group-hover:text-[var(--th-primary)] group-hover:translate-x-0.5 transition-all shrink-0" />
+              </button>
 
               {/* Saved Addresses Card */}
               <button
@@ -221,20 +247,34 @@ export default function AuthPage({ onTriggerToast }) {
           </div>
         ) : (
           /* 2. GUEST VIEW: Login / Register Form (Compact 1-Screen) */
-          <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-2xl shadow-xl overflow-hidden p-5 sm:p-6 backdrop-blur-md">
+          <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-2xl shadow-xl overflow-hidden p-5 sm:p-6 backdrop-blur-md relative">
 
-            {/* Brand Header */}
-            <div className="text-center mb-3">
+            {/* Back Button & Brand Header Inside Card */}
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[var(--th-border)]/50">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center space-x-1.5 text-xs font-bold text-[var(--th-text-muted)] hover:text-[var(--th-primary)] px-2.5 py-1 rounded-lg hover:bg-[var(--th-surface-alt)] border border-[var(--th-border)] transition-all cursor-pointer group"
+                title="Go back to previous page"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
+                <span>Back</span>
+              </button>
+
               <div 
                 onClick={() => navigate('/')} 
-                className="inline-flex items-center justify-center space-x-1.5 cursor-pointer"
+                className="inline-flex items-center space-x-1 cursor-pointer"
               >
-                <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
-                <span className="font-serif text-lg font-bold tracking-wider text-[var(--th-text-main)]">
+                <Sparkles className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                <span className="font-serif text-sm font-bold tracking-wider text-[var(--th-text-main)]">
                   SILVER<span className="text-[var(--th-accent)]">HOUSE</span>
                 </span>
               </div>
-              <p className="text-[10px] text-[var(--th-text-muted)] tracking-widest uppercase mt-0.5">
+            </div>
+
+            {/* Subtitle */}
+            <div className="text-center mb-3">
+              <p className="text-[10px] text-[var(--th-text-muted)] tracking-widest uppercase">
                 SACRED 925 & 999 PURE SILVER
               </p>
             </div>

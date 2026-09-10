@@ -183,8 +183,170 @@ app.post('/api/data', async (req, res) => {
             });
         }
 
+        let normalizedProc = (proc_name || '').trim().toLowerCase();
+        if (normalizedProc === 'order') normalizedProc = 'orders';
+
+        // Direct handler for creating orders and order items from checkout
+        if (normalizedProc === 'orders' && (opr.toUpperCase() === 'ADD' || opr.toUpperCase() === 'INSERT')) {
+            try {
+                const vals = table_values || {};
+                const orderNum = vals.order_number || ('SH-' + Date.now().toString().slice(-6));
+                const userId = vals.user_id ? Number(vals.user_id) : null;
+                const addressId = vals.address_id ? Number(vals.address_id) : null;
+                const totalAmt = Number(vals.total_amount || 0);
+                const discountAmt = Number(vals.discount_amount || 0);
+                const finalPayable = Number(vals.final_payable || (totalAmt - discountAmt));
+                const paymentStatus = vals.payment_status || 'PAID';
+
+                const insertReq = pool.request();
+                insertReq.input('order_number', sql.NVarChar(50), orderNum);
+                insertReq.input('user_id', sql.Int, userId);
+                insertReq.input('address_id', sql.Int, addressId);
+                insertReq.input('total_amount', sql.Decimal(18, 2), totalAmt);
+                insertReq.input('discount_amount', sql.Decimal(18, 2), discountAmt);
+                insertReq.input('final_payable', sql.Decimal(18, 2), finalPayable);
+                insertReq.input('payment_status', sql.NVarChar(20), paymentStatus);
+
+                const insResult = await insertReq.query(`
+                    INSERT INTO dbo.orders (order_number, user_id, address_id, total_amount, discount_amount, final_payable, payment_status, created_at)
+                    OUTPUT INSERTED.order_id
+                    VALUES (@order_number, @user_id, @address_id, @total_amount, @discount_amount, @final_payable, @payment_status, SYSDATETIME());
+                `);
+
+                const newOrderId = insResult.recordset[0]?.order_id;
+
+                // Insert items into order_item if provided
+                if (newOrderId && Array.isArray(vals.items)) {
+                    for (const itm of vals.items) {
+                        try {
+                            const pId = itm.product_id || itm.id;
+                            if (pId) {
+                                const itemReq = pool.request();
+                                itemReq.input('order_id', sql.Int, newOrderId);
+                                itemReq.input('product_id', sql.Int, Number(pId));
+                                itemReq.input('unit_price', sql.Decimal(18, 2), Number(itm.unit_price || itm.price || 0));
+                                itemReq.input('discount_percent', sql.Decimal(18, 2), Number(itm.discount_percent || 0));
+                                itemReq.input('quantity', sql.Int, Number(itm.quantity || itm.qty || 1));
+                                itemReq.input('subtotal', sql.Decimal(18, 2), Number(itm.subtotal || ((itm.unit_price || itm.price || 0) * (itm.quantity || itm.qty || 1))));
+
+                                await itemReq.query(`
+                                    INSERT INTO dbo.order_item (order_id, product_id, unit_price, discount_percent, quantity, subtotal)
+                                    VALUES (@order_id, @product_id, @unit_price, @discount_percent, @quantity, @subtotal);
+                                `);
+                            }
+                        } catch (itemErr) {
+                            console.warn('[Order Item Insert Warning]:', itemErr.message);
+                        }
+                    }
+                }
+
+                return res.status(200).json({
+                    success: true,
+                    status: 'OK',
+                    data: [{ order_id: newOrderId, order_number: orderNum, final_payable: finalPayable, message: 'Order placed successfully' }]
+                });
+            } catch (orderErr) {
+                console.error('[Order Insert Error]:', orderErr.message);
+                return res.status(500).json({ success: false, error: orderErr.message });
+            }
+        }
+
+        // Direct handler for querying orders with user & address details
+        if (normalizedProc === 'orders' && opr.toUpperCase() === 'SELECT') {
+            try {
+                const selectReq = pool.request();
+                let filterClause = '';
+                const uid = condition || table_values?.user_id;
+                if (uid && !isNaN(Number(uid))) {
+                    selectReq.input('uid', sql.Int, Number(uid));
+                    filterClause = 'WHERE o.user_id = @uid';
+                }
+
+                const ordersResult = await selectReq.query(`
+                    SELECT 
+                        o.order_id,
+                        o.order_number,
+                        o.user_id,
+                        ISNULL(u.full_name, 'Guest Patron') AS customer_name,
+                        u.email AS customer_email,
+                        u.phone AS customer_phone,
+                        o.address_id,
+                        a.recipient_name,
+                        a.city,
+                        a.pincode,
+                        ISNULL(a.street + ', ' + a.city + ' - ' + a.pincode, 'Registered Address') AS delivery_address,
+                        o.total_amount,
+                        o.discount_amount,
+                        o.final_payable,
+                        o.payment_status,
+                        o.created_at
+                    FROM dbo.orders o
+                    LEFT JOIN dbo.[user] u ON o.user_id = u.user_id
+                    LEFT JOIN dbo.address a ON o.address_id = a.address_id
+                    ${filterClause}
+                    ORDER BY o.order_id DESC;
+                `);
+
+                const orderRows = ordersResult.recordset || [];
+
+                if (orderRows.length > 0) {
+                    const orderIds = orderRows.map(o => o.order_id);
+                    const itemsReq = pool.request();
+                    const itemsResult = await itemsReq.query(`
+                        SELECT 
+                            oi.order_item_id,
+                            oi.order_id,
+                            oi.product_id,
+                            p.title AS product_name,
+                            p.price AS current_price,
+                            oi.unit_price,
+                            oi.discount_percent,
+                            oi.quantity,
+                            oi.subtotal
+                        FROM dbo.order_item oi
+                        LEFT JOIN dbo.product p ON oi.product_id = p.product_id
+                        WHERE oi.order_id IN (${orderIds.join(',')});
+                    `);
+
+                    const itemsByOrder = {};
+                    (itemsResult.recordset || []).forEach(item => {
+                        if (!itemsByOrder[item.order_id]) itemsByOrder[item.order_id] = [];
+                        itemsByOrder[item.order_id].push(item);
+                    });
+
+                    orderRows.forEach(o => {
+                        o.items = itemsByOrder[o.order_id] || [];
+                    });
+                }
+
+                return res.status(200).json({
+                    success: true,
+                    status: 'OK',
+                    total: orderRows.length,
+                    data: orderRows
+                });
+            } catch (selectErr) {
+                console.warn('[Orders Select Fallback]:', selectErr.message);
+            }
+        }
+
+        // Direct handler for deleting orders
+        if (normalizedProc === 'orders' && opr.toUpperCase() === 'DELETE' && condition) {
+            try {
+                const delReq = pool.request();
+                delReq.input('order_id', sql.Int, Number(condition));
+                await delReq.query(`
+                    DELETE FROM dbo.order_item WHERE order_id = @order_id;
+                    DELETE FROM dbo.orders WHERE order_id = @order_id;
+                `);
+                return res.status(200).json({ success: true, status: 'OK', message: 'Order deleted successfully' });
+            } catch (delErr) {
+                return res.status(500).json({ success: false, error: delErr.message });
+            }
+        }
+
         // Special handler: When selecting products, use SP_Fetchdata to guarantee full joined dataset (categories & images)
-        if (proc_name.toLowerCase() === 'product' && opr.toUpperCase() === 'SELECT') {
+        if (normalizedProc === 'product' && opr.toUpperCase() === 'SELECT') {
             try {
                 const fetchReq = pool.request();
                 fetchReq.input('proc_name', sql.NVarChar(50), 'product');
@@ -237,7 +399,7 @@ app.post('/api/data', async (req, res) => {
         }
 
         const request = pool.request();
-        request.input('proc_name', sql.NVarChar(50), proc_name);
+        request.input('proc_name', sql.NVarChar(50), normalizedProc);
         request.input('Opr', sql.NVarChar(10), opr);
         request.input('JSONstr', sql.NVarChar(sql.MAX), jsonStr);
         request.input('Condition', sql.NVarChar(255), condition !== undefined && condition !== null ? String(condition) : null);

@@ -5,6 +5,7 @@ import ProductListingPage from '../components/plp/ProductListingPage';
 import ProductDetailPage from '../components/pdp/ProductDetailPage';
 import AuthPage from '../components/auth/AuthPage';
 import AddressPage from '../components/account/AddressPage';
+import OrdersPage from '../components/account/OrdersPage';
 
 export default function AppRouter({
   products,
@@ -54,6 +55,10 @@ export default function AppRouter({
       {/* Saved Addresses Route */}
       <Route path="/addresses" element={<AddressPage onTriggerToast={onTriggerToast} />} />
       <Route path="/account/addresses" element={<AddressPage onTriggerToast={onTriggerToast} />} />
+
+      {/* User Orders Route */}
+      <Route path="/orders" element={<OrdersPage onTriggerToast={onTriggerToast} />} />
+      <Route path="/account/orders" element={<OrdersPage onTriggerToast={onTriggerToast} />} />
 
       {/* Home Page */}
       <Route
