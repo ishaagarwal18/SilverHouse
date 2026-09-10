@@ -372,6 +372,169 @@ app.post('/api/data', async (req, res) => {
             }
         }
 
+        // Direct handler for querying cart in Admin Studio or with user_id filter
+        if (normalizedProc === 'cart' && opr.toUpperCase() === 'SELECT') {
+            try {
+                const cartReq = pool.request();
+                let filterClause = '';
+                const uid = condition || table_values?.user_id;
+                if (uid && !isNaN(Number(uid))) {
+                    cartReq.input('uid', sql.Int, Number(uid));
+                    filterClause = 'WHERE c.user_id = @uid';
+                }
+
+                const cartResult = await cartReq.query(`
+                    SELECT 
+                        c.cart_id,
+                        c.user_id,
+                        ISNULL(u.full_name, 'Guest Patron') AS user_name,
+                        u.email AS user_email,
+                        c.guest_token,
+                        (SELECT COUNT(*) FROM dbo.cart_item ci WHERE ci.cart_id = c.cart_id) AS total_items,
+                        (SELECT ISNULL(SUM(ci.quantity), 0) FROM dbo.cart_item ci WHERE ci.cart_id = c.cart_id) AS total_quantity,
+                        c.updated_at
+                    FROM dbo.cart c
+                    LEFT JOIN dbo.[user] u ON c.user_id = u.user_id
+                    ${filterClause}
+                    ORDER BY c.cart_id DESC;
+                `);
+
+                return res.status(200).json({
+                    success: true,
+                    status: 'OK',
+                    total: cartResult.recordset.length,
+                    data: cartResult.recordset
+                });
+            } catch (cartErr) {
+                console.warn('[Cart Select Error]:', cartErr.message);
+            }
+        }
+
+        // Direct handler for deleting cart
+        if (normalizedProc === 'cart' && opr.toUpperCase() === 'DELETE' && condition) {
+            try {
+                const delReq = pool.request();
+                delReq.input('cart_id', sql.Int, Number(condition));
+                await delReq.query(`
+                    DELETE FROM dbo.cart_item WHERE cart_id = @cart_id;
+                    DELETE FROM dbo.cart WHERE cart_id = @cart_id;
+                `);
+                return res.status(200).json({ success: true, status: 'OK', message: 'Cart deleted successfully' });
+            } catch (delErr) {
+                return res.status(500).json({ success: false, error: delErr.message });
+            }
+        }
+
+        // Direct handler for querying cart_item
+        if (normalizedProc === 'cart_item' && opr.toUpperCase() === 'SELECT') {
+            try {
+                const ciReq = pool.request();
+                let filterClause = '';
+                const cartId = condition || table_values?.cart_id;
+                if (cartId && !isNaN(Number(cartId))) {
+                    ciReq.input('cartId', sql.Int, Number(cartId));
+                    filterClause = 'WHERE ci.cart_id = @cartId';
+                }
+
+                const ciResult = await ciReq.query(`
+                    SELECT 
+                        ci.cart_item_id,
+                        ci.cart_id,
+                        c.user_id,
+                        ISNULL(u.full_name, 'Guest Patron') AS user_name,
+                        ci.product_id,
+                        p.title AS product_name,
+                        p.price AS unit_price,
+                        ci.quantity,
+                        CAST(p.price * ci.quantity AS DECIMAL(18,2)) AS subtotal,
+                        ci.created_at
+                    FROM dbo.cart_item ci
+                    LEFT JOIN dbo.cart c ON ci.cart_id = c.cart_id
+                    LEFT JOIN dbo.[user] u ON c.user_id = u.user_id
+                    LEFT JOIN dbo.product p ON ci.product_id = p.product_id
+                    ${filterClause}
+                    ORDER BY ci.cart_item_id DESC;
+                `);
+
+                return res.status(200).json({
+                    success: true,
+                    status: 'OK',
+                    total: ciResult.recordset.length,
+                    data: ciResult.recordset
+                });
+            } catch (ciErr) {
+                console.warn('[Cart Item Select Error]:', ciErr.message);
+            }
+        }
+
+        // Direct handler for deleting cart_item
+        if (normalizedProc === 'cart_item' && opr.toUpperCase() === 'DELETE' && condition) {
+            try {
+                const delReq = pool.request();
+                delReq.input('cart_item_id', sql.Int, Number(condition));
+                await delReq.query(`
+                    DELETE FROM dbo.cart_item WHERE cart_item_id = @cart_item_id;
+                `);
+                return res.status(200).json({ success: true, status: 'OK', message: 'Cart item deleted successfully' });
+            } catch (delErr) {
+                return res.status(500).json({ success: false, error: delErr.message });
+            }
+        }
+
+        // Direct handler for querying order_item
+        if (normalizedProc === 'order_item' && opr.toUpperCase() === 'SELECT') {
+            try {
+                const oiReq = pool.request();
+                let filterClause = '';
+                const orderId = condition || table_values?.order_id;
+                if (orderId && !isNaN(Number(orderId))) {
+                    oiReq.input('orderId', sql.Int, Number(orderId));
+                    filterClause = 'WHERE oi.order_id = @orderId';
+                }
+
+                const oiResult = await oiReq.query(`
+                    SELECT 
+                        oi.order_item_id,
+                        oi.order_id,
+                        o.order_number,
+                        oi.product_id,
+                        p.title AS product_name,
+                        oi.unit_price,
+                        oi.discount_percent,
+                        oi.quantity,
+                        oi.subtotal
+                    FROM dbo.order_item oi
+                    LEFT JOIN dbo.orders o ON oi.order_id = o.order_id
+                    LEFT JOIN dbo.product p ON oi.product_id = p.product_id
+                    ${filterClause}
+                    ORDER BY oi.order_item_id DESC;
+                `);
+
+                return res.status(200).json({
+                    success: true,
+                    status: 'OK',
+                    total: oiResult.recordset.length,
+                    data: oiResult.recordset
+                });
+            } catch (oiErr) {
+                console.warn('[Order Item Select Error]:', oiErr.message);
+            }
+        }
+
+        // Direct handler for deleting order_item
+        if (normalizedProc === 'order_item' && opr.toUpperCase() === 'DELETE' && condition) {
+            try {
+                const delReq = pool.request();
+                delReq.input('order_item_id', sql.Int, Number(condition));
+                await delReq.query(`
+                    DELETE FROM dbo.order_item WHERE order_item_id = @order_item_id;
+                `);
+                return res.status(200).json({ success: true, status: 'OK', message: 'Order item deleted successfully' });
+            } catch (delErr) {
+                return res.status(500).json({ success: false, error: delErr.message });
+            }
+        }
+
         // Special handler: When selecting products, use SP_Fetchdata to guarantee full joined dataset (categories & images)
         if (normalizedProc === 'product' && opr.toUpperCase() === 'SELECT') {
             try {

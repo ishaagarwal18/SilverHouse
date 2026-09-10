@@ -100,8 +100,9 @@
             display: flex;
             flex-direction: column;
             padding: 24px 16px;
-            gap: 32px;
+            gap: 28px;
             z-index: 10;
+            overflow-y: auto;
         }
 
         .brand {
@@ -694,6 +695,18 @@
                     <i class="ph-bold ph-package"></i>
                     <span>Orders</span>
                 </li>
+                <li class="nav-item" onclick="navigate('order_item')">
+                    <i class="ph-bold ph-receipt"></i>
+                    <span>Order Items</span>
+                </li>
+                <li class="nav-item" onclick="navigate('cart')">
+                    <i class="ph-bold ph-shopping-cart"></i>
+                    <span>Carts</span>
+                </li>
+                <li class="nav-item" onclick="navigate('cart_item')">
+                    <i class="ph-bold ph-list-plus"></i>
+                    <span>Cart Items</span>
+                </li>
                 <li class="nav-item" onclick="navigate('wishlist')">
                     <i class="ph-bold ph-heart"></i>
                     <span>Wishlist</span>
@@ -773,6 +786,9 @@
             product_image: 'product_id',
             orders: 'order_id',
             order: 'order_id',
+            order_item: 'order_item_id',
+            cart: 'cart_id',
+            cart_item: 'cart_item_id',
             wishlist: 'wishlist_id',
             user: 'user_id',
             address: 'address_id'
@@ -853,7 +869,7 @@
 
             const actionControls = document.querySelector('.action-controls');
             if (actionControls) {
-                if (['orders', 'order', 'user', 'address', 'wishlist'].includes(procName)) {
+                if (['orders', 'order', 'order_item', 'cart', 'cart_item', 'user', 'address', 'wishlist'].includes(procName)) {
                     actionControls.style.display = 'none';
                 } else {
                     actionControls.style.display = 'flex';
@@ -941,7 +957,7 @@
                     } else if (h === 'payment_status' && val !== '-') {
                         const isPaid = String(val).toUpperCase() === 'PAID';
                         rowHtml += `<td><span style="padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: bold; text-transform: uppercase; background: ${isPaid ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; color: ${isPaid ? '#10b981' : '#f59e0b'}; border: 1px solid ${isPaid ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'};">${val}</span>${showBadge ? badgeHtml : ''}</td>`;
-                    } else if ((h.includes('amount') || h.includes('payable') || h.includes('price')) && !isNaN(Number(val)) && val !== '-') {
+                    } else if ((h.includes('amount') || h.includes('payable') || h.includes('price') || h.includes('subtotal') || h.includes('unit_price')) && !isNaN(Number(val)) && val !== '-') {
                         rowHtml += `<td style="font-family:monospace;font-weight:600">₹${Number(val).toLocaleString('en-IN')}${showBadge ? badgeHtml : ''}</td>`;
                     } else if (h === 'items' && Array.isArray(val)) {
                         rowHtml += `<td><span title="${val.map(i => `${i.product_name || i.name} (${i.quantity}x)`).join(', ')}" style="cursor:help;font-weight:600">${val.length} item(s)</span>${showBadge ? badgeHtml : ''}</td>`;
@@ -958,7 +974,7 @@
 
                 const rowId = row[PK_MAP[activeEntity]];
                 rowHtml += `<td style="text-align:right">
-          ${(activeEntity !== 'product_image' && !['orders', 'order', 'user', 'address', 'wishlist'].includes(activeEntity)) ? `<button class="btn-action-edit" onclick="openEditModal(${rowId})">Edit</button>` : ''}
+          ${(activeEntity !== 'product_image' && !['orders', 'order', 'order_item', 'cart', 'cart_item', 'user', 'address', 'wishlist'].includes(activeEntity)) ? `<button class="btn-action-edit" onclick="openEditModal(${rowId})">Edit</button>` : ''}
           <button class="btn-action-del" onclick="deleteRecord(${rowId}, ${row.image_id || null})">Delete</button>
         </td></tr>`;
 
