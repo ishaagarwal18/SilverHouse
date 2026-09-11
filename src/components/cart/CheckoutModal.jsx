@@ -4,7 +4,7 @@ import {
   Truck, ArrowRight, Lock, Sparkles, MapPin, Plus, Home, Tag,
   Copy, Check, Phone, Mail, User, Scale, Award, Calendar, ChevronRight
 } from 'lucide-react';
-import { postApiData, fetchUserAddresses, addUserAddress } from '../../services/api';
+import { postApiData, fetchUserAddresses, addUserAddress, getGuestToken } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 export default function CheckoutModal({
@@ -223,6 +223,7 @@ export default function CheckoutModal({
         product_name: item.product.name || item.product.title,
         quantity: item.quantity,
         unit_price: item.product.price,
+        discount_percent: item.product.discount || 0,
         subtotal: item.product.price * item.quantity,
         image: item.product.image || (item.product.images && item.product.images[0]) || ''
       }))
@@ -244,6 +245,7 @@ export default function CheckoutModal({
       table_values: {
         order_number: generatedID,
         user_id: user?.userId || null,
+        guest_token: getGuestToken(),
         address_id: effective.addressId || null,
         customer_name: effective.fullName,
         customer_email: effective.email,

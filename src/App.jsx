@@ -14,7 +14,17 @@ import InfoModal from './components/common/InfoModal';
 import ThemeSwitcher from './components/common/ThemeSwitcher';
 import AppRouter from './router/AppRouter';
 import { useAuth } from './context/AuthContext';
-import { fetchProducts, fetchCategories, fetchUserWishlist, addToWishlistApi, removeFromWishlistApi } from './services/api';
+import { 
+  fetchProducts, 
+  fetchCategories, 
+  fetchUserWishlist, 
+  addToWishlistApi, 
+  removeFromWishlistApi,
+  addToCartApi,
+  updateCartQtyApi,
+  removeCartItemApi,
+  getGuestToken
+} from './services/api';
 import { PRODUCTS, CATEGORIES } from './data/products';
 
 export default function App() {
@@ -28,7 +38,23 @@ export default function App() {
   const [categories, setCategories] = useState(CATEGORIES);
 
   // Cart & Wishlist State
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('silverhouse_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Sync cart to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('silverhouse_cart', JSON.stringify(cartItems));
+    } catch (e) {
+      console.warn('Failed to save cart', e);
+    }
+  }, [cartItems]);
   const [wishlistIds, setWishlistIds] = useState(() => {
     try {
       const saved = localStorage.getItem('silverhouse_wishlist');
@@ -170,10 +196,14 @@ export default function App() {
     navigate('/category/custom-gifting/custom-yatra-lockets');
   };
 
-  // Cart Operations
-  const handleAddToCart = (product, quantity = 1, customConfig = null) => {
+  // Cart Operations - Synchronized with SQL Server database tables dbo.cart and dbo.cart_item
+  const handleAddToCart = async (product, quantity = 1, customConfig = null) => {
+    if (!product) return;
+    const prodId = product.id || product.product_id;
+    const prodTitle = product.name || product.title || product.product_name || 'Sacred Creation';
+
     setCartItems((prev) => {
-      const existingIdx = prev.findIndex(item => item.product.id === product.id && JSON.stringify(item.customConfig) === JSON.stringify(customConfig));
+      const existingIdx = prev.findIndex(item => (item.product.id || item.product.product_id) === prodId && JSON.stringify(item.customConfig) === JSON.stringify(customConfig));
       if (existingIdx > -1) {
         const updated = [...prev];
         updated[existingIdx].quantity += quantity;
@@ -183,23 +213,75 @@ export default function App() {
       }
     });
 
-    triggerToast('success', 'Added to Shopping Cart', `${product.name} (${quantity} qty) is in your cart.`);
+    triggerToast('success', 'Added to Shopping Cart', `${prodTitle} (${quantity} qty) is in your cart.`);
     setIsCartOpen(true);
+
+    // Sync addition directly to database table dbo.cart & dbo.cart_item
+    try {
+      await addToCartApi({
+        userId: isAuthenticated && user?.userId ? user.userId : null,
+        guestToken: getGuestToken(),
+        productId: prodId,
+        quantity: quantity
+      });
+    } catch (err) {
+      console.error('Failed to sync item to DB cart:', err);
+    }
   };
 
-  const handleUpdateCartQty = (index, newQty) => {
+  const handleUpdateCartQty = async (index, newQty) => {
+    const item = cartItems[index];
+    if (!item) return;
+    const prodId = item.product.id || item.product.product_id;
+
     setCartItems((prev) => {
+      if (newQty <= 0) {
+        return prev.filter((_, idx) => idx !== index);
+      }
       const updated = [...prev];
       updated[index].quantity = newQty;
       return updated;
     });
+
+    // Sync to database table dbo.cart_item
+    try {
+      if (newQty <= 0) {
+        await removeCartItemApi({
+          userId: isAuthenticated && user?.userId ? user.userId : null,
+          guestToken: getGuestToken(),
+          productId: prodId
+        });
+      } else {
+        await updateCartQtyApi({
+          userId: isAuthenticated && user?.userId ? user.userId : null,
+          guestToken: getGuestToken(),
+          productId: prodId,
+          quantity: newQty
+        });
+      }
+    } catch (err) {
+      console.error('Failed to update DB cart qty:', err);
+    }
   };
 
-  const handleRemoveCartItem = (index) => {
+  const handleRemoveCartItem = async (index) => {
     const item = cartItems[index];
+    if (!item) return;
+    const prodId = item.product.id || item.product.product_id;
+    const prodTitle = item.product.name || item.product.title || item.product.product_name || 'Item';
+
     setCartItems((prev) => prev.filter((_, idx) => idx !== index));
-    if (item) {
-      triggerToast('info', 'Item Removed', `${item.product.name} removed from cart.`);
+    triggerToast('info', 'Item Removed', `${prodTitle} removed from cart.`);
+
+    // Sync removal directly to database table dbo.cart_item
+    try {
+      await removeCartItemApi({
+        userId: isAuthenticated && user?.userId ? user.userId : null,
+        guestToken: getGuestToken(),
+        productId: prodId
+      });
+    } catch (err) {
+      console.error('Failed to remove item from DB cart:', err);
     }
   };
 
@@ -343,7 +425,14 @@ export default function App() {
         totalAmount={checkoutData.totalAmount}
         discountAmount={checkoutData.discountAmount}
         appliedCoupon={checkoutData.appliedCoupon}
-        onClearCart={() => setCartItems([])}
+        onClearCart={() => {
+          setCartItems([]);
+          try {
+            localStorage.removeItem('silverhouse_cart');
+          } catch (e) {
+            console.warn(e);
+          }
+        }}
         onNavigateHome={handleNavigateHome}
       />
 

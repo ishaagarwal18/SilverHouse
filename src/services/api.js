@@ -323,3 +323,121 @@ export async function removeFromWishlistApi(userId, productId) {
   }
 }
 
+/**
+ * Returns a stable guest token stored in localStorage for guest sessions.
+ */
+export function getGuestToken() {
+  let token = localStorage.getItem('silverhouse_guest_token');
+  if (!token) {
+    token = 'guest_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+    localStorage.setItem('silverhouse_guest_token', token);
+  }
+  return token;
+}
+
+/**
+ * Adds or increments an item in dbo.cart and dbo.cart_item.
+ */
+export async function addToCartApi({ userId, guestToken, productId, quantity = 1 }) {
+  try {
+    const token = guestToken || getGuestToken();
+    return await postApiData({
+      proc_name: 'cart_item',
+      opr: 'ADD',
+      table_values: {
+        user_id: userId ? Number(userId) : null,
+        guest_token: token,
+        product_id: Number(productId),
+        quantity: Number(quantity)
+      }
+    });
+  } catch (err) {
+    console.error('[API Service] Error adding item to cart in DB:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Updates item quantity in dbo.cart_item.
+ */
+export async function updateCartQtyApi({ userId, guestToken, productId, quantity }) {
+  try {
+    const token = guestToken || getGuestToken();
+    return await postApiData({
+      proc_name: 'cart_item',
+      opr: 'UPDATE_QTY',
+      table_values: {
+        user_id: userId ? Number(userId) : null,
+        guest_token: token,
+        product_id: Number(productId),
+        quantity: Number(quantity)
+      }
+    });
+  } catch (err) {
+    console.error('[API Service] Error updating cart qty in DB:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Removes an item from dbo.cart_item.
+ */
+export async function removeCartItemApi({ userId, guestToken, productId }) {
+  try {
+    const token = guestToken || getGuestToken();
+    return await postApiData({
+      proc_name: 'cart_item',
+      opr: 'DELETE',
+      table_values: {
+        user_id: userId ? Number(userId) : null,
+        guest_token: token,
+        product_id: Number(productId)
+      }
+    });
+  } catch (err) {
+    console.error('[API Service] Error removing cart item from DB:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Creates an order record in dbo.orders and order items in dbo.order_item.
+ */
+export async function createOrderApi(orderPayload) {
+  try {
+    return await postApiData({
+      proc_name: 'orders',
+      opr: 'ADD',
+      table_values: orderPayload
+    });
+  } catch (err) {
+    console.error('[API Service] Error placing order in DB:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Fetches current cart items directly from dbo.cart and dbo.cart_item.
+ */
+export async function fetchUserCartApi({ userId, guestToken }) {
+  try {
+    const token = guestToken || getGuestToken();
+    const json = await postApiData({
+      proc_name: 'cart_item',
+      opr: 'SELECT',
+      table_values: {
+        user_id: userId ? Number(userId) : null,
+        guest_token: token
+      }
+    });
+    if (json && json.success && Array.isArray(json.data)) {
+      return json.data;
+    }
+  } catch (err) {
+    console.warn('[API Service] Error fetching cart items from DB:', err);
+  }
+  return [];
+}
+
+
+

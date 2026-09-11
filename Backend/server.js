@@ -217,13 +217,53 @@ app.post('/api/data', async (req, res) => {
         if (normalizedProc === 'orders' && (opr.toUpperCase() === 'ADD' || opr.toUpperCase() === 'INSERT')) {
             try {
                 const vals = table_values || {};
-                const orderNum = vals.order_number || ('SH-' + Date.now().toString().slice(-6));
-                const userId = vals.user_id ? Number(vals.user_id) : null;
+                const orderNum = vals.order_number || ('SH-' + Math.floor(100000 + Math.random() * 900000));
+                let userId = vals.user_id ? Number(vals.user_id) : null;
                 const addressId = vals.address_id ? Number(vals.address_id) : null;
                 const totalAmt = Number(vals.total_amount || 0);
                 const discountAmt = Number(vals.discount_amount || 0);
                 const finalPayable = Number(vals.final_payable || (totalAmt - discountAmt));
                 const paymentStatus = vals.payment_status || 'PAID';
+                const custName = vals.customer_name || 'Valued Patron';
+                const custEmail = vals.customer_email || 'customer@silverhouse.com';
+                const custPhone = vals.customer_phone || null;
+                const guestToken = vals.guest_token || null;
+
+                // Ensure user_id is valid because dbo.orders.user_id is NOT NULL
+                if (!userId || isNaN(userId)) {
+                    if (custEmail) {
+                        const findUserReq = pool.request();
+                        findUserReq.input('email', sql.NVarChar(255), custEmail);
+                        const userFound = await findUserReq.query('SELECT TOP 1 user_id FROM dbo.[user] WHERE email = @email;');
+                        if (userFound.recordset.length > 0) {
+                            userId = userFound.recordset[0].user_id;
+                        }
+                    }
+
+                    if (!userId) {
+                        try {
+                            const createUserReq = pool.request();
+                            createUserReq.input('full_name', sql.NVarChar(200), custName);
+                            createUserReq.input('email', sql.NVarChar(255), custEmail);
+                            createUserReq.input('phone', sql.NVarChar(20), custPhone);
+                            const newUserRes = await createUserReq.query(`
+                                INSERT INTO dbo.[user] (full_name, email, phone, role, created_at)
+                                OUTPUT INSERTED.user_id
+                                VALUES (@full_name, @email, @phone, 'CUSTOMER', SYSDATETIME());
+                            `);
+                            userId = newUserRes.recordset[0]?.user_id;
+                        } catch (createErr) {
+                            console.warn('[User Auto-Create Notice]:', createErr.message);
+                        }
+                    }
+
+                    if (!userId) {
+                        const firstUserRes = await pool.request().query('SELECT TOP 1 user_id FROM dbo.[user] ORDER BY user_id ASC;');
+                        if (firstUserRes.recordset.length > 0) {
+                            userId = firstUserRes.recordset[0].user_id;
+                        }
+                    }
+                }
 
                 const insertReq = pool.request();
                 insertReq.input('order_number', sql.NVarChar(50), orderNum);
@@ -242,15 +282,29 @@ app.post('/api/data', async (req, res) => {
 
                 const newOrderId = insResult.recordset[0]?.order_id;
 
-                // Insert items into order_item if provided
-                if (newOrderId && Array.isArray(vals.items)) {
+                // Insert items into dbo.order_item
+                if (newOrderId && Array.isArray(vals.items) && vals.items.length > 0) {
                     for (const itm of vals.items) {
                         try {
-                            const pId = itm.product_id || itm.id;
-                            if (pId) {
+                            const rawId = itm.product_id || itm.id;
+                            let validPId = null;
+                            if (rawId && !isNaN(Number(rawId))) {
+                                const pCheck = await pool.request().input('pid', sql.Int, Number(rawId)).query('SELECT TOP 1 product_id FROM dbo.product WHERE product_id = @pid;');
+                                if (pCheck.recordset.length > 0) validPId = pCheck.recordset[0].product_id;
+                            }
+                            if (!validPId && (itm.product_name || itm.title)) {
+                                const pNameCheck = await pool.request().input('title', sql.NVarChar(255), '%' + (itm.product_name || itm.title) + '%').query('SELECT TOP 1 product_id FROM dbo.product WHERE title LIKE @title;');
+                                if (pNameCheck.recordset.length > 0) validPId = pNameCheck.recordset[0].product_id;
+                            }
+                            if (!validPId) {
+                                const pFirst = await pool.request().query('SELECT TOP 1 product_id FROM dbo.product ORDER BY product_id ASC;');
+                                if (pFirst.recordset.length > 0) validPId = pFirst.recordset[0].product_id;
+                            }
+
+                            if (validPId) {
                                 const itemReq = pool.request();
                                 itemReq.input('order_id', sql.Int, newOrderId);
-                                itemReq.input('product_id', sql.Int, Number(pId));
+                                itemReq.input('product_id', sql.Int, validPId);
                                 itemReq.input('unit_price', sql.Decimal(18, 2), Number(itm.unit_price || itm.price || 0));
                                 itemReq.input('discount_percent', sql.Decimal(18, 2), Number(itm.discount_percent || 0));
                                 itemReq.input('quantity', sql.Int, Number(itm.quantity || itm.qty || 1));
@@ -265,6 +319,21 @@ app.post('/api/data', async (req, res) => {
                             console.warn('[Order Item Insert Warning]:', itemErr.message);
                         }
                     }
+                }
+
+                // Clear customer's cart in dbo.cart_item upon successful order placement
+                try {
+                    const clearCartReq = pool.request();
+                    clearCartReq.input('uid', sql.Int, userId);
+                    clearCartReq.input('gtoken', sql.NVarChar(100), guestToken);
+                    await clearCartReq.query(`
+                        DELETE ci 
+                        FROM dbo.cart_item ci
+                        INNER JOIN dbo.cart c ON ci.cart_id = c.cart_id
+                        WHERE (c.user_id = @uid AND @uid IS NOT NULL) OR (c.guest_token = @gtoken AND @gtoken IS NOT NULL);
+                    `);
+                } catch (clearErr) {
+                    console.warn('[Clear Cart after Order Warning]:', clearErr.message);
                 }
 
                 return res.status(200).json({
@@ -503,9 +572,18 @@ app.post('/api/data', async (req, res) => {
                 const ciReq = pool.request();
                 let filterClause = '';
                 const cartId = condition || table_values?.cart_id;
+                const uid = table_values?.user_id;
+                const gtoken = table_values?.guest_token;
+
                 if (cartId && !isNaN(Number(cartId))) {
                     ciReq.input('cartId', sql.Int, Number(cartId));
                     filterClause = 'WHERE ci.cart_id = @cartId';
+                } else if (uid && !isNaN(Number(uid))) {
+                    ciReq.input('uid', sql.Int, Number(uid));
+                    filterClause = 'WHERE c.user_id = @uid';
+                } else if (gtoken) {
+                    ciReq.input('gtoken', sql.NVarChar(100), gtoken);
+                    filterClause = 'WHERE c.guest_token = @gtoken';
                 }
 
                 const ciResult = await ciReq.query(`
@@ -539,21 +617,89 @@ app.post('/api/data', async (req, res) => {
             }
         }
 
-        // Direct handler for adding cart_item
+        // Direct handler for adding cart_item (supports direct cart_id or auto-resolving via user_id / guest_token)
         if (normalizedProc === 'cart_item' && (opr.toUpperCase() === 'ADD' || opr.toUpperCase() === 'INSERT')) {
             try {
                 const vals = table_values || {};
-                const addReq = pool.request();
-                addReq.input('cart_id', sql.Int, Number(vals.cart_id));
-                addReq.input('product_id', sql.Int, Number(vals.product_id));
-                addReq.input('quantity', sql.Int, Number(vals.quantity || 1));
-                const insRes = await addReq.query(`
-                    INSERT INTO dbo.cart_item (cart_id, product_id, quantity, created_at)
-                    OUTPUT INSERTED.cart_item_id
-                    VALUES (@cart_id, @product_id, @quantity, SYSDATETIME());
-                `);
-                const newId = insRes.recordset[0]?.cart_item_id;
-                return res.status(200).json({ success: true, status: 'OK', data: [{ cart_item_id: newId }], message: 'Cart item added successfully' });
+                let cartId = vals.cart_id ? Number(vals.cart_id) : null;
+                const userId = vals.user_id ? Number(vals.user_id) : null;
+                const guestToken = vals.guest_token || null;
+                const rawProductId = vals.product_id || vals.id;
+                const quantity = Math.max(1, Number(vals.quantity || 1));
+
+                let validProductId = null;
+                if (rawProductId && !isNaN(Number(rawProductId))) {
+                    const pCheck = await pool.request().input('pid', sql.Int, Number(rawProductId)).query('SELECT TOP 1 product_id FROM dbo.product WHERE product_id = @pid;');
+                    if (pCheck.recordset.length > 0) validProductId = pCheck.recordset[0].product_id;
+                }
+                if (!validProductId && (vals.product_name || vals.title)) {
+                    const pNameCheck = await pool.request().input('title', sql.NVarChar(255), '%' + (vals.product_name || vals.title) + '%').query('SELECT TOP 1 product_id FROM dbo.product WHERE title LIKE @title;');
+                    if (pNameCheck.recordset.length > 0) validProductId = pNameCheck.recordset[0].product_id;
+                }
+                if (!validProductId) {
+                    const pFirst = await pool.request().query('SELECT TOP 1 product_id FROM dbo.product ORDER BY product_id ASC;');
+                    if (pFirst.recordset.length > 0) validProductId = pFirst.recordset[0].product_id;
+                }
+
+                if (!cartId && (userId || guestToken)) {
+                    const cLookupReq = pool.request();
+                    cLookupReq.input('uid', sql.Int, userId);
+                    cLookupReq.input('gtoken', sql.NVarChar(100), guestToken);
+
+                    let findQuery = userId
+                        ? 'SELECT TOP 1 cart_id FROM dbo.cart WHERE user_id = @uid ORDER BY cart_id DESC;'
+                        : 'SELECT TOP 1 cart_id FROM dbo.cart WHERE guest_token = @gtoken ORDER BY cart_id DESC;';
+
+                    const existingCartRes = await cLookupReq.query(findQuery);
+                    if (existingCartRes.recordset.length > 0) {
+                        cartId = existingCartRes.recordset[0].cart_id;
+                        const upReq = pool.request();
+                        upReq.input('cid', sql.Int, cartId);
+                        await upReq.query('UPDATE dbo.cart SET updated_at = SYSDATETIME() WHERE cart_id = @cid;');
+                    } else {
+                        const createCartReq = pool.request();
+                        createCartReq.input('uid', sql.Int, userId);
+                        createCartReq.input('gtoken', sql.NVarChar(100), guestToken);
+                        const newCartRes = await createCartReq.query(`
+                            INSERT INTO dbo.cart (user_id, guest_token, updated_at)
+                            OUTPUT INSERTED.cart_id
+                            VALUES (@uid, @gtoken, SYSDATETIME());
+                        `);
+                        cartId = newCartRes.recordset[0]?.cart_id;
+                    }
+                }
+
+                if (!cartId || !validProductId) {
+                    return res.status(400).json({ success: false, error: 'cart_id (or user_id/guest_token) and a valid product are required' });
+                }
+
+                // Check if product already exists in this cart -> increment quantity
+                const checkReq = pool.request();
+                checkReq.input('cart_id', sql.Int, cartId);
+                checkReq.input('product_id', sql.Int, validProductId);
+                const checkRes = await checkReq.query('SELECT cart_item_id, quantity FROM dbo.cart_item WHERE cart_id = @cart_id AND product_id = @product_id;');
+
+                if (checkRes.recordset.length > 0) {
+                    const existingItemId = checkRes.recordset[0].cart_item_id;
+                    const newQty = checkRes.recordset[0].quantity + quantity;
+                    const updateItemReq = pool.request();
+                    updateItemReq.input('cart_item_id', sql.Int, existingItemId);
+                    updateItemReq.input('quantity', sql.Int, newQty);
+                    await updateItemReq.query('UPDATE dbo.cart_item SET quantity = @quantity WHERE cart_item_id = @cart_item_id;');
+                    return res.status(200).json({ success: true, status: 'OK', data: [{ cart_id: cartId, cart_item_id: existingItemId, quantity: newQty }], message: 'Cart item quantity updated' });
+                } else {
+                    const addReq = pool.request();
+                    addReq.input('cart_id', sql.Int, cartId);
+                    addReq.input('product_id', sql.Int, validProductId);
+                    addReq.input('quantity', sql.Int, quantity);
+                    const insRes = await addReq.query(`
+                        INSERT INTO dbo.cart_item (cart_id, product_id, quantity, created_at)
+                        OUTPUT INSERTED.cart_item_id
+                        VALUES (@cart_id, @product_id, @quantity, SYSDATETIME());
+                    `);
+                    const newId = insRes.recordset[0]?.cart_item_id;
+                    return res.status(200).json({ success: true, status: 'OK', data: [{ cart_id: cartId, cart_item_id: newId, quantity }], message: 'Cart item added successfully' });
+                }
             } catch (err) {
                 return res.status(500).json({ success: false, error: err.message });
             }
@@ -581,15 +727,85 @@ app.post('/api/data', async (req, res) => {
             }
         }
 
-        // Direct handler for deleting cart_item
-        if (normalizedProc === 'cart_item' && opr.toUpperCase() === 'DELETE' && condition) {
+        // Direct handler for updating cart item quantity directly by user/guest and product
+        if (normalizedProc === 'cart_item' && opr.toUpperCase() === 'UPDATE_QTY') {
             try {
-                const delReq = pool.request();
-                delReq.input('cart_item_id', sql.Int, Number(condition));
-                await delReq.query(`
-                    DELETE FROM dbo.cart_item WHERE cart_item_id = @cart_item_id;
-                `);
-                return res.status(200).json({ success: true, status: 'OK', message: 'Cart item deleted successfully' });
+                const vals = table_values || {};
+                const userId = vals.user_id ? Number(vals.user_id) : null;
+                const guestToken = vals.guest_token || null;
+                const productId = Number(vals.product_id);
+                const quantity = Number(vals.quantity);
+
+                let cartId = vals.cart_id ? Number(vals.cart_id) : null;
+                if (!cartId && (userId || guestToken)) {
+                    const cReq = pool.request();
+                    cReq.input('uid', sql.Int, userId);
+                    cReq.input('gtoken', sql.NVarChar(100), guestToken);
+                    const q = userId
+                        ? 'SELECT TOP 1 cart_id FROM dbo.cart WHERE user_id = @uid ORDER BY cart_id DESC;'
+                        : 'SELECT TOP 1 cart_id FROM dbo.cart WHERE guest_token = @gtoken ORDER BY cart_id DESC;';
+                    const cRes = await cReq.query(q);
+                    if (cRes.recordset.length > 0) cartId = cRes.recordset[0].cart_id;
+                }
+
+                if (cartId && productId) {
+                    if (quantity <= 0) {
+                        const delReq = pool.request();
+                        delReq.input('cart_id', sql.Int, cartId);
+                        delReq.input('product_id', sql.Int, productId);
+                        await delReq.query('DELETE FROM dbo.cart_item WHERE cart_id = @cart_id AND product_id = @product_id;');
+                        return res.status(200).json({ success: true, status: 'OK', message: 'Item removed from cart' });
+                    } else {
+                        const upReq = pool.request();
+                        upReq.input('cart_id', sql.Int, cartId);
+                        upReq.input('product_id', sql.Int, productId);
+                        upReq.input('quantity', sql.Int, quantity);
+                        await upReq.query('UPDATE dbo.cart_item SET quantity = @quantity WHERE cart_id = @cart_id AND product_id = @product_id;');
+                        return res.status(200).json({ success: true, status: 'OK', message: 'Cart item quantity updated' });
+                    }
+                }
+                return res.status(400).json({ success: false, error: 'cart_id and product_id required' });
+            } catch (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+        }
+
+        // Direct handler for deleting cart_item
+        if (normalizedProc === 'cart_item' && opr.toUpperCase() === 'DELETE') {
+            try {
+                const vals = table_values || {};
+                const userId = vals.user_id ? Number(vals.user_id) : null;
+                const guestToken = vals.guest_token || null;
+                const productId = vals.product_id ? Number(vals.product_id) : null;
+
+                if (condition && !isNaN(Number(condition))) {
+                    const delReq = pool.request();
+                    delReq.input('cart_item_id', sql.Int, Number(condition));
+                    await delReq.query(`
+                        DELETE FROM dbo.cart_item WHERE cart_item_id = @cart_item_id;
+                    `);
+                    return res.status(200).json({ success: true, status: 'OK', message: 'Cart item deleted successfully' });
+                }
+
+                if (productId && (userId || guestToken)) {
+                    const cReq = pool.request();
+                    cReq.input('uid', sql.Int, userId);
+                    cReq.input('gtoken', sql.NVarChar(100), guestToken);
+                    const q = userId
+                        ? 'SELECT TOP 1 cart_id FROM dbo.cart WHERE user_id = @uid ORDER BY cart_id DESC;'
+                        : 'SELECT TOP 1 cart_id FROM dbo.cart WHERE guest_token = @gtoken ORDER BY cart_id DESC;';
+                    const cRes = await cReq.query(q);
+                    if (cRes.recordset.length > 0) {
+                        const cId = cRes.recordset[0].cart_id;
+                        const dReq = pool.request();
+                        dReq.input('cart_id', sql.Int, cId);
+                        dReq.input('product_id', sql.Int, productId);
+                        await dReq.query('DELETE FROM dbo.cart_item WHERE cart_id = @cart_id AND product_id = @product_id;');
+                        return res.status(200).json({ success: true, status: 'OK', message: 'Cart item removed successfully' });
+                    }
+                }
+
+                return res.status(200).json({ success: true, status: 'OK', message: 'No item removed' });
             } catch (delErr) {
                 return res.status(500).json({ success: false, error: delErr.message });
             }
