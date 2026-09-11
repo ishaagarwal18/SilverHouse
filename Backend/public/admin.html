@@ -628,39 +628,7 @@
             stroke: rgba(148, 163, 184, 0.25) !important;
         }
 
-        /* Row reorder controls */
-        .row-reorder-box {
-            display: inline-flex;
-            align-items: center;
-            gap: 2px;
-        }
 
-        .btn-row-move {
-            background: var(--surface-card);
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            width: 22px;
-            height: 22px;
-            border-radius: 4px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 11px;
-            transition: var(--transition);
-        }
-
-        .btn-row-move:hover:not(:disabled) {
-            background: var(--primary);
-            color: #ffffff;
-            border-color: var(--primary);
-            transform: scale(1.08);
-        }
-
-        .btn-row-move:disabled {
-            opacity: 0.25;
-            cursor: not-allowed;
-        }
 
         /* =========================================
            ROW HIGHLIGHTING FOR CRUD OPERATIONS
@@ -872,7 +840,7 @@
                     <span>Import File</span>
                 </button>
                 <button class="btn btn-primary" onclick="openAddModal()">
-                    <i class="ph-bold ph-plus"></i>
+
                     <span id="btnAddText">Add Product</span>
                 </button>
             </div>
@@ -894,7 +862,8 @@
             <div class="modal-header">
                 <div>
                     <h3 id="modalTitle">Add Record</h3>
-                    <p id="modalSubtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">Enter record details</p>
+                    <p id="modalSubtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">Enter
+                        record details</p>
                 </div>
                 <button type="button" class="modal-close-btn" onclick="closeRecordModal()">
                     <i class="ph-bold ph-x"></i>
@@ -1172,17 +1141,6 @@
             renderTable(sorted);
         }
 
-        function moveRow(fromIndex, delta) {
-            const toIndex = fromIndex + delta;
-            if (toIndex < 0 || toIndex >= currentRows.length) return;
-            const item = currentRows.splice(fromIndex, 1)[0];
-            currentRows.splice(toIndex, 0, item);
-            currentSortCol = null;
-            currentSortDir = null;
-            renderTable(currentRows);
-            showToast('Row order adjusted');
-        }
-
         function renderTable(rows) {
             const thead = document.getElementById('tableHead');
             const tbody = document.getElementById('tableBody');
@@ -1201,7 +1159,6 @@
             const pkField = PK_MAP[activeEntity];
             const headers = Object.keys(rows[0]);
             let headRow = '<tr>';
-            headRow += '<th style="width: 50px; text-align: center;" title="Manual row reorder">#</th>';
 
             headers.forEach(h => {
                 let colTitle = h.replace(/_/g, ' ');
@@ -1251,14 +1208,6 @@
                 }
 
                 let rowHtml = `<tr data-id="${idVal}" class="${rowClass}">`;
-                
-                // Row reorder arrows column
-                rowHtml += `<td style="text-align:center;">
-                    <div class="row-reorder-box">
-                        <button class="btn-row-move" onclick="moveRow(${rowIdx}, -1)" title="Move Row Up" ${rowIdx === 0 ? 'disabled' : ''}><i class="ph-bold ph-caret-up"></i></button>
-                        <button class="btn-row-move" onclick="moveRow(${rowIdx}, 1)" title="Move Row Down" ${rowIdx === rows.length - 1 ? 'disabled' : ''}><i class="ph-bold ph-caret-down"></i></button>
-                    </div>
-                </td>`;
 
                 headers.forEach((h, idx) => {
                     let val = row[h] !== null && row[h] !== undefined ? row[h] : '-';
@@ -1338,22 +1287,22 @@
             editId = (mode === 'EDIT') ? id : null;
             const cfg = ENTITY_CONFIG[activeEntity] || { singular: activeEntity };
 
-            document.getElementById('modalTitle').innerText = (mode === 'EDIT') 
-                ? `Edit ${cfg.singular} (#${id})` 
+            document.getElementById('modalTitle').innerText = (mode === 'EDIT')
+                ? `Edit ${cfg.singular} (#${id})`
                 : `Add New ${cfg.singular}`;
             document.getElementById('modalSubtitle').innerText = (mode === 'EDIT')
                 ? `Update ${cfg.singular.toLowerCase()} record values in dbo.${activeEntity}`
                 : `Insert a new ${cfg.singular.toLowerCase()} record into dbo.${activeEntity}`;
-            document.getElementById('modalSubmitBtn').innerText = (mode === 'EDIT') 
-                ? `Update ${cfg.singular}` 
+            document.getElementById('modalSubmitBtn').innerText = (mode === 'EDIT')
+                ? `Update ${cfg.singular}`
                 : `Create ${cfg.singular}`;
 
             const fieldsContainer = document.getElementById('modalFormFields');
             fieldsContainer.innerHTML = '';
 
             const pkField = PK_MAP[activeEntity];
-            const rowData = (mode === 'EDIT' && id) 
-                ? currentRows.find(r => String(r[pkField]) === String(id)) || {} 
+            const rowData = (mode === 'EDIT' && id)
+                ? currentRows.find(r => String(r[pkField]) === String(id)) || {}
                 : {};
 
             const schema = ENTITY_FORM_SCHEMAS[activeEntity] || [];
@@ -1410,8 +1359,8 @@
             formData.forEach((value, key) => {
                 const trimmed = String(value).trim();
                 if (trimmed !== '') {
-                    table_values[key] = (!isNaN(trimmed) && trimmed !== '' && !key.includes('phone') && !key.includes('pincode') && !key.includes('order_number') && !key.includes('guest_token')) 
-                        ? Number(trimmed) 
+                    table_values[key] = (!isNaN(trimmed) && trimmed !== '' && !key.includes('phone') && !key.includes('pincode') && !key.includes('order_number') && !key.includes('guest_token'))
+                        ? Number(trimmed)
                         : trimmed;
                 }
             });
