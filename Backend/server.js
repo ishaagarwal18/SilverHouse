@@ -372,6 +372,38 @@ app.post('/api/data', async (req, res) => {
             }
         }
 
+        // Direct handler for editing orders
+        if (normalizedProc === 'orders' && opr.toUpperCase() === 'EDIT' && condition) {
+            try {
+                const vals = table_values || {};
+                const orderId = Number(condition);
+                const editReq = pool.request();
+                editReq.input('order_id', sql.Int, orderId);
+                editReq.input('user_id', sql.Int, vals.user_id ? Number(vals.user_id) : null);
+                editReq.input('address_id', sql.Int, vals.address_id ? Number(vals.address_id) : null);
+                editReq.input('total_amount', sql.Decimal(18, 2), vals.total_amount ? Number(vals.total_amount) : null);
+                editReq.input('discount_amount', sql.Decimal(18, 2), vals.discount_amount ? Number(vals.discount_amount) : null);
+                editReq.input('final_payable', sql.Decimal(18, 2), vals.final_payable ? Number(vals.final_payable) : null);
+                editReq.input('payment_status', sql.NVarChar(20), vals.payment_status || null);
+                editReq.input('order_number', sql.NVarChar(50), vals.order_number || null);
+
+                await editReq.query(`
+                    UPDATE dbo.orders
+                    SET user_id = COALESCE(@user_id, user_id),
+                        address_id = COALESCE(@address_id, address_id),
+                        total_amount = COALESCE(@total_amount, total_amount),
+                        discount_amount = COALESCE(@discount_amount, discount_amount),
+                        final_payable = COALESCE(@final_payable, final_payable),
+                        payment_status = COALESCE(@payment_status, payment_status),
+                        order_number = COALESCE(@order_number, order_number)
+                    WHERE order_id = @order_id;
+                `);
+                return res.status(200).json({ success: true, status: 'OK', message: 'Order updated successfully' });
+            } catch (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+        }
+
         // Direct handler for querying cart in Admin Studio or with user_id filter
         if (normalizedProc === 'cart' && opr.toUpperCase() === 'SELECT') {
             try {
@@ -407,6 +439,46 @@ app.post('/api/data', async (req, res) => {
                 });
             } catch (cartErr) {
                 console.warn('[Cart Select Error]:', cartErr.message);
+            }
+        }
+
+        // Direct handler for adding cart
+        if (normalizedProc === 'cart' && (opr.toUpperCase() === 'ADD' || opr.toUpperCase() === 'INSERT')) {
+            try {
+                const vals = table_values || {};
+                const addReq = pool.request();
+                addReq.input('user_id', sql.Int, vals.user_id ? Number(vals.user_id) : null);
+                addReq.input('guest_token', sql.NVarChar(100), vals.guest_token || null);
+                const insRes = await addReq.query(`
+                    INSERT INTO dbo.cart (user_id, guest_token, updated_at)
+                    OUTPUT INSERTED.cart_id
+                    VALUES (@user_id, @guest_token, SYSDATETIME());
+                `);
+                const newId = insRes.recordset[0]?.cart_id;
+                return res.status(200).json({ success: true, status: 'OK', data: [{ cart_id: newId }], message: 'Cart created successfully' });
+            } catch (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+        }
+
+        // Direct handler for editing cart
+        if (normalizedProc === 'cart' && opr.toUpperCase() === 'EDIT' && condition) {
+            try {
+                const vals = table_values || {};
+                const editReq = pool.request();
+                editReq.input('cart_id', sql.Int, Number(condition));
+                editReq.input('user_id', sql.Int, vals.user_id ? Number(vals.user_id) : null);
+                editReq.input('guest_token', sql.NVarChar(100), vals.guest_token || null);
+                await editReq.query(`
+                    UPDATE dbo.cart
+                    SET user_id = COALESCE(@user_id, user_id),
+                        guest_token = COALESCE(@guest_token, guest_token),
+                        updated_at = SYSDATETIME()
+                    WHERE cart_id = @cart_id;
+                `);
+                return res.status(200).json({ success: true, status: 'OK', message: 'Cart updated successfully' });
+            } catch (err) {
+                return res.status(500).json({ success: false, error: err.message });
             }
         }
 
@@ -467,6 +539,48 @@ app.post('/api/data', async (req, res) => {
             }
         }
 
+        // Direct handler for adding cart_item
+        if (normalizedProc === 'cart_item' && (opr.toUpperCase() === 'ADD' || opr.toUpperCase() === 'INSERT')) {
+            try {
+                const vals = table_values || {};
+                const addReq = pool.request();
+                addReq.input('cart_id', sql.Int, Number(vals.cart_id));
+                addReq.input('product_id', sql.Int, Number(vals.product_id));
+                addReq.input('quantity', sql.Int, Number(vals.quantity || 1));
+                const insRes = await addReq.query(`
+                    INSERT INTO dbo.cart_item (cart_id, product_id, quantity, created_at)
+                    OUTPUT INSERTED.cart_item_id
+                    VALUES (@cart_id, @product_id, @quantity, SYSDATETIME());
+                `);
+                const newId = insRes.recordset[0]?.cart_item_id;
+                return res.status(200).json({ success: true, status: 'OK', data: [{ cart_item_id: newId }], message: 'Cart item added successfully' });
+            } catch (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+        }
+
+        // Direct handler for editing cart_item
+        if (normalizedProc === 'cart_item' && opr.toUpperCase() === 'EDIT' && condition) {
+            try {
+                const vals = table_values || {};
+                const editReq = pool.request();
+                editReq.input('cart_item_id', sql.Int, Number(condition));
+                editReq.input('cart_id', sql.Int, vals.cart_id ? Number(vals.cart_id) : null);
+                editReq.input('product_id', sql.Int, vals.product_id ? Number(vals.product_id) : null);
+                editReq.input('quantity', sql.Int, vals.quantity ? Number(vals.quantity) : null);
+                await editReq.query(`
+                    UPDATE dbo.cart_item
+                    SET cart_id = COALESCE(@cart_id, cart_id),
+                        product_id = COALESCE(@product_id, product_id),
+                        quantity = COALESCE(@quantity, quantity)
+                    WHERE cart_item_id = @cart_item_id;
+                `);
+                return res.status(200).json({ success: true, status: 'OK', message: 'Cart item updated successfully' });
+            } catch (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+        }
+
         // Direct handler for deleting cart_item
         if (normalizedProc === 'cart_item' && opr.toUpperCase() === 'DELETE' && condition) {
             try {
@@ -521,6 +635,57 @@ app.post('/api/data', async (req, res) => {
             }
         }
 
+        // Direct handler for adding order_item
+        if (normalizedProc === 'order_item' && (opr.toUpperCase() === 'ADD' || opr.toUpperCase() === 'INSERT')) {
+            try {
+                const vals = table_values || {};
+                const addReq = pool.request();
+                addReq.input('order_id', sql.Int, Number(vals.order_id));
+                addReq.input('product_id', sql.Int, Number(vals.product_id));
+                addReq.input('unit_price', sql.Decimal(18, 2), Number(vals.unit_price || 0));
+                addReq.input('discount_percent', sql.Decimal(18, 2), Number(vals.discount_percent || 0));
+                addReq.input('quantity', sql.Int, Number(vals.quantity || 1));
+                addReq.input('subtotal', sql.Decimal(18, 2), Number(vals.subtotal || ((vals.unit_price || 0) * (vals.quantity || 1))));
+                const insRes = await addReq.query(`
+                    INSERT INTO dbo.order_item (order_id, product_id, unit_price, discount_percent, quantity, subtotal)
+                    OUTPUT INSERTED.order_item_id
+                    VALUES (@order_id, @product_id, @unit_price, @discount_percent, @quantity, @subtotal);
+                `);
+                const newId = insRes.recordset[0]?.order_item_id;
+                return res.status(200).json({ success: true, status: 'OK', data: [{ order_item_id: newId }], message: 'Order item added successfully' });
+            } catch (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+        }
+
+        // Direct handler for editing order_item
+        if (normalizedProc === 'order_item' && opr.toUpperCase() === 'EDIT' && condition) {
+            try {
+                const vals = table_values || {};
+                const editReq = pool.request();
+                editReq.input('order_item_id', sql.Int, Number(condition));
+                editReq.input('order_id', sql.Int, vals.order_id ? Number(vals.order_id) : null);
+                editReq.input('product_id', sql.Int, vals.product_id ? Number(vals.product_id) : null);
+                editReq.input('unit_price', sql.Decimal(18, 2), vals.unit_price !== undefined ? Number(vals.unit_price) : null);
+                editReq.input('discount_percent', sql.Decimal(18, 2), vals.discount_percent !== undefined ? Number(vals.discount_percent) : null);
+                editReq.input('quantity', sql.Int, vals.quantity !== undefined ? Number(vals.quantity) : null);
+                editReq.input('subtotal', sql.Decimal(18, 2), vals.subtotal !== undefined ? Number(vals.subtotal) : null);
+                await editReq.query(`
+                    UPDATE dbo.order_item
+                    SET order_id = COALESCE(@order_id, order_id),
+                        product_id = COALESCE(@product_id, product_id),
+                        unit_price = COALESCE(@unit_price, unit_price),
+                        discount_percent = COALESCE(@discount_percent, discount_percent),
+                        quantity = COALESCE(@quantity, quantity),
+                        subtotal = COALESCE(@subtotal, subtotal)
+                    WHERE order_item_id = @order_item_id;
+                `);
+                return res.status(200).json({ success: true, status: 'OK', message: 'Order item updated successfully' });
+            } catch (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
+        }
+
         // Direct handler for deleting order_item
         if (normalizedProc === 'order_item' && opr.toUpperCase() === 'DELETE' && condition) {
             try {
@@ -532,6 +697,26 @@ app.post('/api/data', async (req, res) => {
                 return res.status(200).json({ success: true, status: 'OK', message: 'Order item deleted successfully' });
             } catch (delErr) {
                 return res.status(500).json({ success: false, error: delErr.message });
+            }
+        }
+
+        // Direct handler for editing wishlist
+        if (normalizedProc === 'wishlist' && opr.toUpperCase() === 'EDIT' && condition) {
+            try {
+                const vals = table_values || {};
+                const editReq = pool.request();
+                editReq.input('wishlist_id', sql.Int, Number(condition));
+                editReq.input('user_id', sql.Int, Number(vals.user_id));
+                editReq.input('product_id', sql.Int, Number(vals.product_id));
+                await editReq.query(`
+                    UPDATE dbo.wishlist
+                    SET user_id = @user_id,
+                        product_id = @product_id
+                    WHERE wishlist_id = @wishlist_id;
+                `);
+                return res.status(200).json({ success: true, status: 'OK', message: 'Wishlist updated successfully' });
+            } catch (err) {
+                return res.status(500).json({ success: false, error: err.message });
             }
         }
 

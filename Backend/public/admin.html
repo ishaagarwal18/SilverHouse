@@ -538,6 +538,131 @@
         }
 
         /* =========================================
+           SORTING HEADERS & ROW REORDER ARROWS
+        ========================================= */
+        .th-sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: var(--transition);
+        }
+
+        .th-sortable:hover {
+            background: var(--surface-hover) !important;
+            color: var(--primary) !important;
+        }
+
+        .th-content {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .sort-arrows {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        [data-theme="dark"] .sort-arrows {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .th-sortable:hover .sort-arrows {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .sort-arrows svg {
+            display: block;
+        }
+
+        .arrow-up {
+            stroke: #94a3b8;
+            transition: stroke 0.2s ease, stroke-width 0.2s ease;
+        }
+
+        .arrow-down {
+            stroke: #94a3b8;
+            transition: stroke 0.2s ease, stroke-width 0.2s ease;
+        }
+
+        /* Active sort states matching user uploaded screenshot */
+        .sort-arrows.active.asc {
+            background: rgba(56, 189, 248, 0.18);
+        }
+
+        .sort-arrows.active.asc .arrow-up {
+            stroke: #0284c7 !important;
+            stroke-width: 2.8;
+        }
+
+        [data-theme="dark"] .sort-arrows.active.asc .arrow-up {
+            stroke: #38bdf8 !important;
+        }
+
+        .sort-arrows.active.asc .arrow-down {
+            stroke: rgba(148, 163, 184, 0.25) !important;
+        }
+
+        .sort-arrows.active.desc {
+            background: rgba(56, 189, 248, 0.18);
+        }
+
+        .sort-arrows.active.desc .arrow-down {
+            stroke: #0284c7 !important;
+            stroke-width: 2.8;
+        }
+
+        [data-theme="dark"] .sort-arrows.active.desc .arrow-down {
+            stroke: #38bdf8 !important;
+        }
+
+        .sort-arrows.active.desc .arrow-up {
+            stroke: rgba(148, 163, 184, 0.25) !important;
+        }
+
+        /* Row reorder controls */
+        .row-reorder-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .btn-row-move {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 11px;
+            transition: var(--transition);
+        }
+
+        .btn-row-move:hover:not(:disabled) {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+            transform: scale(1.08);
+        }
+
+        .btn-row-move:disabled {
+            opacity: 0.25;
+            cursor: not-allowed;
+        }
+
+        /* =========================================
            ROW HIGHLIGHTING FOR CRUD OPERATIONS
         ========================================= */
         tr.row-highlight-edit {
@@ -742,13 +867,13 @@
 
                 <input type="file" id="fileUploadInput" accept=".csv, .xlsx, .xls, .docx" style="display:none;"
                     onchange="handleFileUpload(event)" />
-                <button class="btn btn-secondary" onclick="triggerFileImport()">
+                <button class="btn btn-secondary" id="btnImport" onclick="triggerFileImport()">
                     <i class="ph-bold ph-upload-simple"></i>
                     <span>Import File</span>
                 </button>
                 <button class="btn btn-primary" onclick="openAddModal()">
                     <i class="ph-bold ph-plus"></i>
-                    <span>Add Product</span>
+                    <span id="btnAddText">Add Product</span>
                 </button>
             </div>
         </header>
@@ -762,6 +887,30 @@
             </div>
         </div>
     </main>
+
+    <!-- Dynamic In-Page Modal for Adding / Editing Records -->
+    <div id="recordModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h3 id="modalTitle">Add Record</h3>
+                    <p id="modalSubtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">Enter record details</p>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeRecordModal()">
+                    <i class="ph-bold ph-x"></i>
+                </button>
+            </div>
+            <form id="recordForm" onsubmit="handleRecordFormSubmit(event)">
+                <div class="modal-body">
+                    <div id="modalFormFields" class="form-grid"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeRecordModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="modalSubmitBtn">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Toast Notification element -->
     <div id="toast" class="toast"></div>
@@ -850,10 +999,83 @@
             }
         }
 
+        const ENTITY_CONFIG = {
+            product: { singular: 'Product', plural: 'Products', formPage: '/product-form.html' },
+            category: { singular: 'Category', plural: 'Categories', formPage: '/category-form.html' },
+            image: { singular: 'Image', plural: 'Images', formPage: '/image-form.html' },
+            make_master: { singular: 'Make Master', plural: 'Make Master', formPage: '/make-master-form.html' },
+            product_image: { singular: 'Product Image', plural: 'Product Images', formPage: '/product-image-form.html' },
+            orders: { singular: 'Order', plural: 'Orders' },
+            order: { singular: 'Order', plural: 'Orders' },
+            order_item: { singular: 'Order Item', plural: 'Order Items' },
+            cart: { singular: 'Cart', plural: 'Carts' },
+            cart_item: { singular: 'Cart Item', plural: 'Cart Items' },
+            wishlist: { singular: 'Wishlist Item', plural: 'Wishlist' },
+            user: { singular: 'User', plural: 'Users' },
+            address: { singular: 'Address', plural: 'Addresses' }
+        };
+
+        const ENTITY_FORM_SCHEMAS = {
+            orders: [
+                { name: 'user_id', label: 'User ID', type: 'number', required: true, placeholder: 'e.g. 1' },
+                { name: 'address_id', label: 'Address ID', type: 'number', placeholder: 'e.g. 1' },
+                { name: 'order_number', label: 'Order Number', type: 'text', placeholder: 'e.g. SH-99124' },
+                { name: 'payment_status', label: 'Payment Status', type: 'select', options: ['PAID', 'PENDING', 'CANCELLED', 'FAILED'], default: 'PAID' },
+                { name: 'total_amount', label: 'Total Amount (₹)', type: 'number', step: '0.01', placeholder: 'e.g. 1599.00' },
+                { name: 'discount_amount', label: 'Discount Amount (₹)', type: 'number', step: '0.01', default: 0 },
+                { name: 'final_payable', label: 'Final Payable (₹)', type: 'number', step: '0.01', placeholder: 'e.g. 1599.00' }
+            ],
+            order_item: [
+                { name: 'order_id', label: 'Order ID', type: 'number', required: true, placeholder: 'e.g. 1' },
+                { name: 'product_id', label: 'Product ID', type: 'number', required: true, placeholder: 'e.g. 5' },
+                { name: 'unit_price', label: 'Unit Price (₹)', type: 'number', step: '0.01', required: true, placeholder: 'e.g. 1439.00' },
+                { name: 'discount_percent', label: 'Discount (%)', type: 'number', step: '0.01', default: 0 },
+                { name: 'quantity', label: 'Quantity', type: 'number', required: true, default: 1 },
+                { name: 'subtotal', label: 'Subtotal (₹)', type: 'number', step: '0.01', placeholder: 'e.g. 1439.00' }
+            ],
+            cart: [
+                { name: 'user_id', label: 'User ID', type: 'number', placeholder: 'e.g. 1 (optional for guest carts)' },
+                { name: 'guest_token', label: 'Guest Token', type: 'text', placeholder: 'Optional guest token' }
+            ],
+            cart_item: [
+                { name: 'cart_id', label: 'Cart ID', type: 'number', required: true, placeholder: 'e.g. 1' },
+                { name: 'product_id', label: 'Product ID', type: 'number', required: true, placeholder: 'e.g. 5' },
+                { name: 'quantity', label: 'Quantity', type: 'number', required: true, default: 1 }
+            ],
+            wishlist: [
+                { name: 'user_id', label: 'User ID', type: 'number', required: true, placeholder: 'e.g. 1' },
+                { name: 'product_id', label: 'Product ID', type: 'number', required: true, placeholder: 'e.g. 5' }
+            ],
+            user: [
+                { name: 'full_name', label: 'Full Name', type: 'text', required: true, placeholder: 'e.g. Isha Agarwal' },
+                { name: 'email', label: 'Email Address', type: 'email', required: true, placeholder: 'e.g. isha@example.com' },
+                { name: 'phone', label: 'Phone Number', type: 'text', placeholder: 'e.g. 9876543210' },
+                { name: 'role', label: 'User Role', type: 'select', options: ['CUSTOMER', 'ADMIN'], default: 'CUSTOMER' },
+                { name: 'password_hash', label: 'Password / Hash', type: 'text', required: true, default: 'hash_default_secret', fullWidth: true }
+            ],
+            address: [
+                { name: 'user_id', label: 'User ID', type: 'number', required: true, placeholder: 'e.g. 1' },
+                { name: 'recipient_name', label: 'Recipient Name', type: 'text', required: true, placeholder: 'e.g. Isha Agarwal' },
+                { name: 'address_name', label: 'Address Type', type: 'text', placeholder: 'e.g. Home, Office' },
+                { name: 'Block', label: 'Block / Flat', type: 'text', required: true, placeholder: 'e.g. A-205' },
+                { name: 'street', label: 'Street Address', type: 'text', required: true, placeholder: 'e.g. Akash Metro City', fullWidth: true },
+                { name: 'area', label: 'Area / Locality', type: 'text', required: true, placeholder: 'e.g. Isanpur' },
+                { name: 'city', label: 'City', type: 'text', required: true, placeholder: 'e.g. Ahmedabad' },
+                { name: 'state', label: 'State', type: 'text', required: true, default: 'Gujarat' },
+                { name: 'pincode', label: 'Pincode', type: 'text', required: true, placeholder: 'e.g. 382443' },
+                { name: 'country', label: 'Country', type: 'text', default: 'India' }
+            ]
+        };
+
+        let currentSortCol = null;
+        let currentSortDir = null; // 'asc' or 'desc' or null
+
         function navigate(procName) {
             activeEntity = procName;
             editId = null;
             highlightMap = {};
+            currentSortCol = null;
+            currentSortDir = null;
 
             // Update active nav button
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -861,23 +1083,24 @@
                 window.event.currentTarget.classList.add('active');
             }
 
-            // Update titles
-            const cleanName = procName.replace('_', ' ').toUpperCase();
-            document.getElementById('pageTitle').innerText = cleanName;
+            const cfg = ENTITY_CONFIG[procName] || { singular: procName.replace(/_/g, ' '), plural: procName.replace(/_/g, ' ') };
+            document.getElementById('pageTitle').innerText = cfg.plural.toUpperCase();
             const desc = document.getElementById('pageDescription');
-            if (desc) desc.innerText = `Manage, inspect and review ${cleanName} live table data`;
-
-            const actionControls = document.querySelector('.action-controls');
-            if (actionControls) {
-                if (['orders', 'order', 'order_item', 'cart', 'cart_item', 'user', 'address', 'wishlist'].includes(procName)) {
-                    actionControls.style.display = 'none';
-                } else {
-                    actionControls.style.display = 'flex';
-                }
-            }
+            if (desc) desc.innerText = `Manage, search, sort and review ${cfg.plural.toLowerCase()} live table data`;
 
             const btnAdd = document.getElementById('btnAddText');
-            if (btnAdd) btnAdd.innerText = `+ Add ${cleanName.slice(0, -1)}`;
+            if (btnAdd) btnAdd.innerText = `+ Add ${cfg.singular}`;
+
+            // Ensure actionControls (Add button) is always visible for all tables
+            const actionControls = document.querySelector('.action-controls');
+            if (actionControls) actionControls.style.display = 'flex';
+
+            // Show bulk import controls only for catalog tables
+            const isCatalog = ['product', 'category', 'image', 'make_master', 'product_image'].includes(procName);
+            const importModeSelect = document.getElementById('importModeSelect');
+            const btnImport = document.getElementById('btnImport');
+            if (importModeSelect) importModeSelect.style.display = (procName === 'product') ? 'inline-block' : 'none';
+            if (btnImport) btnImport.style.display = isCatalog ? 'inline-flex' : 'none';
 
             loadData();
         }
@@ -892,10 +1115,72 @@
                 });
                 const result = await res.json();
                 currentRows = result.data || [];
-                renderTable(currentRows);
+                sortAndRender();
             } catch (err) {
                 showToast('Failed to load table: ' + err.message, true);
             }
+        }
+
+        function handleSort(col) {
+            if (currentSortCol === col) {
+                if (currentSortDir === 'asc') {
+                    currentSortDir = 'desc';
+                } else if (currentSortDir === 'desc') {
+                    currentSortDir = null;
+                    currentSortCol = null;
+                }
+            } else {
+                currentSortCol = col;
+                currentSortDir = 'asc';
+            }
+            sortAndRender();
+        }
+
+        function sortAndRender() {
+            if (!currentSortCol || !currentSortDir) {
+                renderTable(currentRows);
+                return;
+            }
+
+            const sorted = [...currentRows].sort((a, b) => {
+                let valA = a[currentSortCol];
+                let valB = b[currentSortCol];
+
+                if (valA === null || valA === undefined || valA === '-') valA = '';
+                if (valB === null || valB === undefined || valB === '-') valB = '';
+
+                // Numeric sorting
+                const numA = Number(valA);
+                const numB = Number(valB);
+                if (!isNaN(numA) && !isNaN(numB) && valA !== '' && valB !== '') {
+                    return currentSortDir === 'asc' ? numA - numB : numB - numA;
+                }
+
+                // Date sorting
+                const dateA = Date.parse(valA);
+                const dateB = Date.parse(valB);
+                if (!isNaN(dateA) && !isNaN(dateB) && typeof valA === 'string' && (valA.includes('-') || valA.includes(':'))) {
+                    return currentSortDir === 'asc' ? dateA - dateB : dateB - dateA;
+                }
+
+                // String comparison
+                const strA = String(valA).toLowerCase();
+                const strB = String(valB).toLowerCase();
+                return currentSortDir === 'asc' ? strA.localeCompare(strB) : strB.localeCompare(strA);
+            });
+
+            renderTable(sorted);
+        }
+
+        function moveRow(fromIndex, delta) {
+            const toIndex = fromIndex + delta;
+            if (toIndex < 0 || toIndex >= currentRows.length) return;
+            const item = currentRows.splice(fromIndex, 1)[0];
+            currentRows.splice(toIndex, 0, item);
+            currentSortCol = null;
+            currentSortDir = null;
+            renderTable(currentRows);
+            showToast('Row order adjusted');
         }
 
         function renderTable(rows) {
@@ -904,9 +1189,11 @@
             thead.innerHTML = '';
             tbody.innerHTML = '';
 
+            const cfg = ENTITY_CONFIG[activeEntity] || { singular: activeEntity };
+
             if (!rows || rows.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="15" style="text-align:center; padding: 40px; color: var(--text-muted);">
-          No records present in ${activeEntity}. Click "+ Add" to create one.
+                tbody.innerHTML = `<tr><td colspan="16" style="text-align:center; padding: 40px; color: var(--text-muted);">
+          No records present in ${activeEntity}. Click "+ Add ${cfg.singular}" to create one.
         </td></tr>`;
                 return;
             }
@@ -914,6 +1201,8 @@
             const pkField = PK_MAP[activeEntity];
             const headers = Object.keys(rows[0]);
             let headRow = '<tr>';
+            headRow += '<th style="width: 50px; text-align: center;" title="Manual row reorder">#</th>';
+
             headers.forEach(h => {
                 let colTitle = h.replace(/_/g, ' ');
                 if (activeEntity === 'product') {
@@ -921,14 +1210,30 @@
                     if (h === 'm_id') colTitle = 'Make Master';
                     if (h === 'title') colTitle = 'Product Name';
                 }
-                headRow += `<th>${colTitle}</th>`;
+
+                const isSorted = currentSortCol === h;
+                const sortClass = isSorted ? `active ${currentSortDir}` : '';
+
+                headRow += `
+                    <th class="th-sortable" onclick="handleSort('${h}')" title="Click to sort by ${colTitle} (${isSorted ? (currentSortDir === 'asc' ? 'Ascending' : 'Descending') : 'Unsorted'})">
+                        <div class="th-content">
+                            <span>${colTitle}</span>
+                            <span class="sort-arrows ${sortClass}">
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                    <path d="M5 12.5V3.5M5 3.5L2 6.5M5 3.5L8 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-up"/>
+                                    <path d="M11 3.5V12.5M11 12.5L8 9.5M11 12.5L14 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-down"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </th>
+                `;
             });
             headRow += '<th style="text-align:right">Actions</th></tr>';
             thead.innerHTML = headRow;
 
             let firstHighlightedRow = null;
 
-            rows.forEach(row => {
+            rows.forEach((row, rowIdx) => {
                 const idVal = row[pkField];
                 const actionType = highlightMap[idVal] || (idVal !== undefined && highlightMap[String(idVal)]);
 
@@ -946,6 +1251,15 @@
                 }
 
                 let rowHtml = `<tr data-id="${idVal}" class="${rowClass}">`;
+                
+                // Row reorder arrows column
+                rowHtml += `<td style="text-align:center;">
+                    <div class="row-reorder-box">
+                        <button class="btn-row-move" onclick="moveRow(${rowIdx}, -1)" title="Move Row Up" ${rowIdx === 0 ? 'disabled' : ''}><i class="ph-bold ph-caret-up"></i></button>
+                        <button class="btn-row-move" onclick="moveRow(${rowIdx}, 1)" title="Move Row Down" ${rowIdx === rows.length - 1 ? 'disabled' : ''}><i class="ph-bold ph-caret-down"></i></button>
+                    </div>
+                </td>`;
+
                 headers.forEach((h, idx) => {
                     let val = row[h] !== null && row[h] !== undefined ? row[h] : '-';
                     const showBadge = (idx === 0 && badgeHtml);
@@ -973,10 +1287,10 @@
                 });
 
                 const rowId = row[PK_MAP[activeEntity]];
-                rowHtml += `<td style="text-align:right">
-          ${(activeEntity !== 'product_image' && !['orders', 'order', 'order_item', 'cart', 'cart_item', 'user', 'address', 'wishlist'].includes(activeEntity)) ? `<button class="btn-action-edit" onclick="openEditModal(${rowId})">Edit</button>` : ''}
-          <button class="btn-action-del" onclick="deleteRecord(${rowId}, ${row.image_id || null})">Delete</button>
-        </td></tr>`;
+                rowHtml += `<td style="text-align:right; white-space:nowrap;">
+                  <button class="btn-action-edit" onclick="openEditModal('${rowId}')"><i class="ph-bold ph-pencil-simple"></i> Edit</button>
+                  <button class="btn-action-del" onclick="deleteRecord('${rowId}', ${row.image_id || null})"><i class="ph-bold ph-trash"></i> Delete</button>
+                </td></tr>`;
 
                 const trElem = document.createElement('tbody');
                 trElem.innerHTML = rowHtml;
@@ -1003,15 +1317,129 @@
             product_image: '/product-image-form.html'
         };
 
-        // Navigation Handlers for Separate Form Pages
+        // Navigation & Modal Handlers for Add and Edit
         function openAddModal() {
-            const page = FORM_PAGES[activeEntity] || '/product-form.html';
-            window.location.href = page;
+            if (FORM_PAGES[activeEntity]) {
+                window.location.href = FORM_PAGES[activeEntity];
+                return;
+            }
+            openInPageModal('ADD');
         }
 
         function openEditModal(id) {
-            const page = FORM_PAGES[activeEntity] || '/product-form.html';
-            window.location.href = `${page}?id=${id}`;
+            if (FORM_PAGES[activeEntity]) {
+                window.location.href = `${FORM_PAGES[activeEntity]}?id=${id}`;
+                return;
+            }
+            openInPageModal('EDIT', id);
+        }
+
+        function openInPageModal(mode, id = null) {
+            editId = (mode === 'EDIT') ? id : null;
+            const cfg = ENTITY_CONFIG[activeEntity] || { singular: activeEntity };
+
+            document.getElementById('modalTitle').innerText = (mode === 'EDIT') 
+                ? `Edit ${cfg.singular} (#${id})` 
+                : `Add New ${cfg.singular}`;
+            document.getElementById('modalSubtitle').innerText = (mode === 'EDIT')
+                ? `Update ${cfg.singular.toLowerCase()} record values in dbo.${activeEntity}`
+                : `Insert a new ${cfg.singular.toLowerCase()} record into dbo.${activeEntity}`;
+            document.getElementById('modalSubmitBtn').innerText = (mode === 'EDIT') 
+                ? `Update ${cfg.singular}` 
+                : `Create ${cfg.singular}`;
+
+            const fieldsContainer = document.getElementById('modalFormFields');
+            fieldsContainer.innerHTML = '';
+
+            const pkField = PK_MAP[activeEntity];
+            const rowData = (mode === 'EDIT' && id) 
+                ? currentRows.find(r => String(r[pkField]) === String(id)) || {} 
+                : {};
+
+            const schema = ENTITY_FORM_SCHEMAS[activeEntity] || [];
+            if (schema.length === 0) {
+                // Generate dynamic inputs from current row keys if schema not explicitly mapped
+                const sampleRow = currentRows[0] || {};
+                Object.keys(sampleRow).forEach(k => {
+                    if (k === pkField || k === 'created_at' || k === 'updated_at') return;
+                    schema.push({ name: k, label: k.replace(/_/g, ' ').toUpperCase(), type: 'text' });
+                });
+            }
+
+            schema.forEach(field => {
+                const val = rowData[field.name] !== undefined ? rowData[field.name] : (field.default !== undefined ? field.default : '');
+                const isFullWidth = field.fullWidth ? 'full-width' : '';
+
+                let inputHtml = '';
+                if (field.type === 'select') {
+                    let optionsHtml = '';
+                    field.options.forEach(opt => {
+                        const optVal = typeof opt === 'object' ? opt.value : opt;
+                        const optText = typeof opt === 'object' ? opt.text : opt;
+                        const selected = String(optVal) === String(val) ? 'selected' : '';
+                        optionsHtml += `<option value="${optVal}" ${selected}>${optText}</option>`;
+                    });
+                    inputHtml = `<select name="${field.name}" id="field_${field.name}" ${field.required ? 'required' : ''}>${optionsHtml}</select>`;
+                } else if (field.type === 'textarea') {
+                    inputHtml = `<textarea name="${field.name}" id="field_${field.name}" rows="3" ${field.required ? 'required' : ''}>${val}</textarea>`;
+                } else {
+                    inputHtml = `<input type="${field.type || 'text'}" name="${field.name}" id="field_${field.name}" value="${val}" ${field.required ? 'required' : ''} placeholder="${field.placeholder || ''}" ${field.step ? `step="${field.step}"` : ''} />`;
+                }
+
+                fieldsContainer.innerHTML += `
+                    <div class="form-group ${isFullWidth}">
+                        <label for="field_${field.name}">${field.label} ${field.required ? '<span style="color:var(--danger)">*</span>' : ''}</label>
+                        ${inputHtml}
+                    </div>
+                `;
+            });
+
+            document.getElementById('recordModal').classList.add('show');
+        }
+
+        function closeRecordModal() {
+            document.getElementById('recordModal').classList.remove('show');
+            editId = null;
+        }
+
+        async function handleRecordFormSubmit(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const table_values = {};
+
+            formData.forEach((value, key) => {
+                const trimmed = String(value).trim();
+                if (trimmed !== '') {
+                    table_values[key] = (!isNaN(trimmed) && trimmed !== '' && !key.includes('phone') && !key.includes('pincode') && !key.includes('order_number') && !key.includes('guest_token')) 
+                        ? Number(trimmed) 
+                        : trimmed;
+                }
+            });
+
+            const payload = {
+                proc_name: activeEntity,
+                opr: editId ? 'EDIT' : 'ADD',
+                table_values: table_values,
+                condition: editId ? String(editId) : null
+            };
+
+            try {
+                const res = await fetch('/api/data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+                if (!result.success) throw new Error(result.status || result.error || 'Failed to save');
+
+                const cfg = ENTITY_CONFIG[activeEntity] || { singular: activeEntity };
+                showToast(`${cfg.singular} ${editId ? 'updated' : 'created'} successfully!`);
+                closeRecordModal();
+                loadData();
+            } catch (err) {
+                showToast(err.message, true);
+            }
         }
 
         // Initialize active entity from URL parameter if present
@@ -1026,17 +1454,16 @@
                         item.classList.add('active');
                     }
                 });
-                const cleanName = activeEntity.replace('_', ' ').toUpperCase();
-                document.getElementById('pageTitle').innerText = cleanName;
+                const cfg = ENTITY_CONFIG[activeEntity] || { singular: activeEntity.replace(/_/g, ' '), plural: activeEntity.replace(/_/g, ' ') };
+                document.getElementById('pageTitle').innerText = cfg.plural.toUpperCase();
                 const btnAdd = document.getElementById('btnAddText');
-                if (btnAdd) btnAdd.innerText = `+ Add ${cleanName.slice(0, -1)}`;
+                if (btnAdd) btnAdd.innerText = `+ Add ${cfg.singular}`;
             }
 
             const highlightId = urlParams.get('highlightId') || urlParams.get('highlight');
             const actionParam = (urlParams.get('action') || 'edit').toLowerCase();
             if (highlightId) {
                 highlightMap[highlightId] = actionParam;
-                // Clean URL query parameter without page reload
                 const newUrl = new URL(window.location.href);
                 newUrl.searchParams.delete('highlightId');
                 newUrl.searchParams.delete('highlight');
