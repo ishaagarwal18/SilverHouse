@@ -110,7 +110,10 @@ BEGIN
             OR p.title LIKE '%' + @SearchKeyword + '%' 
             OR p.[description] LIKE '%' + @SearchKeyword + '%'
         )
-    ORDER BY p.[priority] DESC, p.product_id DESC;
+    ORDER BY 
+        CASE WHEN p.[priority] > 0 THEN 0 ELSE 1 END ASC,
+        p.[priority] ASC,
+        p.product_id ASC;
 END;
 GO
 USE SilverHouse;

@@ -12,9 +12,9 @@ export default function TopSellerSection({
 }) {
   const scrollRef = useRef(null);
 
-  // Requirement 6: Top 10 products sorted by highest sold value
+  // Requirement: Top 10 products sorted strictly by highest sold value descending
   const topSellers = [...products]
-    .sort((a, b) => Number(b.sold || 0) - Number(a.sold || 0))
+    .sort((a, b) => (Number(b.sold) || 0) - (Number(a.sold) || 0))
     .slice(0, 10);
 
   const scrollLeft = () => {
@@ -119,7 +119,7 @@ export default function TopSellerSection({
                       <span>#{index + 1} Best Seller</span>
                     </span>
                     <span className="bg-[var(--th-accent)] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs w-fit">
-                      {product.sold || 500}+ Sold
+                      {Number(product.sold || 0)} Sold
                     </span>
                   </div>
 
@@ -192,7 +192,7 @@ export default function TopSellerSection({
                         )}
                       </div>
                       <span className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block -mt-0.5">
-                        🔥 {product.sold || 500} Sold
+                        🔥 {Number(product.sold || 0)} Sold
                       </span>
                     </div>
 

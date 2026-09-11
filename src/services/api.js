@@ -70,6 +70,8 @@ export function normalizeProduct(rawItem) {
     reviewsCount: reviewCount,
     review: reviewCount,
     sold: sold,
+    priority: Number(rawItem.priority || 0),
+    quantity: Number(rawItem.quantity !== undefined && rawItem.quantity !== null ? rawItem.quantity : 0),
     inStock: rawItem.quantity !== undefined ? Number(rawItem.quantity) > 0 : true,
     isBestSeller: Boolean(rawItem.is_bestseller || rawItem.isBestSeller || false),
     isCustomizable: Boolean(rawItem.is_customizable || rawItem.isCustomizable || false),

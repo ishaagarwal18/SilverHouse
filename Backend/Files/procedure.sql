@@ -107,7 +107,11 @@ BEGIN
         IF @TargetId IS NOT NULL AND @TargetId > 0
             SELECT * FROM dbo.product WHERE product_id = @TargetId;
         ELSE
-            SELECT * FROM dbo.product ORDER BY [priority] DESC, product_id DESC;
+            SELECT * FROM dbo.product 
+            ORDER BY 
+                CASE WHEN [priority] > 0 THEN 0 ELSE 1 END ASC,
+                [priority] ASC,
+                product_id ASC;
     END
 
     -- ADD
@@ -1589,7 +1593,20 @@ BEGIN
                 WHERE ci.cart_id = @CartId;
             END
 
-            -- 3. Clear cart if user/guest cart exists
+            -- 3. Reduce product stock quantity and increment sold count for ordered items
+            UPDATE p
+            SET 
+                p.quantity = CASE WHEN p.quantity >= oi.total_qty THEN p.quantity - oi.total_qty ELSE 0 END,
+                p.sold = ISNULL(p.sold, 0) + oi.total_qty
+            FROM dbo.product p
+            INNER JOIN (
+                SELECT product_id, SUM(quantity) AS total_qty
+                FROM dbo.order_item
+                WHERE order_id = @NewOrderId
+                GROUP BY product_id
+            ) oi ON p.product_id = oi.product_id;
+
+            -- 4. Clear cart if user/guest cart exists
             IF @CartId IS NOT NULL
             BEGIN
                 DELETE FROM dbo.cart_item WHERE cart_id = @CartId;

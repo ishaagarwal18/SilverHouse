@@ -89,7 +89,7 @@ export default function App() {
     loadWishlistFromDb();
   }, [effectiveUserId]);
 
-  // Fetch backend data on app mount
+  // Fetch backend data on app mount and on product updates
   useEffect(() => {
     async function loadDataFromBackend() {
       const backendProducts = await fetchProducts();
@@ -102,6 +102,12 @@ export default function App() {
       }
     }
     loadDataFromBackend();
+
+    const handleProductsUpdated = () => {
+      loadDataFromBackend();
+    };
+    window.addEventListener('products_updated', handleProductsUpdated);
+    return () => window.removeEventListener('products_updated', handleProductsUpdated);
   }, []);
 
   // Scroll to top on route change

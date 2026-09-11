@@ -556,6 +556,14 @@ export default function ProductListingPage({
       result.sort((a, b) => b.rating - a.rating);
     } else if (sortBy === 'newest') {
       result.sort((a, b) => (b.sold || 0) - (a.sold || 0));
+    } else {
+      // Default / Featured: strictly order by priority given (1, 2, 3...)
+      result.sort((a, b) => {
+        const pA = Number(a.priority) > 0 ? Number(a.priority) : 999999;
+        const pB = Number(b.priority) > 0 ? Number(b.priority) : 999999;
+        if (pA !== pB) return pA - pB;
+        return Number(a.id || 0) - Number(b.id || 0);
+      });
     }
 
     return result;

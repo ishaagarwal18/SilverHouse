@@ -260,9 +260,13 @@ export default function CheckoutModal({
       }
     };
 
-    postApiData(orderPayload).catch(err => {
-      console.warn('[Checkout] Order post warning:', err);
-    });
+    postApiData(orderPayload)
+      .then(() => {
+        window.dispatchEvent(new Event('products_updated'));
+      })
+      .catch(err => {
+        console.warn('[Checkout] Order post warning:', err);
+      });
 
     onClearCart();
   };
