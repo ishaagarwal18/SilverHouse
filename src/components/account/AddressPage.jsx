@@ -5,7 +5,8 @@ import { fetchUserAddresses, addUserAddress, deleteUserAddress } from '../../ser
 import { 
   MapPin, Plus, Trash2, Home, Building2, Tag, 
   Sparkles, ShieldCheck, ArrowRight, X, AlertCircle, 
-  CheckCircle2, Lock, User, Navigation, ArrowLeft 
+  CheckCircle2, Lock, User, Navigation, ArrowLeft, Phone,
+  Check, Mail, CheckCheck
 } from 'lucide-react';
 
 const INDIAN_STATES = [
@@ -102,14 +103,11 @@ export default function AddressPage({ onTriggerToast }) {
         country: formData.country || 'India'
       };
 
-      const result = await addUserAddress(payload);
-      if (result && result.success) {
-        if (onTriggerToast) {
-          onTriggerToast('success', 'Address Saved', 'New delivery address added to your account successfully.');
-        }
-        window.dispatchEvent(new Event('silverhouse_address_updated'));
+      const res = await addUserAddress(payload);
+      if (res && res.success) {
+        if (onTriggerToast) onTriggerToast('Address saved successfully!');
         setIsModalOpen(false);
-        // Reset form
+        // Reset fields
         setFormData({
           address_name: 'Home',
           recipient_name: user?.fullName || '',
@@ -121,20 +119,12 @@ export default function AddressPage({ onTriggerToast }) {
           pincode: '',
           country: 'India'
         });
-        await loadAddresses();
+        loadAddresses();
       } else {
-        const errMsg = result?.error || 'Failed to save address. Please check your inputs.';
-        setError(errMsg);
-        if (onTriggerToast) {
-          onTriggerToast('error', 'Address Error', errMsg);
-        }
+        setError(res?.error || 'Failed to save address. Please try again.');
       }
     } catch (err) {
-      const errMsg = err.message || 'An error occurred while saving your address.';
-      setError(errMsg);
-      if (onTriggerToast) {
-        onTriggerToast('error', 'Address Error', errMsg);
-      }
+      setError(err.message || 'An error occurred while saving.');
     } finally {
       setSubmitting(false);
     }
@@ -143,104 +133,54 @@ export default function AddressPage({ onTriggerToast }) {
   const confirmDeleteAddress = async () => {
     if (!addressToDelete) return;
     setIsDeleting(true);
-
     try {
-      const result = await deleteUserAddress(addressToDelete.address_id);
-      if (result && result.success) {
-        if (onTriggerToast) {
-          onTriggerToast('info', 'Address Removed', `The ${addressToDelete.address_name || 'Home'} address was removed from your account.`);
-        }
-        setAddresses(prev => prev.filter(a => a.address_id !== addressToDelete.address_id));
-        window.dispatchEvent(new Event('silverhouse_address_updated'));
+      const res = await deleteUserAddress(addressToDelete.address_id, user.userId);
+      if (res && res.success) {
+        if (onTriggerToast) onTriggerToast('Address removed successfully.');
         setAddressToDelete(null);
+        loadAddresses();
       } else {
-        const errMsg = result?.error || 'Failed to delete address.';
-        if (onTriggerToast) {
-          onTriggerToast('error', 'Delete Failed', errMsg);
-        } else {
-          alert(errMsg);
-        }
+        alert(res?.error || 'Failed to delete address.');
       }
     } catch (err) {
-      console.error('Delete address error:', err);
-      if (onTriggerToast) {
-        onTriggerToast('error', 'Delete Error', err.message || 'Failed to delete address');
-      }
+      alert('Error deleting address: ' + err.message);
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // 1. GUEST GATING VIEW: User is not logged in
-  if (!authLoading && !isAuthenticated) {
-    return (
-      <div className="min-h-[75vh] bg-[var(--th-bg)] flex items-center justify-center p-4 py-16 transition-colors duration-300">
-        <div className="max-w-md w-full bg-[var(--th-card)] border border-[var(--th-border)] rounded-3xl shadow-xl p-8 text-center backdrop-blur-sm">
-          <div className="w-16 h-16 rounded-2xl bg-[var(--th-primary)]/10 text-[var(--th-primary)] border border-[var(--th-border)] flex items-center justify-center mx-auto mb-4 shadow-sm">
-            <Lock className="w-8 h-8 text-[var(--th-accent)]" />
-          </div>
-          <h2 className="font-serif text-2xl font-bold text-[var(--th-text-main)] mb-2">
-            Sign In Required
-          </h2>
-          <p className="text-xs sm:text-sm text-[var(--th-text-muted)] mb-6 font-sans leading-relaxed">
-            Your saved addresses are encrypted and securely linked to your personal account for verified delivery and expedited checkout. Please sign in to view or enter delivery addresses.
-          </p>
-          <div className="space-y-3">
-            <button
-              onClick={() => navigate('/login?redirect=/addresses')}
-              className="w-full py-3.5 px-6 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-widest shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer"
-            >
-              <span>Sign In to Your Account</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => navigate('/')}
-              className="w-full py-3 px-6 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] hover:bg-[var(--th-card)] text-[var(--th-text-main)] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
-            >
-              Back to Store
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 2. AUTHENTICATED ADDRESS MANAGEMENT VIEW
   return (
-    <div className="min-h-screen bg-[var(--th-bg)] py-10 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-[var(--th-bg)] text-[var(--th-text-main)] font-sans transition-colors duration-300 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto space-y-8">
         
-        {/* Back Button */}
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-card)] text-xs font-bold text-[var(--th-text-main)] hover:text-[var(--th-primary)] hover:border-[var(--th-accent)] transition-all cursor-pointer shadow-2xs mb-4 group"
-          title="Go back to previous page"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
-          <span>Back</span>
-        </button>
-
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between pb-6 mb-8 border-b border-[var(--th-border)] gap-4">
-          <div>
-            <div className="flex items-center space-x-2 text-[var(--th-accent)] mb-1">
-              <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
-              <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--th-text-muted)]">
-                DELIVERY DIRECTORY • SAVED DESTINATIONS
-              </span>
+        {/* Navigation & Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-[var(--th-border)]">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 rounded-full border border-[var(--th-border)] bg-[var(--th-card)] flex items-center justify-center text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:border-[var(--th-primary)] transition-colors cursor-pointer shadow-xs"
+              title="Back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <div className="flex items-center space-x-2.5">
+                <h1 className="font-serif font-bold text-2xl sm:text-3xl text-[var(--th-text-main)]">
+                  Delivery Addresses
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[var(--th-primary)] text-white shadow-xs">
+                  {addresses.length}
+                </span>
+              </div>
+              <p className="text-xs text-[var(--th-text-muted)] mt-1">
+                Manage your saved delivery destinations for 1-click expedited checkout
+              </p>
             </div>
-            <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[var(--th-text-main)] tracking-tight">
-              MY SAVED ADDRESSES
-            </h1>
-            <p className="text-xs sm:text-sm text-[var(--th-text-muted)] mt-1 font-sans">
-              Manage your residential, workplace, and gifting locations for seamless delivery.
-            </p>
           </div>
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center space-x-2 px-6 py-3 rounded-full bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0"
+            className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Address</span>
@@ -249,33 +189,33 @@ export default function AddressPage({ onTriggerToast }) {
 
         {/* Loading State */}
         {loading ? (
-          <div className="py-20 text-center text-[var(--th-text-muted)]">
-            <div className="w-8 h-8 border-3 border-[var(--th-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-xs uppercase tracking-wider font-semibold">Loading your verified addresses...</p>
+          <div className="py-24 text-center text-[var(--th-text-muted)]">
+            <div className="w-9 h-9 border-3 border-[var(--th-primary)] border-t-transparent rounded-full animate-spin mx-auto mb-3.5" />
+            <p className="text-xs uppercase tracking-wider font-bold">Loading your verified addresses...</p>
           </div>
         ) : addresses.length === 0 ? (
           /* Empty Address State */
-          <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-3xl p-12 text-center shadow-sm">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-[var(--th-accent)] flex items-center justify-center mx-auto mb-4">
-              <MapPin className="w-8 h-8" />
+          <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-3xl p-12 text-center shadow-xs max-w-lg mx-auto">
+            <div className="w-18 h-18 rounded-3xl bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-[var(--th-accent)] flex items-center justify-center mx-auto mb-5 shadow-inner">
+              <MapPin className="w-9 h-9 text-[var(--th-accent)]/80" />
             </div>
-            <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)] mb-1">
-              No Addresses Saved Yet
+            <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)] mb-1.5">
+              No Saved Addresses
             </h3>
-            <p className="text-xs text-[var(--th-text-muted)] max-w-sm mx-auto mb-6">
-              You haven't added any delivery addresses yet. Add your address now for fast 1-click checkout!
+            <p className="text-xs text-[var(--th-text-muted)] max-w-sm mx-auto mb-6 leading-relaxed">
+              Add your primary residence or office address now to experience instantaneous 1-click checkout with insured express delivery.
             </p>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center space-x-2 px-6 py-3 rounded-full bg-[var(--th-primary)] text-white font-bold text-xs uppercase tracking-wider shadow-md hover:bg-[var(--th-primary-hover)] transition-all cursor-pointer"
+              className="inline-flex items-center space-x-2 px-7 py-3.5 rounded-2xl bg-[var(--th-primary)] text-white font-bold text-xs uppercase tracking-wider shadow-md hover:bg-[var(--th-primary-hover)] transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Add Your First Address</span>
             </button>
           </div>
         ) : (
-          /* Address Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          /* Address Cards Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {addresses.map((addr) => {
               const tag = (addr.address_name || 'Home').toLowerCase();
               const isHome = tag.includes('home');
@@ -284,101 +224,125 @@ export default function AddressPage({ onTriggerToast }) {
               return (
                 <div
                   key={addr.address_id}
-                  className="bg-[var(--th-card)] border border-[var(--th-border)] hover:border-[var(--th-accent)] rounded-2xl p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative group"
+                  className="bg-[var(--th-card)] border border-[var(--th-border)] hover:border-[var(--th-primary)]/50 rounded-3xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative group"
                 >
                   <div>
-                    {/* Top Row: Tag & Delete Action */}
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-[var(--th-primary)]">
+                    {/* Top Row: Tag Badge & Actions */}
+                    <div className="flex items-center justify-between mb-3.5">
+                      <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-[var(--th-primary)] shadow-2xs">
                         {isHome ? <Home className="w-3 h-3 text-[var(--th-accent)]" /> : isWork ? <Building2 className="w-3 h-3 text-[var(--th-accent)]" /> : <Tag className="w-3 h-3 text-[var(--th-accent)]" />}
                         <span>{addr.address_name || 'Delivery'}</span>
                       </span>
 
                       <button
                         onClick={() => setAddressToDelete(addr)}
-                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50/80 hover:text-rose-700 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-xl text-[var(--th-text-muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                         title="Delete Address"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
 
-                    {/* Recipient Details */}
-                    <h3 className="font-bold text-base text-[var(--th-text-main)] mb-1">
-                      {addr.recipient_name}
-                    </h3>
+                    {/* Recipient Header */}
+                    <div className="flex items-center space-x-2.5 mb-2.5">
+                      <div className="w-8 h-8 rounded-full bg-[var(--th-surface-alt)] text-[var(--th-primary)] font-bold text-xs flex items-center justify-center border border-[var(--th-border)]">
+                        {(addr.recipient_name || 'U').charAt(0).toUpperCase()}
+                      </div>
+                      <h3 className="font-bold text-sm sm:text-base text-[var(--th-text-main)]">
+                        {addr.recipient_name}
+                      </h3>
+                    </div>
 
-                    {/* Address String */}
-                    <div className="text-xs text-[var(--th-text-muted)] space-y-0.5 leading-relaxed">
-                      <p className="font-medium text-[var(--th-text-main)]">{addr.Block}, {addr.street}</p>
+                    {/* Formatted Address Details */}
+                    <div className="text-xs text-[var(--th-text-muted)] space-y-1 leading-relaxed pl-1">
+                      <p className="font-medium text-[var(--th-text-main)]">{addr.Block ? addr.Block + ', ' : ''}{addr.street}</p>
                       <p>{addr.area}</p>
-                      <p>{addr.city}, {addr.state} - <strong className="text-[var(--th-text-main)] font-mono">{addr.pincode}</strong></p>
-                      <p className="text-[11px] font-bold text-[var(--th-accent)] uppercase tracking-wider pt-1">{addr.country || 'India'}</p>
+                      <p>{addr.city}, {addr.state}</p>
+                      <div className="pt-1.5 flex items-center space-x-2">
+                        <span className="px-2 py-0.5 rounded-md bg-[var(--th-surface-alt)] border border-[var(--th-border)] font-mono font-bold text-[11px] text-[var(--th-primary)]">
+                          PIN {addr.pincode}
+                        </span>
+                        <span className="text-[11px] font-bold text-[var(--th-accent)] uppercase">
+                          {addr.country || 'India'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="pt-4 mt-4 border-t border-[var(--th-border)]/60 flex items-center justify-between text-[11px] text-[var(--th-text-muted)]">
-                    <span className="flex items-center space-x-1">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Verified for Express Shipping</span>
+                  {/* Card Footer */}
+                  <div className="pt-4 mt-4 border-t border-[var(--th-border)]/70 flex items-center justify-between text-[11px] text-[var(--th-text-muted)]">
+                    <span className="flex items-center space-x-1.5 text-emerald-700 dark:text-emerald-400 font-medium">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Insured Transit Verified</span>
                     </span>
                   </div>
                 </div>
               );
             })}
+
+            {/* Quick Add New Address Card Button */}
+            <div
+              onClick={() => setIsModalOpen(true)}
+              className="border-2 border-dashed border-[var(--th-border)] hover:border-[var(--th-primary)] rounded-3xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-[var(--th-surface-alt)]/40 min-h-[220px] group"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-[var(--th-surface-alt)] group-hover:bg-[var(--th-primary)]/10 text-[var(--th-primary)] flex items-center justify-center mb-3 transition-colors">
+                <Plus className="w-6 h-6" />
+              </div>
+              <h4 className="font-bold text-sm text-[var(--th-text-main)] mb-1">
+                Add Another Address
+              </h4>
+              <p className="text-xs text-[var(--th-text-muted)] max-w-xs">
+                Save a secondary home, family residence or office location
+              </p>
+            </div>
           </div>
         )}
 
-        {/* 3. ADD NEW ADDRESS MODAL */}
+        {/* 3. ADD NEW ADDRESS MODAL DIALOG */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
               onClick={() => setIsModalOpen(false)}
             />
 
-            {/* Modal Dialog */}
             <div className="relative w-full max-w-lg bg-[var(--th-card)] border border-[var(--th-border)] rounded-3xl shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200 flex flex-col max-h-[92vh]">
-              
-              {/* Header */}
+              {/* Modal Header */}
               <div className="p-5 border-b border-[var(--th-border)] bg-[var(--th-surface-alt)] flex items-center justify-between">
-                <div className="flex items-center space-x-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-[var(--th-card)] text-[var(--th-accent)] border border-[var(--th-border)] flex items-center justify-center">
-                    <MapPin className="w-4 h-4" />
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[var(--th-card)] text-[var(--th-accent)] border border-[var(--th-border)] flex items-center justify-center shadow-xs">
+                    <MapPin className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-serif font-bold text-base text-[var(--th-text-main)]">
+                    <h3 className="font-serif font-bold text-base sm:text-lg text-[var(--th-text-main)]">
                       Add Delivery Address
                     </h3>
-                    <p className="text-[11px] text-[var(--th-text-muted)] font-sans">
-                      Stored in your database profile for fast checkout
+                    <p className="text-[11px] text-[var(--th-text-muted)]">
+                      Saved to your verified database account
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="p-1.5 text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] rounded-lg hover:bg-[var(--th-card)] cursor-pointer"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-card)] cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Form Body */}
-              <form onSubmit={handleSaveAddress} className="p-6 overflow-y-auto space-y-4 text-xs">
-                
-                {/* Error Banner */}
+              <form onSubmit={handleSaveAddress} className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs">
                 {error && (
-                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center space-x-2">
+                  <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-xl flex items-center space-x-2">
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     <span>{error}</span>
                   </div>
                 )}
 
-                {/* Address Label / Tag Selection */}
+                {/* Address Type Selector */}
                 <div>
                   <label className="block font-bold text-[var(--th-text-main)] mb-1.5">
-                    Address Type / Label *
+                    Address Label / Type *
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {['Home', 'Office', 'Other'].map(tag => (
@@ -386,13 +350,16 @@ export default function AddressPage({ onTriggerToast }) {
                         type="button"
                         key={tag}
                         onClick={() => setFormData(prev => ({ ...prev, address_name: tag }))}
-                        className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
                           formData.address_name === tag
-                            ? 'bg-[var(--th-primary)] text-white border-[var(--th-primary)] shadow-xs'
+                            ? 'bg-[var(--th-primary)] text-white border-[var(--th-primary)] shadow-2xs'
                             : 'bg-[var(--th-surface-alt)] text-[var(--th-text-muted)] border-[var(--th-border)] hover:text-[var(--th-text-main)]'
                         }`}
                       >
-                        {tag}
+                        {tag === 'Home' && <Home className="w-3.5 h-3.5" />}
+                        {tag === 'Office' && <Building2 className="w-3.5 h-3.5" />}
+                        {tag === 'Other' && <Tag className="w-3.5 h-3.5" />}
+                        <span>{tag}</span>
                       </button>
                     ))}
                   </div>
@@ -403,18 +370,21 @@ export default function AddressPage({ onTriggerToast }) {
                   <label className="block font-bold text-[var(--th-text-main)] mb-1">
                     Recipient Full Name *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    name="recipient_name"
-                    value={formData.recipient_name}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Yash Agarwal"
-                    className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none transition-all placeholder:text-[var(--th-text-muted)]/60"
-                  />
+                  <div className="relative">
+                    <User className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      name="recipient_name"
+                      value={formData.recipient_name}
+                      onChange={handleInputChange}
+                      placeholder="e.g. Isha Agarwal"
+                      className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] pl-9 pr-3.5 py-2.5 rounded-xl outline-none transition-all"
+                    />
+                  </div>
                 </div>
 
-                {/* Block / Flat / Building */}
+                {/* House / Flat / Block */}
                 <div>
                   <label className="block font-bold text-[var(--th-text-main)] mb-1">
                     Flat / House No. / Building / Block *
@@ -426,7 +396,7 @@ export default function AddressPage({ onTriggerToast }) {
                     value={formData.Block}
                     onChange={handleInputChange}
                     placeholder="e.g. Flat 402, Lotus Residency, Block C"
-                    className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none transition-all placeholder:text-[var(--th-text-muted)]/60"
+                    className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none transition-all"
                   />
                 </div>
 
@@ -442,7 +412,7 @@ export default function AddressPage({ onTriggerToast }) {
                     value={formData.street}
                     onChange={handleInputChange}
                     placeholder="e.g. MG Road, Near Silver Market"
-                    className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none transition-all placeholder:text-[var(--th-text-muted)]/60"
+                    className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none transition-all"
                   />
                 </div>
 
@@ -458,7 +428,7 @@ export default function AddressPage({ onTriggerToast }) {
                     value={formData.area}
                     onChange={handleInputChange}
                     placeholder="e.g. Sector 15, Near Shiv Mandir"
-                    className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none transition-all placeholder:text-[var(--th-text-muted)]/60"
+                    className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none transition-all"
                   />
                 </div>
 
@@ -475,7 +445,7 @@ export default function AddressPage({ onTriggerToast }) {
                       value={formData.city}
                       onChange={handleInputChange}
                       placeholder="e.g. New Delhi"
-                      className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none transition-all placeholder:text-[var(--th-text-muted)]/60"
+                      className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none transition-all"
                     />
                   </div>
 
@@ -487,10 +457,10 @@ export default function AddressPage({ onTriggerToast }) {
                       name="state"
                       value={formData.state}
                       onChange={handleInputChange}
-                      className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none transition-all cursor-pointer"
+                      className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3 py-2.5 rounded-xl outline-none transition-all cursor-pointer"
                     >
-                      {INDIAN_STATES.map(st => (
-                        <option key={st} value={st}>{st}</option>
+                      {INDIAN_STATES.map(s => (
+                        <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
                   </div>
@@ -500,7 +470,7 @@ export default function AddressPage({ onTriggerToast }) {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-[var(--th-text-main)] mb-1">
-                      PIN Code (6 digits) *
+                      6-Digit PIN Code *
                     </label>
                     <input
                       type="text"
@@ -510,7 +480,7 @@ export default function AddressPage({ onTriggerToast }) {
                       value={formData.pincode}
                       onChange={handleInputChange}
                       placeholder="110001"
-                      className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none transition-all font-mono placeholder:text-[var(--th-text-muted)]/60"
+                      className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] px-3.5 py-2.5 rounded-xl outline-none font-mono transition-all"
                     />
                   </div>
 
@@ -527,90 +497,70 @@ export default function AddressPage({ onTriggerToast }) {
                   </div>
                 </div>
 
-                {/* Modal Footer Buttons */}
-                <div className="pt-4 border-t border-[var(--th-border)] flex items-center justify-end space-x-3">
+                {/* Submit Actions */}
+                <div className="pt-4 flex items-center justify-end space-x-3 border-t border-[var(--th-border)]">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl border border-[var(--th-border)] text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] font-bold cursor-pointer transition-colors"
+                    className="px-5 py-2.5 rounded-xl border border-[var(--th-border)] hover:bg-[var(--th-surface-alt)] text-[var(--th-text-muted)] font-bold text-xs uppercase tracking-wider cursor-pointer"
                   >
                     Cancel
                   </button>
-
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-6 py-2.5 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold tracking-wider uppercase shadow-md flex items-center space-x-2 cursor-pointer transition-all disabled:opacity-50"
+                    className="px-6 py-2.5 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50"
                   >
-                    {submitting ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Save Address</span>
-                      </>
-                    )}
+                    {submitting ? 'Saving Address...' : 'Save Address'}
                   </button>
                 </div>
-
               </form>
             </div>
           </div>
         )}
 
-        {/* 4. CUSTOM DELETE CONFIRMATION ALERT CARD */}
+        {/* 4. DELETE CONFIRMATION MODAL */}
         {addressToDelete && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
-              onClick={() => !isDeleting && setAddressToDelete(null)}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+              onClick={() => setAddressToDelete(null)}
             />
 
-            {/* Alert Confirmation Card */}
-            <div className="relative w-full max-w-sm bg-[var(--th-card)] border border-[var(--th-border)] rounded-3xl shadow-2xl p-6 z-10 animate-in zoom-in-95 duration-200 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 flex items-center justify-center mx-auto mb-3.5 shadow-xs">
+            <div className="relative w-full max-w-sm bg-[var(--th-card)] border border-[var(--th-border)] rounded-3xl p-6 shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center mx-auto border border-rose-200 dark:border-rose-800">
                 <Trash2 className="w-7 h-7" />
               </div>
 
-              <h3 className="text-base font-bold text-[var(--th-text-main)] mb-1">
-                Confirm Address Removal
-              </h3>
-
-              {/* Exact Alert Message Requested by User */}
-              <div className="my-3 py-2.5 px-3 rounded-xl bg-rose-500/10 border border-rose-500/20">
-                <p className="text-xs font-bold text-rose-600">
-                  You are deleting {addressToDelete.address_name || 'Home'} address
+              <div>
+                <h4 className="font-serif font-bold text-lg text-[var(--th-text-main)]">
+                  Delete Address?
+                </h4>
+                <p className="text-xs text-[var(--th-text-muted)] mt-1.5 leading-relaxed">
+                  Are you sure you want to remove this delivery address? This action cannot be undone.
                 </p>
               </div>
 
-              <p className="text-xs text-[var(--th-text-muted)] mb-5 leading-relaxed">
-                <strong className="text-[var(--th-text-main)]">{addressToDelete.recipient_name}</strong>
-                <br />
-                {addressToDelete.Block ? `${addressToDelete.Block}, ` : ''}{addressToDelete.street}, {addressToDelete.city} - {addressToDelete.pincode}
-              </p>
+              <div className="p-3 bg-[var(--th-surface-alt)] rounded-xl border border-[var(--th-border)] text-xs text-left">
+                <span className="font-bold text-[var(--th-text-main)] block">{addressToDelete.recipient_name}</span>
+                <span className="text-[var(--th-text-muted)] text-[11px] block">{addressToDelete.Block}, {addressToDelete.street}, {addressToDelete.city}</span>
+              </div>
 
-              <div className="flex items-center space-x-3">
+              <div className="flex space-x-3 pt-2">
                 <button
                   type="button"
-                  disabled={isDeleting}
                   onClick={() => setAddressToDelete(null)}
-                  className="flex-1 py-2.5 px-4 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] hover:bg-[var(--th-card)] text-xs font-bold text-[var(--th-text-main)] transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl border border-[var(--th-border)] hover:bg-[var(--th-surface-alt)] text-[var(--th-text-muted)] font-bold text-xs uppercase tracking-wider cursor-pointer"
                 >
                   Cancel
                 </button>
-
                 <button
                   type="button"
                   disabled={isDeleting}
                   onClick={confirmDeleteAddress}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+                  className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider shadow-md cursor-pointer disabled:opacity-50"
                 >
-                  {isDeleting ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <span>Yes, Delete</span>
-                  )}
+                  {isDeleting ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>
