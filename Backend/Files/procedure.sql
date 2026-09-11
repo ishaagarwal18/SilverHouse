@@ -11,6 +11,10 @@ IF OBJECT_ID('dbo.SP_product_image', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_prod
 IF OBJECT_ID('dbo.SP_user', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_user;
 IF OBJECT_ID('dbo.SP_address', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_address;
 IF OBJECT_ID('dbo.SP_cart', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_cart;
+IF OBJECT_ID('dbo.SP_cart_item', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_cart_item;
+IF OBJECT_ID('dbo.SP_orders', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_orders;
+IF OBJECT_ID('dbo.SP_order_item', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_order_item;
+IF OBJECT_ID('dbo.SP_wishlist', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_wishlist;
 GO
 
 -- =========================================================================
@@ -1206,7 +1210,172 @@ END;
 GO
 
 -- =========================================================================
--- PROCEDURE 9: SP_orders
+-- PROCEDURE 9: SP_cart_item
+-- =========================================================================
+CREATE OR ALTER PROCEDURE dbo.SP_cart_item
+    @Opr       NVARCHAR(10),
+    @JSONstr   NVARCHAR(MAX) = NULL,
+    @Condition NVARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @TargetCartItemId INT = TRY_CAST(@Condition AS INT);
+    DECLARE @CartId           INT;
+    DECLARE @UserId           INT;
+    DECLARE @GuestToken       NVARCHAR(100);
+    DECLARE @ProductId        INT;
+    DECLARE @Quantity         INT = 1;
+
+    IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
+    BEGIN
+        SELECT
+            @TargetCartItemId = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.cart_item_id') AS INT), @TargetCartItemId),
+            @CartId           = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.cart_id') AS INT),
+            @UserId           = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.user_id') AS INT),
+            @GuestToken       = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.guest_token'))),
+            @ProductId        = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.product_id') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.id') AS INT)),
+            @Quantity         = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.quantity') AS INT), 1);
+    END
+
+    -- Auto-resolve Cart ID if not provided
+    IF @CartId IS NULL
+    BEGIN
+        IF @UserId IS NOT NULL AND @UserId > 0
+        BEGIN
+            SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE user_id = @UserId ORDER BY cart_id DESC;
+            IF @CartId IS NULL
+            BEGIN
+                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (@UserId, NULL, SYSDATETIME());
+                SET @CartId = SCOPE_IDENTITY();
+            END
+        END
+        ELSE IF @GuestToken IS NOT NULL AND @GuestToken <> ''
+        BEGIN
+            SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE guest_token = @GuestToken ORDER BY cart_id DESC;
+            IF @CartId IS NULL
+            BEGIN
+                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (NULL, @GuestToken, SYSDATETIME());
+                SET @CartId = SCOPE_IDENTITY();
+            END
+        END
+    END
+
+    -- Safe product id fallback
+    IF @ProductId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.product WHERE product_id = @ProductId)
+    BEGIN
+        SELECT TOP 1 @ProductId = product_id FROM dbo.product ORDER BY product_id ASC;
+    END
+
+    -- SELECT
+    IF @Opr = 'SELECT'
+    BEGIN
+        SELECT 
+            ci.cart_item_id,
+            ci.cart_id,
+            c.user_id,
+            ISNULL(u.full_name, 'Guest Patron') AS user_name,
+            ci.product_id,
+            p.title AS product_name,
+            p.price AS unit_price,
+            ci.quantity,
+            CAST(p.price * ci.quantity AS DECIMAL(18,2)) AS subtotal,
+            ci.created_at
+        FROM dbo.cart_item ci
+        LEFT JOIN dbo.cart c ON ci.cart_id = c.cart_id
+        LEFT JOIN dbo.[user] u ON c.user_id = u.user_id
+        LEFT JOIN dbo.product p ON ci.product_id = p.product_id
+        WHERE (@TargetCartItemId IS NOT NULL AND ci.cart_item_id = @TargetCartItemId)
+           OR (@CartId IS NOT NULL AND ci.cart_id = @CartId)
+           OR (@TargetCartItemId IS NULL AND @CartId IS NULL)
+        ORDER BY ci.cart_item_id DESC;
+        RETURN;
+    END
+
+    -- ADD / INSERT
+    IF @Opr IN ('ADD', 'INSERT')
+    BEGIN
+        IF @CartId IS NULL OR @ProductId IS NULL
+        BEGIN
+            RAISERROR('Validation Error: Valid cart_id and product_id are required.', 16, 1);
+            RETURN;
+        END
+
+        IF EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId)
+        BEGIN
+            UPDATE dbo.cart_item
+            SET quantity = quantity + @Quantity
+            WHERE cart_id = @CartId AND product_id = @ProductId;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO dbo.cart_item (cart_id, product_id, quantity, created_at)
+            VALUES (@CartId, @ProductId, @Quantity, SYSDATETIME());
+        END
+
+        UPDATE dbo.cart SET updated_at = SYSDATETIME() WHERE cart_id = @CartId;
+
+        DECLARE @RetItemId INT;
+        SELECT TOP 1 @RetItemId = cart_item_id FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId;
+        SELECT @CartId AS cart_id, @RetItemId AS cart_item_id, @ProductId AS product_id, @Quantity AS quantity, 'Cart item added successfully' AS [Message];
+        RETURN;
+    END
+
+    -- EDIT / UPDATE_QTY
+    IF @Opr IN ('EDIT', 'UPDATE_QTY')
+    BEGIN
+        IF @Quantity <= 0
+        BEGIN
+            IF @TargetCartItemId IS NOT NULL
+                DELETE FROM dbo.cart_item WHERE cart_item_id = @TargetCartItemId;
+            ELSE IF @CartId IS NOT NULL AND @ProductId IS NOT NULL
+                DELETE FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId;
+
+            SELECT 'Item removed from cart' AS [Message];
+            RETURN;
+        END
+
+        IF @TargetCartItemId IS NOT NULL
+        BEGIN
+            UPDATE dbo.cart_item SET quantity = @Quantity WHERE cart_item_id = @TargetCartItemId;
+            SELECT @TargetCartItemId AS cart_item_id, @Quantity AS quantity, 'Quantity updated successfully' AS [Message];
+        END
+        ELSE IF @CartId IS NOT NULL AND @ProductId IS NOT NULL
+        BEGIN
+            UPDATE dbo.cart_item SET quantity = @Quantity WHERE cart_id = @CartId AND product_id = @ProductId;
+            SELECT @CartId AS cart_id, @ProductId AS product_id, @Quantity AS quantity, 'Quantity updated successfully' AS [Message];
+        END
+
+        IF @CartId IS NOT NULL
+            UPDATE dbo.cart SET updated_at = SYSDATETIME() WHERE cart_id = @CartId;
+        RETURN;
+    END
+
+    -- DELETE
+    IF @Opr = 'DELETE'
+    BEGIN
+        IF @TargetCartItemId IS NOT NULL
+        BEGIN
+            DELETE FROM dbo.cart_item WHERE cart_item_id = @TargetCartItemId;
+            SELECT @TargetCartItemId AS cart_item_id, 'Cart item deleted successfully' AS [Message];
+        END
+        ELSE IF @CartId IS NOT NULL AND @ProductId IS NOT NULL
+        BEGIN
+            DELETE FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId;
+            SELECT @CartId AS cart_id, @ProductId AS product_id, 'Cart item removed successfully' AS [Message];
+        END
+        ELSE IF @CartId IS NOT NULL
+        BEGIN
+            DELETE FROM dbo.cart_item WHERE cart_id = @CartId;
+            SELECT @CartId AS cart_id, 'All cart items removed' AS [Message];
+        END
+        RETURN;
+    END
+END;
+GO
+
+-- =========================================================================
+-- PROCEDURE 10: SP_orders
 -- =========================================================================
 CREATE OR ALTER PROCEDURE dbo.SP_orders
     @Opr       NVARCHAR(10),
@@ -1222,14 +1391,30 @@ BEGIN
     DECLARE @PaymentStatus  NVARCHAR(20);
     DECLARE @OrderNumber    NVARCHAR(50);
     DECLARE @CartId         INT;
+    DECLARE @GuestToken     NVARCHAR(100);
+    DECLARE @CustomerName   NVARCHAR(200);
+    DECLARE @CustomerEmail  NVARCHAR(255);
+    DECLARE @CustomerPhone  NVARCHAR(20);
+    DECLARE @TotalAmount    DECIMAL(18,2);
+    DECLARE @DiscountAmount DECIMAL(18,2);
+    DECLARE @FinalPayable   DECIMAL(18,2);
 
     IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
     BEGIN
         SELECT
-            @UserId        = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.user_id') AS INT),
-            @AddressId     = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.address_id') AS INT),
-            @PaymentStatus = COALESCE(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.payment_status'))), 'PENDING'),
-            @CartId        = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.cart_id') AS INT);
+            @TargetOrderId  = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.order_id') AS INT), @TargetOrderId),
+            @UserId         = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.user_id') AS INT),
+            @AddressId      = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.address_id') AS INT),
+            @PaymentStatus  = COALESCE(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.payment_status'))), 'PAID'),
+            @OrderNumber    = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.order_number'))),
+            @CartId         = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.cart_id') AS INT),
+            @GuestToken     = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.guest_token'))),
+            @CustomerName   = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.customer_name'))),
+            @CustomerEmail  = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.customer_email'))),
+            @CustomerPhone  = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.customer_phone'))),
+            @TotalAmount    = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.total_amount') AS DECIMAL(18,2)),
+            @DiscountAmount = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.discount_amount') AS DECIMAL(18,2)),
+            @FinalPayable   = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.final_payable') AS DECIMAL(18,2));
     END
 
     -- SELECT
@@ -1276,77 +1461,147 @@ BEGIN
         RETURN;
     END
 
-    -- ADD (Convert Cart to Order)
-    IF @Opr = 'ADD'
+    -- ADD / INSERT
+    IF @Opr IN ('ADD', 'INSERT')
     BEGIN
+        -- Ensure valid user_id for NOT NULL constraint
         IF @UserId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.[user] WHERE user_id = @UserId)
         BEGIN
-            RAISERROR('Validation Error: A valid user_id is required.', 16, 1);
-            RETURN;
+            IF @CustomerEmail IS NOT NULL AND @CustomerEmail <> ''
+            BEGIN
+                SELECT TOP 1 @UserId = user_id FROM dbo.[user] WHERE LOWER(email) = LOWER(@CustomerEmail);
+            END
+
+            IF @UserId IS NULL
+            BEGIN
+                INSERT INTO dbo.[user] (full_name, email, phone, role, password_hash, created_at)
+                VALUES (COALESCE(@CustomerName, 'Valued Customer'), COALESCE(@CustomerEmail, 'guest@silverhouse.com'), @CustomerPhone, 'CUSTOMER', 'GUEST_NO_PASSWORD', SYSDATETIME());
+                SET @UserId = SCOPE_IDENTITY();
+            END
+
+            IF @UserId IS NULL
+            BEGIN
+                SELECT TOP 1 @UserId = user_id FROM dbo.[user] ORDER BY user_id ASC;
+            END
         END
 
         IF @AddressId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.address WHERE address_id = @AddressId)
+            SET @AddressId = NULL;
+
+        -- Generate Order Number if not provided
+        IF @OrderNumber IS NULL OR @OrderNumber = ''
+            SET @OrderNumber = 'SH-' + CONVERT(VARCHAR(8), GETDATE(), 112) + '-' + RIGHT(CAST(NEWID() AS VARCHAR(36)), 4);
+
+        -- Check if items are passed in JSON
+        DECLARE @HasJsonItems BIT = 0;
+        IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0 AND JSON_QUERY(@JSONstr, '$.table_values.items') IS NOT NULL
         BEGIN
-            RAISERROR('Validation Error: Provided address_id does not exist.', 16, 1);
-            RETURN;
+            SET @HasJsonItems = 1;
         END
 
-        -- If cart_id wasn't explicitly supplied, find user's cart
-        IF @CartId IS NULL
-            SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE user_id = @UserId;
-
-        IF @CartId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @CartId)
+        IF @HasJsonItems = 0
         BEGIN
-            RAISERROR('Validation Error: Cannot place an order with an empty cart.', 16, 1);
-            RETURN;
+            IF @CartId IS NULL
+                SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE user_id = @UserId ORDER BY cart_id DESC;
+
+            IF @CartId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @CartId)
+            BEGIN
+                RAISERROR('Validation Error: Cannot place an order without items or an empty cart.', 16, 1);
+                RETURN;
+            END
         END
 
-        -- Generate Order Number (e.g., SH-20260903-XXXX)
-        SET @OrderNumber = 'SH-' + CONVERT(VARCHAR(8), GETDATE(), 112) + '-' + RIGHT(CAST(NEWID() AS VARCHAR(36)), 4);
+        -- Compute totals if missing
+        IF @TotalAmount IS NULL OR @TotalAmount = 0.00
+        BEGIN
+            IF @HasJsonItems = 1
+            BEGIN
+                SELECT @TotalAmount = SUM(COALESCE(subtotal, (COALESCE(unit_price, price, 0.00) * COALESCE(quantity, qty, 1))))
+                FROM OPENJSON(JSON_QUERY(@JSONstr, '$.table_values.items'))
+                WITH (
+                    subtotal         DECIMAL(18,2) '$.subtotal',
+                    unit_price       DECIMAL(18,2) '$.unit_price',
+                    price            DECIMAL(18,2) '$.price',
+                    quantity         INT           '$.quantity',
+                    qty              INT           '$.qty'
+                );
+            END
+            ELSE
+            BEGIN
+                SELECT 
+                    @TotalAmount    = SUM(p.price * ci.quantity),
+                    @FinalPayable   = SUM(CAST(p.price - (p.price * ISNULL(p.discount, 0.00) / 100.0) AS DECIMAL(18,2)) * ci.quantity)
+                FROM dbo.cart_item ci
+                INNER JOIN dbo.product p ON ci.product_id = p.product_id
+                WHERE ci.cart_id = @CartId;
+            END
+        END
 
-        DECLARE @TotalAmount     DECIMAL(18,2) = 0.00;
-        DECLARE @DiscountAmount  DECIMAL(18,2) = 0.00;
-        DECLARE @FinalPayable    DECIMAL(18,2) = 0.00;
+        IF @DiscountAmount IS NULL
+            SET @DiscountAmount = 0.00;
 
-        SELECT 
-            @TotalAmount    = SUM(p.price * ci.quantity),
-            @FinalPayable   = SUM(CAST(p.price - (p.price * ISNULL(p.discount, 0.00) / 100.0) AS DECIMAL(18,2)) * ci.quantity)
-        FROM dbo.cart_item ci
-        INNER JOIN dbo.product p ON ci.product_id = p.product_id
-        WHERE ci.cart_id = @CartId;
-
-        SET @DiscountAmount = @TotalAmount - @FinalPayable;
+        IF @FinalPayable IS NULL OR @FinalPayable = 0.00
+            SET @FinalPayable = @TotalAmount - @DiscountAmount;
 
         BEGIN TRANSACTION;
         BEGIN TRY
             -- 1. Insert into orders
-            INSERT INTO dbo.orders (order_number, user_id, address_id, total_amount, discount_amount, final_payable, payment_status)
-            VALUES (@OrderNumber, @UserId, @AddressId, @TotalAmount, @DiscountAmount, @FinalPayable, @PaymentStatus);
+            INSERT INTO dbo.orders (order_number, user_id, address_id, total_amount, discount_amount, final_payable, payment_status, created_at)
+            VALUES (@OrderNumber, @UserId, @AddressId, @TotalAmount, @DiscountAmount, @FinalPayable, @PaymentStatus, SYSDATETIME());
 
             DECLARE @NewOrderId INT = SCOPE_IDENTITY();
 
-            -- 2. Insert into order_item (Snapshot live price and discount)
-            INSERT INTO dbo.order_item (order_id, product_id, unit_price, discount_percent, quantity, subtotal)
-            SELECT 
-                @NewOrderId,
-                ci.product_id,
-                p.price,
-                ISNULL(p.discount, 0.00),
-                ci.quantity,
-                CAST(CAST(p.price - (p.price * ISNULL(p.discount, 0.00) / 100.0) AS DECIMAL(18,2)) * ci.quantity AS DECIMAL(18,2))
-            FROM dbo.cart_item ci
-            INNER JOIN dbo.product p ON ci.product_id = p.product_id
-            WHERE ci.cart_id = @CartId;
+            -- 2. Insert into order_item
+            IF @HasJsonItems = 1
+            BEGIN
+                INSERT INTO dbo.order_item (order_id, product_id, unit_price, discount_percent, quantity, subtotal)
+                SELECT 
+                    @NewOrderId,
+                    COALESCE(j.product_id, j.id, (SELECT TOP 1 product_id FROM dbo.product ORDER BY product_id ASC)),
+                    COALESCE(j.unit_price, j.price, 0.00),
+                    COALESCE(j.discount_percent, 0.00),
+                    COALESCE(j.quantity, j.qty, 1),
+                    COALESCE(j.subtotal, (COALESCE(j.unit_price, j.price, 0.00) * COALESCE(j.quantity, j.qty, 1)))
+                FROM OPENJSON(JSON_QUERY(@JSONstr, '$.table_values.items'))
+                WITH (
+                    product_id       INT           '$.product_id',
+                    id               INT           '$.id',
+                    unit_price       DECIMAL(18,2) '$.unit_price',
+                    price            DECIMAL(18,2) '$.price',
+                    discount_percent DECIMAL(18,2) '$.discount_percent',
+                    quantity         INT           '$.quantity',
+                    qty              INT           '$.qty',
+                    subtotal         DECIMAL(18,2) '$.subtotal'
+                ) j;
+            END
+            ELSE
+            BEGIN
+                INSERT INTO dbo.order_item (order_id, product_id, unit_price, discount_percent, quantity, subtotal)
+                SELECT 
+                    @NewOrderId,
+                    ci.product_id,
+                    p.price,
+                    ISNULL(p.discount, 0.00),
+                    ci.quantity,
+                    CAST(CAST(p.price - (p.price * ISNULL(p.discount, 0.00) / 100.0) AS DECIMAL(18,2)) * ci.quantity AS DECIMAL(18,2))
+                FROM dbo.cart_item ci
+                INNER JOIN dbo.product p ON ci.product_id = p.product_id
+                WHERE ci.cart_id = @CartId;
+            END
 
-            -- 3. Decrement Product Stock
-            UPDATE p
-            SET p.quantity = p.quantity - ci.quantity
-            FROM dbo.product p
-            INNER JOIN dbo.cart_item ci ON p.product_id = ci.product_id
-            WHERE ci.cart_id = @CartId;
-
-            -- 4. Clear Cart
-            DELETE FROM dbo.cart_item WHERE cart_id = @CartId;
+            -- 3. Clear cart if user/guest cart exists
+            IF @CartId IS NOT NULL
+            BEGIN
+                DELETE FROM dbo.cart_item WHERE cart_id = @CartId;
+            END
+            ELSE IF @UserId IS NOT NULL OR (@GuestToken IS NOT NULL AND @GuestToken <> '')
+            BEGIN
+                DELETE ci
+                FROM dbo.cart_item ci
+                INNER JOIN dbo.cart c ON ci.cart_id = c.cart_id
+                WHERE (c.user_id = @UserId AND @UserId IS NOT NULL)
+                   OR (c.guest_token = @GuestToken AND @GuestToken IS NOT NULL);
+            END
 
             COMMIT TRANSACTION;
 
@@ -1359,7 +1614,7 @@ BEGIN
         END CATCH
     END
 
-    -- EDIT (Update Payment Status)
+    -- EDIT
     IF @Opr = 'EDIT'
     BEGIN
         IF @TargetOrderId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.orders WHERE order_id = @TargetOrderId)
@@ -1369,10 +1624,143 @@ BEGIN
         END
 
         UPDATE dbo.orders
-        SET payment_status = ISNULL(@PaymentStatus, payment_status)
+        SET payment_status  = ISNULL(@PaymentStatus, payment_status),
+            address_id      = COALESCE(@AddressId, address_id),
+            total_amount    = COALESCE(@TotalAmount, total_amount),
+            discount_amount = COALESCE(@DiscountAmount, discount_amount),
+            final_payable   = COALESCE(@FinalPayable, final_payable),
+            order_number    = COALESCE(@OrderNumber, order_number)
         WHERE order_id = @TargetOrderId;
 
         SELECT @TargetOrderId AS order_id, 'Order updated successfully' AS [Message];
+        RETURN;
+    END
+
+    -- DELETE
+    IF @Opr = 'DELETE'
+    BEGIN
+        IF @TargetOrderId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.orders WHERE order_id = @TargetOrderId)
+        BEGIN
+            RAISERROR('Not Found: Order with ID %d does not exist.', 16, 1, @TargetOrderId);
+            RETURN;
+        END
+
+        DELETE FROM dbo.order_item WHERE order_id = @TargetOrderId;
+        DELETE FROM dbo.orders WHERE order_id = @TargetOrderId;
+
+        SELECT @TargetOrderId AS order_id, 'Order deleted successfully' AS [Message];
+        RETURN;
+    END
+END;
+GO
+
+-- =========================================================================
+-- PROCEDURE 11: SP_order_item
+-- =========================================================================
+CREATE OR ALTER PROCEDURE dbo.SP_order_item
+    @Opr       NVARCHAR(10),
+    @JSONstr   NVARCHAR(MAX) = NULL,
+    @Condition NVARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @TargetOrderItemId INT = TRY_CAST(@Condition AS INT);
+    DECLARE @OrderId           INT;
+    DECLARE @ProductId         INT;
+    DECLARE @UnitPrice         DECIMAL(18,2);
+    DECLARE @DiscountPercent   DECIMAL(18,2);
+    DECLARE @Quantity          INT = 1;
+    DECLARE @Subtotal          DECIMAL(18,2);
+
+    IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
+    BEGIN
+        SELECT
+            @TargetOrderItemId = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.order_item_id') AS INT), @TargetOrderItemId),
+            @OrderId           = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.order_id') AS INT),
+            @ProductId         = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.product_id') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.id') AS INT)),
+            @UnitPrice         = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.unit_price') AS DECIMAL(18,2)),
+            @DiscountPercent   = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.discount_percent') AS DECIMAL(18,2)), 0.00),
+            @Quantity          = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.quantity') AS INT), 1),
+            @Subtotal          = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.subtotal') AS DECIMAL(18,2));
+    END
+
+    IF @Subtotal IS NULL AND @UnitPrice IS NOT NULL
+        SET @Subtotal = @UnitPrice * @Quantity;
+
+    -- SELECT
+    IF @Opr = 'SELECT'
+    BEGIN
+        SELECT 
+            oi.order_item_id,
+            oi.order_id,
+            o.order_number,
+            oi.product_id,
+            p.title AS product_name,
+            oi.unit_price,
+            oi.discount_percent,
+            oi.quantity,
+            oi.subtotal
+        FROM dbo.order_item oi
+        LEFT JOIN dbo.orders o ON oi.order_id = o.order_id
+        LEFT JOIN dbo.product p ON oi.product_id = p.product_id
+        WHERE (@TargetOrderItemId IS NOT NULL AND oi.order_item_id = @TargetOrderItemId)
+           OR (@OrderId IS NOT NULL AND oi.order_id = @OrderId)
+           OR (@TargetOrderItemId IS NULL AND @OrderId IS NULL)
+        ORDER BY oi.order_item_id DESC;
+        RETURN;
+    END
+
+    -- ADD / INSERT
+    IF @Opr IN ('ADD', 'INSERT')
+    BEGIN
+        IF @OrderId IS NULL OR @ProductId IS NULL
+        BEGIN
+            RAISERROR('Validation Error: order_id and product_id are required.', 16, 1);
+            RETURN;
+        END
+
+        INSERT INTO dbo.order_item (order_id, product_id, unit_price, discount_percent, quantity, subtotal)
+        VALUES (@OrderId, @ProductId, COALESCE(@UnitPrice, 0.00), COALESCE(@DiscountPercent, 0.00), @Quantity, COALESCE(@Subtotal, 0.00));
+
+        DECLARE @NewOIId INT = SCOPE_IDENTITY();
+        SELECT @NewOIId AS order_item_id, 'Order item added successfully' AS [Message];
+        RETURN;
+    END
+
+    -- EDIT
+    IF @Opr = 'EDIT'
+    BEGIN
+        IF @TargetOrderItemId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.order_item WHERE order_item_id = @TargetOrderItemId)
+        BEGIN
+            RAISERROR('Not Found: Order item does not exist.', 16, 1);
+            RETURN;
+        END
+
+        UPDATE dbo.order_item
+        SET order_id         = COALESCE(@OrderId, order_id),
+            product_id       = COALESCE(@ProductId, product_id),
+            unit_price       = COALESCE(@UnitPrice, unit_price),
+            discount_percent = COALESCE(@DiscountPercent, discount_percent),
+            quantity         = COALESCE(@Quantity, quantity),
+            subtotal         = COALESCE(@Subtotal, subtotal)
+        WHERE order_item_id = @TargetOrderItemId;
+
+        SELECT @TargetOrderItemId AS order_item_id, 'Order item updated successfully' AS [Message];
+        RETURN;
+    END
+
+    -- DELETE
+    IF @Opr = 'DELETE'
+    BEGIN
+        IF @TargetOrderItemId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.order_item WHERE order_item_id = @TargetOrderItemId)
+        BEGIN
+            RAISERROR('Not Found: Order item does not exist.', 16, 1);
+            RETURN;
+        END
+
+        DELETE FROM dbo.order_item WHERE order_item_id = @TargetOrderItemId;
+        SELECT @TargetOrderItemId AS order_item_id, 'Order item deleted successfully' AS [Message];
         RETURN;
     END
 END;
@@ -1500,7 +1888,7 @@ BEGIN
     END
 
     -- Whitelist includes catalog entities and new e-commerce entities
-    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'product_image', 'user', 'address', 'cart', 'orders', 'wishlist')
+    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'product_image', 'user', 'address', 'cart', 'cart_item', 'orders', 'order', 'order_item', 'wishlist')
     BEGIN
         SET @Response = 'SECURITY ERROR: Unauthorized or unsupported proc_name "' + @proc_name + '".';
         SELECT @Response AS [Response_Status];
@@ -1515,14 +1903,14 @@ BEGIN
     END
 
     -- Allow standard CRUD + RESTOCK and MERGE operations
-    IF @Opr NOT IN ('ADD', 'EDIT', 'DELETE', 'SELECT', 'RESTOCK', 'MERGE')
+    IF @Opr NOT IN ('ADD', 'INSERT', 'EDIT', 'DELETE', 'SELECT', 'RESTOCK', 'MERGE', 'UPDATE_QTY')
     BEGIN
-        SET @Response = 'VALIDATION ERROR: Invalid operation "' + @Opr + '". Allowed: ADD, EDIT, DELETE, SELECT, RESTOCK, MERGE.';
+        SET @Response = 'VALIDATION ERROR: Invalid operation "' + @Opr + '". Allowed: ADD, INSERT, EDIT, DELETE, SELECT, RESTOCK, MERGE, UPDATE_QTY.';
         SELECT @Response AS [Response_Status];
         RETURN;
     END
 
-    IF @Opr IN ('ADD', 'RESTOCK')
+    IF @Opr IN ('ADD', 'INSERT', 'RESTOCK')
     BEGIN
         IF @JSONstr IS NULL OR ISJSON(@JSONstr) = 0
         BEGIN
@@ -1549,8 +1937,12 @@ BEGIN
             EXEC dbo.SP_address @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
         ELSE IF @proc_name = 'cart'
             EXEC dbo.SP_cart @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
-        ELSE IF @proc_name = 'orders'
+        ELSE IF @proc_name = 'cart_item'
+            EXEC dbo.SP_cart_item @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
+        ELSE IF @proc_name IN ('orders', 'order')
             EXEC dbo.SP_orders @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
+        ELSE IF @proc_name = 'order_item'
+            EXEC dbo.SP_order_item @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
         ELSE IF @proc_name = 'wishlist'
             EXEC dbo.SP_wishlist @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
 
