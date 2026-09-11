@@ -1090,7 +1090,57 @@
             }
         }
 
+        function isNumericCol(h, rows) {
+            if (!h) return false;
+            const col = h.toLowerCase();
+
+            // Explicit non-numeric / varchar fields (names, descriptions, text, dates, phones, addresses, codes, hashes)
+            const varcharBlacklist = [
+                'name', 'title', 'product_name', 'category_name', 'category',
+                'description', 'purity', 'weight', 'image_url', 'url', 'images',
+                'role', 'email', 'full_name', 'phone', 'address_line1', 'address_line2',
+                'city', 'state', 'postal_code', 'country', 'order_number', 'payment_status',
+                'password_hash', 'remark', 'status', 'created_at', 'updated_at'
+            ];
+            if (varcharBlacklist.includes(col)) return false;
+            if (col.includes('url') || col.includes('name') || col.includes('desc') || col.includes('date') ||
+                col.includes('email') || col.includes('phone') || col.includes('address') || col.includes('status') ||
+                col.includes('text') || col.includes('hash') || col.includes('time') || col.includes('role') ||
+                col.includes('code') || col.includes('number') || col.includes('weight') || col.includes('purity')) {
+                return false;
+            }
+
+            // Explicit integer / numeric fields
+            const numericWhitelist = [
+                'quantity', 'qty', 'stock', 'stock_available', 'stock_qty',
+                'price', 'discount', 'discount_percent', 'final_price', 'unit_price',
+                'subtotal', 'total_amount', 'discount_amount', 'final_payable'
+            ];
+            if (col.endsWith('_id') || col === 'id' || numericWhitelist.includes(col)) {
+                return true;
+            }
+
+            // Verify with row data if present
+            if (rows && rows.length > 0) {
+                let hasValidVal = false;
+                for (const r of rows) {
+                    const val = r[h];
+                    if (val !== null && val !== undefined && val !== '' && val !== '-') {
+                        hasValidVal = true;
+                        if (isNaN(Number(val)) || typeof val === 'boolean') {
+                            return false;
+                        }
+                    }
+                }
+                return hasValidVal;
+            }
+
+            return false;
+        }
+
         function handleSort(col) {
+            if (!isNumericCol(col, currentRows)) return;
+
             if (currentSortCol === col) {
                 if (currentSortDir === 'asc') {
                     currentSortDir = 'desc';
@@ -1106,7 +1156,7 @@
         }
 
         function sortAndRender() {
-            if (!currentSortCol || !currentSortDir) {
+            if (!currentSortCol || !currentSortDir || !isNumericCol(currentSortCol, currentRows)) {
                 renderTable(currentRows);
                 return;
             }
@@ -1115,27 +1165,10 @@
                 let valA = a[currentSortCol];
                 let valB = b[currentSortCol];
 
-                if (valA === null || valA === undefined || valA === '-') valA = '';
-                if (valB === null || valB === undefined || valB === '-') valB = '';
+                const numA = (valA === null || valA === undefined || valA === '-' || valA === '') ? 0 : Number(valA);
+                const numB = (valB === null || valB === undefined || valB === '-' || valB === '') ? 0 : Number(valB);
 
-                // Numeric sorting
-                const numA = Number(valA);
-                const numB = Number(valB);
-                if (!isNaN(numA) && !isNaN(numB) && valA !== '' && valB !== '') {
-                    return currentSortDir === 'asc' ? numA - numB : numB - numA;
-                }
-
-                // Date sorting
-                const dateA = Date.parse(valA);
-                const dateB = Date.parse(valB);
-                if (!isNaN(dateA) && !isNaN(dateB) && typeof valA === 'string' && (valA.includes('-') || valA.includes(':'))) {
-                    return currentSortDir === 'asc' ? dateA - dateB : dateB - dateA;
-                }
-
-                // String comparison
-                const strA = String(valA).toLowerCase();
-                const strB = String(valB).toLowerCase();
-                return currentSortDir === 'asc' ? strA.localeCompare(strB) : strB.localeCompare(strA);
+                return currentSortDir === 'asc' ? numA - numB : numB - numA;
             });
 
             renderTable(sorted);
@@ -1168,22 +1201,28 @@
                     if (h === 'title') colTitle = 'Product Name';
                 }
 
-                const isSorted = currentSortCol === h;
-                const sortClass = isSorted ? `active ${currentSortDir}` : '';
+                const isNumeric = isNumericCol(h, rows);
 
-                headRow += `
-                    <th class="th-sortable" onclick="handleSort('${h}')" title="Click to sort by ${colTitle} (${isSorted ? (currentSortDir === 'asc' ? 'Ascending' : 'Descending') : 'Unsorted'})">
-                        <div class="th-content">
-                            <span>${colTitle}</span>
-                            <span class="sort-arrows ${sortClass}">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                                    <path d="M5 12.5V3.5M5 3.5L2 6.5M5 3.5L8 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-up"/>
-                                    <path d="M11 3.5V12.5M11 12.5L8 9.5M11 12.5L14 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-down"/>
-                                </svg>
-                            </span>
-                        </div>
-                    </th>
-                `;
+                if (isNumeric) {
+                    const isSorted = currentSortCol === h;
+                    const sortClass = isSorted ? `active ${currentSortDir}` : '';
+
+                    headRow += `
+                        <th class="th-sortable" onclick="handleSort('${h}')" title="Click to sort by ${colTitle} (${isSorted ? (currentSortDir === 'asc' ? 'Ascending' : 'Descending') : 'Unsorted'})">
+                            <div class="th-content">
+                                <span>${colTitle}</span>
+                                <span class="sort-arrows ${sortClass}">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                        <path d="M5 12.5V3.5M5 3.5L2 6.5M5 3.5L8 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-up"/>
+                                        <path d="M11 3.5V12.5M11 12.5L8 9.5M11 12.5L14 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-down"/>
+                                    </svg>
+                                </span>
+                            </div>
+                        </th>
+                    `;
+                } else {
+                    headRow += `<th>${colTitle}</th>`;
+                }
             });
             headRow += '<th style="text-align:right">Actions</th></tr>';
             thead.innerHTML = headRow;
