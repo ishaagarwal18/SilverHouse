@@ -32,7 +32,7 @@ export default function TopSellerSection({
   return (
     <section className="py-14 sm:py-16 bg-[var(--th-bg)] border-b border-[var(--th-border)] relative">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 pb-4 border-b border-[var(--th-border)] gap-4">
           <div>
@@ -118,9 +118,6 @@ export default function TopSellerSection({
                       <Flame className="w-3 h-3 text-[var(--th-accent)] fill-[var(--th-accent)]" />
                       <span>#{index + 1} Best Seller</span>
                     </span>
-                    <span className="bg-[var(--th-accent)] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs w-fit">
-                      {Number(product.sold || 0)} Sold
-                    </span>
                   </div>
 
                   {/* Wishlist Button */}
@@ -129,11 +126,10 @@ export default function TopSellerSection({
                       e.stopPropagation();
                       onToggleWishlist && onToggleWishlist(product);
                     }}
-                    className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                      isWishlisted
-                        ? 'bg-rose-100 text-rose-700 shadow-md border border-rose-300'
-                        : 'bg-[var(--th-card)]/90 text-[var(--th-text-muted)] hover:text-[var(--th-primary)] hover:bg-[var(--th-card)] shadow-xs border border-[var(--th-border)]'
-                    }`}
+                    className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${isWishlisted
+                      ? 'bg-rose-100 text-rose-700 shadow-md border border-rose-300'
+                      : 'bg-[var(--th-card)]/90 text-[var(--th-text-muted)] hover:text-[var(--th-primary)] hover:bg-[var(--th-card)] shadow-xs border border-[var(--th-border)]'
+                      }`}
                     title="Save to Wishlist"
                   >
                     <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current text-rose-700' : ''}`} />
@@ -172,7 +168,7 @@ export default function TopSellerSection({
                     >
                       {product.name}
                     </h3>
-                    
+
                     <p className="text-[11px] text-[var(--th-text-muted)] font-medium mt-0.5 line-clamp-1">
                       {product.weightGrams ? `${product.weightGrams}g Pure Silver` : 'Hallmark Certified'} • {product.recipient || product.idealFor || 'Authentic'}
                     </p>
@@ -191,9 +187,6 @@ export default function TopSellerSection({
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block -mt-0.5">
-                        🔥 {Number(product.sold || 0)} Sold
-                      </span>
                     </div>
 
                     <button

@@ -57,7 +57,9 @@ export function normalizeProduct(rawItem) {
 
   return {
     id: String(rawItem.id || rawItem.product_id || rawItem.code || Math.random().toString(36).substring(2, 9)),
-    name: rawItem.product_name || rawItem.name || 'Pure Silver Item',
+    product_id: Number(rawItem.product_id || rawItem.id),
+    name: rawItem.product_name || rawItem.name || rawItem.title || 'Pure Silver Item',
+    title: rawItem.title || rawItem.product_name || rawItem.name || 'Pure Silver Item',
     category: (rawItem.slug || rawItem.category_slug || rawItem.category_name || rawItem.category || 'silver-coins-bars').toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
     subcategory: (rawItem.subcategory_name || rawItem.subcategory || 'all').toLowerCase().replace(/\s+/g, '-'),
     purity: purity,

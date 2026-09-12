@@ -25,6 +25,7 @@ export default function CheckoutModal({
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [copiedOrderId, setCopiedOrderId] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   // Card Simulator state for Step 2
   const [cardDetails, setCardDetails] = useState({
@@ -197,12 +198,29 @@ export default function CheckoutModal({
   };
 
   const handleCompleteOrder = async () => {
+    if (isPlacingOrder) return;
     const generatedID = 'SH-' + Math.floor(100000 + Math.random() * 900000);
-    setOrderId(generatedID);
-    setStep(3);
 
     const effective = getEffectiveAddress();
     const finalAmount = totalAmount - discountAmount;
+
+    const formattedItems = cartItems.map(item => {
+      const dbProdId = item.product.product_id || (typeof item.product.id === 'number' ? item.product.id : (!isNaN(Number(item.product.id)) ? Number(item.product.id) : null));
+      const pName = item.product.title || item.product.name || item.product.product_name || 'Sacred Item';
+      return {
+        product_id: dbProdId,
+        id: dbProdId,
+        product_name: pName,
+        title: pName,
+        quantity: item.quantity,
+        qty: item.quantity,
+        unit_price: item.product.price,
+        price: item.product.price,
+        discount_percent: item.product.discount || 0,
+        subtotal: item.product.price * item.quantity,
+        image: item.product.image || (item.product.images && item.product.images[0]) || ''
+      };
+    });
 
     const orderData = {
       order_id: Date.now(),
@@ -218,27 +236,10 @@ export default function CheckoutModal({
       payment_status: paymentMethod === 'cod' ? 'PENDING' : 'PAID',
       payment_method: paymentMethod,
       created_at: new Date().toISOString(),
-      items: cartItems.map(item => ({
-        product_id: item.product.id || item.product.product_id,
-        product_name: item.product.name || item.product.title,
-        quantity: item.quantity,
-        unit_price: item.product.price,
-        discount_percent: item.product.discount || 0,
-        subtotal: item.product.price * item.quantity,
-        image: item.product.image || (item.product.images && item.product.images[0]) || ''
-      }))
+      items: formattedItems
     };
 
-    // 1. Cache immediately in localStorage for instant display on /orders
-    try {
-      const existing = JSON.parse(localStorage.getItem('silverhouse_orders') || '[]');
-      localStorage.setItem('silverhouse_orders', JSON.stringify([orderData, ...existing]));
-      window.dispatchEvent(new Event('orders_updated'));
-    } catch (e) {
-      console.warn('Could not save order locally:', e);
-    }
-
-    // 2. Send order record payload to backend Express API
+    // Prepare payload for backend Express API (/api/data with proc_name: 'orders', opr: 'INSERT')
     const orderPayload = {
       proc_name: 'orders',
       opr: 'INSERT',
@@ -256,19 +257,40 @@ export default function CheckoutModal({
         final_payable: finalAmount,
         payment_status: paymentMethod === 'cod' ? 'PENDING' : 'PAID',
         payment_method: paymentMethod,
-        items: orderData.items
+        items: formattedItems
       }
     };
 
-    postApiData(orderPayload)
-      .then(() => {
-        window.dispatchEvent(new Event('products_updated'));
-      })
-      .catch(err => {
-        console.warn('[Checkout] Order post warning:', err);
-      });
+    setIsPlacingOrder(true);
+    try {
+      const res = await postApiData(orderPayload);
+      if (res && res.success) {
+        // Cache order in localStorage for orders history
+        try {
+          const existing = JSON.parse(localStorage.getItem('silverhouse_orders') || '[]');
+          localStorage.setItem('silverhouse_orders', JSON.stringify([orderData, ...existing]));
+          window.dispatchEvent(new Event('orders_updated'));
+        } catch (e) {
+          console.warn('Could not save order locally:', e);
+        }
 
-    onClearCart();
+        // Notify app to re-fetch products so updated quantity and sold counts are reflected live immediately
+        window.dispatchEvent(new Event('products_updated'));
+
+        const finalOrderNum = res.data?.[0]?.order_number || generatedID;
+        setOrderId(finalOrderNum);
+        setStep(3);
+        onClearCart();
+      } else {
+        console.error('[Checkout] Order placement failed:', res);
+        alert(res?.error || res?.status || 'Could not complete order. Please try again.');
+      }
+    } catch (err) {
+      console.error('[Checkout] Order post error:', err);
+      alert('Could not place order due to a network error. Please try again.');
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   const copyOrderId = () => {
@@ -958,10 +980,17 @@ export default function CheckoutModal({
 
                 <button
                   onClick={handleCompleteOrder}
-                  className="px-8 py-3.5 bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center space-x-2.5 cursor-pointer group"
+                  disabled={isPlacingOrder}
+                  className={`px-8 py-3.5 bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center space-x-2.5 cursor-pointer group ${
+                    isPlacingOrder ? 'opacity-70 cursor-not-allowed' : ''
+                  }`}
                 >
                   <Lock className="w-4 h-4" />
-                  <span>Place Order • <strong className="font-outfit text-sm">₹{totalAmount.toLocaleString('en-IN')}</strong></span>
+                  <span>
+                    {isPlacingOrder ? 'Securing & Placing Order...' : (
+                      <>Place Order • <strong className="font-outfit text-sm">₹{totalAmount.toLocaleString('en-IN')}</strong></>
+                    )}
+                  </span>
                 </button>
               </div>
 

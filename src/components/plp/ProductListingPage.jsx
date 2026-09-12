@@ -557,11 +557,11 @@ export default function ProductListingPage({
     } else if (sortBy === 'newest') {
       result.sort((a, b) => (b.sold || 0) - (a.sold || 0));
     } else {
-      // Default / Featured: strictly order by priority given (1, 2, 3...)
+      // Default / Featured: strictly order by priority descending (more the priority that product should be first)
       result.sort((a, b) => {
-        const pA = Number(a.priority) > 0 ? Number(a.priority) : 999999;
-        const pB = Number(b.priority) > 0 ? Number(b.priority) : 999999;
-        if (pA !== pB) return pA - pB;
+        const pA = Number(a.priority !== undefined && a.priority !== null ? a.priority : 0);
+        const pB = Number(b.priority !== undefined && b.priority !== null ? b.priority : 0);
+        if (pA !== pB) return pB - pA;
         return Number(a.id || 0) - Number(b.id || 0);
       });
     }
@@ -1279,10 +1279,18 @@ export default function ProductListingPage({
 
                           <h3
                             onClick={() => onSelectProduct(product)}
-                            className="font-semibold text-sm text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-colors line-clamp-2 cursor-pointer mb-2"
+                            className="font-semibold text-sm text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-colors line-clamp-2 cursor-pointer mb-1.5"
                           >
                             {product.name}
                           </h3>
+
+                          {/* Live Stock & Sold Badge */}
+                          <div className="flex items-center justify-between text-[11px] mb-2">
+                            <span className={`font-semibold ${product.quantity > 5 ? 'text-emerald-600 dark:text-emerald-400' : (product.quantity > 0 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-rose-500 font-bold')
+                              }`}>
+                              {product.quantity > 5 ? `In Stock (${product.quantity})` : (product.quantity > 0 ? `Only ${product.quantity} left!` : 'Sold Out')}
+                            </span>
+                          </div>
                         </div>
 
                         <div>
@@ -1307,11 +1315,13 @@ export default function ProductListingPage({
                             </button>
                           ) : (
                             <button
+                              disabled={product.quantity !== undefined && product.quantity !== null && product.quantity <= 0}
                               onClick={() => onAddToCart(product, 1)}
-                              className="w-full py-2.5 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs hover:shadow-md"
+                              className={`w-full py-2.5 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs hover:shadow-md ${product.quantity !== undefined && product.quantity !== null && product.quantity <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
                             >
                               <ShoppingBag className="w-3.5 h-3.5" />
-                              <span>Add to Cart</span>
+                              <span>{product.quantity !== undefined && product.quantity !== null && product.quantity <= 0 ? 'Sold Out' : 'Add to Cart'}</span>
                             </button>
                           )}
                         </div>

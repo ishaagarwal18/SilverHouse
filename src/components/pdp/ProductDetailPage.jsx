@@ -40,8 +40,8 @@ export default function ProductDetailPage({
   const discountPct = currentProduct.discount !== undefined && currentProduct.discount !== null && Number(currentProduct.discount) > 0
     ? Number(currentProduct.discount)
     : (currentProduct.originalPrice && currentProduct.originalPrice > currentProduct.price
-        ? Math.round(((currentProduct.originalPrice - currentProduct.price) / currentProduct.originalPrice) * 100)
-        : null);
+      ? Math.round(((currentProduct.originalPrice - currentProduct.price) / currentProduct.originalPrice) * 100)
+      : null);
 
   const relatedProducts = productList.filter(p => p.category === currentProduct.category && p.id !== currentProduct.id).slice(0, 4);
 
@@ -105,30 +105,30 @@ export default function ProductDetailPage({
               >
                 Home
               </button>
-            <ChevronRight className="w-3 h-3 text-silver-400" />
-            <button
-              onClick={() => navigate('/catalog')}
-              className="hover:text-[#D4AF37] font-medium transition-colors cursor-pointer"
-            >
-              Catalog
-            </button>
-            {currentProduct.category && (
-              <>
-                <ChevronRight className="w-3 h-3 text-silver-400" />
-                <button
-                  onClick={() => navigate(`/category/${currentProduct.category}`)}
-                  className="hover:text-[#D4AF37] font-medium capitalize transition-colors cursor-pointer"
-                >
-                  {currentProduct.category_name || currentProduct.category.replace(/-/g, ' ')}
-                </button>
-              </>
-            )}
-            <ChevronRight className="w-3 h-3 text-silver-400" />
-            <span className="text-[#1A1A1A] font-semibold line-clamp-1">{currentProduct.name}</span>
-          </nav>
+              <ChevronRight className="w-3 h-3 text-silver-400" />
+              <button
+                onClick={() => navigate('/catalog')}
+                className="hover:text-[#D4AF37] font-medium transition-colors cursor-pointer"
+              >
+                Catalog
+              </button>
+              {currentProduct.category && (
+                <>
+                  <ChevronRight className="w-3 h-3 text-silver-400" />
+                  <button
+                    onClick={() => navigate(`/category/${currentProduct.category}`)}
+                    className="hover:text-[#D4AF37] font-medium capitalize transition-colors cursor-pointer"
+                  >
+                    {currentProduct.category_name || currentProduct.category.replace(/-/g, ' ')}
+                  </button>
+                </>
+              )}
+              <ChevronRight className="w-3 h-3 text-silver-400" />
+              <span className="text-[#1A1A1A] font-semibold line-clamp-1">{currentProduct.name}</span>
+            </nav>
+          </div>
         </div>
       </div>
-    </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
@@ -161,8 +161,8 @@ export default function ProductDetailPage({
               <button
                 onClick={() => onToggleWishlist(currentProduct)}
                 className={`absolute top-4 right-4 z-10 p-3 rounded-full backdrop-blur-md transition-all shadow-md ${isCurrentWishlisted
-                    ? 'bg-rose-600 text-white'
-                    : 'bg-white/90 text-silver-700 hover:bg-white hover:text-black'
+                  ? 'bg-rose-600 text-white'
+                  : 'bg-white/90 text-silver-700 hover:bg-white hover:text-black'
                   }`}
                 title="Toggle Wishlist"
               >
@@ -178,14 +178,14 @@ export default function ProductDetailPage({
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
                     className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white ${selectedImage === idx
-                        ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30 shadow-md scale-102'
-                        : 'border-silver-200 opacity-70 hover:opacity-100'
+                      ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30 shadow-md scale-102'
+                      : 'border-silver-200 opacity-70 hover:opacity-100'
                       }`}
                   >
-                    <img 
-                      src={img} 
-                      alt={`Thumbnail ${idx}`} 
-                      className="w-full h-full object-cover" 
+                    <img
+                      src={img}
+                      alt={`Thumbnail ${idx}`}
+                      className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=600&q=80';
@@ -263,6 +263,28 @@ export default function ProductDetailPage({
                   <span className="text-base font-bold text-[#D4AF37]">{currentProduct.weightGrams} Grams</span>
                 </div>
               </div>
+
+              {/* Live Inventory Stock Status & Sales Badge */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-silver-50 border border-silver-200 text-xs my-3">
+                <div className="flex items-center space-x-2">
+                  <span className={`w-2.5 h-2.5 rounded-full ${currentProduct.quantity > 5 ? 'bg-emerald-500 animate-pulse' : (currentProduct.quantity > 0 ? 'bg-amber-500 animate-pulse' : 'bg-rose-500')
+                    }`} />
+                  <span className="font-semibold">
+                    {currentProduct.quantity > 5 ? (
+                      <span className="text-emerald-700 font-bold">In Stock ({currentProduct.quantity} units available)</span>
+                    ) : currentProduct.quantity > 0 ? (
+                      <span className="text-amber-700 font-bold">Hurry, only {currentProduct.quantity} left in stock!</span>
+                    ) : (
+                      <span className="text-rose-600 font-bold">Currently Out of Stock</span>
+                    )}
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-1.5 bg-white border border-silver-200 px-3 py-1 rounded-lg text-[#D4AF37] font-bold text-xs shadow-2xs">
+                  <span>🔥</span>
+                  <span>{Number(currentProduct.sold || 0)} Sold</span>
+                </div>
+              </div>
             </div>
 
             {/* Customization Form (Yatra Lockets & Engravings) */}
@@ -324,20 +346,24 @@ export default function ProductDetailPage({
                   </button>
                   <span className="w-10 text-center font-bold text-sm text-[#1A1A1A]">{qty}</span>
                   <button
+                    disabled={currentProduct.quantity !== undefined && currentProduct.quantity !== null && qty >= currentProduct.quantity}
                     onClick={() => setQty(qty + 1)}
-                    className="w-8 h-8 flex items-center justify-center font-bold text-silver-700 hover:text-black rounded-lg hover:bg-silver-200"
+                    className={`w-8 h-8 flex items-center justify-center font-bold text-silver-700 hover:text-black rounded-lg hover:bg-silver-200 ${currentProduct.quantity !== undefined && currentProduct.quantity !== null && qty >= currentProduct.quantity ? 'opacity-30 cursor-not-allowed' : ''
+                      }`}
                   >
                     +
                   </button>
                 </div>
 
                 <button
+                  disabled={currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0}
                   onClick={() => onAddToCart(currentProduct, qty, { customText, uploadedImagePreview })}
-                  className="flex-1 py-3.5 bg-[#1A1A1A] hover:bg-[#D4AF37] text-white hover:text-black font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2"
+                  className={`flex-1 py-3.5 bg-[#1A1A1A] hover:bg-[#D4AF37] text-white hover:text-black font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 ${currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                 >
                   <ShoppingBag className="w-4 h-4" />
                   <Sparkles className="w-4 h-4" />
-                  <span>Buy Now • Express Checkout</span>
+                  <span>{currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0 ? 'Out of Stock' : 'Buy Now • Express Checkout'}</span>
                 </button>
               </div>
             </div>

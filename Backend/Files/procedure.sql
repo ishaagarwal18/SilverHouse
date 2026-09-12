@@ -109,8 +109,7 @@ BEGIN
         ELSE
             SELECT * FROM dbo.product 
             ORDER BY 
-                CASE WHEN [priority] > 0 THEN 0 ELSE 1 END ASC,
-                [priority] ASC,
+                [priority] DESC,
                 product_id ASC;
     END
 
@@ -305,7 +304,10 @@ BEGIN
         FROM dbo.product p
         LEFT JOIN dbo.category c ON p.category_id = c.category_id
         LEFT JOIN dbo.make_master m ON p.m_id = m.m_id
-        WHERE (@TargetId IS NULL OR p.product_id = @TargetId);
+        WHERE (@TargetId IS NULL OR p.product_id = @TargetId)
+        ORDER BY 
+            p.[priority] DESC,
+            p.product_id ASC;
     END
 END;
 GO
@@ -1561,15 +1563,22 @@ BEGIN
                 INSERT INTO dbo.order_item (order_id, product_id, unit_price, discount_percent, quantity, subtotal)
                 SELECT 
                     @NewOrderId,
-                    COALESCE(j.product_id, j.id, (SELECT TOP 1 product_id FROM dbo.product ORDER BY product_id ASC)),
+                    COALESCE(
+                        (SELECT TOP 1 p.product_id FROM dbo.product p WHERE p.product_id = TRY_CAST(COALESCE(j.product_id, j.id) AS INT)),
+                        (SELECT TOP 1 p.product_id FROM dbo.product p WHERE p.title = COALESCE(j.product_name, j.title, '') AND COALESCE(j.product_name, j.title, '') <> ''),
+                        (SELECT TOP 1 p.product_id FROM dbo.product p WHERE p.title LIKE '%' + COALESCE(j.product_name, j.title, '') + '%' AND COALESCE(j.product_name, j.title, '') <> ''),
+                        (SELECT TOP 1 product_id FROM dbo.product ORDER BY product_id ASC)
+                    ),
                     COALESCE(j.unit_price, j.price, 0.00),
                     COALESCE(j.discount_percent, 0.00),
                     COALESCE(j.quantity, j.qty, 1),
                     COALESCE(j.subtotal, (COALESCE(j.unit_price, j.price, 0.00) * COALESCE(j.quantity, j.qty, 1)))
                 FROM OPENJSON(JSON_QUERY(@JSONstr, '$.table_values.items'))
                 WITH (
-                    product_id       INT           '$.product_id',
-                    id               INT           '$.id',
+                    product_id       NVARCHAR(50)  '$.product_id',
+                    id               NVARCHAR(50)  '$.id',
+                    product_name     NVARCHAR(255) '$.product_name',
+                    title            NVARCHAR(255) '$.title',
                     unit_price       DECIMAL(18,2) '$.unit_price',
                     price            DECIMAL(18,2) '$.price',
                     discount_percent DECIMAL(18,2) '$.discount_percent',
@@ -1735,6 +1744,11 @@ BEGIN
         BEGIN
             RAISERROR('Validation Error: order_id and product_id are required.', 16, 1);
             RETURN;
+        END
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE product_id = @ProductId)
+        BEGIN
+            SELECT TOP 1 @ProductId = product_id FROM dbo.product ORDER BY product_id ASC;
         END
 
         INSERT INTO dbo.order_item (order_id, product_id, unit_price, discount_percent, quantity, subtotal)

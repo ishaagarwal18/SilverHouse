@@ -111,8 +111,7 @@ BEGIN
             OR p.[description] LIKE '%' + @SearchKeyword + '%'
         )
     ORDER BY 
-        CASE WHEN p.[priority] > 0 THEN 0 ELSE 1 END ASC,
-        p.[priority] ASC,
+        p.[priority] DESC,
         p.product_id ASC;
 END;
 GO
