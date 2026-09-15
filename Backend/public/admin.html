@@ -277,6 +277,182 @@
             background: var(--surface-hover);
         }
 
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        /* Bulk Action Bar */
+        .bulk-action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(99, 102, 241, 0.08));
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: var(--radius);
+            padding: 12px 20px;
+            margin-bottom: 16px;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .bulk-action-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .bulk-count-badge {
+            background: var(--danger);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-bulk-clear {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+            transition: var(--transition);
+        }
+
+        .btn-bulk-clear:hover {
+            color: var(--text-main);
+        }
+
+        /* Custom Checkbox */
+        .checkbox-cell {
+            width: 44px;
+            text-align: center;
+            padding: 14px 10px !important;
+        }
+
+        .custom-chk {
+            width: 17px;
+            height: 17px;
+            cursor: pointer;
+            accent-color: var(--primary);
+            border-radius: 4px;
+            vertical-align: middle;
+        }
+
+        /* Delete Confirmation Modal Card */
+        .delete-modal-card {
+            max-width: 520px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            overflow: hidden;
+        }
+
+        .delete-modal-header {
+            background: rgba(239, 68, 68, 0.05);
+            border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+        }
+
+        .delete-icon-badge {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .delete-item-card {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .delete-item-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            gap: 10px;
+        }
+
+        .delete-id-tag {
+            font-family: monospace;
+            font-size: 12px;
+            padding: 2px 8px;
+            background: rgba(99, 102, 241, 0.12);
+            color: var(--primary);
+            border-radius: 4px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .delete-item-meta {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            line-height: 1.5;
+        }
+
+        .delete-item-list {
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-card);
+            margin-bottom: 16px;
+        }
+
+        .delete-list-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        .delete-list-row:last-child {
+            border-bottom: none;
+        }
+
+        .delete-warning-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 12px 14px;
+            border-radius: 8px;
+            color: var(--danger);
+            font-size: 12.5px;
+            line-height: 1.4;
+        }
+
         .btn-action-edit {
             padding: 6px 12px;
             background: rgba(56, 189, 248, 0.1);
@@ -847,6 +1023,23 @@
         </header>
 
         <div class="content-area">
+            <!-- Bulk Action Bar -->
+            <div id="bulkActionBar" class="bulk-action-bar" style="display:none;">
+                <div class="bulk-action-info">
+                    <span class="bulk-count-badge">
+                        <i class="ph-bold ph-check"></i>
+                        <span id="bulkSelectedCount">0</span> selected
+                    </span>
+                    <button type="button" class="btn-bulk-clear" onclick="clearSelectedRecords()">Deselect All</button>
+                </div>
+                <div class="bulk-action-btns">
+                    <button type="button" class="btn btn-danger" onclick="triggerBulkDelete()">
+                        <i class="ph-bold ph-trash"></i>
+                        <span>Delete Selected (<span id="bulkDeleteBtnCount">0</span>)</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="table-card">
                 <table>
                     <thead id="tableHead"></thead>
@@ -881,6 +1074,44 @@
         </div>
     </div>
 
+    <!-- Custom Delete Confirmation Modal Card -->
+    <div id="deleteConfirmModal" class="modal-overlay">
+        <div class="modal-card delete-modal-card">
+            <div class="modal-header delete-modal-header">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="delete-icon-badge">
+                        <i class="ph-bold ph-trash"></i>
+                    </div>
+                    <div>
+                        <h3 id="deleteModalTitle" style="color:var(--danger, #ef4444);">Confirm Deletion</h3>
+                        <p id="deleteModalSubtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                            Permanent removal warning
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeDeleteConfirmModal()">
+                    <i class="ph-bold ph-x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="deleteModalDetails">
+                    <!-- Dynamic deletion preview / item summary will render here -->
+                </div>
+                <div class="delete-warning-box">
+                    <i class="ph-bold ph-warning" style="font-size:18px; flex-shrink:0;"></i>
+                    <span><strong>Permanent Action:</strong> This cannot be undone. The database record(s) and any associated data will be permanently erased.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteConfirmModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="executePendingDelete()">
+                    <i class="ph-bold ph-trash"></i>
+                    <span id="confirmDeleteBtnText">Delete</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification element -->
     <div id="toast" class="toast"></div>
 
@@ -889,12 +1120,16 @@
         let currentRows = [];
         let editId = null;
         let highlightMap = {};
+        let selectedRecordIds = new Set();
+        let pendingDeleteContext = null;
 
         let categoriesList = [];
         let makeMasterList = [];
         let categoriesMap = {};
         let categoryNameToIdMap = {};
+        let categorySlugToIdMap = {};
         let makeMasterMap = {};
+        let makeNameToIdMap = {};
 
         const PK_MAP = {
             product: 'product_id',
@@ -932,18 +1167,25 @@
 
                 categoriesMap = {};
                 categoryNameToIdMap = {};
+                categorySlugToIdMap = {};
                 categoriesList.forEach(c => {
                     if (c.category_id !== undefined && c.name) {
                         categoriesMap[c.category_id] = c.name;
                         categoryNameToIdMap[String(c.name).trim().toLowerCase()] = c.category_id;
                         categoryNameToIdMap[String(c.name).trim()] = c.category_id;
                     }
+                    if (c.category_id !== undefined && c.slug) {
+                        categorySlugToIdMap[String(c.slug).trim().toLowerCase()] = c.category_id;
+                    }
                 });
 
                 makeMasterMap = {};
+                makeNameToIdMap = {};
                 makeMasterList.forEach(m => {
                     if (m.m_id !== undefined && m.type) {
                         makeMasterMap[m.m_id] = m.type;
+                        makeNameToIdMap[String(m.type).trim().toLowerCase()] = m.m_id;
+                        makeNameToIdMap[String(m.type).trim()] = m.m_id;
                     }
                 });
 
@@ -1045,6 +1287,8 @@
             highlightMap = {};
             currentSortCol = null;
             currentSortDir = null;
+            selectedRecordIds.clear();
+            updateBulkActionBar();
 
             // Update active nav button
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -1072,6 +1316,83 @@
             if (btnImport) btnImport.style.display = isCatalog ? 'inline-flex' : 'none';
 
             loadData();
+        }
+
+        // Selection & Bulk Action Helpers
+        function toggleSelectAll(masterChk) {
+            const isChecked = masterChk.checked;
+            const pkField = PK_MAP[activeEntity];
+            currentRows.forEach(r => {
+                const id = String(r[pkField]);
+                if (isChecked) {
+                    selectedRecordIds.add(id);
+                } else {
+                    selectedRecordIds.delete(id);
+                }
+            });
+            document.querySelectorAll('.row-select-checkbox').forEach(chk => {
+                chk.checked = isChecked;
+            });
+            updateBulkActionBar();
+        }
+
+        function handleRowSelectChange(e, id) {
+            if (e.target.checked) {
+                selectedRecordIds.add(String(id));
+            } else {
+                selectedRecordIds.delete(String(id));
+            }
+            updateBulkActionBar();
+        }
+
+        function clearSelectedRecords() {
+            selectedRecordIds.clear();
+            const masterChk = document.getElementById('selectAllCheckbox');
+            if (masterChk) {
+                masterChk.checked = false;
+                masterChk.indeterminate = false;
+            }
+            document.querySelectorAll('.row-select-checkbox').forEach(chk => {
+                chk.checked = false;
+            });
+            updateBulkActionBar();
+        }
+
+        function updateBulkActionBar() {
+            const count = selectedRecordIds.size;
+            const bar = document.getElementById('bulkActionBar');
+            const countBadge = document.getElementById('bulkSelectedCount');
+            const btnCount = document.getElementById('bulkDeleteBtnCount');
+            const masterChk = document.getElementById('selectAllCheckbox');
+
+            if (countBadge) countBadge.innerText = count;
+            if (btnCount) btnCount.innerText = count;
+
+            if (bar) {
+                bar.style.display = count > 0 ? 'flex' : 'none';
+            }
+
+            if (masterChk && currentRows.length > 0) {
+                const total = currentRows.length;
+                if (count === 0) {
+                    masterChk.checked = false;
+                    masterChk.indeterminate = false;
+                } else if (count >= total) {
+                    masterChk.checked = true;
+                    masterChk.indeterminate = false;
+                } else {
+                    masterChk.checked = false;
+                    masterChk.indeterminate = true;
+                }
+            }
+        }
+
+        function triggerBulkDelete() {
+            if (selectedRecordIds.size === 0) {
+                showToast('Please select at least one record to delete.', true);
+                return;
+            }
+            openDeleteConfirmModal('bulk');
         }
 
         async function loadData() {
@@ -1192,6 +1513,11 @@
             const pkField = PK_MAP[activeEntity];
             const headers = Object.keys(rows[0]);
             let headRow = '<tr>';
+            headRow += `
+                <th class="checkbox-cell">
+                    <input type="checkbox" id="selectAllCheckbox" class="custom-chk" onchange="toggleSelectAll(this)" title="Select All">
+                </th>
+            `;
 
             headers.forEach(h => {
                 let colTitle = h.replace(/_/g, ' ');
@@ -1247,6 +1573,12 @@
                 }
 
                 let rowHtml = `<tr data-id="${idVal}" class="${rowClass}">`;
+                const isRowChecked = selectedRecordIds.has(String(idVal));
+                rowHtml += `
+                    <td class="checkbox-cell">
+                        <input type="checkbox" class="custom-chk row-select-checkbox" data-id="${idVal}" ${isRowChecked ? 'checked' : ''} onchange="handleRowSelectChange(event, '${idVal}')">
+                    </td>
+                `;
 
                 headers.forEach((h, idx) => {
                     let val = row[h] !== null && row[h] !== undefined ? row[h] : '-';
@@ -1289,6 +1621,8 @@
                     firstHighlightedRow = trNode;
                 }
             });
+
+            updateBulkActionBar();
 
             if (firstHighlightedRow) {
                 setTimeout(() => {
@@ -1500,69 +1834,357 @@
             }
         }
 
-        // Delete Handler
-        async function deleteRecord(id, imageId) {
-            if (!confirm(`Are you sure you want to permanently delete this ${activeEntity} record?`)) return;
+        // Delete Handlers & Custom Confirmation Modal
+        function deleteRecord(id, imageId) {
+            openDeleteConfirmModal('single', id, imageId);
+        }
 
-            // Visual feedback: Highlight row red before deleting
-            const rowElem = document.querySelector(`tr[data-id="${id}"]`);
-            if (rowElem) {
-                rowElem.className = 'row-highlight-delete';
-                await new Promise(r => setTimeout(r, 400));
-            }
+        function openDeleteConfirmModal(type, singleId = null, imageId = null) {
+            const pkField = PK_MAP[activeEntity];
+            const cfg = ENTITY_CONFIG[activeEntity] || { singular: activeEntity.replace(/_/g, ' '), plural: activeEntity.replace(/_/g, ' ') };
+            const modal = document.getElementById('deleteConfirmModal');
+            const detailsContainer = document.getElementById('deleteModalDetails');
+            const titleEl = document.getElementById('deleteModalTitle');
+            const subtitleEl = document.getElementById('deleteModalSubtitle');
+            const confirmBtnText = document.getElementById('confirmDeleteBtnText');
 
-            const payload = {
-                proc_name: activeEntity,
-                opr: 'DELETE',
-                condition: String(id)
-            };
+            if (type === 'single') {
+                pendingDeleteContext = { type: 'single', ids: [String(singleId)], imageId: imageId };
+                const row = currentRows.find(r => String(r[pkField]) === String(singleId)) || {};
 
-            if (activeEntity === 'product_image' && imageId) {
-                payload.table_values = { product_id: id, image_id: imageId };
-            }
+                titleEl.innerText = `Delete ${cfg.singular}`;
+                subtitleEl.innerText = `Confirm permanent removal from database`;
+                confirmBtnText.innerText = `Delete ${cfg.singular}`;
 
-            try {
-                const res = await fetch('/api/data', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                let itemTitle = row.title || row.name || row.slug || row.type || `Record #${singleId}`;
+                let metaItems = [];
+                if (row.category_id !== undefined) {
+                    const cName = categoriesMap[row.category_id] || row.category_name || `Category #${row.category_id}`;
+                    metaItems.push(`<span><strong>Category:</strong> ${cName}</span>`);
+                }
+                if (row.price !== undefined) {
+                    metaItems.push(`<span><strong>Price:</strong> ₹${Number(row.price).toLocaleString('en-IN')}</span>`);
+                }
+                if (row.quantity !== undefined) {
+                    metaItems.push(`<span><strong>Stock:</strong> ${row.quantity} units</span>`);
+                }
+                if (row.purity) {
+                    metaItems.push(`<span><strong>Purity:</strong> ${row.purity}</span>`);
+                }
+                if (row.weight) {
+                    metaItems.push(`<span><strong>Weight:</strong> ${row.weight}</span>`);
+                }
+                if (row.m_id !== undefined) {
+                    const mName = makeMasterMap[row.m_id] || `Make #${row.m_id}`;
+                    metaItems.push(`<span><strong>Make:</strong> ${mName}</span>`);
+                }
+
+                detailsContainer.innerHTML = `
+                    <div class="delete-item-card">
+                        <div class="delete-item-title">
+                            <span>${itemTitle}</span>
+                            <span class="delete-id-tag">#${singleId}</span>
+                        </div>
+                        ${metaItems.length > 0 ? `<div class="delete-item-meta">${metaItems.join('')}</div>` : ''}
+                    </div>
+                `;
+            } else {
+                // Bulk deletion
+                const ids = Array.from(selectedRecordIds);
+                if (ids.length === 0) {
+                    showToast('No items selected for deletion.', true);
+                    return;
+                }
+                pendingDeleteContext = { type: 'bulk', ids: ids };
+
+                titleEl.innerText = `Delete ${ids.length} ${cfg.plural}`;
+                subtitleEl.innerText = `You are about to permanently delete ${ids.length} records`;
+                confirmBtnText.innerText = `Delete Selected (${ids.length})`;
+
+                let listHtml = '<div class="delete-item-list">';
+                ids.forEach(id => {
+                    const row = currentRows.find(r => String(r[pkField]) === String(id)) || {};
+                    const name = row.title || row.name || row.slug || row.type || `Item #${id}`;
+                    let extra = '';
+                    if (row.price !== undefined) extra = `₹${Number(row.price).toLocaleString('en-IN')}`;
+                    else if (row.category_id !== undefined) extra = categoriesMap[row.category_id] || '';
+                    else if (row.type) extra = row.type;
+
+                    listHtml += `
+                        <div class="delete-list-row">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span class="delete-id-tag">#${id}</span>
+                                <span style="font-weight:600; color:var(--text-main);">${name}</span>
+                            </div>
+                            <span style="color:var(--text-muted); font-size:12px; font-weight:500;">${extra}</span>
+                        </div>
+                    `;
                 });
+                listHtml += '</div>';
 
-                const result = await res.json();
-                if (!result.success) throw new Error(result.status || result.error);
+                detailsContainer.innerHTML = `
+                    <div style="margin-bottom:12px; font-size:13.5px; color:var(--text-main);">
+                        You are about to delete <strong>${ids.length} ${cfg.plural.toLowerCase()}</strong> in one go:
+                    </div>
+                    ${listHtml}
+                `;
+            }
 
-                showToast(`Record deleted successfully.`);
-                delete highlightMap[id];
+            modal.classList.add('show');
+        }
+
+        function closeDeleteConfirmModal() {
+            const modal = document.getElementById('deleteConfirmModal');
+            if (modal) modal.classList.remove('show');
+            pendingDeleteContext = null;
+        }
+
+        async function executePendingDelete() {
+            if (!pendingDeleteContext || !pendingDeleteContext.ids || pendingDeleteContext.ids.length === 0) {
+                closeDeleteConfirmModal();
+                return;
+            }
+
+            const btn = document.getElementById('confirmDeleteBtn');
+            const btnText = document.getElementById('confirmDeleteBtnText');
+            const originalText = btnText ? btnText.innerText : 'Delete';
+            if (btn) btn.disabled = true;
+            if (btnText) btnText.innerHTML = `<i class="ph-bold ph-spinner ph-spin"></i> Deleting...`;
+
+            const { ids, imageId } = pendingDeleteContext;
+            let successCount = 0;
+            let failCount = 0;
+            let lastError = null;
+
+            for (const id of ids) {
+                const rowElem = document.querySelector(`tr[data-id="${id}"]`);
+                if (rowElem) rowElem.className = 'row-highlight-delete';
+
+                const payload = {
+                    proc_name: activeEntity,
+                    opr: 'DELETE',
+                    condition: String(id)
+                };
+                if (activeEntity === 'product_image' && imageId) {
+                    payload.table_values = { product_id: id, image_id: imageId };
+                }
+
+                try {
+                    const res = await fetch('/api/data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        successCount++;
+                        delete highlightMap[id];
+                        selectedRecordIds.delete(String(id));
+                    } else {
+                        failCount++;
+                        lastError = result.status || result.error;
+                    }
+                } catch (err) {
+                    failCount++;
+                    lastError = err.message;
+                }
+            }
+
+            if (btn) btn.disabled = false;
+            if (btnText) btnText.innerText = originalText;
+            closeDeleteConfirmModal();
+
+            if (successCount > 0) {
+                showToast(`Successfully deleted ${successCount} record(s).`);
                 if (activeEntity === 'category' || activeEntity === 'make_master') {
                     await loadDropdownOptions();
                 }
                 loadData();
-            } catch (err) {
-                showToast(err.message, true);
             }
+            if (failCount > 0) {
+                showToast(`Failed to delete ${failCount} record(s): ${lastError || 'Unknown error'}`, true);
+            }
+            updateBulkActionBar();
         }
 
         const FIELD_ALIASES = {
             product_id: ['product_id', 'productid', 'product id', 'p_id', 'pid'],
             category_id: ['category_id', 'categoryid', 'category id', 'cat_id', 'catid'],
-            category_name: ['category_name', 'category name', 'categoryname', 'category_i', 'category', 'cat_name'],
-            m_id: ['m_id', 'mid', 'make_id', 'make id', 'make_master', 'makemaster', 'make'],
+            category_name: ['category_name', 'category name', 'categoryname', 'category_i', 'category', 'cat_name', 'catname'],
+            m_id: ['m_id', 'mid', 'make_id', 'make id', 'make_master', 'makemaster', 'make', 'make_name', 'makename', 'make name', 'making_type', 'making type'],
             name: ['name', 'category_name_val'],
             title: ['title', 'product_name', 'product name', 'productname', 'title_name'],
             purity: ['purity', 'silver_purity', 'purity_grade'],
-            weight: ['weight', 'item_weight', 'wt', 'weight_gm'],
+            weight: ['weight', 'item_weight', 'wt', 'weight_gm', 'weight_g'],
             description: ['description', 'desc', 'details', 'item_description'],
             price: ['price', 'unit_price', 'mrp', 'rate', 'product_price'],
             discount: ['discount', 'disc', 'discount_percent', 'discount_%'],
             quantity: ['quantity', 'qty', 'stock', 'stock_qty', 'count'],
             ideal_for: ['ideal_for', 'idealfor', 'ideal for', 'gender', 'target_audience'],
             packaging: ['packaging', 'package', 'pack_type', 'box_type'],
-            labour_cost: ['labour_cost', 'labourcost', 'labour cost', 'making_charge', 'making_cost'],
+            labour_cost: ['labour_cost', 'labourcost', 'labour cost', 'making_charge', 'making_cost', 'making charges'],
             actual_cost: ['actual_cost', 'actualcost', 'actual cost', 'cost_price', 'cost'],
-            priority: ['priority', 'display_priority'],
+            priority: ['priority', 'display_priority', 'prio'],
+            color: ['color', 'colour', 'shade'],
+            review: ['review', 'rating', 'stars', 'reviews'],
+            sold: ['sold', 'sales', 'units_sold', 'items_sold'],
             image_id: ['image_id', 'imageid', 'image id', 'img_id'],
             image_url: ['image_url', 'imageurl', 'image url', 'url', 'image', 'link']
         };
+
+        // Intelligent Category & Make Master Resolvers
+        async function resolveOrCreateCategory(rawCatVal) {
+            if (rawCatVal === undefined || rawCatVal === null || String(rawCatVal).trim() === '') {
+                return null;
+            }
+            if (!isNaN(rawCatVal) && String(rawCatVal).trim() !== '') {
+                const numId = Number(rawCatVal);
+                if (categoriesMap[numId]) return { id: numId, name: categoriesMap[numId] };
+            }
+
+            const catStr = String(rawCatVal).trim();
+            const lower = catStr.toLowerCase();
+
+            // 1. Exact Name match
+            if (categoryNameToIdMap[lower] !== undefined) {
+                return { id: categoryNameToIdMap[lower], name: categoriesMap[categoryNameToIdMap[lower]] };
+            }
+            if (categoryNameToIdMap[catStr] !== undefined) {
+                return { id: categoryNameToIdMap[catStr], name: categoriesMap[categoryNameToIdMap[catStr]] };
+            }
+
+            // 2. Slug match
+            if (categorySlugToIdMap[lower] !== undefined) {
+                return { id: categorySlugToIdMap[lower], name: categoriesMap[categorySlugToIdMap[lower]] };
+            }
+
+            // 3. Known Aliases / Synonyms
+            const ALIAS_MAP = {
+                'anklets': 'Anklets & Payal',
+                'payal': 'Anklets & Payal',
+                'bracelets': 'Bangles & Bracelets',
+                'bracelet': 'Bangles & Bracelets',
+                'bangles': 'Bangles & Bracelets',
+                'kadas': 'Bangles & Bracelets',
+                'rings': 'Silver Rings',
+                'ring': 'Silver Rings',
+                'utensils': 'Silverware',
+                'silver utensils': 'Silverware',
+                'idols': 'Silver Idols',
+                'murti': 'Silver Idols',
+                'coins': 'Silver Coins',
+                'coin': 'Silver Coins',
+                'baby': 'Baby Silver',
+                'puja': 'Pooja Articles',
+                'pooja': 'Pooja Articles',
+                'spiritual': 'Spiritual Wear'
+            };
+
+            for (const [aliasKey, targetName] of Object.entries(ALIAS_MAP)) {
+                if (lower === aliasKey || lower.includes(aliasKey)) {
+                    const matchedId = categoryNameToIdMap[targetName.toLowerCase()];
+                    if (matchedId) {
+                        return { id: matchedId, name: targetName };
+                    }
+                }
+            }
+
+            // 4. Substring / contains match
+            for (const c of categoriesList) {
+                const cLower = String(c.name).toLowerCase();
+                if (cLower.includes(lower) || lower.includes(cLower)) {
+                    return { id: c.category_id, name: c.name };
+                }
+            }
+
+            // 5. Auto-create new Category on-the-fly in dbo.category
+            try {
+                const genSlug = lower.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || `cat-${Date.now()}`;
+                const newCatRes = await fetch('/api/data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        proc_name: 'category',
+                        opr: 'ADD',
+                        table_values: {
+                            name: catStr,
+                            description: `${catStr} Collection`,
+                            slug: genSlug,
+                            ideal_for: 'ALL'
+                        }
+                    })
+                });
+                const newCatData = await newCatRes.json();
+                if (newCatData.success) {
+                    await loadDropdownOptions();
+                    let newCatId = null;
+                    if (newCatData.data && newCatData.data.length > 0) {
+                        const first = newCatData.data[0];
+                        newCatId = first.NewCategoryId || first.category_id || first[Object.keys(first)[0]];
+                    }
+                    if (!newCatId) newCatId = categoryNameToIdMap[lower] || categoryNameToIdMap[catStr];
+                    return { id: newCatId, name: catStr, autoCreated: true };
+                }
+            } catch (err) {
+                console.error("Auto category creation failed:", err);
+            }
+
+            return null;
+        }
+
+        async function resolveOrCreateMake(rawMakeVal) {
+            if (rawMakeVal === undefined || rawMakeVal === null || String(rawMakeVal).trim() === '') {
+                return null;
+            }
+            if (!isNaN(rawMakeVal) && String(rawMakeVal).trim() !== '') {
+                const numId = Number(rawMakeVal);
+                if (makeMasterMap[numId]) return numId;
+            }
+
+            const makeStr = String(rawMakeVal).trim();
+            const lower = makeStr.toLowerCase();
+
+            // 1. Exact match
+            if (makeNameToIdMap[lower] !== undefined) return makeNameToIdMap[lower];
+            if (makeNameToIdMap[makeStr] !== undefined) return makeNameToIdMap[makeStr];
+
+            // 2. Keyword matching
+            if (lower.includes('handmade') || lower.includes('handcrafted') || lower.includes('artisan')) return 1; // Handcrafted
+            if (lower.includes('machine')) return 2; // Machine Made
+            if (lower.includes('temple') || lower.includes('antique')) return 3; // Temple Antique
+            if (lower.includes('filigree')) return 4; // Filigree Work
+            if (lower.includes('cast') || lower.includes('chiseled')) return 5; // Casted Sterling
+
+            // 3. Partial substring
+            for (const m of makeMasterList) {
+                const mLower = String(m.type).toLowerCase();
+                if (mLower.includes(lower) || lower.includes(mLower)) {
+                    return m.m_id;
+                }
+            }
+
+            // 4. Auto-create new make in dbo.make_master
+            try {
+                const newMakeRes = await fetch('/api/data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        proc_name: 'make_master',
+                        opr: 'ADD',
+                        table_values: { type: makeStr }
+                    })
+                });
+                const newMakeData = await newMakeRes.json();
+                if (newMakeData.success) {
+                    await loadDropdownOptions();
+                    return makeNameToIdMap[lower] || makeNameToIdMap[makeStr] || null;
+                }
+            } catch (err) {
+                console.error("Auto make creation failed:", err);
+            }
+
+            return null;
+        }
 
         function normalizeRowData(rawRow) {
             const cleanObj = {};
@@ -1710,31 +2332,34 @@
                     // Normalize headers & data values for DB payload
                     const cleanTableValues = normalizeRowData(row);
 
-                    // Dual-Type Category Resolution (Numeric ID vs Text Name)
+                    // Dual-Type Category & Make Master Resolution
                     if (activeEntity === 'product') {
+                        // 1. Resolve or auto-create category
                         let rawCatVal = cleanTableValues['category_id'] !== undefined ? cleanTableValues['category_id'] : cleanTableValues['category_name'];
                         if (rawCatVal === undefined) rawCatVal = cleanTableValues['category'];
 
-                        if (rawCatVal !== undefined && rawCatVal !== null && rawCatVal !== '') {
-                            if (!isNaN(rawCatVal) && String(rawCatVal).trim() !== '') {
-                                cleanTableValues['category_id'] = Number(rawCatVal);
+                        if (rawCatVal !== undefined && rawCatVal !== null && String(rawCatVal).trim() !== '') {
+                            const resolvedCat = await resolveOrCreateCategory(rawCatVal);
+                            if (resolvedCat && resolvedCat.id) {
+                                cleanTableValues['category_id'] = resolvedCat.id;
                                 delete cleanTableValues['category_name'];
                                 delete cleanTableValues['category'];
                             } else {
-                                const normKey = String(rawCatVal).trim().toLowerCase();
-                                if (categoryNameToIdMap[normKey] !== undefined) {
-                                    cleanTableValues['category_id'] = categoryNameToIdMap[normKey];
-                                    delete cleanTableValues['category_name'];
-                                    delete cleanTableValues['category'];
-                                } else if (categoryNameToIdMap[String(rawCatVal).trim()] !== undefined) {
-                                    cleanTableValues['category_id'] = categoryNameToIdMap[String(rawCatVal).trim()];
-                                    delete cleanTableValues['category_name'];
-                                    delete cleanTableValues['category'];
-                                } else {
-                                    failed++;
-                                    row['Remark'] = `Validation Error: Category '${rawCatVal}' does not exist in database.`;
-                                    continue;
-                                }
+                                failed++;
+                                row['Remark'] = `Validation Error: Category '${rawCatVal}' could not be matched or created.`;
+                                continue;
+                            }
+                        }
+
+                        // 2. Resolve or auto-create make_master (m_id)
+                        let rawMakeVal = cleanTableValues['m_id'] !== undefined ? cleanTableValues['m_id'] : cleanTableValues['make_name'];
+                        if (rawMakeVal === undefined) rawMakeVal = cleanTableValues['make'];
+                        if (rawMakeVal !== undefined && rawMakeVal !== null && String(rawMakeVal).trim() !== '') {
+                            const resolvedMId = await resolveOrCreateMake(rawMakeVal);
+                            if (resolvedMId) {
+                                cleanTableValues['m_id'] = resolvedMId;
+                                delete cleanTableValues['make_name'];
+                                delete cleanTableValues['make'];
                             }
                         }
                     }
@@ -1856,24 +2481,52 @@
                     return newObj;
                 });
 
-                // 5. In-Place Direct Save back to Original File on Disk
+                // 5. In-Place Direct Save back to Original File on Disk AND Automatic Download Fallback
+                let savedInPlace = false;
+                const ws = XLSX.utils.json_to_sheet(formattedRows);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
                 if (fileHandle && formattedRows.length > 0) {
                     try {
-                        const ws = XLSX.utils.json_to_sheet(formattedRows);
                         const writable = await fileHandle.createWritable();
-
                         if (fileName.endsWith('.csv')) {
                             const csvOutput = XLSX.utils.sheet_to_csv(ws);
                             await writable.write(csvOutput);
                         } else {
-                            const wb = XLSX.utils.book_new();
-                            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
                             const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
                             await writable.write(excelBuffer);
                         }
                         await writable.close();
+                        savedInPlace = true;
                     } catch (writeErr) {
-                        console.error('Failed to write directly back to file:', writeErr);
+                        console.warn('In-place direct save failed (file might be locked/open in Microsoft Excel). Falling back to automatic download:', writeErr);
+                    }
+                }
+
+                // If in-place direct write didn't succeed (or no fileHandle was provided), automatically download the file with Remarks!
+                if (!savedInPlace && formattedRows.length > 0) {
+                    const dotIndex = file.name.lastIndexOf('.');
+                    const base = dotIndex !== -1 ? file.name.substring(0, dotIndex) : file.name;
+                    const ext = dotIndex !== -1 ? file.name.substring(dotIndex) : '.xlsx';
+                    const outputName = `${base}_with_remarks${ext.endsWith('.csv') ? '.csv' : '.xlsx'}`;
+
+                    try {
+                        if (ext.endsWith('.csv')) {
+                            const csvStr = XLSX.utils.sheet_to_csv(ws);
+                            const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+                            const link = document.createElement("a");
+                            link.href = URL.createObjectURL(blob);
+                            link.download = outputName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(link.href);
+                        } else {
+                            XLSX.writeFile(wb, outputName);
+                        }
+                    } catch (dlErr) {
+                        console.error('Download export failed:', dlErr);
                     }
                 }
 
@@ -1884,7 +2537,11 @@
                     failed > 0 ? `Errors: ${failed}` : null
                 ].filter(Boolean).join(', ');
 
-                showToast(`Import Completed & Saved to ${file.name}! (${summary || 'No changes made'})`);
+                const fileStatusNotice = savedInPlace
+                    ? `Saved in-place to ${file.name}`
+                    : `Downloaded with Remarks as ${file.name.replace(/\.[^/.]+$/, "")}_with_remarks.xlsx`;
+
+                showToast(`Import Completed! ${fileStatusNotice} (${summary || 'No changes made'})`);
                 loadData();
 
             } catch (err) {

@@ -292,6 +292,10 @@ app.post('/api/data', async (req, res) => {
 });
 
 // 2. Static assets & HTML views
+// Serve root public/images and root public directory
+app.use('/images', express.static(path.join(__dirname, '..', 'public', 'images')));
+app.use(express.static(path.join(__dirname, '..', 'public')));
+// Serve Backend/public (uploads, html, scripts)
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 app.get('/', (req, res) => {
