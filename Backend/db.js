@@ -7,21 +7,28 @@ let sql;
 let poolPromise;
 
 if (isWindowsLocal) {
-    sql = require('mssql/msnodesqlv8');
-    const server = process.env.DB_SERVER || '.\\SQLEXPRESS';
-    const database = process.env.DB_NAME || 'SilverHouse';
-    const connectionString = `Driver={ODBC Driver 17 for SQL Server};Server=${server};Database=${database};Trusted_Connection=yes;`;
-    
-    poolPromise = new sql.ConnectionPool({ connectionString })
-        .connect()
-        .then((pool) => {
-            console.log(`[Database] Connected to MSSQL Database '${database}' on '${server}' via Windows Auth`);
-            return pool;
-        })
-        .catch((err) => {
-            console.error('[Database Error] Connection failed:', err.message);
-        });
-} else {
+    try {
+        sql = require('mssql/msnodesqlv8');
+        const server = process.env.DB_SERVER || '.\\SQLEXPRESS';
+        const database = process.env.DB_NAME || 'SilverHouse';
+        const connectionString = `Driver={ODBC Driver 17 for SQL Server};Server=${server};Database=${database};Trusted_Connection=yes;`;
+        
+        poolPromise = new sql.ConnectionPool({ connectionString })
+            .connect()
+            .then((pool) => {
+                console.log(`[Database] Connected to MSSQL Database '${database}' on '${server}' via Windows Auth`);
+                return pool;
+            })
+            .catch((err) => {
+                console.error('[Database Error] Connection failed:', err.message);
+            });
+    } catch (e) {
+        console.warn('[Database] msnodesqlv8 not available, falling back to standard TDS driver');
+        sql = require('mssql');
+    }
+}
+
+if (!poolPromise) {
     sql = require('mssql');
     const config = {
         server: process.env.DB_SERVER || 'localhost',
