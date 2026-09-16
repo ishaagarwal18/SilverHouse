@@ -2213,7 +2213,8 @@
                             : '92.5 Sterling Silver';
                     } else if (finalKey === 'ideal_for' && typeof val === 'string') {
                         const s = val.toLowerCase();
-                        if (s.includes('women') || s.includes('female')) cleanObj[finalKey] = 'Women';
+                        if (s === 'all' || s.startsWith('all')) cleanObj[finalKey] = 'ALL';
+                        else if (s.includes('women') || s.includes('female')) cleanObj[finalKey] = 'Women';
                         else if (s.includes('men') || s.includes('male')) cleanObj[finalKey] = 'Men';
                         else if (s.includes('puja') || s.includes('pooja') || s.includes('home') || s.includes('mandir') || s.includes('temple') || s.includes('idol')) cleanObj[finalKey] = 'Puja';
                         else cleanObj[finalKey] = 'Unisex';
