@@ -16,7 +16,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mssql": "^12.7.0",
-    "multer": "^2.3.0"
+    "multer": "^2.3.0",
+    "pg": "^8.23.0"
   },
   "optionalDependencies": {
     "msnodesqlv8": "^5.2.3"

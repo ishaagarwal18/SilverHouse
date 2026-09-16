@@ -129,82 +129,82 @@ export default function Header({
       { label: "VIEW ALL JEWELLERY", action: () => onNavigateCategory("jewellery") },
       ...(hasDbCategories
         ? categories
-            .filter(c => ['rings', 'anklets-payal', 'bangles-bracelets', 'spiritual-wear'].includes(c.id || c.slug))
-            .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
+          .filter(c => ['rings', 'anklets-payal', 'bangles-bracelets', 'spiritual-wear'].includes(c.id || c.slug))
+          .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
         : [
-            { label: "SILVER RINGS", action: () => onNavigateCategory("rings") },
-            { label: "SILVER BANGLES & KADAS", action: () => onNavigateCategory("bangles-bracelets") },
-            { label: "SILVER PAYAL & ANKLETS", action: () => onNavigateCategory("anklets-payal") },
-            { label: "SPIRITUAL WEAR", action: () => onNavigateCategory("spiritual-wear") }
-          ])
+          { label: "SILVER RINGS", action: () => onNavigateCategory("rings") },
+          { label: "SILVER BANGLES & KADAS", action: () => onNavigateCategory("bangles-bracelets") },
+          { label: "SILVER PAYAL & ANKLETS", action: () => onNavigateCategory("anklets-payal") },
+          { label: "SPIRITUAL WEAR", action: () => onNavigateCategory("spiritual-wear") }
+        ])
     ],
     coins: [
       { label: "VIEW ALL COINS & BARS", action: () => onNavigateCategory("silver-coins") },
       ...(hasDbCategories
         ? categories
-            .filter(c => (c.id || c.slug) === 'silver-coins')
-            .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
+          .filter(c => (c.id || c.slug) === 'silver-coins')
+          .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
         : [
-            { label: "PURE 999 FINE BULLION", action: () => onNavigateCategory("silver-coins") }
-          ])
+          { label: "PURE 999 FINE BULLION", action: () => onNavigateCategory("silver-coins") }
+        ])
     ],
     women: [
       { label: "VIEW ALL WOMEN", action: () => onNavigateCategory("women") },
       ...(hasDbCategories
         ? categories
-            .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'women' || ['rings', 'anklets-payal', 'bangles-bracelets'].includes(c.id || c.slug))
-            .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
+          .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'women' || ['rings', 'anklets-payal', 'bangles-bracelets'].includes(c.id || c.slug))
+          .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
         : [
-            { label: "SILVER RINGS", action: () => onNavigateCategory("rings") },
-            { label: "TRADITIONAL GHUNGROO PAYAL", action: () => onNavigateCategory("anklets-payal") },
-            { label: "TEMPLE WORK BANGLES", action: () => onNavigateCategory("bangles-bracelets") }
-          ])
+          { label: "SILVER RINGS", action: () => onNavigateCategory("rings") },
+          { label: "TRADITIONAL GHUNGROO PAYAL", action: () => onNavigateCategory("anklets-payal") },
+          { label: "TEMPLE WORK BANGLES", action: () => onNavigateCategory("bangles-bracelets") }
+        ])
     ],
     mens: [
       { label: "VIEW ALL MEN COLLECTION", action: () => onNavigateCategory("mens") },
       ...(hasDbCategories
         ? categories
-            .filter(c => ['rings', 'spiritual-wear'].includes(c.id || c.slug) || (c.idealFor || c.ideal_for || '').toLowerCase().includes('men'))
-            .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
+          .filter(c => ['rings', 'spiritual-wear'].includes(c.id || c.slug) || (c.idealFor || c.ideal_for || '').toLowerCase().includes('men'))
+          .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
         : [
-            { label: "ROYAL SOLID SILVER KADA", action: () => onNavigateCategory("bangles-bracelets") },
-            { label: "SACRED RUDRAKSHA PENDANT", action: () => onNavigateCategory("spiritual-wear") },
-            { label: "MEN'S SIGNET RINGS", action: () => onNavigateCategory("rings") }
-          ])
+          { label: "ROYAL SOLID SILVER KADA", action: () => onNavigateCategory("bangles-bracelets") },
+          { label: "SACRED RUDRAKSHA PENDANT", action: () => onNavigateCategory("spiritual-wear") },
+          { label: "MEN'S SIGNET RINGS", action: () => onNavigateCategory("rings") }
+        ])
     ],
     kids: [
       { label: "VIEW ALL KIDS COLLECTION", action: () => onNavigateCategory("kids") },
       ...(hasDbCategories
         ? categories
-            .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'kids' || (c.id || c.slug) === 'baby-silver')
-            .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
+          .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'kids' || (c.id || c.slug) === 'baby-silver')
+          .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
         : [
-            { label: "BABY SILVER UTENSILS", action: () => onNavigateCategory("baby-silver") }
-          ])
+          { label: "BABY SILVER UTENSILS", action: () => onNavigateCategory("baby-silver") }
+        ])
     ],
     puja: [
       { label: "ALL DIVINE ARTIFACTS", action: () => onNavigateCategory("silver-idols") },
       ...(hasDbCategories
         ? categories
-            .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'puja' || ['silver-idols', 'pooja-articles', 'car-accessories', 'silverware'].includes(c.id || c.slug))
-            .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
+          .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'puja' || ['silver-idols', 'pooja-articles', 'car-accessories', 'silverware'].includes(c.id || c.slug))
+          .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
         : [
-            { label: "SILVER IDOLS & MURTI", action: () => onNavigateCategory("silver-idols") },
-            { label: "POOJA ARTICLES & DIYAS", action: () => onNavigateCategory("pooja-articles") },
-            { label: "CAR DASHBOARD IDOLS", action: () => onNavigateCategory("car-accessories") }
-          ])
+          { label: "SILVER IDOLS & MURTI", action: () => onNavigateCategory("silver-idols") },
+          { label: "POOJA ARTICLES & DIYAS", action: () => onNavigateCategory("pooja-articles") },
+          { label: "CAR DASHBOARD IDOLS", action: () => onNavigateCategory("car-accessories") }
+        ])
     ],
     gifts: [
       { label: "ALL SACRED GIFTS", action: () => onNavigateCategory("all") },
       { label: "CUSTOM YATRA SHRINE LOCKETS", action: onNavigateYatraCustomizer },
       ...(hasDbCategories
         ? categories
-            .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'gifts' || ['silver-coins', 'silverware'].includes(c.id || c.slug))
-            .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
+          .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'gifts' || ['silver-coins', 'silverware'].includes(c.id || c.slug))
+          .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
         : [
-            { label: "SILVER COINS & BARS", action: () => onNavigateCategory("silver-coins") },
-            { label: "ROYAL SILVERWARE", action: () => onNavigateCategory("silverware") }
-          ])
+          { label: "SILVER COINS & BARS", action: () => onNavigateCategory("silver-coins") },
+          { label: "ROYAL SILVERWARE", action: () => onNavigateCategory("silverware") }
+        ])
     ]
   };
 
@@ -347,8 +347,8 @@ export default function Header({
                                     setIsLocationPopoverOpen(false);
                                   }}
                                   className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-start justify-between ${isSelected
-                                      ? 'border-[var(--th-primary)] bg-[var(--th-primary)]/10 text-[var(--th-primary)] font-bold'
-                                      : 'border-[var(--th-border)] hover:bg-[var(--th-surface-alt)] text-[var(--th-text-main)]'
+                                    ? 'border-[var(--th-primary)] bg-[var(--th-primary)]/10 text-[var(--th-primary)] font-bold'
+                                    : 'border-[var(--th-border)] hover:bg-[var(--th-surface-alt)] text-[var(--th-text-main)]'
                                     }`}
                                 >
                                   <div>

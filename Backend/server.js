@@ -3,7 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const { sql, poolPromise } = require('./db');
+const { sql, poolPromise, isPostgres } = require('./db');
+const { getPgPool, executePgFetch, executePgMutation } = require('./postgres_adapter');
 require('dotenv').config();
 
 const app = express();
@@ -56,16 +57,26 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Email and password are required.' });
         }
 
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('email', sql.NVarChar(150), email.trim())
-            .query('SELECT user_id, full_name, email, phone, password_hash, role FROM dbo.[user] WHERE LOWER(email) = LOWER(@email)');
+        let user;
+        if (isPostgres) {
+            const pgPool = getPgPool();
+            const resUser = await pgPool.query('SELECT user_id, full_name, email, phone, password_hash, role FROM "user" WHERE LOWER(email) = LOWER($1)', [email.trim()]);
+            if (!resUser.rows || resUser.rows.length === 0) {
+                return res.status(401).json({ success: false, error: 'Invalid email or password.' });
+            }
+            user = resUser.rows[0];
+        } else {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('email', sql.NVarChar(150), email.trim())
+                .query('SELECT user_id, full_name, email, phone, password_hash, role FROM dbo.[user] WHERE LOWER(email) = LOWER(@email)');
 
-        if (!result.recordset || result.recordset.length === 0) {
-            return res.status(401).json({ success: false, error: 'Invalid email or password.' });
+            if (!result.recordset || result.recordset.length === 0) {
+                return res.status(401).json({ success: false, error: 'Invalid email or password.' });
+            }
+            user = result.recordset[0];
         }
 
-        const user = result.recordset[0];
         if (password.trim() !== user.password_hash.trim()) {
             return res.status(401).json({ success: false, error: 'Invalid email or password.' });
         }
@@ -103,24 +114,38 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Full name, email, and password are required.' });
         }
 
-        const pool = await poolPromise;
-        const checkResult = await pool.request()
-            .input('email', sql.NVarChar(150), email.trim())
-            .query('SELECT user_id FROM dbo.[user] WHERE LOWER(email) = LOWER(@email)');
+        let newUserId;
+        if (isPostgres) {
+            const pgPool = getPgPool();
+            const checkResult = await pgPool.query('SELECT user_id FROM "user" WHERE LOWER(email) = LOWER($1)', [email.trim()]);
+            if (checkResult.rows && checkResult.rows.length > 0) {
+                return res.status(400).json({ success: false, error: 'An account with this email already exists.' });
+            }
+            const insertResult = await pgPool.query(
+                'INSERT INTO "user" (full_name, email, phone, password_hash, role) VALUES ($1, $2, $3, $4, $5) RETURNING user_id',
+                [fullName.trim(), email.trim(), phone ? phone.trim() : null, password.trim(), 'CUSTOMER']
+            );
+            newUserId = insertResult.rows[0].user_id;
+        } else {
+            const pool = await poolPromise;
+            const checkResult = await pool.request()
+                .input('email', sql.NVarChar(150), email.trim())
+                .query('SELECT user_id FROM dbo.[user] WHERE LOWER(email) = LOWER(@email)');
 
-        if (checkResult.recordset && checkResult.recordset.length > 0) {
-            return res.status(400).json({ success: false, error: 'An account with this email already exists.' });
+            if (checkResult.recordset && checkResult.recordset.length > 0) {
+                return res.status(400).json({ success: false, error: 'An account with this email already exists.' });
+            }
+
+            const insertResult = await pool.request()
+                .input('full_name', sql.NVarChar(100), fullName.trim())
+                .input('email', sql.NVarChar(150), email.trim())
+                .input('phone', sql.NVarChar(20), phone ? phone.trim() : null)
+                .input('password_hash', sql.NVarChar(255), password.trim())
+                .input('role', sql.NVarChar(20), 'CUSTOMER')
+                .query('INSERT INTO dbo.[user] (full_name, email, phone, password_hash, role) OUTPUT INSERTED.user_id VALUES (@full_name, @email, @phone, @password_hash, @role)');
+
+            newUserId = insertResult.recordset[0].user_id;
         }
-
-        const insertResult = await pool.request()
-            .input('full_name', sql.NVarChar(100), fullName.trim())
-            .input('email', sql.NVarChar(150), email.trim())
-            .input('phone', sql.NVarChar(20), phone ? phone.trim() : null)
-            .input('password_hash', sql.NVarChar(255), password.trim())
-            .input('role', sql.NVarChar(20), 'CUSTOMER')
-            .query('INSERT INTO dbo.[user] (full_name, email, phone, password_hash, role) OUTPUT INSERTED.user_id VALUES (@full_name, @email, @phone, @password_hash, @role)');
-
-        const newUserId = insertResult.recordset[0].user_id;
 
         const userObj = {
             userId: newUserId,
@@ -173,6 +198,29 @@ app.post('/api/data', async (req, res) => {
             });
         }
 
+        let normalizedProc = (proc_name || '').trim().toLowerCase();
+        if (normalizedProc === 'order') normalizedProc = 'orders';
+        const operation = (opr || '').trim().toUpperCase();
+
+        if (isPostgres) {
+            if (operation === 'SELECT') {
+                const data = await executePgFetch(normalizedProc, table_values, condition);
+                return res.status(200).json({
+                    success: true,
+                    status: 'OK',
+                    total: data.length,
+                    data: data
+                });
+            } else {
+                const result = await executePgMutation(normalizedProc, operation, table_values, condition);
+                return res.status(200).json({
+                    success: true,
+                    status: result.status || 'OK',
+                    data: result.data
+                });
+            }
+        }
+
         const jsonStr = table_values ? JSON.stringify({ table_values }) : null;
 
         const pool = await poolPromise;
@@ -182,10 +230,6 @@ app.post('/api/data', async (req, res) => {
                 error: 'Database connection is not available.'
             });
         }
-
-        let normalizedProc = (proc_name || '').trim().toLowerCase();
-        if (normalizedProc === 'order') normalizedProc = 'orders';
-        const operation = (opr || '').trim().toUpperCase();
 
         // 1. ALL FETCHING / QUERYING IS ROUTED THROUGH dbo.SP_Fetchdata
         if (operation === 'SELECT') {

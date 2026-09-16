@@ -1,12 +1,20 @@
 require('dotenv').config();
 
+const isPostgres = Boolean(process.env.DATABASE_URL && (process.env.DATABASE_URL.startsWith('postgres://') || process.env.DATABASE_URL.startsWith('postgresql://')));
 const hasPassword = Boolean(process.env.DB_PASSWORD && process.env.DB_PASSWORD.trim() !== '');
-const isWindowsLocal = !hasPassword && process.platform === 'win32';
+const isWindowsLocal = !isPostgres && !hasPassword && process.platform === 'win32';
 
-let sql;
-let poolPromise;
+let sql = null;
+let poolPromise = null;
 
-if (isWindowsLocal) {
+if (isPostgres) {
+    console.log('[Database] DATABASE_URL detected: Running in PostgreSQL mode (Neon Cloud)');
+    const { getPgPool } = require('./postgres_adapter');
+    // Ping Neon database
+    getPgPool().query('SELECT NOW()')
+        .then(r => console.log(`[Database] Successfully connected to Neon PostgreSQL at ${r.rows[0].now}`))
+        .catch(err => console.error('[Database Error] Failed to connect to Neon PostgreSQL:', err.message));
+} else if (isWindowsLocal) {
     try {
         sql = require('mssql/msnodesqlv8');
         const server = process.env.DB_SERVER || '.\\SQLEXPRESS';
@@ -26,9 +34,7 @@ if (isWindowsLocal) {
         console.warn('[Database] msnodesqlv8 not available, falling back to standard TDS driver');
         sql = require('mssql');
     }
-}
-
-if (!poolPromise) {
+} else {
     sql = require('mssql');
     const config = {
         server: process.env.DB_SERVER || 'localhost',
@@ -55,4 +61,5 @@ if (!poolPromise) {
 module.exports = {
     sql,
     poolPromise,
+    isPostgres
 };
