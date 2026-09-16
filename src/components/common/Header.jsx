@@ -539,7 +539,7 @@ export default function Header({
 
                     {isAdmin && (
                       <a
-                        href="http://localhost:5000/api/data"
+                        href={import.meta.env.VITE_ADMIN_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '/catalog') : 'http://localhost:5000/catalog')}
                         target="_blank"
                         rel="noreferrer"
                         className="w-full text-left px-3 py-2 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors"
