@@ -668,11 +668,9 @@
         .card-media {
             position: relative;
             width: 100%;
-            height: 220px;
+            height: 250px;
             background: var(--card-media-bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: block;
             overflow: hidden;
             border-bottom: 1px solid var(--border);
         }
@@ -680,13 +678,16 @@
         .card-media img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            padding: 12px;
-            transition: transform 0.3s ease;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+            padding: 0;
+            margin: 0;
+            transition: transform 0.35s ease;
         }
 
         .product-card:hover .card-media img {
-            transform: scale(1.04);
+            transform: scale(1.05);
         }
 
         .card-checkbox-wrap {
@@ -1361,9 +1362,8 @@
                     <button class="pill-btn active" data-val="" onclick="setAudience('')">All</button>
                     <button class="pill-btn" data-val="Women" onclick="setAudience('Women')">Women</button>
                     <button class="pill-btn" data-val="Men" onclick="setAudience('Men')">Men</button>
-                    <button class="pill-btn" data-val="Kids" onclick="setAudience('Kids')">Kids</button>
-                    <button class="pill-btn" data-val="Home" onclick="setAudience('Home')">Home</button>
                     <button class="pill-btn" data-val="Unisex" onclick="setAudience('Unisex')">Unisex</button>
+                    <button class="pill-btn" data-val="Puja" onclick="setAudience('Puja')">Puja</button>
                 </div>
             </div>
 
@@ -1605,8 +1605,11 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="formPurity">Silver Purity</label>
-                            <input type="text" id="formPurity" name="purity" placeholder="e.g. 92.5 Sterling, 99.9 Fine" />
+                            <label for="formPurity">Silver Purity *</label>
+                            <select id="formPurity" name="purity" required>
+                                <option value="92.5 Sterling Silver">92.5 Sterling Silver (Standard 925)</option>
+                                <option value="99.9 Pure Silver">99.9 Pure Silver (Fine 999)</option>
+                            </select>
                         </div>
 
                         <div class="form-group">
@@ -1628,9 +1631,8 @@
                             <select id="formIdealFor" name="ideal_for">
                                 <option value="Women">Women</option>
                                 <option value="Men">Men</option>
-                                <option value="Kids">Kids</option>
-                                <option value="Home">Home & Decor</option>
                                 <option value="Unisex">Unisex</option>
+                                <option value="Puja">Puja</option>
                             </select>
                         </div>
 
@@ -1798,7 +1800,7 @@
         let pendingDeleteTarget = null; // { type: 'single' | 'bulk', ids: [] }
 
         // Fallback placeholder SVG for missing images
-        const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="%23f1ede6"/><circle cx="150" cy="130" r="48" fill="%23d8cebe"/><path d="M90 230 C90 190, 210 190, 210 230" fill="%23d8cebe"/><text x="150" y="270" font-family="sans-serif" font-size="13" font-weight="bold" fill="%23847565" text-anchor="middle">SilverHouse Jewelry</text></svg>';
+        const PLACEHOLDER_IMG = '/images/placeholder.svg';
 
         // Helper: format image URL safely
         function getSafeImageUrl(img) {
@@ -2046,26 +2048,27 @@
                 colorContainer.innerHTML = html;
             }
 
-            // Purity options
+            // Purity options - strictly 2 options: 92.5 and 99.9
             const purityContainer = document.getElementById('purityOptions');
             if (purityContainer) {
-                const purities = [...new Set(products.map(p => p.purity).filter(Boolean))];
-                let html = `
-                    <label class="radio-item ${!selectedPurity ? 'active' : ''}">
-                        <span style="display:flex; align-items:center; gap:8px;">
-                            <input type="radio" name="purity_filter" value="" ${!selectedPurity ? 'checked' : ''} onchange="setPurity('')" />
-                            <span>All Purities</span>
-                        </span>
-                    </label>
-                `;
-                purities.forEach(pur => {
-                    const isChecked = selectedPurity === pur;
+                const purityGrades = [
+                    { id: '', label: 'All Purities' },
+                    { id: '92.5', label: '92.5 Sterling Silver' },
+                    { id: '99.9', label: '99.9 Pure Silver' }
+                ];
+                let html = '';
+                purityGrades.forEach(grade => {
+                    const count = grade.id 
+                        ? products.filter(p => (p.purity || '').includes(grade.id)).length 
+                        : products.length;
+                    const isChecked = selectedPurity === grade.id;
                     html += `
                         <label class="radio-item ${isChecked ? 'active' : ''}">
                             <span style="display:flex; align-items:center; gap:8px;">
-                                <input type="radio" name="purity_filter" value="${pur}" ${isChecked ? 'checked' : ''} onchange="setPurity('${pur}')" />
-                                <span>${pur}</span>
+                                <input type="radio" name="purity_filter" value="${grade.id}" ${isChecked ? 'checked' : ''} onchange="setPurity('${grade.id}')" />
+                                <span>${grade.label}</span>
                             </span>
+                            <span class="count-badge">${count}</span>
                         </label>
                     `;
                 });
@@ -2211,7 +2214,7 @@
                 const matchesColor = !selectedColor || (p.color || 'Silver').toLowerCase() === selectedColor.toLowerCase();
 
                 // Purity
-                const matchesPurity = !selectedPurity || p.purity === selectedPurity;
+                const matchesPurity = !selectedPurity || (p.purity || '').includes(selectedPurity);
 
                 // Price
                 const effectivePrice = Number(p.final_price !== undefined ? p.final_price : p.price) || 0;
@@ -2335,7 +2338,7 @@
                         <span class="badge-stock-status ${stockStatusClass}">
                             <i class="ph-bold ${stock === 0 ? 'ph-x-circle' : (stock <= 5 ? 'ph-warning' : 'ph-check-circle')}"></i> ${stockStatusLabel}
                         </span>
-                        <img src="${safeImgSrc}" alt="${name}" loading="lazy" onerror="this.src='${PLACEHOLDER_IMG}'" />
+                        <img src="${safeImgSrc}" alt="${name}" loading="lazy" onerror="this.onerror=null;this.src='/images/placeholder.svg'" />
                     </div>
 
                     <div class="card-body">
@@ -2440,7 +2443,7 @@
                         <input type="checkbox" class="card-checkbox" ${isSelected ? 'checked' : ''} onchange="toggleProductSelection(${id}, this.checked)" />
                     </td>
                     <td>
-                        <img src="${safeImgSrc}" class="table-thumb" alt="${name}" onerror="this.src='${PLACEHOLDER_IMG}'" />
+                        <img src="${safeImgSrc}" class="table-thumb" alt="${name}" onerror="this.onerror=null;this.src='/images/placeholder.svg'" />
                     </td>
                     <td>
                         <div style="font-weight:700; color:var(--text-main); font-size:13px;">${name}</div>
@@ -2725,6 +2728,7 @@
             document.getElementById('btnSaveProduct').innerHTML = `
                 <i class="ph-bold ph-plus"></i> <span>Create Product</span>
             `;
+            document.getElementById('formPurity').value = '92.5 Sterling Silver';
             updateModalImagePreview('');
             calculateModalMargin();
             document.getElementById('productFormModal').classList.add('open');
@@ -2738,7 +2742,7 @@
             document.getElementById('formTitle').value = product.product_name || product.title || '';
             document.getElementById('formCategory').value = product.category_id || (categoriesList[0]?.category_id || 1);
             document.getElementById('formMake').value = product.make_id || product.m_id || (makesList[0]?.m_id || 1);
-            document.getElementById('formPurity').value = product.purity || '92.5 Sterling';
+            document.getElementById('formPurity').value = (product.purity || '').includes('99') ? '99.9 Pure Silver' : '92.5 Sterling Silver';
             document.getElementById('formWeight').value = product.weight || '';
             document.getElementById('formColor').value = product.color || 'Silver';
             document.getElementById('formIdealFor').value = product.ideal_for || 'Women';

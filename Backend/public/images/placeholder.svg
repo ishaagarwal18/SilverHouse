@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450">
+  <rect width="600" height="450" fill="#F4EFEB"/>
+  <circle cx="300" cy="200" r="70" fill="#D8CEBE" opacity="0.8"/>
+  <path d="M210 330 C210 270, 390 270, 390 330 Z" fill="#D8CEBE" opacity="0.8"/>
+  <text x="300" y="375" font-family="'Plus Jakarta Sans', sans-serif" font-size="20" font-weight="700" fill="#847565" text-anchor="middle" letter-spacing="1">SILVERHOUSE STUDIO</text>
+  <text x="300" y="405" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="600" fill="#A89989" text-anchor="middle">Luxury Silver Jewelry</text>
+</svg>

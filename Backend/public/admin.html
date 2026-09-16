@@ -2206,7 +2206,20 @@
                 let val = rawRow[rawKey];
                 if (typeof val === 'string') val = val.trim();
                 if (val !== undefined && val !== null && val !== '') {
-                    cleanObj[finalKey] = (!isNaN(val) && val !== '') ? Number(val) : val;
+                    if (finalKey === 'purity' && typeof val === 'string') {
+                        const s = val.toLowerCase();
+                        cleanObj[finalKey] = (s.includes('99') || s.includes('pure') || s.includes('fine'))
+                            ? '99.9 Pure Silver'
+                            : '92.5 Sterling Silver';
+                    } else if (finalKey === 'ideal_for' && typeof val === 'string') {
+                        const s = val.toLowerCase();
+                        if (s.includes('women') || s.includes('female')) cleanObj[finalKey] = 'Women';
+                        else if (s.includes('men') || s.includes('male')) cleanObj[finalKey] = 'Men';
+                        else if (s.includes('puja') || s.includes('pooja') || s.includes('home') || s.includes('mandir') || s.includes('temple') || s.includes('idol')) cleanObj[finalKey] = 'Puja';
+                        else cleanObj[finalKey] = 'Unisex';
+                    } else {
+                        cleanObj[finalKey] = (!isNaN(val) && val !== '') ? Number(val) : val;
+                    }
                 }
             });
             return cleanObj;
