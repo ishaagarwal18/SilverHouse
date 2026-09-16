@@ -2383,11 +2383,34 @@
                         row[k] = cleanTableValues[k];
                     });
 
-                    const idVal = cleanTableValues[pkField];
+                    let idVal = cleanTableValues[pkField];
 
                     // Check if ID exists in currently loaded database records
-                    const existsInDb = idVal !== undefined && idVal !== null && idVal !== '' &&
+                    let existsInDb = idVal !== undefined && idVal !== null && idVal !== '' &&
                         currentRows.some(r => r[pkField] == idVal);
+
+                    // Intelligent anti-duplicate check: if ID is omitted, match existing records by title/name
+                    if (!existsInDb && activeEntity === 'product') {
+                        const productTitle = (cleanTableValues['title'] || cleanTableValues['name'] || '').trim().toLowerCase();
+                        if (productTitle) {
+                            const matchedProduct = currentRows.find(r => (r.title || r.name || '').trim().toLowerCase() === productTitle);
+                            if (matchedProduct) {
+                                idVal = matchedProduct[pkField];
+                                cleanTableValues[pkField] = idVal;
+                                existsInDb = true;
+                            }
+                        }
+                    } else if (!existsInDb && activeEntity === 'category') {
+                        const catName = (cleanTableValues['name'] || '').trim().toLowerCase();
+                        if (catName) {
+                            const matchedCat = currentRows.find(r => (r.name || '').trim().toLowerCase() === catName);
+                            if (matchedCat) {
+                                idVal = matchedCat[pkField];
+                                cleanTableValues[pkField] = idVal;
+                                existsInDb = true;
+                            }
+                        }
+                    }
 
                     let opr = 'ADD';
                     let condition = null;
