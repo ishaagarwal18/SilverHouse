@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node server.js",
     "server": "node server.js",
-    "build": "node -c server.js db.js",
+    "build": "node build_dist.js",
+    "zip": "node build_dist.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

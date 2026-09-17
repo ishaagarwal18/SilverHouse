@@ -25,3 +25,4 @@ dist-ssr
 .vs/
 ~$*
 *_with_*remarks.xlsx
+*.zip
