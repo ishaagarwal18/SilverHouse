@@ -292,11 +292,14 @@ app.post('/api/data', async (req, res) => {
 });
 
 // 2. Static assets & HTML views
-// Serve root public/images and root public directory
+// Serve Backend/public (uploads, images, html, scripts)
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
+
+// Fallback to parent repository public assets if running from monorepo root
 app.use('/images', express.static(path.join(__dirname, '..', 'public', 'images')));
 app.use(express.static(path.join(__dirname, '..', 'public')));
-// Serve Backend/public (uploads, html, scripts)
-app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));

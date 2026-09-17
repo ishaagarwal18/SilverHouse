@@ -9,8 +9,8 @@ let poolPromise;
 if (isWindowsLocal) {
     try {
         sql = require('mssql/msnodesqlv8');
-        const server = process.env.DB_SERVER;
-        const database = process.env.DB_NAME;
+        const server = process.env.DB_SERVER || '.\\SQLEXPRESS';
+        const database = process.env.DB_NAME || 'SilverHouse';
         const connectionString = `Driver={ODBC Driver 17 for SQL Server};Server=${server};Database=${database};Trusted_Connection=yes;`;
 
         poolPromise = new sql.ConnectionPool({ connectionString })
@@ -31,8 +31,8 @@ if (isWindowsLocal) {
 if (!poolPromise) {
     sql = require('mssql');
     const config = {
-        server: process.env.DB_SERVER,
-        database: process.env.DB_NAME,
+        server: process.env.DB_SERVER || 'localhost',
+        database: process.env.DB_NAME || 'SilverHouse',
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
         port: parseInt(process.env.DB_PORT || '1433'),
