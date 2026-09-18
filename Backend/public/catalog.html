@@ -1692,8 +1692,8 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="formSold">Units Sold (Historical)</label>
-                            <input type="number" id="formSold" name="sold" min="0" value="0" />
+                            <label for="formSold">Units Sold (Auto-Incremented)</label>
+                            <input type="number" id="formSold" name="sold" min="0" value="0" readonly style="background:var(--surface-card); cursor:not-allowed;" title="Units sold are updated automatically when customers place orders" />
                         </div>
 
                         <div class="form-group full-width">
@@ -2819,13 +2819,14 @@
             const price = parseFloat(document.getElementById('formPrice').value) || 0;
             const discount = parseFloat(document.getElementById('formDiscount').value) || 0;
 
-            const effectivePrice = price - (price * discount / 100);
+            const discountedBase = price - (price * discount / 100);
+            const effectivePrice = Math.round(discountedBase + labour);
             const totalCost = cost + labour;
             const margin = effectivePrice - totalCost;
             const percent = effectivePrice > 0 ? Math.round((margin / effectivePrice) * 100) : 0;
 
             document.getElementById('modalCalculatedFinalPrice').innerText =
-                `₹${Math.round(effectivePrice).toLocaleString('en-IN')}${discount > 0 ? ` (${discount}% discount applied)` : ''}`;
+                `₹${effectivePrice.toLocaleString('en-IN')}${discount > 0 ? ` [ (₹${Math.round(price).toLocaleString('en-IN')} - ${discount}%) + ₹${Math.round(labour).toLocaleString('en-IN')} labour ]` : (labour > 0 ? ` [ ₹${Math.round(price).toLocaleString('en-IN')} + ₹${Math.round(labour).toLocaleString('en-IN')} labour ]` : '')}`;
 
             const marginEl = document.getElementById('modalCalculatedMargin');
             marginEl.innerText = `₹${Math.round(margin).toLocaleString('en-IN')} (${percent}%)`;

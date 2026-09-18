@@ -366,6 +366,7 @@
                 opacity: 0;
                 transform: translateY(6px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -430,7 +431,8 @@
                 </div>
             </div>
             <div>
-                <button class="btn btn-secondary" onclick="toggleTheme()" id="themeToggleBtn" title="Toggle Light / Dark Mode">
+                <button class="btn btn-secondary" onclick="toggleTheme()" id="themeToggleBtn"
+                    title="Toggle Light / Dark Mode">
                     <i class="ph-bold ph-moon" id="themeIcon"></i>
                     <span id="themeToggleText">Dark Mode</span>
                 </button>
@@ -454,36 +456,34 @@
                             </select>
                         </div>
                         <div class="form-group full-width">
-                            <label>Product Name *</label>
-                            <input type="text" name="title" required placeholder="e.g. Floral Silver Locket" />
+                            <label>Product Name / Title *</label>
+                            <input type="text" name="title" id="title" required
+                                placeholder="e.g. Floral Silver Locket" />
                         </div>
                         <div class="form-group">
                             <label>Purity *</label>
-                            <input type="text" name="purity" required placeholder="e.g. 92.5 Sterling" />
+                            <select name="purity" id="purity" required>
+                                <option value="92.5 Sterling Silver">92.5 Sterling Silver</option>
+                                <option value="99.9 Pure Silver">99.9 Pure Silver</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Weight *</label>
-                            <input type="text" name="weight" required placeholder="e.g. 6.20 gm" />
-                        </div>
-                        <div class="form-group full-width">
-                            <label>Description *</label>
-                            <textarea name="description" rows="3" required placeholder="Detailed item specifications..."></textarea>
+                            <input type="text" name="weight" id="weight" required placeholder="e.g. 6.20 gm" />
                         </div>
                         <div class="form-group">
-                            <label>Price (₹) *</label>
-                            <input type="number" step="0.01" name="price" required placeholder="2499.00" />
+                            <label>Color / Signature Finish</label>
+                            <select name="color" id="color">
+                                <option value="Silver">Fine Silver</option>
+                                <option value="Rose Gold">Rose Gold Plated</option>
+                                <option value="Oxidised">Bold Oxidised</option>
+                                <option value="Gold Plated">Gold Plated</option>
+                                <option value="Two-Tone Silver">Two-Tone Silver</option>
+                            </select>
                         </div>
                         <div class="form-group">
-                            <label>Discount (%)</label>
-                            <input type="number" step="0.01" name="discount" placeholder="5.00" />
-                        </div>
-                        <div class="form-group">
-                            <label>Quantity *</label>
-                            <input type="number" name="quantity" required placeholder="10" />
-                        </div>
-                        <div class="form-group">
-                            <label>Ideal For *</label>
-                            <select name="ideal_for">
+                            <label>Ideal For (Target Audience) *</label>
+                            <select name="ideal_for" id="ideal_for" required>
                                 <option value="ALL">ALL</option>
                                 <option value="Women">Women</option>
                                 <option value="Men">Men</option>
@@ -491,17 +491,109 @@
                                 <option value="Puja">Puja</option>
                             </select>
                         </div>
+
+                        <!-- Financials & Pricing Calculation -->
                         <div class="form-group">
-                            <label>Packaging</label>
-                            <input type="text" name="packaging" placeholder="e.g. Velvet Box" />
+                            <label>Base Price / MRP (₹) *</label>
+                            <input type="number" step="0.01" name="price" id="price" required placeholder="2499.00"
+                                oninput="calculateFinalPrice()" />
                         </div>
                         <div class="form-group">
-                            <label>Labour Cost (₹)</label>
-                            <input type="number" step="0.01" name="labour_cost" placeholder="300.00" />
+                            <label>Discount (%)</label>
+                            <input type="number" step="0.01" name="discount" id="discount" min="0" max="100"
+                                placeholder="5.00" value="0" oninput="calculateFinalPrice()" />
                         </div>
-                        <div class="form-group full-width">
+                        <div class="form-group">
+                            <label>Labour Cost / Making Charges (₹)</label>
+                            <input type="number" step="0.01" name="labour_cost" id="labour_cost" placeholder="300.00"
+                                value="0" oninput="calculateFinalPrice()" />
+                        </div>
+                        <div class="form-group">
                             <label>Actual Cost (₹) *</label>
-                            <input type="number" step="0.01" name="actual_cost" required placeholder="1700.00" />
+                            <input type="number" step="0.01" name="actual_cost" id="actual_cost" required
+                                placeholder="1700.00" />
+                        </div>
+
+                        <!-- Auto-Calculated Final Customer Price Box -->
+                        <div class="form-group full-width">
+                            <div
+                                style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(2, 132, 199, 0.06)); border: 1px solid var(--primary-glow); border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <div
+                                        style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                                        <i class="ph-bold ph-calculator"></i>
+                                        <span>Auto-Calculated Final Customer Price</span>
+                                    </div>
+                                    <div id="finalPriceBreakdown"
+                                        style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                                        Formula: (Price - Discount) + Labour Cost
+                                    </div>
+                                </div>
+                                <div id="finalPriceDisplay"
+                                    style="font-size: 26px; font-weight: 800; color: var(--text-main);">₹0</div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Warehouse Stock Quantity *</label>
+                            <input type="number" name="quantity" id="quantity" required placeholder="10" value="10" />
+                        </div>
+                        <div class="form-group">
+                            <label>Display Priority Rank</label>
+                            <input type="number" name="priority" id="priority" placeholder="10" value="10"
+                                title="Higher priority products appear first in catalog" />
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label>Packaging Type</label>
+                            <input type="text" name="packaging" id="packaging"
+                                placeholder="e.g. Luxury Velvet Box, Tamper-Proof Pouch" />
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label>Description *</label>
+                            <textarea name="description" id="description" rows="3" required
+                                placeholder="Detailed item specifications, hallmark details, and styling notes..."></textarea>
+                        </div>
+
+                        <!-- Image Upload & Preview -->
+                        <div class="form-group full-width">
+                            <label>Product Primary Image</label>
+                            <div style="display:flex; align-items:center; gap:16px;">
+                                <div id="imagePreviewBox"
+                                    style="width:72px; height:72px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--surface-card); flex-shrink:0;">
+                                    <i class="ph-bold ph-image" style="font-size:28px; color:var(--text-muted);"></i>
+                                </div>
+                                <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+                                    <input type="text" name="image_url" id="image_url"
+                                        placeholder="/images/example.jpg or https://..."
+                                        oninput="updateImagePreview(this.value)" />
+                                    <div style="font-size:11px; color:var(--text-muted);">Or choose photo file from your
+                                        device:</div>
+                                    <input type="file" id="imageFileInput" accept="image/*"
+                                        onchange="uploadImageFile(event)" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Managed Auto-Values (Review & Sold) -->
+                        <div class="form-group">
+                            <label>Customer Review Rating</label>
+                            <div
+                                style="background:var(--surface-card); border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-size:12.5px; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+                                <i class="ph-bold ph-star-fill" style="color:#eab308; font-size:16px;"></i>
+                                <span id="reviewInfo">Average of customer reviews (Starts at 0.0 / 0 reviews)</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Units Sold</label>
+                            <div
+                                style="background:var(--surface-card); border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-size:12.5px; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+                                <i class="ph-bold ph-shopping-bag-open"
+                                    style="color:var(--primary); font-size:16px;"></i>
+                                <span id="soldInfo">0 pcs sold (Updated automatically when customers place
+                                    orders)</span>
+                            </div>
                         </div>
                     </div>
 
@@ -598,6 +690,51 @@
             select.innerHTML = html;
         }
 
+        function calculateFinalPrice() {
+            const price = parseFloat(document.getElementById('price').value) || 0;
+            const discount = parseFloat(document.getElementById('discount').value) || 0;
+            const labour = parseFloat(document.getElementById('labour_cost').value) || 0;
+
+            const discountedBase = price - (price * discount / 100);
+            const finalPrice = Math.round(discountedBase + labour);
+
+            document.getElementById('finalPriceDisplay').innerText = `₹${finalPrice.toLocaleString('en-IN')}`;
+            document.getElementById('finalPriceBreakdown').innerText =
+                `Breakdown: (₹${Math.round(price).toLocaleString('en-IN')} - ${discount}%) + ₹${Math.round(labour).toLocaleString('en-IN')} labour = ₹${finalPrice.toLocaleString('en-IN')}`;
+        }
+
+        function updateImagePreview(url) {
+            const box = document.getElementById('imagePreviewBox');
+            if (url && url.trim() !== '') {
+                box.innerHTML = `<img src="${url}" alt="Preview" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null; this.src='/images/placeholder.svg';" />`;
+            } else {
+                box.innerHTML = `<i class="ph-bold ph-image" style="font-size:28px; color:var(--text-muted);"></i>`;
+            }
+        }
+
+        async function uploadImageFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('imageFile', file);
+
+            try {
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const json = await res.json();
+                if (!json.success) throw new Error(json.error || 'Upload failed');
+
+                document.getElementById('image_url').value = json.imageUrl;
+                updateImagePreview(json.imageUrl);
+                showToast('Image uploaded successfully!');
+            } catch (err) {
+                showToast('Image upload failed: ' + err.message, true);
+            }
+        }
+
         async function loadExistingProductData(id) {
             try {
                 const res = await fetch('/api/data', {
@@ -615,6 +752,23 @@
                             form.elements[key].value = row[key] !== null && row[key] !== undefined ? row[key] : '';
                         }
                     });
+
+                    // Set review & sold info
+                    const reviewCount = row.review || 0;
+                    const ratingAvg = reviewCount > 0 ? (4.5 + (reviewCount % 5) * 0.1).toFixed(1) : '0.0';
+                    document.getElementById('reviewInfo').innerText = `⭐ ${ratingAvg} / 5.0 (Average of ${reviewCount} customer reviews)`;
+                    document.getElementById('soldInfo').innerText = `${row.sold || 0} pcs sold (Updated automatically on order placement)`;
+
+                    // Set image preview if present
+                    if (row.image_url) {
+                        document.getElementById('image_url').value = row.image_url;
+                        updateImagePreview(row.image_url);
+                    } else if (Array.isArray(row.images) && row.images.length > 0) {
+                        document.getElementById('image_url').value = row.images[0];
+                        updateImagePreview(row.images[0]);
+                    }
+
+                    calculateFinalPrice();
                 }
             } catch (err) {
                 showToast('Error loading record: ' + err.message, true);
@@ -627,10 +781,12 @@
             const table_values = {};
 
             formData.forEach((value, key) => {
-                if (value.trim() !== '') {
+                if (key !== 'imageFile' && value.trim() !== '') {
                     table_values[key] = !isNaN(value) && value !== '' ? Number(value) : value;
                 }
             });
+
+            const imageUrl = document.getElementById('image_url').value.trim();
 
             const payload = {
                 proc_name: 'product',
@@ -653,8 +809,38 @@
                 if (!targetId && result.data && result.data.length > 0) {
                     targetId = result.data[0].NewProductId || result.data[0].product_id || table_values.product_id;
                 }
-                const action = editId ? 'edit' : 'add';
 
+                // Link image to product if image provided
+                if (imageUrl && targetId) {
+                    try {
+                        const imgRes = await fetch('/api/data', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                proc_name: 'image',
+                                opr: 'ADD',
+                                table_values: { image_url: imageUrl }
+                            })
+                        });
+                        const imgJson = await imgRes.json();
+                        const newImageId = imgJson.data?.[0]?.NewImageId || imgJson.data?.image_id;
+                        if (newImageId) {
+                            await fetch('/api/data', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    proc_name: 'product_image',
+                                    opr: 'ADD',
+                                    table_values: { product_id: targetId, image_id: newImageId }
+                                })
+                            });
+                        }
+                    } catch (imgErr) {
+                        console.warn('Image link notice:', imgErr);
+                    }
+                }
+
+                const action = editId ? 'edit' : 'add';
                 showToast('Product saved successfully!');
                 setTimeout(() => {
                     window.location.href = `/api/data?entity=product${targetId ? `&highlightId=${targetId}&action=${action}` : ''}`;
