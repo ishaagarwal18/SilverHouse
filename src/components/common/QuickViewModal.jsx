@@ -15,8 +15,17 @@ export default function QuickViewModal({
 
   if (!isOpen || !product) return null;
 
+  const images = Array.isArray(product.images) && product.images.length > 0
+    ? product.images
+    : [product.image || product.thumbnail || 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80&w=800'];
+
+  const rating = product.rating || 4.9;
+  const reviewsCount = product.reviewsCount ?? product.reviews_count ?? 12;
+  const purity = product.purity || '92.5 Sterling Silver';
+  const weight = product.weightGrams ?? product.weight ?? 15;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       {/* Overlay */}
       <div 
         className="fixed inset-0 bg-black/65 backdrop-blur-xs transition-opacity"
@@ -28,7 +37,7 @@ export default function QuickViewModal({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/80 text-silver-600 hover:text-black hover:bg-white shadow-md transition-all"
+          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/80 text-silver-600 hover:text-black hover:bg-white shadow-md transition-all cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -37,23 +46,23 @@ export default function QuickViewModal({
         <div className="w-full md:w-1/2 bg-silver-50 p-6 flex flex-col justify-between">
           <div className="relative aspect-square rounded-xl overflow-hidden border border-silver-200 bg-white mb-4">
             <img 
-              src={product.images[selectedImage] || product.images[0]} 
+              src={images[selectedImage] || images[0]} 
               alt={product.name} 
               className="w-full h-full object-cover"
             />
             <span className="absolute top-3 left-3 bg-[#1A1A1A] text-[#D4AF37] text-[11px] font-bold px-3 py-1 rounded-full shadow-md">
-              {product.purity}
+              {purity}
             </span>
           </div>
 
           {/* Thumbnails */}
-          {product.images.length > 1 && (
+          {images.length > 1 && (
             <div className="flex space-x-3 overflow-x-auto pb-1">
-              {product.images.map((img, idx) => (
+              {images.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(idx)}
-                  className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${
+                  className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
                     selectedImage === idx ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/20' : 'border-silver-200 opacity-70 hover:opacity-100'
                   }`}
                 >
@@ -71,8 +80,8 @@ export default function QuickViewModal({
             <div className="flex items-center justify-between text-xs mb-2">
               <div className="flex items-center space-x-1 text-[#D4AF37]">
                 <Star className="w-4 h-4 fill-[#D4AF37]" />
-                <span className="font-bold text-[#1A1A1A]">{product.rating}</span>
-                <span className="text-silver-400">({product.reviewsCount} reviews)</span>
+                <span className="font-bold text-[#1A1A1A]">{rating}</span>
+                <span className="text-silver-400">({reviewsCount} reviews)</span>
               </div>
               <span className="text-emerald-600 font-semibold flex items-center">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>
@@ -104,16 +113,16 @@ export default function QuickViewModal({
             <div className="p-3 bg-silver-50 rounded-lg border border-silver-200 text-xs space-y-1 mb-4">
               <div className="flex justify-between">
                 <span className="text-silver-600">Net Silver Weight:</span>
-                <span className="font-bold text-[#1A1A1A]">{product.weightGrams} Grams</span>
+                <span className="font-bold text-[#1A1A1A]">{weight} Grams</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-silver-600">Metal Certification:</span>
-                <span className="font-bold text-[#D4AF37]">{product.purity}</span>
+                <span className="font-bold text-[#D4AF37]">{purity}</span>
               </div>
             </div>
 
             <p className="text-xs text-silver-600 leading-relaxed mb-6">
-              {product.shortDesc}
+              {product.shortDesc || product.description || 'Authentic hallmarked handcrafted pure silver jewelry with certified purity and insured door delivery.'}
             </p>
           </div>
 

@@ -418,6 +418,7 @@ export default function App() {
         onUpdateQty={handleUpdateCartQty}
         onRemoveItem={handleRemoveCartItem}
         onProceedCheckout={handleProceedCheckout}
+        onQuickView={(prod) => setQuickViewProduct(prod)}
       />
 
       <WishlistDrawer
