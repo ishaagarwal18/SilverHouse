@@ -92,13 +92,19 @@ export default function App() {
   // Fetch backend data on app mount and on product updates
   useEffect(() => {
     async function loadDataFromBackend() {
-      const backendProducts = await fetchProducts();
-      if (backendProducts && backendProducts.length > 0) {
-        setProducts(backendProducts);
-      }
-      const backendCategories = await fetchCategories();
-      if (backendCategories && backendCategories.length > 0) {
-        setCategories(backendCategories);
+      try {
+        const [backendProducts, backendCategories] = await Promise.all([
+          fetchProducts(),
+          fetchCategories()
+        ]);
+        if (Array.isArray(backendProducts) && backendProducts.length > 0) {
+          setProducts(backendProducts);
+        }
+        if (Array.isArray(backendCategories) && backendCategories.length > 0) {
+          setCategories(backendCategories);
+        }
+      } catch (err) {
+        console.error('Failed to load live database data:', err);
       }
     }
     loadDataFromBackend();

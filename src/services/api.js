@@ -1,7 +1,23 @@
-import { PRODUCTS } from '../data/products';
+import { PRODUCTS } from '../data/products.js';
 
-// Base API URL (proxied via Vite server to backend port 5000)
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Base API URL (supports relative /api proxied through Vite/Vercel or explicit backend host)
+let rawApiUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) 
+  ? String(import.meta.env.VITE_API_URL).trim() 
+  : '/api';
+
+// Strip any accidental whitespace, tabs, or quotes from environment variable
+rawApiUrl = rawApiUrl.replace(/[\t\r\n"']/g, '').trim();
+
+if (!rawApiUrl || rawApiUrl === '/') {
+  rawApiUrl = '/api';
+}
+
+// Ensure external host URLs point to the /api endpoint
+if (rawApiUrl.startsWith('http') && !rawApiUrl.endsWith('/api')) {
+  rawApiUrl = rawApiUrl.replace(/\/+$/, '') + '/api';
+}
+
+export const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
 
 /**
  * Normalizes raw backend product object to frontend component interface.
@@ -60,7 +76,8 @@ export function normalizeProduct(rawItem) {
     product_id: Number(rawItem.product_id || rawItem.id),
     name: rawItem.product_name || rawItem.name || rawItem.title || 'Pure Silver Item',
     title: rawItem.title || rawItem.product_name || rawItem.name || 'Pure Silver Item',
-    category: (rawItem.slug || rawItem.category_slug || rawItem.category_name || rawItem.category || 'silver-coins-bars').toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+    category: (rawItem.slug || rawItem.category_slug || rawItem.category_name || rawItem.category || 'silver-idols').toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+    category_slug: (rawItem.category_slug || rawItem.slug || rawItem.category || '').toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
     subcategory: (rawItem.subcategory_name || rawItem.subcategory || 'all').toLowerCase().replace(/\s+/g, '-'),
     purity: purity,
     purityCode: purityCode,
@@ -93,8 +110,7 @@ export function normalizeProduct(rawItem) {
 }
 
 /**
- * Fetches all products from Backend API (/api/data).
- * Falls back to mock PRODUCTS dataset if backend is unreachable or returns error.
+ * Fetches all products live from Backend Database API (/api/data).
  */
 export async function fetchProducts(filters = null) {
   try {
@@ -104,17 +120,17 @@ export async function fetchProducts(filters = null) {
       table_values: filters ? { filters } : null
     });
 
-    if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
+    if (json && json.success && Array.isArray(json.data)) {
       const normalized = json.data.map(normalizeProduct).filter(Boolean);
-      console.log(`[API Service] Loaded ${normalized.length} products live from Express Backend.`);
+      console.log(`[API Service] Loaded ${normalized.length} products live from Database via Express Backend.`);
       return normalized;
     } else {
-      console.warn('[API Service] Backend returned empty data set. Using fallback products catalog.');
-      return PRODUCTS;
+      console.warn('[API Service] Backend returned empty or invalid data set:', json);
+      return [];
     }
   } catch (error) {
-    console.warn('[API Service] Could not connect to Express Backend at /api/data. Using client fallback data.', error.message);
-    return PRODUCTS;
+    console.error('[API Service] Could not connect to Express Backend at /api/data:', error);
+    return [];
   }
 }
 
@@ -132,6 +148,7 @@ export async function fetchCategories() {
     if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
       return json.data.map(cat => ({
         id: (cat.slug || cat.name || String(cat.category_id)).toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        slug: (cat.slug || cat.name || String(cat.category_id)).toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
         category_id: cat.category_id,
         name: cat.name || 'Category',
         shortName: cat.name || 'Category',
@@ -139,13 +156,14 @@ export async function fetchCategories() {
         idealFor: cat.ideal_for || 'All',
         image_id: cat.image_id || null,
         image_url: cat.image_url || null,
-        image: cat.image_url || null
+        image: cat.image_url || null,
+        heroBanner: cat.image_url || '/images/hero_silver_coins.png'
       }));
     }
   } catch (err) {
     console.warn('[API Service] Category fetch warning:', err);
   }
-  return null;
+  return [];
 }
 
 /**
