@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   X, CheckCircle2, ShieldCheck, CreditCard, Smartphone, Building2, 
   Truck, ArrowRight, Lock, Sparkles, MapPin, Plus, Home, Tag,
-  Copy, Check, Phone, Mail, User, Scale, Award, Calendar, ChevronRight
+  Copy, Check, Phone, Mail, User, Scale, Award, Calendar, ChevronRight,
+  Eye, EyeOff, AlertCircle
 } from 'lucide-react';
 import { postApiData, fetchUserAddresses, addUserAddress, getGuestToken } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -17,7 +19,8 @@ export default function CheckoutModal({
   onClearCart,
   onNavigateHome
 }) {
-  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, login, register } = useAuth();
 
   const [step, setStep] = useState(1); // 1: Shipping, 2: Payment, 3: Confirmation
   const [savedAddresses, setSavedAddresses] = useState([]);
@@ -26,6 +29,16 @@ export default function CheckoutModal({
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
+  // In-modal Customer Authentication State
+  const [authTab, setAuthTab] = useState('login'); // 'login' | 'register'
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authFullName, setAuthFullName] = useState('');
+  const [authPhone, setAuthPhone] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
 
   // Card Simulator state for Step 2
   const [cardDetails, setCardDetails] = useState({
@@ -150,8 +163,53 @@ export default function CheckoutModal({
     };
   };
 
+  const handleInModalAuth = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+
+    try {
+      if (authTab === 'login') {
+        if (!authEmail.trim() || !authPassword.trim()) {
+          setAuthError('Please enter your email and password.');
+          setAuthLoading(false);
+          return;
+        }
+        const res = await login(authEmail.trim(), authPassword.trim());
+        if (!res.success) {
+          setAuthError(res.error || 'Invalid email or password.');
+        }
+      } else {
+        if (!authFullName.trim() || !authEmail.trim() || !authPassword.trim()) {
+          setAuthError('Please enter your full name, email, and password.');
+          setAuthLoading(false);
+          return;
+        }
+        const res = await register({
+          fullName: authFullName.trim(),
+          email: authEmail.trim(),
+          phone: authPhone.trim(),
+          password: authPassword.trim()
+        });
+        if (!res.success) {
+          setAuthError(res.error || 'Registration failed. Please try again.');
+        }
+      }
+    } catch (err) {
+      setAuthError(err.message || 'Authentication error.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const handleProceedToPayment = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+
+    if (!isAuthenticated || !user || !user.userId) {
+      alert('You must be logged in to proceed with checkout. Please sign in or register.');
+      setStep(1);
+      return;
+    }
 
     // If entering a new address, validate fields
     if (isAddingNewAddress || !selectedAddressId) {
@@ -164,27 +222,25 @@ export default function CheckoutModal({
         return;
       }
 
-      // If logged in, automatically save address to user's database records for fast future checkout
-      if (isAuthenticated && user?.userId) {
-        try {
-          const newAddr = await addUserAddress({
-            userId: user.userId,
-            address_name: formData.addressType || 'Home',
-            recipient_name: formData.fullName.trim(),
-            Block: '',
-            street: formData.address.trim(),
-            area: formData.city.trim(),
-            city: formData.city.trim(),
-            state: formData.state,
-            pincode: formData.pincode.trim(),
-            country: 'India'
-          });
-          if (newAddr && newAddr.success && newAddr.address_id) {
-            setSelectedAddressId(newAddr.address_id);
-          }
-        } catch (err) {
-          console.warn('Could not auto-save new address to account:', err);
+      // Automatically save address to user's database records for fast future checkout
+      try {
+        const newAddr = await addUserAddress({
+          userId: user.userId,
+          address_name: formData.addressType || 'Home',
+          recipient_name: formData.fullName.trim(),
+          Block: '',
+          street: formData.address.trim(),
+          area: formData.city.trim(),
+          city: formData.city.trim(),
+          state: formData.state,
+          pincode: formData.pincode.trim(),
+          country: 'India'
+        });
+        if (newAddr && newAddr.success && newAddr.address_id) {
+          setSelectedAddressId(newAddr.address_id);
         }
+      } catch (err) {
+        console.warn('Could not auto-save new address to account:', err);
       }
     }
 
@@ -199,6 +255,13 @@ export default function CheckoutModal({
 
   const handleCompleteOrder = async () => {
     if (isPlacingOrder) return;
+
+    if (!isAuthenticated || !user || !user.userId) {
+      alert('You must be logged in to place an order. Please sign in or register.');
+      setStep(1);
+      return;
+    }
+
     const generatedID = 'SH-' + Math.floor(100000 + Math.random() * 900000);
 
     const effective = getEffectiveAddress();
@@ -225,7 +288,7 @@ export default function CheckoutModal({
     const orderData = {
       order_id: Date.now(),
       order_number: generatedID,
-      user_id: user?.userId || null,
+      user_id: user.userId,
       customer_name: effective.fullName,
       customer_email: effective.email,
       customer_phone: effective.phone,
@@ -245,8 +308,7 @@ export default function CheckoutModal({
       opr: 'INSERT',
       table_values: {
         order_number: generatedID,
-        user_id: user?.userId || null,
-        guest_token: getGuestToken(),
+        user_id: user.userId,
         address_id: effective.addressId || null,
         customer_name: effective.fullName,
         customer_email: effective.email,
@@ -385,13 +447,177 @@ export default function CheckoutModal({
         <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-6">
           
           {/* ========================================================= */}
-          {/* STEP 1: SHIPPING & DELIVERY ADDRESS */}
+          {/* STEP 1: SHIPPING & DELIVERY ADDRESS / LOGIN REQUIREMENT */}
           {/* ========================================================= */}
           {step === 1 && (
-            <form onSubmit={handleProceedToPayment} className="space-y-6">
-              
-              {/* Saved Addresses for Authenticated Users */}
-              {isAuthenticated && savedAddresses.length > 0 && !isAddingNewAddress ? (
+            !isAuthenticated || !user ? (
+              /* In-Modal Customer Login / Registration Barrier */
+              <div className="space-y-6 py-2">
+                <div className="text-center space-y-2 max-w-md mx-auto">
+                  <div className="w-14 h-14 rounded-2xl bg-[var(--th-primary)]/10 text-[var(--th-primary)] flex items-center justify-center mx-auto ring-8 ring-[var(--th-primary)]/5 shadow-inner">
+                    <Lock className="w-7 h-7" />
+                  </div>
+                  <h3 className="font-serif font-extrabold text-2xl text-[var(--th-text-main)]">
+                    Customer Sign In Required
+                  </h3>
+                  <p className="text-xs text-[var(--th-text-muted)] leading-relaxed">
+                    To place an order with insured transit, BIS hallmarked certificate in your name, and direct tracking, please sign in or register your customer account.
+                  </p>
+                </div>
+
+                {/* Auth Switcher Tabs */}
+                <div className="max-w-md mx-auto flex items-center p-1 rounded-xl bg-[var(--th-surface-alt)] border border-[var(--th-border)]">
+                  <button
+                    type="button"
+                    onClick={() => { setAuthTab('login'); setAuthError(''); }}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      authTab === 'login'
+                        ? 'bg-[var(--th-card)] text-[var(--th-text-main)] shadow-xs border border-[var(--th-border)]'
+                        : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
+                    }`}
+                  >
+                    Sign In to Existing Account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAuthTab('register'); setAuthError(''); }}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      authTab === 'register'
+                        ? 'bg-[var(--th-card)] text-[var(--th-text-main)] shadow-xs border border-[var(--th-border)]'
+                        : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
+                    }`}
+                  >
+                    Create New Account
+                  </button>
+                </div>
+
+                {/* Error Banner */}
+                {authError && (
+                  <div className="max-w-md mx-auto p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{authError}</span>
+                  </div>
+                )}
+
+                {/* In-Modal Form */}
+                <form onSubmit={handleInModalAuth} className="max-w-md mx-auto space-y-4 text-xs">
+                  {authTab === 'register' && (
+                    <div>
+                      <label className="font-bold text-[var(--th-text-main)] block mb-1">Full Name *</label>
+                      <div className="relative">
+                        <User className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          required
+                          value={authFullName}
+                          onChange={(e) => setAuthFullName(e.target.value)}
+                          placeholder="e.g. Isha Agarwal"
+                          className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="font-bold text-[var(--th-text-main)] block mb-1">Email Address *</label>
+                    <div className="relative">
+                      <Mail className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="email"
+                        required
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                        placeholder="name@example.com"
+                        className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {authTab === 'register' && (
+                    <div>
+                      <label className="font-bold text-[var(--th-text-main)] block mb-1">Phone / WhatsApp Number</label>
+                      <div className="relative">
+                        <Phone className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="tel"
+                          value={authPhone}
+                          onChange={(e) => setAuthPhone(e.target.value)}
+                          placeholder="+91 98765 43210"
+                          className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="font-bold text-[var(--th-text-main)] block mb-1">Password *</label>
+                    <div className="relative">
+                      <Lock className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type={showAuthPassword ? 'text' : 'password'}
+                        required
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl pl-9 pr-10 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAuthPassword(!showAuthPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] cursor-pointer"
+                      >
+                        {showAuthPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full py-3.5 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    {authLoading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>{authTab === 'login' ? 'Sign In & Continue Checkout' : 'Create Account & Continue'}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      navigate('/login?redirect=checkout');
+                    }}
+                    className="text-xs text-[var(--th-accent)] hover:underline font-semibold cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <span>Prefer full login page? Click here</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleProceedToPayment} className="space-y-6">
+                
+                {/* Verified Customer Status Banner */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[var(--th-text-muted)]">Signed in as:</span>
+                    <strong className="text-[var(--th-text-main)]">{user.fullName || user.email}</strong>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                    Verified Customer Account
+                  </span>
+                </div>
+
+                {/* Saved Addresses for Authenticated Users */}
+                {savedAddresses.length > 0 && !isAddingNewAddress ? (
                 <div>
                   <div className="flex items-center justify-between mb-3.5">
                     <h4 className="font-serif font-bold text-base text-[var(--th-text-main)] flex items-center space-x-2">
@@ -621,8 +847,8 @@ export default function CheckoutModal({
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
-
             </form>
+            )
           )}
 
           {/* ========================================================= */}

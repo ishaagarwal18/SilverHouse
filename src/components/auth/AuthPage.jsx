@@ -48,6 +48,8 @@ export default function AuthPage({ onTriggerToast }) {
           setTimeout(() => {
             if (result.isAdmin) {
               navigate('/admin');
+            } else if (redirectTarget === 'checkout' || redirectTarget === '/checkout') {
+              navigate('/?checkout=true');
             } else {
               navigate(redirectTarget);
             }
@@ -60,7 +62,11 @@ export default function AuthPage({ onTriggerToast }) {
             onTriggerToast('success', 'Account Created', '🎉 Welcome to SilverHouse! Your account is ready.');
           }
           setTimeout(() => {
-            navigate(redirectTarget);
+            if (redirectTarget === 'checkout' || redirectTarget === '/checkout') {
+              navigate('/?checkout=true');
+            } else {
+              navigate(redirectTarget);
+            }
           }, 500);
         }
       }

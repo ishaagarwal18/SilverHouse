@@ -104,6 +104,15 @@ app.post('/api/custom-orders', upload.array('images', 10), async (req, res) => {
             return res.status(400).json({ success: false, error: 'Customer phone number is required.' });
         }
 
+        // Strict customer login requirement
+        const parsedUserId = user_id && !isNaN(parseInt(user_id, 10)) ? parseInt(user_id, 10) : null;
+        if (!parsedUserId || parsedUserId <= 0) {
+            return res.status(401).json({
+                success: false,
+                error: 'Customer must be logged in to place a custom order. Please sign in or create an account.'
+            });
+        }
+
         // Collect uploaded files and any existing URLs passed
         let imageUrls = [];
         if (req.files && req.files.length > 0) {
@@ -126,8 +135,6 @@ app.post('/api/custom-orders', upload.array('images', 10), async (req, res) => {
 
         // Generate custom order identifier
         const orderNumber = `CUST-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-        const parsedUserId = user_id && !isNaN(parseInt(user_id, 10)) ? parseInt(user_id, 10) : null;
 
         const insertQuery = `
             INSERT INTO dbo.orders (
@@ -689,6 +696,17 @@ app.post('/api/data', async (req, res) => {
         // 2. ALL CALLING / MUTATIONS (ADD, INSERT, EDIT, DELETE, UPDATE_QTY, RESTOCK) ARE ROUTED THROUGH dbo.SP_GETDATA
         let mutationProc = normalizedProc;
         if (mutationProc === 'custom_orders' || mutationProc === 'custom_order') mutationProc = 'orders';
+
+        // Strict Customer Authentication for Order Creation
+        if (mutationProc === 'orders' && (operation === 'ADD' || operation === 'INSERT')) {
+            const parsedUserId = table_values && (table_values.user_id || table_values.userId);
+            if (!parsedUserId || isNaN(parseInt(parsedUserId, 10)) || parseInt(parsedUserId, 10) <= 0) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Customer must be logged in to place an order. Please sign in or register.'
+                });
+            }
+        }
 
         const request = pool.request();
         request.input('proc_name', sql.NVarChar(50), mutationProc);

@@ -137,6 +137,25 @@ export default function App() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState({ totalAmount: 0, discountAmount: 0, appliedCoupon: null });
 
+  // Automatically open checkout if returning from login with ?checkout=true
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('checkout') === 'true') {
+      if (cartItems.length > 0) {
+        const subtotal = cartItems.reduce((acc, it) => acc + (Number(it.product.price) || 0) * it.quantity, 0);
+        setCheckoutData(prev => ({
+          totalAmount: prev.totalAmount || subtotal,
+          discountAmount: prev.discountAmount || 0,
+          appliedCoupon: prev.appliedCoupon || null
+        }));
+        setIsCheckoutOpen(true);
+      }
+      params.delete('checkout');
+      const newSearch = params.toString() ? `?${params.toString()}` : '';
+      navigate(`${location.pathname}${newSearch}`, { replace: true });
+    }
+  }, [location.search, cartItems, navigate, location.pathname]);
+
   // Toast Notifications State
   const [toasts, setToasts] = useState([]);
 

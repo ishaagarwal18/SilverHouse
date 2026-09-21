@@ -4,7 +4,7 @@ import {
   Crown, Sparkles, Church, HeartHandshake, Compass, Upload, Image as ImageIcon,
   Trash2, Check, ShieldCheck, Clock, Phone, User, Mail, FileText,
   AlertCircle, ChevronRight, Copy, CheckCircle2, ArrowRight, Layers, Eye,
-  Search, CheckCircle
+  Search, CheckCircle, Lock
 } from 'lucide-react';
 import { submitCustomOrderApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -103,6 +103,15 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
   const [customerPhone, setCustomerPhone] = useState(user?.phone || '');
   const [customerEmail, setCustomerEmail] = useState(user?.email || '');
 
+  // Synchronize contact details if user logs in while on customizer
+  useEffect(() => {
+    if (user) {
+      if (user.fullName) setCustomerName(user.fullName);
+      if (user.phone) setCustomerPhone(user.phone);
+      if (user.email) setCustomerEmail(user.email);
+    }
+  }, [user]);
+
   // Multi-image file upload state
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
@@ -194,6 +203,14 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
   // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isAuthenticated || !user || !user.userId) {
+      if (onTriggerToast) {
+        onTriggerToast('Please sign in to your SilverHouse account to submit a custom order.', 'error');
+      }
+      navigate('/login?redirect=/customize');
+      return;
+    }
 
     if (!customerName.trim()) {
       if (onTriggerToast) onTriggerToast('Please enter your full name.', 'error');
@@ -740,10 +757,53 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
 
           {/* 6. CUSTOMER CONTACT INFO CARD */}
           <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-2xl p-6 sm:p-8 space-y-6">
-            <h2 className="text-lg font-bold text-[var(--th-text-main)] flex items-center gap-2 border-b border-[var(--th-border)] pb-4">
-              <Phone className="w-5 h-5 text-[var(--th-accent)]" />
-              <span>4. Your Contact Details for Price Quotation</span>
+            <h2 className="text-lg font-bold text-[var(--th-text-main)] flex items-center justify-between border-b border-[var(--th-border)] pb-4">
+              <div className="flex items-center gap-2">
+                <Phone className="w-5 h-5 text-[var(--th-accent)]" />
+                <span>4. Your Contact Details for Price Quotation</span>
+              </div>
+              {isAuthenticated && user && (
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Verified Customer Account
+                </span>
+              )}
             </h2>
+
+            {/* Login Required Notice for Unauthenticated Users */}
+            {!isAuthenticated || !user ? (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm">Customer Sign In Required to Place Custom Order</div>
+                    <div className="text-xs text-amber-800/80 dark:text-amber-300/80">
+                      Please log in or create an account so our master silversmiths can attach your quote and order status directly to your account.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/login?redirect=/customize')}
+                  className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-all shadow-sm"
+                >
+                  Sign In / Register
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--th-surface)] border border-[var(--th-border)] text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-[var(--th-text-muted)]">Submitting as:</span>
+                  <strong className="text-[var(--th-text-main)]">{user.fullName || user.email}</strong>
+                </div>
+                <span className="text-[11px] text-[var(--th-text-muted)] font-mono">
+                  ID: #{user.userId}
+                </span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               {/* Full Name */}
@@ -810,23 +870,37 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
 
             {/* Submit Button */}
             <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-extrabold text-sm uppercase tracking-wider shadow-lg shadow-[var(--th-primary)]/25 flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Submitting Custom Order...</span>
-                  </>
-                ) : (
-                  <>
-                    <Crown className="w-4 h-4" />
-                    <span>Submit Custom Order Request</span>
-                  </>
-                )}
-              </button>
+              {!isAuthenticated || !user ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onTriggerToast) onTriggerToast('Please log in to your SilverHouse account to place a custom order.', 'error');
+                    navigate('/login?redirect=/customize');
+                  }}
+                  className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-extrabold text-sm uppercase tracking-wider shadow-lg shadow-[var(--th-primary)]/25 flex items-center justify-center space-x-2 transition-all cursor-pointer"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>Sign In to Submit Custom Order</span>
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-extrabold text-sm uppercase tracking-wider shadow-lg shadow-[var(--th-primary)]/25 flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Submitting Custom Order...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Crown className="w-4 h-4" />
+                      <span>Submit Custom Order Request</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </form>
