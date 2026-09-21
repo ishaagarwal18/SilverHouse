@@ -1,14 +1,33 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Crown, Sparkles, Church, HeartHandshake, Upload, Image as ImageIcon,
+  Crown, Sparkles, Church, HeartHandshake, Compass, Upload, Image as ImageIcon,
   Trash2, Check, ShieldCheck, Clock, Phone, User, Mail, FileText,
-  AlertCircle, ChevronRight, Copy, CheckCircle2, ArrowRight, Layers
+  AlertCircle, ChevronRight, Copy, CheckCircle2, ArrowRight, Layers, Eye,
+  Search, CheckCircle
 } from 'lucide-react';
 import { submitCustomOrderApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import {
+  PREDEFINED_SHRINE_DESIGNS,
+  LOCKET_SHAPES,
+  METAL_FINISHES,
+  CHAIN_OPTIONS,
+  POPULAR_MANTRAS
+} from '../../data/predefinedYatraDesigns';
 
-const ARTISANAL_CATEGORIES = [
+const CUSTOM_CATEGORIES = [
+  {
+    id: 'Yatra Lockets',
+    name: 'Yatra Lockets & Shrines',
+    hindi: 'यात्रा लॉकेट / तीर्थ स्वरूप',
+    icon: Compass,
+    tagline: 'Sacred Deity & Pilgrimage Shrine Lockets',
+    description: 'Consecrated 925 sterling silver shrine lockets for Kedarnath, Badrinath, Kashi, Ram Mandir, Mahakal, Banke Bihari, and your personal Ishta Devata.',
+    popularMotifs: ['Kedarnath Jyotirlinga', 'Ayodhya Ram Lalla', 'Kashi Vishwanath', 'Shri Banke Bihari', 'Tirupati Balaji', 'Golden Temple Harmandir Sahib'],
+    presetSpecs: 'Sacred Shrine Locket: 92.5 Hallmarked Sterling Silver, 20" chain, custom back mantra engraving with holy Ganga Jal consecration.',
+    isYatra: true
+  },
   {
     id: 'Mukhut',
     name: 'Mukhut',
@@ -17,7 +36,8 @@ const ARTISANAL_CATEGORIES = [
     tagline: 'Divine Silver Crowns for Deities',
     description: 'Bespoke hand-chased crowns for Radha Krishna, Laddu Gopal, Hanumanji, and temple deities with filigree, peacock feather crests, and gemstone settings.',
     popularMotifs: ['Peacock Feather (Mor Pankh)', 'Surya Kiran (Sun Rays)', 'Floral Filigree (Tarkashi)', 'Gemstone Setting Accents'],
-    presetSpecs: 'Crown height: approx 4 to 6 inches, deity head circumference: 8 to 12 cm, 92.5 Sterling Silver, peacock feather filigree carving.'
+    presetSpecs: 'Crown height: approx 4 to 6 inches, deity head circumference: 8 to 12 cm, 92.5 Sterling Silver, peacock feather filigree carving.',
+    isYatra: false
   },
   {
     id: 'Jhalar',
@@ -27,7 +47,8 @@ const ARTISANAL_CATEGORIES = [
     tagline: 'Ornate Altar & Sanctum Hangings',
     description: 'Traditional handcrafted silver fringe borders, altar hangings, and sanctum canopy trims with dangling silver bells (ghungroo) and floral lace.',
     popularMotifs: ['Dangling Ghungroo Bells', 'Lotus Petal Border', 'Interlocking Vine Chain', 'Altar Canopy Trim'],
-    presetSpecs: 'Altar border length: 24 to 36 inches, drop height: 3 inches, delicate hanging silver bells, high-polish sterling silver.'
+    presetSpecs: 'Altar border length: 24 to 36 inches, drop height: 3 inches, delicate hanging silver bells, high-polish sterling silver.',
+    isYatra: false
   },
   {
     id: 'Thakurji ka saman',
@@ -37,7 +58,8 @@ const ARTISANAL_CATEGORIES = [
     tagline: 'Sacred Seva & Royal Deity Regalia',
     description: 'Exquisite silver articles for deity seva including carved flutes (Bansuri), royal singhasan (thrones), chhatra (parasols), and charan padukas.',
     popularMotifs: ['Engraved Bansuri (Flute)', 'Carved Singhasan (Throne)', 'Royal Chhatra (Parasol)', 'Sacred Charan Paduka'],
-    presetSpecs: 'Deity Singhasan: 6x6 inch base, royal chhatra parasol with peacock finial, heavy gauge sterling silver.'
+    presetSpecs: 'Deity Singhasan: 6x6 inch base, royal chhatra parasol with peacock finial, heavy gauge sterling silver.',
+    isYatra: false
   },
   {
     id: 'Temple things',
@@ -47,21 +69,35 @@ const ARTISANAL_CATEGORIES = [
     tagline: 'Sanctified Altar Vessels & Artifacts',
     description: 'Consecrated silver artifacts for temples and home shrines: multi-wick Aarti diyas, kalash with coconut carving, shankh stands, and temple bells.',
     popularMotifs: ['Panchmukhi Aarti Diya', 'Kalash with Coconut Finial', 'Carved Shankh Stand', 'Nandi Temple Bell'],
-    presetSpecs: 'Panchmukhi Aarti Diya: 5 wicks with ornate peacock handle, solid 92.5 sterling silver, heat-resistant base.'
+    presetSpecs: 'Panchmukhi Aarti Diya: 5 wicks with ornate peacock handle, solid 92.5 sterling silver, heat-resistant base.',
+    isYatra: false
   }
 ];
 
 export default function CustomArtisanalOrderPage({ onTriggerToast }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated } = useAuth();
 
-  // Form State
-  const [selectedCategory, setSelectedCategory] = useState(ARTISANAL_CATEGORIES[0].id);
+  // Selected Category
+  const [selectedCategory, setSelectedCategory] = useState(CUSTOM_CATEGORIES[0].id);
+
+  // Common Customizer State
   const [purity, setPurity] = useState('92.5 Sterling Silver');
   const [approxDimensions, setApproxDimensions] = useState('');
   const [targetWeight, setTargetWeight] = useState('');
   const [description, setDescription] = useState('');
-  
+
+  // Yatra Specific Customizer State
+  const [selectedShrine, setSelectedShrine] = useState(PREDEFINED_SHRINE_DESIGNS[0]);
+  const [shrineCategoryFilter, setShrineCategoryFilter] = useState('ALL');
+  const [shrineSearch, setShrineSearch] = useState('');
+  const [selectedLocketShape, setSelectedLocketShape] = useState(LOCKET_SHAPES[0].id);
+  const [selectedFinish, setSelectedFinish] = useState(METAL_FINISHES[0].id);
+  const [selectedChain, setSelectedChain] = useState(CHAIN_OPTIONS[1].name);
+  const [backEngraving, setBackEngraving] = useState(PREDEFINED_SHRINE_DESIGNS[0].defaultMantra);
+  const [isCustomDeityMode, setIsCustomDeityMode] = useState(false);
+
   // Contact details
   const [customerName, setCustomerName] = useState(user?.fullName || '');
   const [customerPhone, setCustomerPhone] = useState(user?.phone || '');
@@ -77,8 +113,31 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
   const [submittedOrder, setSubmittedOrder] = useState(null);
   const [copiedOrderNumber, setCopiedOrderNumber] = useState(false);
 
+  // Handle URL params for default tab
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const catParam = params.get('category');
+    if (catParam) {
+      const match = CUSTOM_CATEGORIES.find(
+        c => c.id.toLowerCase() === catParam.toLowerCase() || c.name.toLowerCase().includes(catParam.toLowerCase())
+      );
+      if (match) setSelectedCategory(match.id);
+    } else if (location.pathname.includes('yatra')) {
+      setSelectedCategory('Yatra Lockets');
+    }
+  }, [location]);
+
   // Active category object
-  const activeCategoryObj = ARTISANAL_CATEGORIES.find(c => c.id === selectedCategory) || ARTISANAL_CATEGORIES[0];
+  const activeCategoryObj = CUSTOM_CATEGORIES.find(c => c.id === selectedCategory) || CUSTOM_CATEGORIES[0];
+  const isYatraActive = activeCategoryObj.id === 'Yatra Lockets';
+
+  // Predefined shrine filter
+  const shrineCategories = ['ALL', 'Shiva', 'Ram & Vishnu', 'Devi & Shakti', 'Sacred Yantra', 'Ganesha & Wisdom', 'Gurudwara & Peace'];
+  const filteredShrines = PREDEFINED_SHRINE_DESIGNS.filter(d => {
+    const matchCategory = shrineCategoryFilter === 'ALL' || d.category === shrineCategoryFilter;
+    const matchSearch = !shrineSearch || d.name.toLowerCase().includes(shrineSearch.toLowerCase()) || d.deity.toLowerCase().includes(shrineSearch.toLowerCase());
+    return matchCategory && matchSearch;
+  });
 
   // Handle Multi-file selection
   const handleFileChange = (e) => {
@@ -121,14 +180,21 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
     }
   };
 
+  const handleSelectShrine = (shrine) => {
+    setSelectedShrine(shrine);
+    setIsCustomDeityMode(false);
+    if (shrine.defaultMantra) {
+      setBackEngraving(shrine.defaultMantra);
+    }
+    if (onTriggerToast) {
+      onTriggerToast(`Selected shrine: ${shrine.name}`);
+    }
+  };
+
   // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!description.trim()) {
-      if (onTriggerToast) onTriggerToast('Please describe your custom order requirements.', 'error');
-      return;
-    }
     if (!customerName.trim()) {
       if (onTriggerToast) onTriggerToast('Please enter your full name.', 'error');
       return;
@@ -143,12 +209,22 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
     try {
       const formData = new FormData();
       formData.append('custom_category', selectedCategory);
-      
+
       // Build comprehensive description text
       let fullDescription = `Category: ${selectedCategory} (${activeCategoryObj.hindi})\nSilver Purity: ${purity}\n`;
-      if (approxDimensions.trim()) fullDescription += `Estimated Dimensions / Deity Size: ${approxDimensions.trim()}\n`;
+
+      if (isYatraActive) {
+        fullDescription += `Pilgrimage / Deity Shrine: ${isCustomDeityMode ? 'Custom Deity / Uploaded Photo' : selectedShrine.name}\n`;
+        fullDescription += `Locket Shape: ${selectedLocketShape}\n`;
+        fullDescription += `Silver Finish: ${selectedFinish}\n`;
+        fullDescription += `Chain Choice: ${selectedChain}\n`;
+        if (backEngraving.trim()) fullDescription += `Back Engraving Mantra / Gotra: "${backEngraving.trim()}"\n`;
+      } else {
+        if (approxDimensions.trim()) fullDescription += `Estimated Dimensions / Deity Size: ${approxDimensions.trim()}\n`;
+      }
+
       if (targetWeight.trim()) fullDescription += `Target Silver Weight: ${targetWeight.trim()}\n`;
-      fullDescription += `\nDetailed Specifications:\n${description.trim()}`;
+      fullDescription += `\nDetailed Specifications / Customer Notes:\n${description.trim() || 'Handcrafted to master silversmith standards.'}`;
 
       formData.append('description', fullDescription);
       formData.append('customer_name', customerName.trim());
@@ -197,7 +273,7 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
   return (
     <div className="min-h-screen bg-[var(--th-bg)] text-[var(--th-text-main)] py-8 px-4 sm:px-6 lg:px-8">
       {/* Container */}
-      <div className="max-w-5xl mx-auto space-y-10">
+      <div className="max-w-6xl mx-auto space-y-10">
 
         {/* 1. HERO HEADER */}
         <div className="text-center space-y-3">
@@ -205,38 +281,38 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
             <Sparkles className="w-3.5 h-3.5" />
             <span>Master Silversmith Bespoke Studio</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--th-text-main)] font-serif">
-            Custom Silver Devotional & Artisanal Orders
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[var(--th-text-main)] font-serif">
+            Custom Silver Devotional & Artisanal Studio
           </h1>
-          <p className="text-sm sm:text-base text-[var(--th-text-muted)] max-w-2xl mx-auto leading-relaxed">
-            Commission bespoke sacred silver regalia crafted to your precise deity measurements and temple architectural requirements by hereditary master silversmiths.
+          <p className="text-sm sm:text-base text-[var(--th-text-muted)] max-w-3xl mx-auto leading-relaxed">
+            Commission bespoke sacred silver lockets, deity regalia, sanctum hangings, and temple artifacts crafted to your exact specifications with multi-image inspiration and master silversmith quotation.
           </p>
 
           {/* Trust badges */}
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-2 text-xs font-semibold text-[var(--th-text-muted)]">
             <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-              <ShieldCheck className="w-4 h-4" /> 100% Certified Silver Purity
+              <ShieldCheck className="w-4 h-4" /> 100% Certified 925 Hallmarked Silver
             </span>
             <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-              <Crown className="w-4 h-4" /> Hand-Chased Artisanal Craft
+              <Crown className="w-4 h-4" /> Hereditary Master Silversmith Craft
             </span>
             <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
-              <Clock className="w-4 h-4" /> Personalized Price Quotation
+              <Clock className="w-4 h-4" /> Personalized Workshop Quotation
             </span>
           </div>
         </div>
 
-        {/* 2. CATEGORY SELECTION CARDS */}
+        {/* 2. UNIFIED CATEGORY SELECTION CARDS (5 CATEGORIES) */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-[var(--th-text-main)] flex items-center gap-2">
-              <span>1. Choose Custom Item Category</span>
-              <span className="text-xs text-[var(--th-accent)] font-semibold">({ARTISANAL_CATEGORIES.length} Sacred Specialties)</span>
+              <span>1. Choose Custom Creation Category</span>
+              <span className="text-xs text-[var(--th-accent)] font-semibold">({CUSTOM_CATEGORIES.length} Sacred Specialties)</span>
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {ARTISANAL_CATEGORIES.map((cat) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+            {CUSTOM_CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isSelected = selectedCategory === cat.id;
 
@@ -245,33 +321,33 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`relative p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+                  className={`relative p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between ${
                     isSelected
                       ? 'bg-[var(--th-card)] border-[var(--th-primary)] shadow-lg shadow-[var(--th-primary)]/10 ring-2 ring-[var(--th-primary)]/20'
                       : 'bg-[var(--th-surface)] border-[var(--th-border)] hover:border-[var(--th-primary)]/50 hover:bg-[var(--th-card)]'
                   }`}
                 >
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                         isSelected
                           ? 'bg-[var(--th-primary)] text-white'
                           : 'bg-[var(--th-surface-alt)] text-[var(--th-text-muted)]'
                       }`}>
-                        <Icon className="w-5 h-5" />
+                        <Icon className="w-4 h-4" />
                       </div>
-                      <span className="text-xs font-serif font-bold text-[var(--th-accent)]">{cat.hindi}</span>
+                      <span className="text-[11px] font-serif font-bold text-[var(--th-accent)]">{cat.hindi}</span>
                     </div>
 
                     <div>
-                      <div className="font-extrabold text-base text-[var(--th-text-main)]">{cat.name}</div>
-                      <div className="text-xs font-medium text-[var(--th-text-muted)] mt-1 line-clamp-2 leading-relaxed">
+                      <div className="font-extrabold text-sm text-[var(--th-text-main)]">{cat.name}</div>
+                      <div className="text-[11.5px] font-medium text-[var(--th-text-muted)] mt-1 line-clamp-2 leading-snug">
                         {cat.description}
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-[var(--th-border)]/60 flex items-center justify-between text-xs font-bold">
+                  <div className="mt-3 pt-2.5 border-t border-[var(--th-border)]/60 flex items-center justify-between text-xs font-bold">
                     <span className={isSelected ? 'text-[var(--th-primary)]' : 'text-[var(--th-text-muted)]'}>
                       {isSelected ? '✓ Selected' : 'Select'}
                     </span>
@@ -283,38 +359,242 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
           </div>
         </div>
 
-        {/* 3. POPULAR DESIGN MOTIFS FOR SELECTED CATEGORY */}
-        <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-2xl p-5 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="text-sm font-bold text-[var(--th-text-main)] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
-              <span>Inspiration Motifs for {activeCategoryObj.name} ({activeCategoryObj.hindi})</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleApplyPresetSpecs}
-              className="text-xs font-bold text-[var(--th-primary)] hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Insert Recommended Specs</span>
-            </button>
-          </div>
+        {/* 3. CATEGORY-SPECIFIC CUSTOMIZATION OPTIONS */}
+        {isYatraActive ? (
+          /* ================= YATRA LOCKETS & SHRINES SECTION ================= */
+          <div className="space-y-6">
+            {/* Shrine Selector */}
+            <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-2xl p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--th-border)] pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-[var(--th-text-main)] flex items-center gap-2">
+                    <Compass className="w-5 h-5 text-[var(--th-accent)]" />
+                    <span>Select Pilgrimage Shrine or Custom Deity</span>
+                  </h3>
+                  <p className="text-xs text-[var(--th-text-muted)] mt-0.5">
+                    Choose from consecrated holy shrines or upload your own deity artwork/photo.
+                  </p>
+                </div>
 
-          <div className="flex flex-wrap gap-2">
-            {activeCategoryObj.popularMotifs.map((motif, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleApplyPresetMotif(motif)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--th-border)] bg-[var(--th-surface)] hover:border-[var(--th-primary)] hover:text-[var(--th-primary)] transition-all cursor-pointer flex items-center gap-1.5"
-                title="Click to add to your description"
-              >
-                <span>+</span>
-                <span>{motif}</span>
-              </button>
-            ))}
+                <div className="flex items-center gap-2">
+                  <div className="relative min-w-[200px]">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--th-text-muted)]" />
+                    <input
+                      type="text"
+                      placeholder="Search shrine / deity..."
+                      value={shrineSearch}
+                      onChange={(e) => setShrineSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-[var(--th-border)] bg-[var(--th-surface)] text-xs text-[var(--th-text-main)] focus:outline-hidden focus:ring-1 focus:ring-[var(--th-primary)]"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomDeityMode(!isCustomDeityMode);
+                      if (!isCustomDeityMode && onTriggerToast) onTriggerToast('Custom Deity Mode activated: Attach reference photos below!');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      isCustomDeityMode
+                        ? 'bg-[var(--th-primary)] text-white border-[var(--th-primary)]'
+                        : 'border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] hover:border-[var(--th-primary)]'
+                    }`}
+                  >
+                    + My Custom Photo
+                  </button>
+                </div>
+              </div>
+
+              {/* Shrine Category Filter Pills */}
+              {!isCustomDeityMode && (
+                <div className="flex flex-wrap gap-1.5">
+                  {shrineCategories.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setShrineCategoryFilter(c)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                        shrineCategoryFilter === c
+                          ? 'bg-[var(--th-text-main)] text-[var(--th-surface)] border-[var(--th-text-main)]'
+                          : 'bg-[var(--th-surface)] border-[var(--th-border)] text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Shrines Grid */}
+              {!isCustomDeityMode ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-[320px] overflow-y-auto p-1">
+                  {filteredShrines.map((shrine) => {
+                    const isSelected = selectedShrine.id === shrine.id;
+                    return (
+                      <div
+                        key={shrine.id}
+                        onClick={() => handleSelectShrine(shrine)}
+                        className={`group relative rounded-xl border p-2.5 cursor-pointer transition-all flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-[var(--th-surface)] border-[var(--th-primary)] ring-2 ring-[var(--th-primary)]/20 shadow-md'
+                            : 'bg-[var(--th-surface)] border-[var(--th-border)] hover:border-[var(--th-primary)]/50'
+                        }`}
+                      >
+                        <div className="aspect-square rounded-lg overflow-hidden mb-2 bg-black/5 relative">
+                          <img
+                            src={shrine.image || shrine.fallbackImage}
+                            alt={shrine.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            onError={(e) => { e.currentTarget.src = shrine.fallbackImage || '/images/yatra_locket.png'; }}
+                          />
+                          {isSelected && (
+                            <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-[var(--th-primary)] text-white flex items-center justify-center shadow-xs">
+                              <Check className="w-3 h-3" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-[var(--th-text-main)] line-clamp-1">{shrine.name}</div>
+                          <div className="text-[10px] text-[var(--th-text-muted)] line-clamp-1">{shrine.deity}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span><strong>Custom Photo / Artwork Mode:</strong> You can upload your own photo of any temple, guru, or kuldevi/devata in Section 3 below.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomDeityMode(false)}
+                    className="text-[11px] font-bold text-amber-700 dark:text-amber-300 underline cursor-pointer"
+                  >
+                    Back to Predefined Shrines
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Locket Specifications (Shape, Finish, Chain & Back Engraving) */}
+            <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-2xl p-6 space-y-6">
+              <h3 className="text-base font-bold text-[var(--th-text-main)] border-b border-[var(--th-border)] pb-3">
+                Locket Shape, Finish & Sacred Chain
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                {/* Locket Shape */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--th-text-muted)] mb-2">
+                    Locket Shape
+                  </label>
+                  <select
+                    value={selectedLocketShape}
+                    onChange={(e) => setSelectedLocketShape(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)] cursor-pointer"
+                  >
+                    {LOCKET_SHAPES.map(s => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.hindi})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Silver Finish */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--th-text-muted)] mb-2">
+                    Silver Finish Style
+                  </label>
+                  <select
+                    value={selectedFinish}
+                    onChange={(e) => setSelectedFinish(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)] cursor-pointer"
+                  >
+                    {METAL_FINISHES.map(f => (
+                      <option key={f.id} value={f.name}>{f.name} ({f.hindi})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Chain Option */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[var(--th-text-muted)] mb-2">
+                    Chain Style
+                  </label>
+                  <select
+                    value={selectedChain}
+                    onChange={(e) => setSelectedChain(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)] cursor-pointer"
+                  >
+                    {CHAIN_OPTIONS.map(c => (
+                      <option key={c.name} value={c.name}>{c.name} ({c.type})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Back Engraving Mantra / Sacred Text */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--th-text-muted)] mb-2">
+                  Reverse Side Engraving (Sacred Mantra, Gotra, or Name)
+                </label>
+                <div className="flex gap-2 mb-2 flex-wrap">
+                  {POPULAR_MANTRAS.slice(0, 5).map((m, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setBackEngraving(m.text)}
+                      className="text-xs px-2.5 py-1 rounded-md border border-[var(--th-border)] bg-[var(--th-surface)] hover:border-[var(--th-primary)] text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] transition-colors cursor-pointer"
+                    >
+                      {m.text}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. ॐ नमः शिवाय or Kashyap Gotra / Harish Kumar"
+                  value={backEngraving}
+                  onChange={(e) => setBackEngraving(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          /* ================= POPULAR DESIGN MOTIFS FOR ARTISANAL ================= */
+          <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-2xl p-5 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="text-sm font-bold text-[var(--th-text-main)] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
+                <span>Inspiration Motifs for {activeCategoryObj.name} ({activeCategoryObj.hindi})</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleApplyPresetSpecs}
+                className="text-xs font-bold text-[var(--th-primary)] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Insert Recommended Specs</span>
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {activeCategoryObj.popularMotifs.map((motif, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleApplyPresetMotif(motif)}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--th-border)] bg-[var(--th-surface)] hover:border-[var(--th-primary)] hover:text-[var(--th-primary)] transition-all cursor-pointer flex items-center gap-1.5"
+                  title="Click to add to your description"
+                >
+                  <span>+</span>
+                  <span>{motif}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 4. MAIN CUSTOMIZATION FORM */}
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -338,17 +618,18 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                 >
                   <option value="92.5 Sterling Silver">92.5 Sterling Silver (Hallmarked Standard)</option>
                   <option value="99.9 Pure Silver">99.9 Pure Silver (Sacred Puja Fine Silver)</option>
+                  <option value="Antique Oxidized Silver">Antique Oxidized Silver (Auspicious Patina)</option>
                 </select>
               </div>
 
               {/* Dimensions / Deity Size */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[var(--th-text-muted)] mb-2">
-                  Deity Idol Size / Dimensions
+                  {isYatraActive ? 'Locket Diameter / Pendant Size' : 'Deity Idol Size / Altar Dimensions'}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. 9-inch idol height, 4-inch mukut"
+                  placeholder={isYatraActive ? "e.g. 35mm diameter or Large 45mm" : "e.g. 9-inch idol height, 4-inch mukut"}
                   value={approxDimensions}
                   onChange={(e) => setApproxDimensions(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
@@ -362,7 +643,7 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. approx 150 - 250 grams"
+                  placeholder={isYatraActive ? "e.g. approx 20 - 35 grams" : "e.g. approx 150 - 250 grams"}
                   value={targetWeight}
                   onChange={(e) => setTargetWeight(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
@@ -373,19 +654,15 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
             {/* Detailed Description */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[var(--th-text-muted)] mb-2">
-                Detailed Crafting & Design Instructions *
+                Detailed Crafting & Design Instructions (Optional Notes)
               </label>
               <textarea
-                rows={5}
-                required
-                placeholder={`Describe your vision for this ${activeCategoryObj.name} in detail. Include deity names (e.g. Radha Rani, Laddu Gopal, Mahadev), specific engraving motifs, stone colors, or finish style (High Polish, Antique Oxidised, or Gold Gilt accents)...`}
+                rows={4}
+                placeholder={`Describe your vision for this ${activeCategoryObj.name} in detail. Include deity names (e.g. Radha Krishna, Laddu Gopal, Mahadev), specific engraving motifs, stone colors, or finish style...`}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full p-4 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm leading-relaxed focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
               />
-              <p className="text-xs text-[var(--th-text-muted)] mt-1.5">
-                Tip: You can specify idol forehead curvature, back attachment bands, chain drop lengths, or temple shrine aesthetics.
-              </p>
             </div>
           </div>
 
@@ -527,7 +804,7 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
             <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 text-xs leading-relaxed flex items-start gap-3">
               <Clock className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
               <div>
-                <strong>Bespoke Quotation Process:</strong> Because artisanal pieces require calculation of raw silver weights, casting mould preparation, and artisan carving hours, your order will be reviewed manually. We will provide an exact quotation and dispatch timeline within 24 hours.
+                <strong>Bespoke Workshop Quotation:</strong> Because custom pieces require calculating pure silver weight, mould casting, and artisan carving hours, our master silversmith reviews your request personally. You will receive an exact quote and dispatch timeline within 24 hours.
               </div>
             </div>
 
@@ -541,7 +818,7 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Transmitting Custom Order...</span>
+                    <span>Submitting Custom Order...</span>
                   </>
                 ) : (
                   <>
@@ -555,7 +832,7 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
         </form>
       </div>
 
-      {/* 7. REASSURING CONFIRMATION NOTIFICATION / MODAL */}
+      {/* 7. REASSURING CONFIRMATION MODAL */}
       {submittedOrder && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
           <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-6 text-center">

@@ -748,21 +748,25 @@
         </div>
 
         <div>
-            <div class="nav-label">Bespoke Artisanal Categories</div>
-            <ul class="nav-menu">
-                <li class="nav-item" onclick="filterByCategory('Mukhut')">
+            <div class="nav-label">Custom & Bespoke Categories</div>
+            <ul class="nav-menu" id="categoryNavMenu">
+                <li class="nav-item" onclick="filterByCategory('Yatra Lockets', this)">
+                    <i class="ph-bold ph-compass"></i>
+                    <span>Yatra Lockets & Shrines</span>
+                </li>
+                <li class="nav-item" onclick="filterByCategory('Mukhut', this)">
                     <i class="ph-bold ph-crown"></i>
                     <span>Mukhut</span>
                 </li>
-                <li class="nav-item" onclick="filterByCategory('Jhalar')">
+                <li class="nav-item" onclick="filterByCategory('Jhalar', this)">
                     <i class="ph-bold ph-sparkle"></i>
                     <span>Jhalar</span>
                 </li>
-                <li class="nav-item" onclick="filterByCategory('Thakurji ka saman')">
+                <li class="nav-item" onclick="filterByCategory('Thakurji ka saman', this)">
                     <i class="ph-bold ph-hands-praying"></i>
                     <span>Thakurji ka saman</span>
                 </li>
-                <li class="nav-item" onclick="filterByCategory('Temple things')">
+                <li class="nav-item" onclick="filterByCategory('Temple things', this)">
                     <i class="ph-bold ph-church"></i>
                     <span>Temple Things</span>
                 </li>
@@ -775,8 +779,8 @@
         <!-- TOP BAR -->
         <header class="top-bar">
             <div class="title-box">
-                <h1>Custom Artisanal Orders</h1>
-                <p>Manage bespoke customer designs for Mukhut, Jhalar, Thakurji ka Saman & Temple Things</p>
+                <h1>Custom & Bespoke Orders</h1>
+                <p>Unified management for Yatra Lockets, Mukhut, Jhalar, Thakurji ka Saman & Temple Things</p>
             </div>
             <div class="top-actions">
                 <button class="btn-theme" onclick="toggleTheme()" title="Toggle Theme">
@@ -903,11 +907,14 @@
             renderOrders();
         }
 
-        function filterByCategory(cat) {
+        function filterByCategory(cat, el) {
             if (activeCategory === cat) {
                 activeCategory = '';
+                document.querySelectorAll('#categoryNavMenu .nav-item').forEach(i => i.classList.remove('active'));
             } else {
                 activeCategory = cat;
+                document.querySelectorAll('#categoryNavMenu .nav-item').forEach(i => i.classList.remove('active'));
+                if (el) el.classList.add('active');
             }
             renderOrders();
         }
@@ -953,7 +960,8 @@
                     : '<span class="no-images">No inspiration photos uploaded</span>';
 
                 let categoryIcon = 'ph-gem';
-                if (o.custom_category === 'Mukhut') categoryIcon = 'ph-crown';
+                if (o.custom_category === 'Yatra Lockets' || (o.custom_category && o.custom_category.toLowerCase().includes('yatra'))) categoryIcon = 'ph-compass';
+                else if (o.custom_category === 'Mukhut') categoryIcon = 'ph-crown';
                 else if (o.custom_category === 'Jhalar') categoryIcon = 'ph-sparkle';
                 else if (o.custom_category === 'Thakurji ka saman') categoryIcon = 'ph-hands-praying';
                 else if (o.custom_category === 'Temple things') categoryIcon = 'ph-church';

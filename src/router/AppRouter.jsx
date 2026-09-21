@@ -6,7 +6,6 @@ import ProductDetailPage from '../components/pdp/ProductDetailPage';
 import AuthPage from '../components/auth/AuthPage';
 import AddressPage from '../components/account/AddressPage';
 import OrdersPage from '../components/account/OrdersPage';
-import YatraCustomizerPage from '../components/customizer/YatraCustomizerPage';
 import CustomArtisanalOrderPage from '../components/customizer/CustomArtisanalOrderPage';
 
 export default function AppRouter({
@@ -39,7 +38,7 @@ export default function AppRouter({
   };
 
   const handleNavigateYatraCustomizer = () => {
-    navigate('/customize-yatra');
+    navigate('/customize?category=yatra');
   };
 
   const handleSelectProduct = (product) => {
@@ -50,41 +49,13 @@ export default function AppRouter({
 
   return (
     <Routes>
-      {/* Sacred Yatra Locket Customizer Studio Routes */}
-      <Route
-        path="/customize-yatra"
-        element={
-          <YatraCustomizerPage
-            onAddToCart={onAddToCart}
-            onTriggerToast={onTriggerToast}
-            onOpenCart={onOpenCart}
-          />
-        }
-      />
-      <Route
-        path="/category/custom-gifting/custom-yatra-lockets"
-        element={
-          <YatraCustomizerPage
-            onAddToCart={onAddToCart}
-            onTriggerToast={onTriggerToast}
-            onOpenCart={onOpenCart}
-          />
-        }
-      />
-      <Route
-        path="/category/custom-yatra-lockets/customize"
-        element={
-          <YatraCustomizerPage
-            onAddToCart={onAddToCart}
-            onTriggerToast={onTriggerToast}
-            onOpenCart={onOpenCart}
-          />
-        }
-      />
-
-      {/* Bespoke Custom Artisanal Orders Studio (Mukhut, Jhalar, Thakurji ka saman, Temple things) */}
+      {/* Unified Bespoke & Sacred Yatra Customizer Studio Routes */}
       <Route
         path="/customize"
+        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
+      />
+      <Route
+        path="/customize-yatra"
         element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
       />
       <Route
@@ -97,6 +68,14 @@ export default function AppRouter({
       />
       <Route
         path="/customize-artisanal"
+        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
+      />
+      <Route
+        path="/category/custom-gifting/custom-yatra-lockets"
+        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
+      />
+      <Route
+        path="/category/custom-yatra-lockets/customize"
         element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
       />
       <Route

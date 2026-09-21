@@ -196,7 +196,7 @@ export default function Header({
     ],
     gifts: [
       { label: "ALL SACRED GIFTS", action: () => onNavigateCategory("all") },
-      { label: "CUSTOM YATRA SHRINE LOCKETS", action: onNavigateYatraCustomizer },
+      { label: "CUSTOM BESPOKE & YATRA ORDERS", action: () => navigate('/customize') },
       ...(hasDbCategories
         ? categories
           .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'gifts' || ['silver-coins', 'silverware'].includes(c.id || c.slug))
@@ -529,12 +529,12 @@ export default function Header({
                     <button
                       onClick={() => {
                         setIsUserMenuOpen(false);
-                        navigate('/custom-orders');
+                        navigate('/customize');
                       }}
                       className="w-full text-left px-3 py-2 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
                     >
-                      <Crown className="w-4 h-4 text-[var(--th-accent)]" />
-                      <span>Custom Artisanal Orders</span>
+                      <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
+                      <span>Custom & Bespoke Orders</span>
                     </button>
 
                     <button
@@ -894,23 +894,14 @@ export default function Header({
             )}
           </div>
 
-          {/* CUSTOMIZE YATRA STUDIO */}
+          {/* UNIFIED CUSTOM & BESPOKE STUDIO */}
           <button
-            onClick={onNavigateYatraCustomizer}
-            className="px-3 py-1.5 text-xs xl:text-[13px] font-extrabold tracking-wider text-[#D4AF37] hover:text-black bg-[#D4AF37]/10 hover:bg-[#D4AF37] border border-[#D4AF37]/40 rounded-full transition-all flex items-center space-x-1.5 uppercase cursor-pointer shadow-2xs group"
+            onClick={() => navigate('/customize')}
+            className="px-3.5 py-1.5 text-xs xl:text-[13px] font-extrabold tracking-wider text-[#D4AF37] hover:text-black bg-[#D4AF37]/10 hover:bg-[#D4AF37] border border-[#D4AF37]/40 rounded-full transition-all flex items-center space-x-1.5 uppercase cursor-pointer shadow-2xs group"
+            title="Custom Orders: Yatra Lockets, Mukhut, Jhalar, Thakurji ka Saman & Temple Things"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] group-hover:text-black transition-colors" />
-            <span>CUSTOMIZE YATRA</span>
-          </button>
-
-          {/* BESPOKE CUSTOM ARTISANAL ORDERS */}
-          <button
-            onClick={() => navigate('/custom-orders')}
-            className="px-3 py-1.5 text-xs xl:text-[13px] font-extrabold tracking-wider text-[var(--th-primary)] hover:text-white bg-[var(--th-primary)]/10 hover:bg-[var(--th-primary)] border border-[var(--th-primary)]/30 rounded-full transition-all flex items-center space-x-1.5 uppercase cursor-pointer shadow-2xs group"
-            title="Custom Mukhut, Jhalar, Thakurji ka Saman & Temple Things"
-          >
-            <Crown className="w-3.5 h-3.5 text-[var(--th-primary)] group-hover:text-white transition-colors" />
-            <span>CUSTOM ARTISANAL</span>
+            <span>CUSTOMIZE / BESPOKE</span>
           </button>
 
         </nav>
