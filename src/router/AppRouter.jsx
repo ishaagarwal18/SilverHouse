@@ -6,6 +6,8 @@ import ProductDetailPage from '../components/pdp/ProductDetailPage';
 import AuthPage from '../components/auth/AuthPage';
 import AddressPage from '../components/account/AddressPage';
 import OrdersPage from '../components/account/OrdersPage';
+import YatraCustomizerPage from '../components/customizer/YatraCustomizerPage';
+import CustomArtisanalOrderPage from '../components/customizer/CustomArtisanalOrderPage';
 
 export default function AppRouter({
   products,
@@ -37,7 +39,7 @@ export default function AppRouter({
   };
 
   const handleNavigateYatraCustomizer = () => {
-    navigate('/category/custom-gifting/custom-yatra-lockets');
+    navigate('/customize-yatra');
   };
 
   const handleSelectProduct = (product) => {
@@ -48,6 +50,60 @@ export default function AppRouter({
 
   return (
     <Routes>
+      {/* Sacred Yatra Locket Customizer Studio Routes */}
+      <Route
+        path="/customize-yatra"
+        element={
+          <YatraCustomizerPage
+            onAddToCart={onAddToCart}
+            onTriggerToast={onTriggerToast}
+            onOpenCart={onOpenCart}
+          />
+        }
+      />
+      <Route
+        path="/category/custom-gifting/custom-yatra-lockets"
+        element={
+          <YatraCustomizerPage
+            onAddToCart={onAddToCart}
+            onTriggerToast={onTriggerToast}
+            onOpenCart={onOpenCart}
+          />
+        }
+      />
+      <Route
+        path="/category/custom-yatra-lockets/customize"
+        element={
+          <YatraCustomizerPage
+            onAddToCart={onAddToCart}
+            onTriggerToast={onTriggerToast}
+            onOpenCart={onOpenCart}
+          />
+        }
+      />
+
+      {/* Bespoke Custom Artisanal Orders Studio (Mukhut, Jhalar, Thakurji ka saman, Temple things) */}
+      <Route
+        path="/customize"
+        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
+      />
+      <Route
+        path="/custom-orders"
+        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
+      />
+      <Route
+        path="/custom-artisanal"
+        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
+      />
+      <Route
+        path="/customize-artisanal"
+        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
+      />
+      <Route
+        path="/category/custom-artisanal"
+        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
+      />
+
       {/* Login & Register Auth Route */}
       <Route path="/login" element={<AuthPage onTriggerToast={onTriggerToast} />} />
       <Route path="/register" element={<AuthPage onTriggerToast={onTriggerToast} />} />

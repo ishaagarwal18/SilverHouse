@@ -48,6 +48,446 @@ app.post('/api/upload', upload.single('imageFile'), (req, res) => {
     }
 });
 
+// MULTI-IMAGE UPLOAD ENDPOINT FOR INSPIRATION / CUSTOM ORDERS
+app.post('/api/upload-multiple', upload.array('images', 10), (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, error: 'No image files uploaded.' });
+        }
+        const urls = req.files.map(f => `/uploads/${f.filename}`);
+        return res.status(200).json({
+            success: true,
+            imageUrls: urls
+        });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// =========================================================================
+// CUSTOM ARTISANAL ORDERS APIs
+// =========================================================================
+
+// Allowed confirmation statuses as enforced by DB constraint CK_orders_confirm
+const ALLOWED_CONFIRM_STATUSES = ['processing', 'rejected', 'accepted'];
+
+// POST /api/custom-orders: Customer places custom order request with multi-image upload
+app.post('/api/custom-orders', upload.array('images', 10), async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        const {
+            custom_category,
+            description,
+            customer_name,
+            customer_phone,
+            customer_email,
+            user_id
+        } = req.body;
+
+        if (!custom_category || !custom_category.trim()) {
+            return res.status(400).json({ success: false, error: 'Custom item category is required.' });
+        }
+
+        if (!description || !description.trim()) {
+            return res.status(400).json({ success: false, error: 'Detailed description of custom requirement is required.' });
+        }
+
+        if (!customer_name || !customer_name.trim()) {
+            return res.status(400).json({ success: false, error: 'Customer name is required.' });
+        }
+
+        if (!customer_phone || !customer_phone.trim()) {
+            return res.status(400).json({ success: false, error: 'Customer phone number is required.' });
+        }
+
+        // Collect uploaded files and any existing URLs passed
+        let imageUrls = [];
+        if (req.files && req.files.length > 0) {
+            imageUrls = req.files.map(f => `/uploads/${f.filename}`);
+        }
+        if (req.body.imageUrls) {
+            try {
+                const parsed = typeof req.body.imageUrls === 'string' ? JSON.parse(req.body.imageUrls) : req.body.imageUrls;
+                if (Array.isArray(parsed)) {
+                    imageUrls = imageUrls.concat(parsed);
+                }
+            } catch (e) {
+                if (typeof req.body.imageUrls === 'string') {
+                    imageUrls.push(req.body.imageUrls);
+                }
+            }
+        }
+
+        const imagesJson = JSON.stringify(imageUrls);
+
+        // Generate custom order identifier
+        const orderNumber = `CUST-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const parsedUserId = user_id && !isNaN(parseInt(user_id, 10)) ? parseInt(user_id, 10) : null;
+
+        const insertQuery = `
+            INSERT INTO dbo.orders (
+                order_number,
+                user_id,
+                total_amount,
+                discount_amount,
+                final_payable,
+                payment_status,
+                [confirm],
+                custom_category,
+                [description],
+                customer_name,
+                customer_phone,
+                customer_email,
+                is_custom,
+                [image],
+                created_at
+            )
+            OUTPUT 
+                INSERTED.order_id,
+                INSERTED.order_number,
+                INSERTED.[confirm],
+                INSERTED.created_at
+            VALUES (
+                @order_number,
+                @user_id,
+                0.00,
+                0.00,
+                0.00,
+                'PENDING',
+                'processing',
+                @custom_category,
+                @description,
+                @customer_name,
+                @customer_phone,
+                @customer_email,
+                1,
+                @image,
+                SYSUTCDATETIME()
+            );
+        `;
+
+        const request = pool.request();
+        request.input('order_number', sql.NVarChar(50), orderNumber);
+        request.input('user_id', sql.Int, parsedUserId);
+        request.input('custom_category', sql.NVarChar(100), custom_category.trim());
+        request.input('description', sql.NVarChar(sql.MAX), description.trim());
+        request.input('customer_name', sql.NVarChar(150), customer_name.trim());
+        request.input('customer_phone', sql.NVarChar(50), customer_phone.trim());
+        request.input('customer_email', sql.NVarChar(150), customer_email ? customer_email.trim() : null);
+        request.input('image', sql.NVarChar(sql.MAX), imagesJson);
+
+        const result = await request.query(insertQuery);
+        const inserted = result.recordset[0];
+
+        return res.status(201).json({
+            success: true,
+            message: 'Custom order request received successfully. Our master artisans will review your requirements and provide a price quotation.',
+            order: {
+                order_id: inserted.order_id,
+                order_number: inserted.order_number,
+                confirm: inserted.confirm,
+                created_at: inserted.created_at,
+                imageUrls: imageUrls
+            }
+        });
+
+    } catch (err) {
+        console.error('[Custom Orders Post Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /api/admin/custom-orders: Fetch all custom orders for admin panel
+app.get('/api/admin/custom-orders', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        const { status } = req.query;
+        let query = `
+            SELECT 
+                order_id,
+                order_number,
+                user_id,
+                total_amount,
+                discount_amount,
+                final_payable,
+                payment_status,
+                [confirm],
+                custom_category,
+                [description],
+                customer_name,
+                customer_phone,
+                customer_email,
+                is_custom,
+                [image],
+                created_at
+            FROM dbo.orders
+            WHERE is_custom = 1
+        `;
+
+        if (status && ALLOWED_CONFIRM_STATUSES.includes(status.toLowerCase())) {
+            query += ` AND [confirm] = @status`;
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        const request = pool.request();
+        if (status && ALLOWED_CONFIRM_STATUSES.includes(status.toLowerCase())) {
+            request.input('status', sql.VarChar(20), status.toLowerCase());
+        }
+
+        const result = await request.query(query);
+
+        const formatted = result.recordset.map(row => {
+            let images = [];
+            if (row.image) {
+                try {
+                    const parsed = JSON.parse(row.image);
+                    if (Array.isArray(parsed)) {
+                        images = parsed;
+                    } else if (typeof parsed === 'string') {
+                        images = [parsed];
+                    }
+                } catch (e) {
+                    // Fallback to comma-separated or plain string
+                    images = row.image.split(',').map(s => s.trim()).filter(Boolean);
+                }
+            }
+            images = images.map(img => (img && !img.startsWith('http') && !img.startsWith('/') && !img.startsWith('data:')) ? `/${img}` : img);
+            return {
+                ...row,
+                images: images
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            total: formatted.length,
+            orders: formatted
+        });
+
+    } catch (err) {
+        console.error('[Custom Orders Fetch Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// PUT /api/admin/custom-orders/:id: Update quotation price and confirmation status
+app.put('/api/admin/custom-orders/:id', async (req, res) => {
+    try {
+        const orderId = parseInt(req.params.id, 10);
+        if (isNaN(orderId)) {
+            return res.status(400).json({ success: false, error: 'Invalid order ID provided.' });
+        }
+
+        const { confirm, final_payable } = req.body;
+
+        if (confirm !== undefined && confirm !== null) {
+            const normalizedStatus = String(confirm).trim().toLowerCase();
+            if (!ALLOWED_CONFIRM_STATUSES.includes(normalizedStatus)) {
+                return res.status(400).json({
+                    success: false,
+                    error: `Invalid confirm status '${confirm}'. Allowed values are strictly: 'processing', 'rejected', 'accepted'.`
+                });
+            }
+        }
+
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        // Fetch current order to ensure it exists
+        const checkReq = pool.request();
+        checkReq.input('order_id', sql.Int, orderId);
+        const existing = await checkReq.query('SELECT order_id, [confirm], final_payable, total_amount FROM dbo.orders WHERE order_id = @order_id');
+        if (!existing.recordset || existing.recordset.length === 0) {
+            return res.status(404).json({ success: false, error: 'Custom order not found.' });
+        }
+
+        const current = existing.recordset[0];
+        const newStatus = confirm !== undefined ? String(confirm).trim().toLowerCase() : current.confirm;
+        const newPrice = final_payable !== undefined && !isNaN(parseFloat(final_payable)) ? parseFloat(final_payable) : current.final_payable;
+
+        const updateReq = pool.request();
+        updateReq.input('order_id', sql.Int, orderId);
+        updateReq.input('confirm', sql.VarChar(20), newStatus);
+        updateReq.input('final_payable', sql.Decimal(18, 2), newPrice);
+        updateReq.input('total_amount', sql.Decimal(18, 2), newPrice);
+
+        await updateReq.query(`
+            UPDATE dbo.orders
+            SET 
+                [confirm] = @confirm,
+                final_payable = @final_payable,
+                total_amount = @total_amount
+            WHERE order_id = @order_id;
+        `);
+
+        return res.status(200).json({
+            success: true,
+            message: `Custom order #${orderId} updated successfully. Status: '${newStatus}', Price: ₹${newPrice}`,
+            order: {
+                order_id: orderId,
+                confirm: newStatus,
+                final_payable: newPrice
+            }
+        });
+
+    } catch (err) {
+        console.error('[Custom Orders Update Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// =========================================================================
+// ADMIN ANALYTICS & P&L API
+// =========================================================================
+app.get('/api/admin/analytics', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        // 1. Catalog P&L Aggregation (Selling Price vs Actual Cost vs Labour Cost)
+        const catalogPnlQuery = `
+            SELECT 
+                COUNT(*) AS total_products,
+                ISNULL(SUM(price), 0) AS total_catalog_revenue_potential,
+                ISNULL(SUM(actual_cost), 0) AS total_catalog_actual_cost,
+                ISNULL(SUM(labour_cost), 0) AS total_catalog_labour_cost,
+                ISNULL(SUM(price - actual_cost - labour_cost), 0) AS total_catalog_gross_margin,
+                ISNULL(SUM(sold), 0) AS total_units_sold,
+                ISNULL(SUM(sold * price), 0) AS realized_revenue,
+                ISNULL(SUM(sold * actual_cost), 0) AS realized_actual_cost,
+                ISNULL(SUM(sold * labour_cost), 0) AS realized_labour_cost,
+                ISNULL(SUM(sold * (price - actual_cost - labour_cost)), 0) AS realized_gross_profit
+            FROM dbo.product;
+        `;
+        const catalogPnlResult = await pool.request().query(catalogPnlQuery);
+        const pnl = catalogPnlResult.recordset[0] || {};
+
+        // 2. Custom Orders KPIs & Status Ratio
+        const customOrdersQuery = `
+            SELECT 
+                COUNT(*) AS total_custom_orders,
+                SUM(CASE WHEN [confirm] = 'processing' THEN 1 ELSE 0 END) AS processing_count,
+                SUM(CASE WHEN [confirm] = 'accepted' THEN 1 ELSE 0 END) AS accepted_count,
+                SUM(CASE WHEN [confirm] = 'rejected' THEN 1 ELSE 0 END) AS rejected_count,
+                ISNULL(SUM(CASE WHEN [confirm] = 'accepted' THEN final_payable ELSE 0 END), 0) AS accepted_quoted_revenue,
+                ISNULL(SUM(final_payable), 0) AS total_quoted_revenue
+            FROM dbo.orders
+            WHERE is_custom = 1;
+        `;
+        const customOrdersResult = await pool.request().query(customOrdersQuery);
+        const customStats = customOrdersResult.recordset[0] || {};
+
+        // 3. Custom Orders Category Breakdown
+        const categoryBreakdownQuery = `
+            SELECT 
+                ISNULL(NULLIF(custom_category, ''), 'Other') AS category,
+                COUNT(*) AS count,
+                ISNULL(SUM(final_payable), 0) AS total_value,
+                SUM(CASE WHEN [confirm] = 'accepted' THEN 1 ELSE 0 END) AS accepted_count
+            FROM dbo.orders
+            WHERE is_custom = 1
+            GROUP BY custom_category
+            ORDER BY count DESC;
+        `;
+        const categoryResult = await pool.request().query(categoryBreakdownQuery);
+
+        // 4. Product Category Profitability Breakdown
+        const productCategoryPnlQuery = `
+            SELECT 
+                ISNULL(c.name, 'Uncategorized') AS category_name,
+                COUNT(p.product_id) AS product_count,
+                ISNULL(SUM(p.price), 0) AS total_selling_price,
+                ISNULL(SUM(p.actual_cost), 0) AS total_actual_cost,
+                ISNULL(SUM(p.labour_cost), 0) AS total_labour_cost,
+                ISNULL(SUM(p.price - p.actual_cost - p.labour_cost), 0) AS total_margin,
+                ISNULL(SUM(p.sold), 0) AS units_sold
+            FROM dbo.product p
+            LEFT JOIN dbo.category c ON p.category_id = c.category_id
+            GROUP BY c.name
+            ORDER BY total_margin DESC;
+        `;
+        const productCatResult = await pool.request().query(productCategoryPnlQuery);
+
+        // 5. Recent Custom Orders (last 10 for table overview)
+        const recentOrdersQuery = `
+            SELECT TOP 10
+                order_id,
+                order_number,
+                custom_category,
+                customer_name,
+                customer_phone,
+                [confirm],
+                final_payable,
+                created_at
+            FROM dbo.orders
+            WHERE is_custom = 1
+            ORDER BY created_at DESC;
+        `;
+        const recentResult = await pool.request().query(recentOrdersQuery);
+
+        // Calculate key financial percentages
+        const catalogTotalCost = Number(pnl.total_catalog_actual_cost) + Number(pnl.total_catalog_labour_cost);
+        const catalogMarginPct = pnl.total_catalog_revenue_potential > 0
+            ? ((pnl.total_catalog_gross_margin / pnl.total_catalog_revenue_potential) * 100).toFixed(1)
+            : 0;
+
+        const totalCustom = Number(customStats.total_custom_orders) || 0;
+        const acceptedCount = Number(customStats.accepted_count) || 0;
+        const rejectedCount = Number(customStats.rejected_count) || 0;
+        const processingCount = Number(customStats.processing_count) || 0;
+
+        const acceptanceRate = totalCustom > 0 ? ((acceptedCount / totalCustom) * 100).toFixed(1) : 0;
+        const rejectionRate = totalCustom > 0 ? ((rejectedCount / totalCustom) * 100).toFixed(1) : 0;
+
+        return res.status(200).json({
+            success: true,
+            pnl: {
+                totalProducts: Number(pnl.total_products) || 0,
+                potentialRevenue: Number(pnl.total_catalog_revenue_potential) || 0,
+                actualMaterialCost: Number(pnl.total_catalog_actual_cost) || 0,
+                labourCost: Number(pnl.total_catalog_labour_cost) || 0,
+                totalCost: catalogTotalCost,
+                grossMargin: Number(pnl.total_catalog_gross_margin) || 0,
+                marginPercentage: Number(catalogMarginPct),
+                realizedRevenue: Number(pnl.realized_revenue) || 0,
+                realizedProfit: Number(pnl.realized_gross_profit) || 0,
+                unitsSold: Number(pnl.total_units_sold) || 0
+            },
+            customOrders: {
+                total: totalCustom,
+                processing: processingCount,
+                accepted: acceptedCount,
+                rejected: rejectedCount,
+                acceptanceRate: Number(acceptanceRate),
+                rejectionRate: Number(rejectionRate),
+                acceptedRevenue: Number(customStats.accepted_quoted_revenue) || 0,
+                totalQuotedRevenue: Number(customStats.total_quoted_revenue) || 0
+            },
+            categoryBreakdown: categoryResult.recordset,
+            productCategoriesPnl: productCatResult.recordset,
+            recentOrders: recentResult.recordset
+        });
+
+    } catch (err) {
+        console.error('[Admin Analytics Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // AUTHENTICATION ENDPOINTS (Login, Register, Session Verification)
 app.post('/api/auth/login', async (req, res) => {
     try {
@@ -247,8 +687,11 @@ app.post('/api/data', async (req, res) => {
         }
 
         // 2. ALL CALLING / MUTATIONS (ADD, INSERT, EDIT, DELETE, UPDATE_QTY, RESTOCK) ARE ROUTED THROUGH dbo.SP_GETDATA
+        let mutationProc = normalizedProc;
+        if (mutationProc === 'custom_orders' || mutationProc === 'custom_order') mutationProc = 'orders';
+
         const request = pool.request();
-        request.input('proc_name', sql.NVarChar(50), normalizedProc);
+        request.input('proc_name', sql.NVarChar(50), mutationProc);
         request.input('Opr', sql.NVarChar(20), operation);
         request.input('JSONstr', sql.NVarChar(sql.MAX), jsonStr);
         request.input('Condition', sql.NVarChar(255), condition !== undefined && condition !== null ? String(condition) : null);
@@ -311,6 +754,22 @@ app.get('/admin', (req, res) => {
 
 app.get('/catalog', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'catalog.html'));
+});
+
+app.get('/custom-orders', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'custom-orders.html'));
+});
+
+app.get('/admin/custom-orders', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'custom-orders.html'));
+});
+
+app.get('/analytics', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'analytics.html'));
+});
+
+app.get('/admin/analytics', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'analytics.html'));
 });
 
 app.get('/api/data', (req, res) => {

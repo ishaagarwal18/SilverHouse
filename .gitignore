@@ -26,3 +26,7 @@ dist-ssr
 ~$*
 *_with_*remarks.xlsx
 *.zip
+
+# Uploads
+Backend/public/uploads/*
+!Backend/public/uploads/.gitkeep

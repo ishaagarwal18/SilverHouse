@@ -461,5 +461,22 @@ export async function fetchUserCartApi({ userId, guestToken }) {
   return [];
 }
 
-
-
+/**
+ * Submits a bespoke artisanal order request with multi-file inspiration photos.
+ * @param {FormData} formData
+ * @returns {Promise<{success: boolean, order?: object, error?: string, message?: string}>}
+ */
+export async function submitCustomOrderApi(formData) {
+  try {
+    const url = `${API_BASE_URL}/custom-orders`;
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData
+    });
+    const json = await response.json();
+    return json;
+  } catch (err) {
+    console.error('[API Service] Error submitting custom order:', err);
+    return { success: false, error: err.message || 'Failed to submit custom order request.' };
+  }
+}

@@ -9,6 +9,7 @@ import CuratedCollections from './CuratedCollections';
 import SilverTreasureSection from './SilverTreasureSection';
 import SegmentedTabsShowcase from './SegmentedTabsShowcase';
 import SilverCoinsSection from './SilverCoinsSection';
+import YatraLocketSpotlight from './YatraLocketSpotlight';
 import ExploreCatalogGrid from './ExploreCatalogGrid';
 import Testimonials from './Testimonials';
 
@@ -83,7 +84,12 @@ export default function HomePage({
         onNavigateCategory={onNavigateCategory}
       />
 
-      {/* 9. Silver Coins & Bars Section */}
+      {/* 9. Personalized Sacred Yatra Locket Spotlight */}
+      <YatraLocketSpotlight
+        onNavigateCustomizer={onNavigateYatraCustomizer}
+      />
+
+      {/* 10. Silver Coins & Bars Section */}
       <SilverCoinsSection
         onNavigateCategory={onNavigateCategory}
         onNavigateYatraCustomizer={onNavigateYatraCustomizer}

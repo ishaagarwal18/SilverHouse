@@ -245,6 +245,31 @@ export default function CartDrawer({
                                 <span>BIS Certified</span>
                               </span>
                             </div>
+
+                            {/* Custom Yatra Configuration Details */}
+                            {item.customConfig && (
+                              <div className="mt-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-[10px] space-y-0.5">
+                                <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center space-x-1">
+                                  <Sparkles className="w-3 h-3 text-[#D4AF37]" />
+                                  <span>Customized: {item.customConfig.shrineName || 'Sacred Locket'}</span>
+                                </div>
+                                {item.customConfig.engravingText && (
+                                  <div className="text-[10px] text-[var(--th-text-muted)] truncate">
+                                    Engraving: "{item.customConfig.engravingText}"
+                                  </div>
+                                )}
+                                {item.customConfig.familyGotra && item.customConfig.familyGotra !== 'N/A' && (
+                                  <div className="text-[10px] text-[var(--th-text-muted)]">
+                                    Gotra: {item.customConfig.familyGotra}
+                                  </div>
+                                )}
+                                {item.customConfig.allUploadedImages && item.customConfig.allUploadedImages.length > 0 && (
+                                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                                    ✓ {item.customConfig.allUploadedImages.length} custom photo(s) attached
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           {/* Pricing and Stepper Controls */}

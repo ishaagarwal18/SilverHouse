@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom Artisanal Orders | SilverHouse Admin</title>
+
+    <!-- Google Fonts & Phosphor Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --surface-card: #f1f5f9;
+            --surface-hover: #e2e8f0;
+            --border: #e2e8f0;
+            --border-focus: #4f46e5;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-glow: rgba(79, 70, 229, 0.18);
+            --accent: #d97706;
+            --accent-gold: #b45309;
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.12);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.12);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.12);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --sidebar-width: 260px;
+            --radius: 14px;
+            --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --card-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0b0f19;
+            --surface: #111827;
+            --surface-card: #1f2937;
+            --surface-hover: #374151;
+            --border: #374151;
+            --border-focus: #6366f1;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-glow: rgba(99, 102, 241, 0.25);
+            --accent: #f59e0b;
+            --accent-gold: #fbbf24;
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.16);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.16);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.16);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+            --card-shadow: 0 4px 22px rgba(0, 0, 0, 0.45);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px;
+            gap: 24px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 8px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 22px;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .brand-title {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .nav-label {
+            font-size: 10.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            padding: 0 10px 8px;
+        }
+
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .nav-item:hover {
+            background: var(--surface-card);
+            color: var(--text-main);
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .nav-item.active i {
+            color: #ffffff;
+        }
+
+        .nav-item i {
+            font-size: 18px;
+        }
+
+        /* MAIN CONTENT */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            padding: 18px 32px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .title-box h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+        }
+
+        .title-box p {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-theme {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-theme:hover {
+            background: var(--surface-hover);
+        }
+
+        /* FILTER STRIP */
+        .filter-strip {
+            padding: 14px 32px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .status-pills {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-pill {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--surface-card);
+            color: var(--text-muted);
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-pill:hover {
+            background: var(--surface-hover);
+            color: var(--text-main);
+        }
+
+        .status-pill.active {
+            background: var(--text-main);
+            color: var(--surface);
+            border-color: var(--text-main);
+        }
+
+        .search-box {
+            position: relative;
+            min-width: 280px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 14px 8px 36px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface-card);
+            color: var(--text-main);
+            font-size: 13px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            background: var(--surface);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        /* SCROLLABLE ORDER CARDS CONTAINER */
+        .content-scroll {
+            flex: 1;
+            padding: 24px 32px;
+            overflow-y: auto;
+        }
+
+        .orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .orders-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ORDER CARD */
+        .order-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .order-card:hover {
+            border-color: var(--border-focus);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .order-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .order-number {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .order-date {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* STATUS BADGE */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .badge-processing {
+            background: var(--warning-bg);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .badge-accepted {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-rejected {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* CATEGORY TAG */
+        .category-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            background: rgba(217, 119, 6, 0.12);
+            color: var(--accent);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            width: fit-content;
+        }
+
+        /* CUSTOMER DETAILS */
+        .customer-box {
+            background: var(--surface-card);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12.5px;
+        }
+
+        .customer-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+        }
+
+        .customer-row i {
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        .customer-row a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .customer-row a:hover {
+            text-decoration: underline;
+        }
+
+        /* DESCRIPTION BOX */
+        .desc-box {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-main);
+            background: var(--surface-card);
+            border-left: 3px solid var(--primary);
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            white-space: pre-wrap;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        /* INSPIRATION IMAGES */
+        .images-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .images-title {
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .images-strip {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .image-thumb {
+            width: 72px;
+            height: 72px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0;
+            background: var(--surface-card);
+        }
+
+        .image-thumb:hover {
+            transform: scale(1.05);
+            border-color: var(--primary);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .no-images {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* ACTION CONTROLS */
+        .action-box {
+            border-top: 1px solid var(--border);
+            padding-top: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .price-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .price-group label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .price-input {
+            width: 110px;
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface-card);
+            color: var(--text-main);
+            font-size: 13px;
+            font-weight: 700;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .price-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        .status-select {
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface-card);
+            color: var(--text-main);
+            font-size: 12.5px;
+            font-weight: 700;
+            outline: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .status-select:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-update {
+            padding: 7px 14px;
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: var(--transition);
+        }
+
+        .btn-update:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 4px 10px var(--primary-glow);
+        }
+
+        .btn-update:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            color: var(--text-muted);
+            opacity: 0.5;
+        }
+
+        /* LIGHTBOX MODAL */
+        .lightbox-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeIn 0.15s ease-out;
+        }
+
+        .lightbox-modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .lightbox-img {
+            max-width: 100%;
+            max-height: 85vh;
+            border-radius: 10px;
+            object-fit: contain;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        /* TOAST NOTIFICATION */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            background: var(--surface);
+            color: var(--text-main);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            font-size: 13.5px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 2000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            border-left-color: var(--success);
+        }
+
+        .toast-error {
+            border-left-color: var(--danger);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <a href="/admin" class="brand">
+            <div class="brand-logo">
+                <i class="ph-bold ph-gem"></i>
+            </div>
+            <div>
+                <div class="brand-title">SilverHouse</div>
+                <div class="brand-subtitle">Admin Studio</div>
+            </div>
+        </a>
+
+        <div>
+            <div class="nav-label">Management Modules</div>
+            <ul class="nav-menu">
+                <li>
+                    <a href="/admin" class="nav-item">
+                        <i class="ph-bold ph-database"></i>
+                        <span>Product Studio</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/catalog" class="nav-item">
+                        <i class="ph-bold ph-squares-four"></i>
+                        <span>Inventory Catalog</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/custom-orders" class="nav-item active">
+                        <i class="ph-bold ph-paint-brush-household"></i>
+                        <span>Custom Orders</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/analytics" class="nav-item">
+                        <i class="ph-bold ph-chart-line-up"></i>
+                        <span>Analytics & P&L</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div>
+            <div class="nav-label">Bespoke Artisanal Categories</div>
+            <ul class="nav-menu">
+                <li class="nav-item" onclick="filterByCategory('Mukhut')">
+                    <i class="ph-bold ph-crown"></i>
+                    <span>Mukhut</span>
+                </li>
+                <li class="nav-item" onclick="filterByCategory('Jhalar')">
+                    <i class="ph-bold ph-sparkle"></i>
+                    <span>Jhalar</span>
+                </li>
+                <li class="nav-item" onclick="filterByCategory('Thakurji ka saman')">
+                    <i class="ph-bold ph-hands-praying"></i>
+                    <span>Thakurji ka saman</span>
+                </li>
+                <li class="nav-item" onclick="filterByCategory('Temple things')">
+                    <i class="ph-bold ph-church"></i>
+                    <span>Temple Things</span>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <main class="main-wrapper">
+        <!-- TOP BAR -->
+        <header class="top-bar">
+            <div class="title-box">
+                <h1>Custom Artisanal Orders</h1>
+                <p>Manage bespoke customer designs for Mukhut, Jhalar, Thakurji ka Saman & Temple Things</p>
+            </div>
+            <div class="top-actions">
+                <button class="btn-theme" onclick="toggleTheme()" title="Toggle Theme">
+                    <i class="ph-bold ph-moon" id="themeIcon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- FILTER STRIP -->
+        <section class="filter-strip">
+            <div class="status-pills">
+                <button class="status-pill active" data-status="all" onclick="setStatusFilter('all')">
+                    <i class="ph-bold ph-list-bullets"></i> All Orders (<span id="countAll">0</span>)
+                </button>
+                <button class="status-pill" data-status="processing" onclick="setStatusFilter('processing')">
+                    <i class="ph-bold ph-clock"></i> Processing (<span id="countProcessing">0</span>)
+                </button>
+                <button class="status-pill" data-status="accepted" onclick="setStatusFilter('accepted')">
+                    <i class="ph-bold ph-check-circle"></i> Accepted (<span id="countAccepted">0</span>)
+                </button>
+                <button class="status-pill" data-status="rejected" onclick="setStatusFilter('rejected')">
+                    <i class="ph-bold ph-x-circle"></i> Rejected (<span id="countRejected">0</span>)
+                </button>
+            </div>
+
+            <div class="search-box">
+                <i class="ph-bold ph-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="Search by customer, phone, order #..." oninput="renderOrders()" />
+            </div>
+        </section>
+
+        <!-- CARDS SCROLL -->
+        <section class="content-scroll">
+            <div class="orders-grid" id="ordersGrid">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- LIGHTBOX MODAL -->
+    <div class="lightbox-modal" id="lightboxModal" onclick="closeLightbox(event)">
+        <div class="lightbox-content">
+            <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+            <img src="" alt="Full view" class="lightbox-img" id="lightboxImg" />
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast" id="toastBox">
+        <i class="ph-bold ph-check-circle" id="toastIcon"></i>
+        <span id="toastMsg">Operation successful</span>
+    </div>
+
+    <script>
+        let allOrders = [];
+        let activeStatus = 'all';
+        let activeCategory = '';
+
+        // Theme management
+        function initTheme() {
+            const saved = localStorage.getItem('silverhouse_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+            updateThemeIcon(saved);
+        }
+
+        function toggleTheme() {
+            const cur = document.documentElement.getAttribute('data-theme') || 'light';
+            const next = cur === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('silverhouse_theme', next);
+            updateThemeIcon(next);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.className = theme === 'dark' ? 'ph-bold ph-sun' : 'ph-bold ph-moon';
+            }
+        }
+
+        // Toast
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toastBox');
+            const msgEl = document.getElementById('toastMsg');
+            const icon = document.getElementById('toastIcon');
+            msgEl.textContent = msg;
+            toast.className = `toast show ${type === 'success' ? 'toast-success' : 'toast-error'}`;
+            icon.className = type === 'success' ? 'ph-bold ph-check-circle' : 'ph-bold ph-warning-circle';
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3200);
+        }
+
+        // Fetch Orders from Backend API
+        async function fetchCustomOrders() {
+            try {
+                const res = await fetch('/api/admin/custom-orders');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.orders)) {
+                    allOrders = data.orders;
+                    updateCounts();
+                    renderOrders();
+                } else {
+                    showToast(data.error || 'Failed to fetch custom orders', 'error');
+                }
+            } catch (err) {
+                console.error('Error fetching custom orders:', err);
+                showToast('Network error while fetching custom orders', 'error');
+            }
+        }
+
+        function updateCounts() {
+            document.getElementById('countAll').textContent = allOrders.length;
+            document.getElementById('countProcessing').textContent = allOrders.filter(o => o.confirm === 'processing').length;
+            document.getElementById('countAccepted').textContent = allOrders.filter(o => o.confirm === 'accepted').length;
+            document.getElementById('countRejected').textContent = allOrders.filter(o => o.confirm === 'rejected').length;
+        }
+
+        function setStatusFilter(status) {
+            activeStatus = status;
+            document.querySelectorAll('.status-pill').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-status') === status);
+            });
+            renderOrders();
+        }
+
+        function filterByCategory(cat) {
+            if (activeCategory === cat) {
+                activeCategory = '';
+            } else {
+                activeCategory = cat;
+            }
+            renderOrders();
+        }
+
+        function renderOrders() {
+            const query = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+            const grid = document.getElementById('ordersGrid');
+
+            let filtered = allOrders.filter(o => {
+                if (activeStatus !== 'all' && o.confirm !== activeStatus) return false;
+                if (activeCategory && o.custom_category !== activeCategory) return false;
+                if (query) {
+                    const matchName = (o.customer_name || '').toLowerCase().includes(query);
+                    const matchPhone = (o.customer_phone || '').toLowerCase().includes(query);
+                    const matchOrder = (o.order_number || '').toLowerCase().includes(query);
+                    const matchCategory = (o.custom_category || '').toLowerCase().includes(query);
+                    const matchDesc = (o.description || '').toLowerCase().includes(query);
+                    if (!matchName && !matchPhone && !matchOrder && !matchCategory && !matchDesc) return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <i class="ph-bold ph-tray"></i>
+                        <h3>No Custom Orders Found</h3>
+                        <p>No orders match the selected filters or search keyword.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(o => {
+                const dateStr = o.created_at ? new Date(o.created_at).toLocaleString('en-IN', {
+                    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                }) : 'Recently';
+
+                const imagesHtml = Array.isArray(o.images) && o.images.length > 0
+                    ? o.images.map(img => `
+                        <img src="${img}" alt="Inspiration" class="image-thumb" onclick="openLightbox('${img}')" onerror="this.onerror=null; this.src='https://placehold.co/120x120/1e293b/cbd5e1?text=Photo'; this.alt='Preview unavailable';" />
+                    `).join('')
+                    : '<span class="no-images">No inspiration photos uploaded</span>';
+
+                let categoryIcon = 'ph-gem';
+                if (o.custom_category === 'Mukhut') categoryIcon = 'ph-crown';
+                else if (o.custom_category === 'Jhalar') categoryIcon = 'ph-sparkle';
+                else if (o.custom_category === 'Thakurji ka saman') categoryIcon = 'ph-hands-praying';
+                else if (o.custom_category === 'Temple things') categoryIcon = 'ph-church';
+
+                return `
+                    <div class="order-card" id="card-${o.order_id}">
+                        <div class="card-header">
+                            <div class="order-meta">
+                                <span class="order-number">
+                                    <i class="ph-bold ph-receipt"></i> ${o.order_number}
+                                </span>
+                                <span class="order-date">${dateStr}</span>
+                            </div>
+                            <span class="badge badge-${o.confirm}">
+                                <i class="ph-bold ${o.confirm === 'accepted' ? 'ph-check-circle' : (o.confirm === 'rejected' ? 'ph-x-circle' : 'ph-clock')}"></i>
+                                ${o.confirm}
+                            </span>
+                        </div>
+
+                        <div class="category-tag">
+                            <i class="ph-bold ${categoryIcon}"></i>
+                            <span>${o.custom_category || 'Artisanal Silver'}</span>
+                        </div>
+
+                        <div class="customer-box">
+                            <div class="customer-row">
+                                <i class="ph-bold ph-user"></i>
+                                <strong>${escapeHtml(o.customer_name || 'Anonymous Customer')}</strong>
+                            </div>
+                            <div class="customer-row">
+                                <i class="ph-bold ph-phone"></i>
+                                <span>${escapeHtml(o.customer_phone || 'N/A')}</span>
+                                ${o.customer_phone ? `
+                                    <a href="https://wa.me/${o.customer_phone.replace(/[^0-9]/g, '')}" target="_blank" style="margin-left:auto; display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#10b981;">
+                                        <i class="ph-bold ph-whatsapp-logo"></i> WhatsApp
+                                    </a>
+                                ` : ''}
+                            </div>
+                            ${o.customer_email ? `
+                                <div class="customer-row">
+                                    <i class="ph-bold ph-envelope"></i>
+                                    <a href="mailto:${escapeHtml(o.customer_email)}">${escapeHtml(o.customer_email)}</a>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="desc-box">
+                            ${escapeHtml(o.description || 'No detailed instructions provided.')}
+                        </div>
+
+                        <div class="images-section">
+                            <span class="images-title">
+                                <i class="ph-bold ph-images"></i> Customer Inspiration Images (${Array.isArray(o.images) ? o.images.length : 0})
+                            </span>
+                            <div class="images-strip">
+                                ${imagesHtml}
+                            </div>
+                        </div>
+
+                        <div class="action-box">
+                            <div class="price-group">
+                                <label>Quoted Price:</label>
+                                <input type="number" step="100" min="0" class="price-input" id="price-${o.order_id}" value="${o.final_payable || 0}" placeholder="₹ Quotation" />
+                            </div>
+
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <select class="status-select" id="status-${o.order_id}">
+                                    <option value="processing" ${o.confirm === 'processing' ? 'selected' : ''}>⏳ Processing</option>
+                                    <option value="accepted" ${o.confirm === 'accepted' ? 'selected' : ''}>✅ Accepted</option>
+                                    <option value="rejected" ${o.confirm === 'rejected' ? 'selected' : ''}>❌ Rejected</option>
+                                </select>
+
+                                <button class="btn-update" onclick="updateCustomOrder(${o.order_id})" id="btn-${o.order_id}">
+                                    <i class="ph-bold ph-floppy-disk"></i> Save
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateCustomOrder(orderId) {
+            const priceInput = document.getElementById(`price-${orderId}`);
+            const statusSelect = document.getElementById(`status-${orderId}`);
+            const btn = document.getElementById(`btn-${orderId}`);
+
+            const newPrice = parseFloat(priceInput.value) || 0;
+            const newStatus = statusSelect.value;
+
+            // Client side validation against allowed statuses
+            if (!['processing', 'rejected', 'accepted'].includes(newStatus)) {
+                showToast("Status must be 'processing', 'rejected', or 'accepted'", 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="ph-bold ph-spinner-gap" style="animation: spin 1s linear infinite;"></i> Saving...`;
+
+            try {
+                const res = await fetch(`/api/admin/custom-orders/${orderId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        confirm: newStatus,
+                        final_payable: newPrice
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Order #${orderId} updated to '${newStatus}' with price ₹${newPrice}`, 'success');
+                    // Update local state
+                    const target = allOrders.find(o => o.order_id === orderId);
+                    if (target) {
+                        target.confirm = newStatus;
+                        target.final_payable = newPrice;
+                    }
+                    updateCounts();
+                    renderOrders();
+                } else {
+                    showToast(data.error || 'Failed to update order', 'error');
+                }
+            } catch (err) {
+                console.error('Update error:', err);
+                showToast('Failed to connect to server', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="ph-bold ph-floppy-disk"></i> Save`;
+            }
+        }
+
+        // Lightbox modal functions
+        function openLightbox(src) {
+            const modal = document.getElementById('lightboxModal');
+            const img = document.getElementById('lightboxImg');
+            img.src = src;
+            modal.classList.add('active');
+        }
+
+        function closeLightbox(e) {
+            if (!e || e.target.id === 'lightboxModal' || e.target.className === 'lightbox-close') {
+                const modal = document.getElementById('lightboxModal');
+                modal.classList.remove('active');
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            fetchCustomOrders();
+        });
+    </script>
+</body>
+
+</html>

@@ -205,7 +205,7 @@ export default function App() {
   };
 
   const handleNavigateYatraCustomizer = () => {
-    navigate('/category/custom-gifting/custom-yatra-lockets');
+    navigate('/customize-yatra');
   };
 
   // Cart Operations - Synchronized with SQL Server database tables dbo.cart and dbo.cart_item

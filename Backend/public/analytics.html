@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Financial Analytics & P&L Dashboard | SilverHouse Studio</title>
+
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Google Fonts & Phosphor Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --surface-card: #f1f5f9;
+            --surface-hover: #e2e8f0;
+            --border: #e2e8f0;
+            --border-focus: #4f46e5;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-glow: rgba(79, 70, 229, 0.18);
+            --accent: #d97706;
+            --accent-gold: #b45309;
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.12);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.12);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.12);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --sidebar-width: 260px;
+            --radius: 14px;
+            --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --card-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0b0f19;
+            --surface: #111827;
+            --surface-card: #1f2937;
+            --surface-hover: #374151;
+            --border: #374151;
+            --border-focus: #6366f1;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-glow: rgba(99, 102, 241, 0.25);
+            --accent: #f59e0b;
+            --accent-gold: #fbbf24;
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.16);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.16);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.16);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+            --card-shadow: 0 4px 22px rgba(0, 0, 0, 0.45);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px;
+            gap: 24px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 8px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 22px;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .brand-title {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .nav-label {
+            font-size: 10.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            padding: 0 10px 8px;
+        }
+
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .nav-item:hover {
+            background: var(--surface-card);
+            color: var(--text-main);
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .nav-item.active i {
+            color: #ffffff;
+        }
+
+        .nav-item i {
+            font-size: 18px;
+        }
+
+        /* MAIN DASHBOARD */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            padding: 18px 32px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .title-box h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+        }
+
+        .title-box p {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-theme {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-theme:hover {
+            background: var(--surface-hover);
+        }
+
+        .btn-refresh {
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface-card);
+            color: var(--text-main);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: var(--transition);
+        }
+
+        .btn-refresh:hover {
+            background: var(--surface-hover);
+        }
+
+        /* DASHBOARD CONTENT */
+        .content-scroll {
+            flex: 1;
+            padding: 24px 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* KPI METRICS GRID */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-focus);
+        }
+
+        .kpi-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .kpi-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        .kpi-icon-wrap {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-main);
+        }
+
+        .kpi-footer {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .trend-pill {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .trend-up {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .trend-warn {
+            background: var(--warning-bg);
+            color: var(--warning);
+        }
+
+        /* CHARTS GRID */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chart-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .chart-canvas-wrap {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
+
+        /* TABLE SECTION */
+        .table-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        th {
+            background: var(--surface-card);
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: var(--surface-card);
+        }
+
+        .badge-status {
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .status-processing {
+            background: var(--warning-bg);
+            color: var(--warning);
+        }
+
+        .status-accepted {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .status-rejected {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <a href="/admin" class="brand">
+            <div class="brand-logo">
+                <i class="ph-bold ph-gem"></i>
+            </div>
+            <div>
+                <div class="brand-title">SilverHouse</div>
+                <div class="brand-subtitle">Admin Studio</div>
+            </div>
+        </a>
+
+        <div>
+            <div class="nav-label">Management Modules</div>
+            <ul class="nav-menu">
+                <li>
+                    <a href="/admin" class="nav-item">
+                        <i class="ph-bold ph-database"></i>
+                        <span>Product Studio</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/catalog" class="nav-item">
+                        <i class="ph-bold ph-squares-four"></i>
+                        <span>Inventory Catalog</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/custom-orders" class="nav-item">
+                        <i class="ph-bold ph-paint-brush-household"></i>
+                        <span>Custom Orders</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/analytics" class="nav-item active">
+                        <i class="ph-bold ph-chart-line-up"></i>
+                        <span>Analytics & P&L</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div>
+            <div class="nav-label">Executive Shortcuts</div>
+            <ul class="nav-menu">
+                <li class="nav-item" onclick="window.location.href='/custom-orders'">
+                    <i class="ph-bold ph-bell-ringing"></i>
+                    <span>Review Pending Quotes</span>
+                </li>
+                <li class="nav-item" onclick="window.location.href='/catalog'">
+                    <i class="ph-bold ph-currency-inr"></i>
+                    <span>Pricing & Margins</span>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <main class="main-wrapper">
+        <header class="top-bar">
+            <div class="title-box">
+                <h1>Financial Analytics & P&L</h1>
+                <p>Enterprise margin metrics, labour cost analysis, and custom orders conversion ratio</p>
+            </div>
+            <div class="top-actions">
+                <button class="btn-refresh" onclick="loadAnalytics()">
+                    <i class="ph-bold ph-arrows-clockwise"></i> Refresh Metrics
+                </button>
+                <button class="btn-theme" onclick="toggleTheme()" title="Toggle Theme">
+                    <i class="ph-bold ph-moon" id="themeIcon"></i>
+                </button>
+            </div>
+        </header>
+
+        <section class="content-scroll">
+            <!-- 1. KPI CARDS STRIP -->
+            <div class="kpi-grid">
+                <!-- Potential Catalog Revenue -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Catalog Selling Value</span>
+                        <div class="kpi-icon-wrap" style="background: rgba(79, 70, 229, 0.1); color: var(--primary);">
+                            <i class="ph-bold ph-currency-inr"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-value" id="kpiPotentialRevenue">₹0</div>
+                    <div class="kpi-footer">
+                        <span>Total catalog products: <strong id="kpiTotalProducts">0</strong></span>
+                    </div>
+                </div>
+
+                <!-- Total Costs (Actual + Labour) -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Total Product Costs</span>
+                        <div class="kpi-icon-wrap" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);">
+                            <i class="ph-bold ph-money"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-value" id="kpiTotalCost">₹0</div>
+                    <div class="kpi-footer">
+                        <span>Material: <strong id="kpiMaterialCost">₹0</strong> | Labour: <strong id="kpiLabourCost">₹0</strong></span>
+                    </div>
+                </div>
+
+                <!-- Gross Profit Margin -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Catalog Gross Margin</span>
+                        <div class="kpi-icon-wrap" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">
+                            <i class="ph-bold ph-trend-up"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-value" id="kpiGrossMargin">₹0</div>
+                    <div class="kpi-footer">
+                        <span class="trend-pill trend-up" id="kpiMarginPct">0%</span>
+                        <span>Overall catalog profit margin</span>
+                    </div>
+                </div>
+
+                <!-- Custom Orders Conversion -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Custom Orders Volume</span>
+                        <div class="kpi-icon-wrap" style="background: rgba(217, 119, 6, 0.1); color: var(--accent);">
+                            <i class="ph-bold ph-paint-brush"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-value" id="kpiCustomTotal">0</div>
+                    <div class="kpi-footer">
+                        <span class="trend-pill trend-up" id="kpiAcceptedRate">0% Accepted</span>
+                        <span id="kpiProcessingRate">0 pending</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. VISUAL CHARTS GRID -->
+            <div class="charts-grid">
+                <!-- CHART 1: P&L Cost Structure Breakdown -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">
+                                <i class="ph-bold ph-scales" style="color: var(--primary);"></i>
+                                P&L Margin & Cost Structure
+                            </div>
+                            <div class="chart-subtitle">Selling price vs. silver material cost vs. artisan labour cost</div>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="pnlCostChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- CHART 2: Custom Orders Status Ratio -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">
+                                <i class="ph-bold ph-chart-pie" style="color: var(--accent);"></i>
+                                Custom Orders Status Ratio
+                            </div>
+                            <div class="chart-subtitle">Accepted vs Rejected vs Processing quotation pipeline</div>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="customStatusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- CHART 3: Custom Orders by Artisanal Category -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">
+                                <i class="ph-bold ph-crown" style="color: #a855f7;"></i>
+                                Custom Requests by Category
+                            </div>
+                            <div class="chart-subtitle">Mukhut, Jhalar, Thakurji ka Saman & Temple Things volume</div>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="customCategoryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- CHART 4: Category Profitability Comparison -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">
+                                <i class="ph-bold ph-chart-bar" style="color: var(--success);"></i>
+                                Category Profitability Margins
+                            </div>
+                            <div class="chart-subtitle">Selling price vs. gross profit across jewellery lines</div>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="categoryProfitChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. RECENT CUSTOM ORDERS TABLE -->
+            <div class="table-card">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">
+                            <i class="ph-bold ph-clock-counter-clockwise"></i>
+                            Recent Bespoke Custom Orders
+                        </div>
+                        <div class="chart-subtitle">Latest custom artisanal requests and quotation updates</div>
+                    </div>
+                    <a href="/custom-orders" style="font-size: 12.5px; font-weight: 700; color: var(--primary); text-decoration: none;">
+                        View All Custom Orders &rarr;
+                    </a>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Category</th>
+                                <th>Customer</th>
+                                <th>Contact</th>
+                                <th>Quoted Price</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentOrdersBody">
+                            <tr>
+                                <td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">
+                                    Loading analytics data...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let pnlChartInstance = null;
+        let customStatusChartInstance = null;
+        let customCategoryChartInstance = null;
+        let categoryProfitChartInstance = null;
+
+        function initTheme() {
+            const saved = localStorage.getItem('silverhouse_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+            updateThemeIcon(saved);
+        }
+
+        function toggleTheme() {
+            const cur = document.documentElement.getAttribute('data-theme') || 'light';
+            const next = cur === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('silverhouse_theme', next);
+            updateThemeIcon(next);
+            if (window.lastAnalyticsData) {
+                renderCharts(window.lastAnalyticsData);
+            }
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.className = theme === 'dark' ? 'ph-bold ph-sun' : 'ph-bold ph-moon';
+            }
+        }
+
+        function formatINR(val) {
+            const n = Number(val) || 0;
+            return '₹' + n.toLocaleString('en-IN');
+        }
+
+        async function loadAnalytics() {
+            try {
+                const res = await fetch('/api/admin/analytics');
+                const data = await res.json();
+                if (!data.success) {
+                    console.error('Analytics API error:', data.error);
+                    return;
+                }
+
+                window.lastAnalyticsData = data;
+
+                // 1. Populate KPI Strip
+                const pnl = data.pnl || {};
+                const custom = data.customOrders || {};
+
+                document.getElementById('kpiPotentialRevenue').textContent = formatINR(pnl.potentialRevenue);
+                document.getElementById('kpiTotalProducts').textContent = pnl.totalProducts || 0;
+
+                document.getElementById('kpiTotalCost').textContent = formatINR(pnl.totalCost);
+                document.getElementById('kpiMaterialCost').textContent = formatINR(pnl.actualMaterialCost);
+                document.getElementById('kpiLabourCost').textContent = formatINR(pnl.labourCost);
+
+                document.getElementById('kpiGrossMargin').textContent = formatINR(pnl.grossMargin);
+                document.getElementById('kpiMarginPct').textContent = `${pnl.marginPercentage || 0}%`;
+
+                document.getElementById('kpiCustomTotal').textContent = custom.total || 0;
+                document.getElementById('kpiAcceptedRate').textContent = `${custom.acceptanceRate || 0}% Accepted`;
+                document.getElementById('kpiProcessingRate').textContent = `${custom.processing || 0} pending`;
+
+                // 2. Render Charts
+                renderCharts(data);
+
+                // 3. Populate Recent Orders Table
+                renderRecentOrders(data.recentOrders || []);
+
+            } catch (err) {
+                console.error('Failed to load analytics:', err);
+            }
+        }
+
+        function renderCharts(data) {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const textColor = isDark ? '#9ca3af' : '#64748b';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
+
+            const pnl = data.pnl || {};
+            const custom = data.customOrders || {};
+            const categories = data.categoryBreakdown || [];
+            const productCategories = data.productCategoriesPnl || [];
+
+            // ----------------------------------------------------
+            // CHART 1: P&L Cost Structure Breakdown (Donut)
+            // ----------------------------------------------------
+            if (pnlChartInstance) pnlChartInstance.destroy();
+            const ctx1 = document.getElementById('pnlCostChart').getContext('2d');
+            pnlChartInstance = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Actual Material Cost', 'Artisan Labour Cost', 'Gross Margin (Profit)'],
+                    datasets: [{
+                        data: [
+                            pnl.actualMaterialCost || 0,
+                            pnl.labourCost || 0,
+                            pnl.grossMargin > 0 ? pnl.grossMargin : 0
+                        ],
+                        backgroundColor: [
+                            '#f59e0b', // Amber
+                            '#38bdf8', // Sky Blue
+                            '#10b981'  // Emerald
+                        ],
+                        borderWidth: 2,
+                        borderColor: isDark ? '#111827' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: textColor, font: { family: 'Plus Jakarta Sans', weight: '600', size: 11 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.label}: ₹${Number(ctx.raw).toLocaleString('en-IN')}`
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+
+            // ----------------------------------------------------
+            // CHART 2: Custom Orders Status Ratio (Pie/Doughnut)
+            // ----------------------------------------------------
+            if (customStatusChartInstance) customStatusChartInstance.destroy();
+            const ctx2 = document.getElementById('customStatusChart').getContext('2d');
+            customStatusChartInstance = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Processing (Pending)', 'Accepted', 'Rejected'],
+                    datasets: [{
+                        data: [
+                            custom.processing || 0,
+                            custom.accepted || 0,
+                            custom.rejected || 0
+                        ],
+                        backgroundColor: [
+                            '#f59e0b', // Warning
+                            '#10b981', // Success
+                            '#ef4444'  // Danger
+                        ],
+                        borderWidth: 2,
+                        borderColor: isDark ? '#111827' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: textColor, font: { family: 'Plus Jakarta Sans', weight: '600', size: 11 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.label}: ${ctx.raw} orders`
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+
+            // ----------------------------------------------------
+            // CHART 3: Custom Requests by Category (Horizontal Bar)
+            // ----------------------------------------------------
+            if (customCategoryChartInstance) customCategoryChartInstance.destroy();
+            const ctx3 = document.getElementById('customCategoryChart').getContext('2d');
+            const catLabels = categories.map(c => c.category);
+            const catCounts = categories.map(c => c.count);
+
+            customCategoryChartInstance = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: catLabels.length > 0 ? catLabels : ['Mukhut', 'Jhalar', 'Thakurji ka saman', 'Temple things'],
+                    datasets: [{
+                        label: 'Custom Orders Count',
+                        data: catCounts.length > 0 ? catCounts : [0, 0, 0, 0],
+                        backgroundColor: '#a855f7',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: textColor, precision: 0 },
+                            grid: { color: gridColor }
+                        },
+                        y: {
+                            ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', weight: '600' } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // ----------------------------------------------------
+            // CHART 4: Category Profitability Margins (Grouped Bar)
+            // ----------------------------------------------------
+            if (categoryProfitChartInstance) categoryProfitChartInstance.destroy();
+            const ctx4 = document.getElementById('categoryProfitChart').getContext('2d');
+            const prodCatLabels = productCategories.slice(0, 6).map(c => c.category_name);
+            const prodCatSelling = productCategories.slice(0, 6).map(c => c.total_selling_price);
+            const prodCatProfit = productCategories.slice(0, 6).map(c => c.total_margin);
+
+            categoryProfitChartInstance = new Chart(ctx4, {
+                type: 'bar',
+                data: {
+                    labels: prodCatLabels,
+                    datasets: [
+                        {
+                            label: 'Selling Price (₹)',
+                            data: prodCatSelling,
+                            backgroundColor: '#4f46e5',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Gross Profit (₹)',
+                            data: prodCatProfit,
+                            backgroundColor: '#10b981',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: textColor, font: { family: 'Plus Jakarta Sans', weight: '600', size: 11 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.dataset.label}: ₹${Number(ctx.raw).toLocaleString('en-IN')}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: textColor, font: { size: 10 } },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: {
+                                color: textColor,
+                                callback: (val) => '₹' + (val >= 1000 ? (val / 1000) + 'k' : val)
+                            },
+                            grid: { color: gridColor }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderRecentOrders(orders) {
+            const tbody = document.getElementById('recentOrdersBody');
+            if (!orders || orders.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align:center; padding: 20px; color: var(--text-muted);">
+                            No recent custom orders recorded.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = orders.map(o => {
+                const dateStr = o.created_at ? new Date(o.created_at).toLocaleDateString('en-IN', {
+                    day: 'numeric', month: 'short'
+                }) : '-';
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(o.order_number || '')}</strong></td>
+                        <td><span style="font-weight:700; color:var(--accent);">${escapeHtml(o.custom_category || 'Artisanal')}</span></td>
+                        <td>${escapeHtml(o.customer_name || 'Anonymous')}</td>
+                        <td>${escapeHtml(o.customer_phone || '-')}</td>
+                        <td><strong>${formatINR(o.final_payable)}</strong></td>
+                        <td><span class="badge-status status-${o.confirm}">${o.confirm}</span></td>
+                        <td>${dateStr}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            loadAnalytics();
+        });
+    </script>
+</body>
+
+</html>

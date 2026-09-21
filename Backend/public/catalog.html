@@ -12,6 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Chart.js for P&L and Financial Analytics Visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <style>
         :root {
@@ -396,35 +398,50 @@
             background: var(--header-bg);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
-            padding: 14px 28px;
+            padding: 10px 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 20px;
+            gap: 16px;
             z-index: 15;
             flex-shrink: 0;
+            min-height: 64px;
+        }
+
+        .title-box {
+            flex: 0 0 auto;
         }
 
         .title-box h1 {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 800;
-            letter-spacing: -0.4px;
+            letter-spacing: -0.3px;
             color: var(--text-main);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            white-space: nowrap;
+            margin: 0;
         }
 
         .title-box p {
-            font-size: 12px;
+            font-size: 11.5px;
             color: var(--text-muted);
             margin-top: 2px;
+            white-space: nowrap;
         }
 
         .top-actions {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn-icon-only {
+            padding: 8px 10px !important;
+            min-width: 36px !important;
+            justify-content: center !important;
         }
 
         .btn {
@@ -569,8 +586,13 @@
         }
 
         @keyframes slideDown {
-            from { transform: translateY(-100%); }
-            to { transform: translateY(0); }
+            from {
+                transform: translateY(-100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
         }
 
         .bulk-info {
@@ -1136,8 +1158,15 @@
         }
 
         @keyframes modalPop {
-            from { opacity: 0; transform: scale(0.96) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         .modal-header {
@@ -1310,6 +1339,60 @@
         .toast-error {
             border-left: 4px solid var(--danger);
         }
+
+        /* ================= MAIN SECTION SWITCHER ================= */
+        .section-nav-tabs {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--surface-card);
+            padding: 3px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .section-tab-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 13px;
+            border-radius: 7px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .section-tab-btn:hover {
+            color: var(--text-main);
+            background: var(--surface-hover);
+        }
+
+        .section-tab-btn.active {
+            background: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .section-tab-btn.active i {
+            color: #ffffff;
+        }
+
+        .badge-pending-count {
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 10px;
+            margin-left: 2px;
+        }
     </style>
 </head>
 
@@ -1350,8 +1433,10 @@
                 <div class="pill-group" id="stockStatusPills">
                     <button class="pill-btn active" data-val="" onclick="setStockStatus('')">All</button>
                     <button class="pill-btn" data-val="in_stock" onclick="setStockStatus('in_stock')">In Stock</button>
-                    <button class="pill-btn" data-val="low_stock" onclick="setStockStatus('low_stock')">Low Stock (&lt;5)</button>
-                    <button class="pill-btn" data-val="out_of_stock" onclick="setStockStatus('out_of_stock')">Out of Stock</button>
+                    <button class="pill-btn" data-val="low_stock" onclick="setStockStatus('low_stock')">Low Stock
+                        (&lt;5)</button>
+                    <button class="pill-btn" data-val="out_of_stock" onclick="setStockStatus('out_of_stock')">Out of
+                        Stock</button>
                 </div>
             </div>
 
@@ -1413,7 +1498,8 @@
                     <input type="range" class="range-thumb" id="maxPriceInput" min="0" max="100000" step="500"
                         value="100000" oninput="onDualPriceInput('max', this.value)" />
                 </div>
-                <div style="display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-muted); margin-top:2px;">
+                <div
+                    style="display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-muted); margin-top:2px;">
                     <span id="minPriceLabel">₹0</span>
                     <span>₹50,000</span>
                     <span id="maxPriceLabel">₹1,00,000</span>
@@ -1446,26 +1532,45 @@
         <header class="top-bar">
             <div class="title-box">
                 <h1>
-                    <i class="ph-bold ph-squares-four" style="color:var(--accent-gold);"></i>
-                    <span>Product Catalog & Inventory Studio</span>
+                    <i class="ph-bold ph-gem" style="color:var(--primary);"></i>
+                    <span>Product Catalog</span>
                 </h1>
-                <p id="catalogSubtitle">Live warehouse sync with enterprise inventory metrics</p>
+                <p id="catalogSubtitle">Live inventory sync & metrics</p>
+            </div>
+
+            <!-- Navigation Module Links -->
+            <div class="section-nav-tabs">
+                <a href="/catalog" class="section-tab-btn active" title="Inventory Products Catalog">
+                    <i class="ph-bold ph-package"></i>
+                    <span>Products</span>
+                </a>
+                <a href="/custom-orders" class="section-tab-btn" title="Bespoke Artisanal Requests (Mukhut, Jhalar, etc.)">
+                    <i class="ph-bold ph-sparkle" style="color:#f59e0b;"></i>
+                    <span>Custom Orders</span>
+                    <span class="badge-pending-count" id="badgePendingCustom" style="display:none;">0</span>
+                </a>
+                <a href="/analytics" class="section-tab-btn" title="Financial P&L and Conversion Analytics">
+                    <i class="ph-bold ph-chart-line-up"></i>
+                    <span>P&L & Analytics</span>
+                </a>
             </div>
 
             <div class="top-actions">
                 <!-- View Mode Switcher -->
                 <div class="view-mode-switch">
-                    <button class="view-btn active" id="btnGridView" onclick="switchView('grid')" title="Executive Cards View">
+                    <button class="view-btn active" id="btnGridView" onclick="switchView('grid')"
+                        title="Executive Cards View">
                         <i class="ph-bold ph-squares-four"></i>
                     </button>
-                    <button class="view-btn" id="btnTableView" onclick="switchView('table')" title="Dense Data Table View">
+                    <button class="view-btn" id="btnTableView" onclick="switchView('table')"
+                        title="Dense Data Table View">
                         <i class="ph-bold ph-table"></i>
                     </button>
                 </div>
 
-                <button class="btn btn-secondary" onclick="toggleTheme()" id="themeToggleBtn">
+                <button class="btn btn-secondary btn-icon-only" onclick="toggleTheme()" id="themeToggleBtn"
+                    title="Toggle Light / Dark Mode">
                     <i class="ph-bold ph-moon" id="themeIcon"></i>
-                    <span id="themeToggleText">Dark Mode</span>
                 </button>
 
                 <a href="/admin" class="btn btn-secondary" title="Open Admin Studio Database Manager">
@@ -1473,9 +1578,9 @@
                     <span>Admin Studio</span>
                 </a>
 
-                <button class="btn btn-primary" onclick="openProductAddModal()">
+                <button class="btn btn-primary" onclick="openProductAddModal()" id="btnAddProductTop">
                     <i class="ph-bold ph-plus-circle"></i>
-                    <span>Add New Product</span>
+                    <span>+ Add Product</span>
                 </button>
             </div>
         </header>
@@ -1548,7 +1653,8 @@
                 <table class="catalog-table">
                     <thead>
                         <tr>
-                            <th style="width: 40px;"><input type="checkbox" id="thSelectAll" onchange="toggleSelectAllInView()" /></th>
+                            <th style="width: 40px;"><input type="checkbox" id="thSelectAll"
+                                    onchange="toggleSelectAllInView()" /></th>
                             <th style="width: 60px;">Image</th>
                             <th>Product Details</th>
                             <th>Category & Craft</th>
@@ -1587,7 +1693,8 @@
                     <div class="form-grid-2">
                         <div class="form-group full-width">
                             <label for="formTitle">Product Title / Name *</label>
-                            <input type="text" id="formTitle" name="title" required placeholder="e.g. Royal Antique Ghungroo Payal" />
+                            <input type="text" id="formTitle" name="title" required
+                                placeholder="e.g. Royal Antique Ghungroo Payal" />
                         </div>
 
                         <div class="form-group">
@@ -1639,7 +1746,8 @@
 
                         <div class="form-group">
                             <label for="formPackaging">Packaging Type</label>
-                            <input type="text" id="formPackaging" name="packaging" placeholder="e.g. Velvet Box, Wooden Box" />
+                            <input type="text" id="formPackaging" name="packaging"
+                                placeholder="e.g. Velvet Box, Wooden Box" />
                         </div>
 
                         <div class="form-group">
@@ -1668,8 +1776,8 @@
 
                         <div class="form-group">
                             <label for="formDiscount">Discount (%)</label>
-                            <input type="number" id="formDiscount" name="discount" min="0" max="100" step="0.01" value="0"
-                                oninput="calculateModalMargin()" />
+                            <input type="number" id="formDiscount" name="discount" min="0" max="100" step="0.01"
+                                value="0" oninput="calculateModalMargin()" />
                         </div>
 
                         <!-- Live Calculated Margin Info Box -->
@@ -1693,12 +1801,15 @@
 
                         <div class="form-group">
                             <label for="formSold">Units Sold (Auto-Incremented)</label>
-                            <input type="number" id="formSold" name="sold" min="0" value="0" readonly style="background:var(--surface-card); cursor:not-allowed;" title="Units sold are updated automatically when customers place orders" />
+                            <input type="number" id="formSold" name="sold" min="0" value="0" readonly
+                                style="background:var(--surface-card); cursor:not-allowed;"
+                                title="Units sold are updated automatically when customers place orders" />
                         </div>
 
                         <div class="form-group full-width">
                             <label for="formDesc">Product Description</label>
-                            <textarea id="formDesc" name="description" rows="2" placeholder="Exquisite silver piece crafted with pure 925 silver..."></textarea>
+                            <textarea id="formDesc" name="description" rows="2"
+                                placeholder="Exquisite silver piece crafted with pure 925 silver..."></textarea>
                         </div>
 
                         <div class="form-group full-width">
@@ -1708,10 +1819,13 @@
                                     <i class="ph-bold ph-image" style="font-size:28px; color:var(--text-muted);"></i>
                                 </div>
                                 <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
-                                    <input type="text" id="formImageUrl" placeholder="/images/example.jpg or https://..."
+                                    <input type="text" id="formImageUrl"
+                                        placeholder="/images/example.jpg or https://..."
                                         oninput="updateModalImagePreview(this.value)" />
-                                    <div style="font-size:11px; color:var(--text-muted);">Or upload a new photo from local device:</div>
-                                    <input type="file" id="formImageFile" accept="image/*" onchange="handleImageUpload(event)" />
+                                    <div style="font-size:11px; color:var(--text-muted);">Or upload a new photo from
+                                        local device:</div>
+                                    <input type="file" id="formImageFile" accept="image/*"
+                                        onchange="handleImageUpload(event)" />
                                 </div>
                             </div>
                         </div>
@@ -1743,19 +1857,23 @@
 
             <div class="modal-body">
                 <p id="deleteModalDesc" style="font-size:13px; color:var(--text-muted); line-height:1.5;">
-                    Are you sure you want to permanently delete this product from the SilverHouse catalog? This will remove all inventory records, associated images, and cannot be undone.
+                    Are you sure you want to permanently delete this product from the SilverHouse catalog? This will
+                    remove all inventory records, associated images, and cannot be undone.
                 </p>
 
                 <div class="delete-product-preview" id="deleteProductPreview">
                     <img id="delPreviewImg" src="" alt="Product" />
                     <div style="display:flex; flex-direction:column; gap:2px; flex:1;">
-                        <span id="delPreviewTitle" style="font-weight:700; font-size:13px; color:var(--text-main);">Product Name</span>
-                        <div style="display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--text-muted);">
+                        <span id="delPreviewTitle"
+                            style="font-weight:700; font-size:13px; color:var(--text-main);">Product Name</span>
+                        <div
+                            style="display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--text-muted);">
                             <span id="delPreviewId" class="product-id-tag">ID: #0</span>
                             <span id="delPreviewCat">Category</span>
                             <span id="delPreviewStock" style="font-weight:700;">10 In Stock</span>
                         </div>
-                        <div style="font-size:12px; font-weight:800; color:var(--primary); margin-top:2px;" id="delPreviewPrice">₹0</div>
+                        <div style="font-size:12px; font-weight:800; color:var(--primary); margin-top:2px;"
+                            id="delPreviewPrice">₹0</div>
                     </div>
                 </div>
             </div>
@@ -2059,8 +2177,8 @@
                 ];
                 let html = '';
                 purityGrades.forEach(grade => {
-                    const count = grade.id 
-                        ? products.filter(p => (p.purity || '').includes(grade.id)).length 
+                    const count = grade.id
+                        ? products.filter(p => (p.purity || '').includes(grade.id)).length
                         : products.length;
                     const isChecked = selectedPurity === grade.id;
                     html += `
@@ -2261,7 +2379,7 @@
             renderDenseTable(filteredProducts);
 
             const countText = `Displaying ${filteredProducts.length} of ${allProducts.length} items`;
-            document.getElementById('catalogSubtitle').innerText = `${countText} • Live warehouse sync with enterprise inventory metrics`;
+            document.getElementById('catalogSubtitle').innerText = `${countText}`;
         }
 
         // Render Executive Cards
@@ -2925,9 +3043,28 @@
             }
         }
 
-        // Initialize Everything
+        // Check pending custom orders to update the notification badge in top nav
+        async function checkPendingCustomOrdersBadge() {
+            try {
+                const res = await fetch('/api/admin/custom-orders');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.orders)) {
+                    const pending = data.orders.filter(o => o.confirm === 'processing').length;
+                    const badge = document.getElementById('badgePendingCustom');
+                    if (badge) {
+                        badge.textContent = pending;
+                        badge.style.display = pending > 0 ? 'inline-block' : 'none';
+                    }
+                }
+            } catch (err) {
+                console.warn('Custom orders badge note:', err);
+            }
+        }
+
+        // Initialize Catalog
         initTheme();
         fetchInitialData();
+        checkPendingCustomOrdersBadge();
     </script>
 </body>
 
