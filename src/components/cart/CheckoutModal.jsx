@@ -54,6 +54,17 @@ export default function CheckoutModal({
   // Net banking selected bank
   const [selectedBank, setSelectedBank] = useState('HDFC');
 
+  // Error message strip state (replaces browser alerts)
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Automatically redirect unauthenticated customers directly to login page
+  useEffect(() => {
+    if (isOpen && (!isAuthenticated || !user)) {
+      onClose();
+      navigate('/login?redirect=checkout');
+    }
+  }, [isOpen, isAuthenticated, user, navigate, onClose]);
+
   // Reset checkout step whenever modal is opened
   useEffect(() => {
     if (isOpen) {
@@ -62,6 +73,7 @@ export default function CheckoutModal({
       setPaymentMethod('upi');
       setIsAddingNewAddress(false);
       setCopiedOrderId(false);
+      setErrorMessage('');
     }
   }, [isOpen]);
 
@@ -204,21 +216,22 @@ export default function CheckoutModal({
 
   const handleProceedToPayment = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    setErrorMessage('');
 
     if (!isAuthenticated || !user || !user.userId) {
-      alert('You must be logged in to proceed with checkout. Please sign in or register.');
-      setStep(1);
+      onClose();
+      navigate('/login?redirect=checkout');
       return;
     }
 
     // If entering a new address, validate fields
     if (isAddingNewAddress || !selectedAddressId) {
       if (!formData.fullName.trim() || !formData.phone.trim() || !formData.email.trim() || !formData.address.trim() || !formData.city.trim() || !formData.pincode.trim()) {
-        alert('Please fill out all delivery address fields completely.');
+        setErrorMessage('Please fill out all delivery address fields completely.');
         return;
       }
       if (!/^\d{6}$/.test(formData.pincode.trim())) {
-        alert('Please enter a valid 6-digit PIN code.');
+        setErrorMessage('Please enter a valid 6-digit PIN code.');
         return;
       }
 
@@ -255,10 +268,11 @@ export default function CheckoutModal({
 
   const handleCompleteOrder = async () => {
     if (isPlacingOrder) return;
+    setErrorMessage('');
 
     if (!isAuthenticated || !user || !user.userId) {
-      alert('You must be logged in to place an order. Please sign in or register.');
-      setStep(1);
+      onClose();
+      navigate('/login?redirect=checkout');
       return;
     }
 
@@ -345,11 +359,11 @@ export default function CheckoutModal({
         onClearCart();
       } else {
         console.error('[Checkout] Order placement failed:', res);
-        alert(res?.error || res?.status || 'Could not complete order. Please try again.');
+        setErrorMessage(res?.error || res?.status || 'Could not complete order. Please try again.');
       }
     } catch (err) {
       console.error('[Checkout] Order post error:', err);
-      alert('Could not place order due to a network error. Please try again.');
+      setErrorMessage('Could not place order due to a network error. Please try again.');
     } finally {
       setIsPlacingOrder(false);
     }
@@ -446,6 +460,23 @@ export default function CheckoutModal({
         {/* Content Body */}
         <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-6">
           
+          {/* Validation / Error Message Banner */}
+          {errorMessage && (
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center justify-between gap-2 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setErrorMessage('')}
+                className="text-rose-500 hover:text-rose-700 font-bold text-base leading-none cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+          )}
+
           {/* ========================================================= */}
           {/* STEP 1: SHIPPING & DELIVERY ADDRESS / LOGIN REQUIREMENT */}
           {/* ========================================================= */}

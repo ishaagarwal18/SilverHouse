@@ -351,6 +351,11 @@ export default function App() {
   // Checkout Handler
   const handleProceedCheckout = (totalAmount, discountAmount, appliedCoupon) => {
     setCheckoutData({ totalAmount, discountAmount, appliedCoupon });
+    if (!isAuthenticated || !user || !user.userId) {
+      triggerToast('info', 'Sign In Required', 'Please log in to your account to place your order.');
+      navigate('/login?redirect=checkout');
+      return;
+    }
     setIsCheckoutOpen(true);
   };
 
