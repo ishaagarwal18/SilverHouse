@@ -5,6 +5,7 @@ import {
   Sparkles, Lock, Mail, User, Phone, Eye, EyeOff, ShieldCheck,
   ArrowRight, AlertCircle, Building2, LogOut, MapPin, ShoppingBag, ChevronRight, ArrowLeft, Package
 } from 'lucide-react';
+import { getAdminUrl } from '../../utils/adminUrl';
 
 export default function AuthPage({ onTriggerToast }) {
   const [searchParams] = useSearchParams();
@@ -46,8 +47,11 @@ export default function AuthPage({ onTriggerToast }) {
           }
 
           setTimeout(() => {
-            if (result.isAdmin) {
-              navigate('/admin');
+            if (result.isAdmin || result.user?.role?.toUpperCase() === 'ADMIN') {
+              const targetUrl = (result.redirectUrl && result.redirectUrl.startsWith('http') && !result.redirectUrl.includes('localhost'))
+                ? result.redirectUrl
+                : getAdminUrl();
+              window.location.href = targetUrl;
             } else if (redirectTarget === 'checkout' || redirectTarget === '/checkout') {
               navigate('/?checkout=true');
             } else {
@@ -210,7 +214,9 @@ export default function AuthPage({ onTriggerToast }) {
               {/* Admin Studio Link (If Admin) */}
               {isAdmin && (
                 <button
-                  onClick={() => navigate('/admin')}
+                  onClick={() => {
+                    window.location.href = getAdminUrl();
+                  }}
                   className="w-full p-3 rounded-xl bg-[var(--th-surface-alt)] hover:bg-[var(--th-surface-alt)]/80 border border-[var(--th-border)] flex items-center justify-between text-left transition-all hover:border-[var(--th-accent)] cursor-pointer group"
                 >
                   <div className="flex items-center space-x-3">

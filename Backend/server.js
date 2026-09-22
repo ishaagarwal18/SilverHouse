@@ -535,7 +535,7 @@ app.post('/api/auth/login', async (req, res) => {
             user: userObj,
             role: userObj.role,
             isAdmin: isAdmin,
-            redirectUrl: isAdmin ? 'http://localhost:5000' : '/'
+            redirectUrl: isAdmin ? (process.env.ADMIN_URL || 'https://silverhouse-pap9.onrender.com/') : '/'
         });
     } catch (err) {
         console.error('[Auth Error]:', err.message);

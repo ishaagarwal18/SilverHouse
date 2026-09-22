@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import StoresModal from './StoresModal';
 import ThemeSwitcher from './ThemeSwitcher';
+import { getAdminUrl } from '../../utils/adminUrl';
 
 export default function Header({
   cartCount = 0,
@@ -550,9 +551,7 @@ export default function Header({
 
                     {isAdmin && (
                       <a
-                        href={import.meta.env.VITE_ADMIN_URL || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '/catalog') : 'http://localhost:5000/catalog')}
-                        target="_blank"
-                        rel="noreferrer"
+                        href={getAdminUrl()}
                         className="w-full text-left px-3 py-2 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors"
                       >
                         <Building2 className="w-4 h-4 text-[var(--th-accent)]" />

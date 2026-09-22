@@ -12,9 +12,16 @@ export async function loginUser(email, password) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    const data = await res.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Invalid credentials');
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`Backend server is offline or returned status ${res.status}. Please make sure backend is running.`);
+    }
+
+    if (!res.ok || !data.success) {
+      throw new Error(data?.error || 'Invalid credentials');
     }
     return data;
   } catch (err) {
@@ -32,9 +39,16 @@ export async function registerUser({ fullName, email, phone, password }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fullName, email, phone, password })
     });
-    const data = await res.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Registration failed');
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`Backend server is offline or returned status ${res.status}. Please make sure backend is running.`);
+    }
+
+    if (!res.ok || !data.success) {
+      throw new Error(data?.error || 'Registration failed');
     }
     return data;
   } catch (err) {

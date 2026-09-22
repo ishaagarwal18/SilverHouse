@@ -7,6 +7,19 @@ import AuthPage from '../components/auth/AuthPage';
 import AddressPage from '../components/account/AddressPage';
 import OrdersPage from '../components/account/OrdersPage';
 import CustomArtisanalOrderPage from '../components/customizer/CustomArtisanalOrderPage';
+import { getAdminUrl } from '../utils/adminUrl';
+
+function AdminRedirect() {
+  React.useEffect(() => {
+    window.location.replace(getAdminUrl());
+  }, []);
+  return (
+    <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center">
+      <div className="w-10 h-10 border-3 border-[var(--th-primary)] border-t-transparent rounded-full animate-spin mb-4" />
+      <p className="text-sm font-bold text-[var(--th-text-main)]">Opening Admin Studio...</p>
+    </div>
+  );
+}
 
 export default function AppRouter({
   products,
@@ -82,6 +95,10 @@ export default function AppRouter({
         path="/category/custom-artisanal"
         element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
       />
+
+      {/* Admin Studio Route Forwarder */}
+      <Route path="/admin" element={<AdminRedirect />} />
+      <Route path="/admin/*" element={<AdminRedirect />} />
 
       {/* Login & Register Auth Route */}
       <Route path="/login" element={<AuthPage onTriggerToast={onTriggerToast} />} />
