@@ -1645,9 +1645,13 @@
                     let val = row[h] !== null && row[h] !== undefined ? row[h] : '-';
                     const showBadge = (idx === 0 && badgeHtml);
 
+                    const hLower = h.toLowerCase();
+                    const isIdColumn = hLower.endsWith('_id') || hLower.endsWith('id') || hLower === 'id';
+                    const isImageColumn = !isIdColumn && (h === 'image' || h === 'images' || hLower.includes('image_url') || hLower.includes('img_url') || (hLower.includes('image') && !hLower.includes('id')) || (hLower.includes('url') && !hLower.includes('id')));
+
                     if (h === 'password_hash') {
                         rowHtml += `<td><span style="font-family:monospace;letter-spacing:2px;color:var(--text-muted)">••••••••</span>${showBadge ? badgeHtml : ''}</td>`;
-                    } else if ((h === 'image' || h === 'images' || h.toLowerCase().includes('image') || h.toLowerCase().includes('url')) && val !== '-') {
+                    } else if (isImageColumn && val !== '-') {
                         let imgList = [];
                         if (typeof val === 'string' && val.trim().startsWith('[')) {
                             try {
