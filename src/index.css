@@ -9,6 +9,7 @@
 /* Fallback default theme: Aegean Sea Mist */
 :root {
   --th-bg: #E8EFF0;
+  --th-surface: #ffffff;
   --th-surface-alt: #DCE7E8;
   --th-card: #F4F8F8;
   --th-pedestal: #D4DFE0;

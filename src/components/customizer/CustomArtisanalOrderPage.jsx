@@ -90,7 +90,7 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
 
   // Yatra Specific Customizer State
   const [selectedShrine, setSelectedShrine] = useState(PREDEFINED_SHRINE_DESIGNS[0]);
-  const [shrineCategoryFilter, setShrineCategoryFilter] = useState('ALL');
+  const [shrineCategoryFilter, setShrineCategoryFilter] = useState('All');
   const [shrineSearch, setShrineSearch] = useState('');
   const [selectedLocketShape, setSelectedLocketShape] = useState(LOCKET_SHAPES[0].id);
   const [selectedFinish, setSelectedFinish] = useState(METAL_FINISHES[0].id);
@@ -141,9 +141,9 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
   const isYatraActive = activeCategoryObj.id === 'Yatra Lockets';
 
   // Predefined shrine filter
-  const shrineCategories = ['ALL', 'Shiva', 'Ram & Vishnu', 'Devi & Shakti', 'Sacred Yantra', 'Ganesha & Wisdom', 'Gurudwara & Peace'];
+  const shrineCategories = ['All', 'Shiva', 'Ram & Vishnu', 'Devi & Shakti', 'Sacred Yantra', 'Ganesha & Wisdom', 'Gurudwara & Peace'];
   const filteredShrines = PREDEFINED_SHRINE_DESIGNS.filter(d => {
-    const matchCategory = shrineCategoryFilter === 'ALL' || d.category === shrineCategoryFilter;
+    const matchCategory = shrineCategoryFilter === 'All' || shrineCategoryFilter === 'ALL' || d.category === shrineCategoryFilter;
     const matchSearch = !shrineSearch || d.name.toLowerCase().includes(shrineSearch.toLowerCase()) || d.deity.toLowerCase().includes(shrineSearch.toLowerCase());
     return matchCategory && matchSearch;
   });
@@ -307,14 +307,14 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
 
           {/* Trust badges */}
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-2 text-xs font-semibold text-[var(--th-text-muted)]">
-            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-              <ShieldCheck className="w-4 h-4" /> 100% Certified 925 Hallmarked Silver
+            <span className="flex items-center gap-1.5 text-emerald-700">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" /> 100% Certified 925 Hallmarked Silver
             </span>
-            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-              <Crown className="w-4 h-4" /> Hereditary Master Silversmith Craft
+            <span className="flex items-center gap-1.5 text-amber-800">
+              <Crown className="w-4 h-4 text-amber-600" /> Hereditary Master Silversmith Craft
             </span>
-            <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
-              <Clock className="w-4 h-4" /> Personalized Workshop Quotation
+            <span className="flex items-center gap-1.5 text-indigo-700">
+              <Clock className="w-4 h-4 text-indigo-600" /> Personalized Workshop Quotation
             </span>
           </div>
         </div>
@@ -324,7 +324,7 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-[var(--th-text-main)] flex items-center gap-2">
               <span>1. Choose Custom Creation Category</span>
-              <span className="text-xs text-[var(--th-accent)] font-semibold">({CUSTOM_CATEGORIES.length} Sacred Specialties)</span>
+              <span className="text-xs text-[var(--th-text-muted)] font-semibold">({CUSTOM_CATEGORIES.length} Sacred Specialties)</span>
             </h2>
           </div>
 
@@ -401,7 +401,7 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                       placeholder="Search shrine / deity..."
                       value={shrineSearch}
                       onChange={(e) => setShrineSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-[var(--th-border)] bg-[var(--th-surface)] text-xs text-[var(--th-text-main)] focus:outline-hidden focus:ring-1 focus:ring-[var(--th-primary)]"
+                      className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-[var(--th-border)] bg-[var(--th-card)] text-xs text-[var(--th-text-main)] focus:outline-hidden focus:ring-1 focus:ring-[var(--th-primary)]"
                     />
                   </div>
 
@@ -413,8 +413,8 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                     }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                       isCustomDeityMode
-                        ? 'bg-[var(--th-primary)] text-white border-[var(--th-primary)]'
-                        : 'border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] hover:border-[var(--th-primary)]'
+                        ? 'bg-[var(--th-primary)] text-white border-[var(--th-primary)] shadow-xs'
+                        : 'border-[var(--th-border)] bg-[var(--th-card)] text-[var(--th-text-main)] hover:border-[var(--th-primary)]'
                     }`}
                   >
                     + My Custom Photo
@@ -425,20 +425,23 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
               {/* Shrine Category Filter Pills */}
               {!isCustomDeityMode && (
                 <div className="flex flex-wrap gap-1.5">
-                  {shrineCategories.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setShrineCategoryFilter(c)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                        shrineCategoryFilter === c
-                          ? 'bg-[var(--th-text-main)] text-[var(--th-surface)] border-[var(--th-text-main)]'
-                          : 'bg-[var(--th-surface)] border-[var(--th-border)] text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
+                  {shrineCategories.map((c) => {
+                    const isFilterActive = shrineCategoryFilter === c || (c === 'All' && shrineCategoryFilter === 'ALL');
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setShrineCategoryFilter(c)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                          isFilterActive
+                            ? 'bg-[var(--th-primary)] text-white border-[var(--th-primary)] shadow-xs font-bold'
+                            : 'bg-[var(--th-card)] border-[var(--th-border)] text-[var(--th-text-main)] hover:border-[var(--th-primary)] hover:bg-[var(--th-surface-alt)]'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
@@ -453,8 +456,8 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                         onClick={() => handleSelectShrine(shrine)}
                         className={`group relative rounded-xl border p-2.5 cursor-pointer transition-all flex flex-col justify-between ${
                           isSelected
-                            ? 'bg-[var(--th-surface)] border-[var(--th-primary)] ring-2 ring-[var(--th-primary)]/20 shadow-md'
-                            : 'bg-[var(--th-surface)] border-[var(--th-border)] hover:border-[var(--th-primary)]/50'
+                            ? 'bg-[var(--th-card)] border-[var(--th-primary)] ring-2 ring-[var(--th-primary)]/20 shadow-md'
+                            : 'bg-[var(--th-card)] border-[var(--th-border)] hover:border-[var(--th-primary)]/50 hover:shadow-xs'
                         }`}
                       >
                         <div className="aspect-square rounded-lg overflow-hidden mb-2 bg-black/5 relative">
@@ -479,15 +482,17 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                   })}
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                    <span><strong>Custom Photo / Artwork Mode:</strong> You can upload your own photo of any temple, guru, or kuldevi/devata in Section 3 below.</span>
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-[var(--th-text-main)] flex items-center justify-between shadow-2xs">
+                  <div className="flex items-center gap-2.5">
+                    <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span className="text-[var(--th-text-main)] font-medium">
+                      <strong className="font-bold text-[var(--th-text-main)]">Custom Photo / Artwork Mode:</strong> You can upload your own photo of any temple, guru, or kuldevi/devata in Section 3 below.
+                    </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsCustomDeityMode(false)}
-                    className="text-[11px] font-bold text-amber-700 dark:text-amber-300 underline cursor-pointer"
+                    className="text-xs font-bold text-[var(--th-primary)] hover:underline cursor-pointer shrink-0 ml-4"
                   >
                     Back to Predefined Shrines
                   </button>
@@ -510,10 +515,10 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                   <select
                     value={selectedLocketShape}
                     onChange={(e) => setSelectedLocketShape(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)] cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-card)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)] cursor-pointer"
                   >
                     {LOCKET_SHAPES.map(s => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.hindi})</option>
+                      <option key={s.id} value={s.id}>{s.name} {s.badge ? `(${s.badge})` : ''}</option>
                     ))}
                   </select>
                 </div>
@@ -526,10 +531,10 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                   <select
                     value={selectedFinish}
                     onChange={(e) => setSelectedFinish(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)] cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-card)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)] cursor-pointer"
                   >
                     {METAL_FINISHES.map(f => (
-                      <option key={f.id} value={f.name}>{f.name} ({f.hindi})</option>
+                      <option key={f.id} value={f.name}>{f.name}</option>
                     ))}
                   </select>
                 </div>
@@ -542,10 +547,10 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                   <select
                     value={selectedChain}
                     onChange={(e) => setSelectedChain(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)] cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-card)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)] cursor-pointer"
                   >
                     {CHAIN_OPTIONS.map(c => (
-                      <option key={c.name} value={c.name}>{c.name} ({c.type})</option>
+                      <option key={c.name} value={c.name}>{c.name} {c.price > 0 ? `(+₹${c.price.toLocaleString('en-IN')})` : '(Included)'}</option>
                     ))}
                   </select>
                 </div>
@@ -556,24 +561,32 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                 <label className="block text-xs font-bold uppercase tracking-wider text-[var(--th-text-muted)] mb-2">
                   Reverse Side Engraving (Sacred Mantra, Gotra, or Name)
                 </label>
-                <div className="flex gap-2 mb-2 flex-wrap">
-                  {POPULAR_MANTRAS.slice(0, 5).map((m, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setBackEngraving(m.text)}
-                      className="text-xs px-2.5 py-1 rounded-md border border-[var(--th-border)] bg-[var(--th-surface)] hover:border-[var(--th-primary)] text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] transition-colors cursor-pointer"
-                    >
-                      {m.text}
-                    </button>
-                  ))}
+                <div className="flex gap-2 mb-2.5 flex-wrap">
+                  {POPULAR_MANTRAS.slice(0, 6).map((m, idx) => {
+                    const text = typeof m === 'string' ? m : m.text;
+                    const isSelected = backEngraving === text;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setBackEngraving(text)}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition-all cursor-pointer font-medium ${
+                          isSelected
+                            ? 'bg-[var(--th-primary)] text-white border-[var(--th-primary)] shadow-xs font-bold'
+                            : 'bg-[var(--th-card)] border-[var(--th-border)] text-[var(--th-text-main)] hover:border-[var(--th-primary)] hover:bg-[var(--th-surface-alt)]'
+                        }`}
+                      >
+                        {text}
+                      </button>
+                    );
+                  })}
                 </div>
                 <input
                   type="text"
                   placeholder="e.g. ॐ नमः शिवाय or Kashyap Gotra / Harish Kumar"
                   value={backEngraving}
                   onChange={(e) => setBackEngraving(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-card)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
                 />
               </div>
             </div>
@@ -772,14 +785,14 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
 
             {/* Login Required Notice for Unauthenticated Users */}
             {!isAuthenticated || !user ? (
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-[var(--th-text-main)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-start sm:items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center shrink-0">
                     <Lock className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-bold text-sm">Customer Sign In Required to Place Custom Order</div>
-                    <div className="text-xs text-amber-800/80 dark:text-amber-300/80">
+                    <div className="font-bold text-sm text-[var(--th-text-main)]">Customer Sign In Required to Place Custom Order</div>
+                    <div className="text-xs text-[var(--th-text-muted)] mt-0.5">
                       Please log in or create an account so our master silversmiths can attach your quote and order status directly to your account.
                     </div>
                   </div>
@@ -787,13 +800,13 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                 <button
                   type="button"
                   onClick={() => navigate('/login?redirect=/customize')}
-                  className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-all shadow-sm"
+                  className="px-4 py-2.5 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider whitespace-nowrap cursor-pointer transition-all shadow-sm"
                 >
                   Sign In / Register
                 </button>
               </div>
             ) : (
-              <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--th-surface)] border border-[var(--th-border)] text-xs">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--th-card)] border border-[var(--th-border)] text-xs">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   <span className="text-[var(--th-text-muted)]">Submitting as:</span>
@@ -819,7 +832,7 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                     placeholder="Your Full Name"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-card)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
                   />
                 </div>
               </div>
@@ -837,7 +850,7 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                     placeholder="+91 98765 43210"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-card)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
                   />
                 </div>
               </div>
@@ -854,17 +867,17 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                     placeholder="name@example.com"
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-surface)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[var(--th-border)] bg-[var(--th-card)] text-[var(--th-text-main)] text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-[var(--th-primary)]"
                   />
                 </div>
               </div>
             </div>
 
             {/* Informational Callout */}
-            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 text-xs leading-relaxed flex items-start gap-3">
-              <Clock className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div className="p-4 rounded-xl bg-[var(--th-card)] border border-[var(--th-border)] text-[var(--th-text-main)] text-xs leading-relaxed flex items-start gap-3 shadow-2xs">
+              <Clock className="w-5 h-5 shrink-0 text-[var(--th-primary)] mt-0.5" />
               <div>
-                <strong>Bespoke Workshop Quotation:</strong> Because custom pieces require calculating pure silver weight, mould casting, and artisan carving hours, our master silversmith reviews your request personally. You will receive an exact quote and dispatch timeline within 24 hours.
+                <strong className="font-bold text-[var(--th-text-main)]">Bespoke Workshop Quotation:</strong> Because custom pieces require calculating pure silver weight, mould casting, and artisan carving hours, our master silversmith reviews your request personally. You will receive an exact quote and dispatch timeline within 24 hours.
               </div>
             </div>
 

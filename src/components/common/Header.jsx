@@ -901,7 +901,7 @@ export default function Header({
             title="Custom Orders: Yatra Lockets, Mukhut, Jhalar, Thakurji ka Saman & Temple Things"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] group-hover:text-black transition-colors" />
-            <span>CUSTOMIZE / BESPOKE</span>
+            <span>CUSTOMIZE </span>
           </button>
 
         </nav>

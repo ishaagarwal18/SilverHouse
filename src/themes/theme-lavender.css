@@ -2,6 +2,7 @@
 :root[data-theme="lavender"],
 [data-theme="lavender"] {
   --th-bg: #ffffff;
+  --th-surface: #ffffff;
   --th-surface-alt: #ffffff;
   --th-card: #ffffff;
   --th-pedestal: #D8D2DE;

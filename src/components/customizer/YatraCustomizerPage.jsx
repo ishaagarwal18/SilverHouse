@@ -26,7 +26,7 @@ export default function YatraCustomizerPage({
 
   // Predefined Selection
   const [selectedPredefined, setSelectedPredefined] = useState(PREDEFINED_SHRINE_DESIGNS[0]);
-  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('All');
 
   // Multiple Uploaded Images
   const [uploadedImages, setUploadedImages] = useState([]);
@@ -55,8 +55,8 @@ export default function YatraCustomizerPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filter Categories for Predefined Gallery
-  const categories = ['ALL', 'Shiva', 'Ram & Vishnu', 'Devi & Shakti', 'Sacred Yantra', 'Ganesha & Wisdom', 'Gurudwara & Peace'];
-  const filteredDesigns = categoryFilter === 'ALL'
+  const categories = ['All', 'Shiva', 'Ram & Vishnu', 'Devi & Shakti', 'Sacred Yantra', 'Ganesha & Wisdom', 'Gurudwara & Peace'];
+  const filteredDesigns = (categoryFilter === 'All' || categoryFilter === 'ALL')
     ? PREDEFINED_SHRINE_DESIGNS
     : PREDEFINED_SHRINE_DESIGNS.filter(d => d.category === categoryFilter);
 
@@ -554,20 +554,23 @@ export default function YatraCustomizerPage({
                 <div className="space-y-4">
                   {/* Category Filter Pills */}
                   <div className="flex space-x-2 overflow-x-auto pb-1 scrollbar-none">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setCategoryFilter(cat)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                          categoryFilter === cat
-                            ? 'bg-[var(--th-primary)] text-white'
-                            : 'bg-[var(--th-surface-alt)] text-[var(--th-text-muted)] hover:bg-[var(--th-border)]'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
+                    {categories.map((cat) => {
+                      const isCatActive = categoryFilter === cat || (cat === 'All' && categoryFilter === 'ALL');
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setCategoryFilter(cat)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                            isCatActive
+                              ? 'bg-[var(--th-primary)] text-white shadow-xs font-bold'
+                              : 'bg-[var(--th-card)] border border-[var(--th-border)] text-[var(--th-text-main)] hover:border-[var(--th-primary)] hover:bg-[var(--th-surface-alt)]'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {/* Predefined Grid */}
@@ -707,11 +710,11 @@ export default function YatraCustomizerPage({
                       </div>
                     </div>
                   ) : (
-                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-200 text-xs flex items-start space-x-2.5">
-                      <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div className="p-3.5 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-[var(--th-text-main)] text-xs flex items-start space-x-2.5 shadow-2xs">
+                      <Info className="w-4 h-4 shrink-0 mt-0.5 text-[var(--th-primary)]" />
                       <div>
-                        <span className="font-bold block">Multiple Images Option:</span>
-                        <span>You can upload your pilgrimage photos, front deity idol, and family gotra reference. Our silver karigars will prepare a 3D CAD preview for your WhatsApp approval before casting.</span>
+                        <span className="font-bold block text-[var(--th-text-main)]">Multiple Images Option:</span>
+                        <span className="text-[var(--th-text-muted)]">You can upload your pilgrimage photos, front deity idol, and family gotra reference. Our silver karigars will prepare a 3D CAD preview for your WhatsApp approval before casting.</span>
                       </div>
                     </div>
                   )}
@@ -989,10 +992,10 @@ export default function YatraCustomizerPage({
                   className="mt-1 w-4 h-4 accent-[var(--th-primary)] cursor-pointer"
                 />
                 <div className="text-xs">
-                  <span className="font-bold text-amber-800 dark:text-amber-200 block">
+                  <span className="font-bold text-[var(--th-text-main)] block">
                     Vedic Temple Consecration & Sankalpa Puja (+₹251)
                   </span>
-                  <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+                  <p className="text-[11px] text-[var(--th-text-muted)] mt-0.5">
                     Our temple priest performs Pran Pratishtha puja with Haridwar Gangajal, sacred bhasma, and Vedic chanting in your family gotra name before dispatch.
                   </p>
                 </div>

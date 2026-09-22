@@ -2,6 +2,7 @@
 :root[data-theme="sage"],
 [data-theme="sage"] {
   --th-bg: #ffffff;
+  --th-surface: #ffffff;
   --th-surface-alt: #ffffff;
   --th-card: #ffffff;
   --th-pedestal: #D3DCD4;
