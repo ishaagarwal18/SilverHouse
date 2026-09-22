@@ -25,23 +25,52 @@ export const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
 export function normalizeProduct(rawItem) {
   if (!rawItem) return null;
 
+  // Helper to resolve relative uploaded images to the deployed backend host
+  const resolveImageUrl = (img) => {
+    if (!img) return '';
+    const val = typeof img === 'object' ? (img.image_url || img.url || '') : String(img);
+    const trimmed = String(val).trim();
+    if (!trimmed) return '';
+    // Already an absolute HTTP/HTTPS or data URL
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+    // Static local bundled assets in /images/
+    if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
+      return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    }
+    // Uploaded images from the deployed admin panel (/uploads/... or img-...)
+    if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/') || trimmed.startsWith('img-')) {
+      const filename = trimmed.replace(/^\/?uploads\//, '');
+      const rawEnv = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
+        ? String(import.meta.env.VITE_API_URL).trim()
+        : '';
+      const backendBase = (rawEnv && rawEnv.startsWith('http'))
+        ? rawEnv.replace(/\/api\/?$/, '')
+        : 'https://silverhouse-pap9.onrender.com';
+      return `${backendBase}/uploads/${filename}`;
+    }
+    return trimmed;
+  };
+
   // Process images array
   let images = [];
   if (Array.isArray(rawItem.images) && rawItem.images.length > 0) {
-    images = rawItem.images.map(img => typeof img === 'object' ? (img.image_url || img.url) : img).filter(Boolean);
+    images = rawItem.images.map(resolveImageUrl).filter(Boolean);
   } else if (rawItem.images_json) {
     try {
       const parsed = JSON.parse(rawItem.images_json);
-      images = Array.isArray(parsed) ? parsed.map(i => typeof i === 'object' ? i.image_url : i) : [];
+      images = Array.isArray(parsed) ? parsed.map(resolveImageUrl).filter(Boolean) : [];
     } catch {
       images = [];
     }
   } else if (rawItem.image_url) {
-    images = [rawItem.image_url];
+    const resolved = resolveImageUrl(rawItem.image_url);
+    images = resolved ? [resolved] : [];
   }
 
   if (images.length === 0) {
-    images = [""];
+    images = ['/images/placeholder.svg'];
   }
 
   const rawPrice = Number(rawItem.price) || Number(rawItem.original_price) || 1000;

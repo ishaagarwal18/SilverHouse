@@ -16,7 +16,7 @@ export default defineConfig({
         secure: false,
       },
       '/uploads': {
-        target: 'http://localhost:5000',
+        target: 'https://silverhouse-pap9.onrender.com',
         changeOrigin: true,
         secure: false,
       },

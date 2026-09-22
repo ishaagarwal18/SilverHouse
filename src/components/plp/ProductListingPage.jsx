@@ -1215,15 +1215,23 @@ export default function ProductListingPage({
                         onClick={() => onSelectProduct(product)}
                       >
                         <img
-                          src={Array.isArray(product.images) && product.images[0] ? product.images[0] : ''}
+                          src={Array.isArray(product.images) && product.images[0] ? product.images[0] : '/images/placeholder.svg'}
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/images/placeholder.svg';
+                          }}
                         />
                         {Array.isArray(product.images) && product.images[1] && (
                           <img
                             src={product.images[1]}
                             alt={product.name}
                             className="w-full h-full object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = '/images/placeholder.svg';
+                            }}
                           />
                         )}
 
