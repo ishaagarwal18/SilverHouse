@@ -209,3 +209,29 @@ BEGIN
 END;
 GO
 
+
+USE SilverHouse;
+GO
+
+IF OBJECT_ID('dbo.company', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.company (
+        company_id      INT IDENTITY(1,1) PRIMARY KEY,
+        [name]          NVARCHAR(150) NOT NULL,
+        [address]       NVARCHAR(255) NOT NULL,
+        city            NVARCHAR(100) NOT NULL,
+        [state]         NVARCHAR(100) NOT NULL,
+        pincode         VARCHAR(10) NOT NULL,
+        gst_no          VARCHAR(15) NULL UNIQUE,     -- 15-digit alphanumeric GSTIN
+        pan_card        VARCHAR(10) NULL,            -- 10-digit alphanumeric PAN
+        contact_number  VARCHAR(20) NOT NULL,
+        email           NVARCHAR(150) NULL,
+        created_at      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        updated_at      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+
+        -- Optional Validation Constraints
+        CONSTRAINT CK_company_gst_length CHECK (gst_no IS NULL OR LEN(gst_no) = 15),
+        CONSTRAINT CK_company_pan_length CHECK (pan_card IS NULL OR LEN(pan_card) = 10)
+    );
+END
+GO

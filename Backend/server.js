@@ -326,7 +326,8 @@ app.put('/api/admin/custom-orders/:id', async (req, res) => {
                 customer_name,
                 customer_phone,
                 customer_email,
-                custom_category
+                custom_category,
+                is_custom
             FROM dbo.orders 
             WHERE order_id = @order_id
         `);
@@ -336,6 +337,12 @@ app.put('/api/admin/custom-orders/:id', async (req, res) => {
         }
 
         const current = existing.recordset[0];
+        if (!current.is_custom) {
+            return res.status(400).json({
+                success: false,
+                error: `Order #${orderId} is a standard/ready-made order. Order decision statuses ('processing', 'accepted', 'rejected') are strictly for customized orders only.`
+            });
+        }
         let newStatus = confirm !== undefined ? String(confirm).trim().toLowerCase() : current.confirm;
         if (newStatus === 'approved') newStatus = 'accepted';
         const newPrice = final_payable !== undefined && !isNaN(parseFloat(final_payable)) ? parseFloat(final_payable) : current.final_payable;
@@ -1053,7 +1060,17 @@ app.post('/api/data', async (req, res) => {
 
         // 2. ALL CALLING / MUTATIONS (ADD, INSERT, EDIT, DELETE, UPDATE_QTY, RESTOCK) ARE ROUTED THROUGH dbo.SP_GETDATA
         let mutationProc = normalizedProc;
-        if (mutationProc === 'custom_orders' || mutationProc === 'custom_order') mutationProc = 'orders';
+        const isCustomOrderProc = (mutationProc === 'custom_orders' || mutationProc === 'custom_order');
+        if (isCustomOrderProc) mutationProc = 'orders';
+
+        // Ready-made orders strictly DO NOT have confirm status ('processing', 'accepted', 'rejected')
+        if (mutationProc === 'orders' && !isCustomOrderProc && table_values) {
+            if (!table_values.is_custom) {
+                delete table_values.confirm;
+                delete table_values.custom_category;
+            }
+        }
+        const effectiveJsonStr = table_values ? JSON.stringify({ table_values }) : jsonStr;
 
         // Strict Customer Authentication for Order Creation
         if (mutationProc === 'orders' && (operation === 'ADD' || operation === 'INSERT')) {
@@ -1069,7 +1086,7 @@ app.post('/api/data', async (req, res) => {
         const request = pool.request();
         request.input('proc_name', sql.NVarChar(50), mutationProc);
         request.input('Opr', sql.NVarChar(20), operation);
-        request.input('JSONstr', sql.NVarChar(sql.MAX), jsonStr);
+        request.input('JSONstr', sql.NVarChar(sql.MAX), effectiveJsonStr);
         request.input('Condition', sql.NVarChar(255), condition !== undefined && condition !== null ? String(condition) : null);
 
         const result = await request.execute('dbo.SP_GETDATA');

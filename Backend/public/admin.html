@@ -1271,16 +1271,15 @@
 
         const ENTITY_FORM_SCHEMAS = {
             orders: [
-                { name: 'order_number', label: 'Order Number', type: 'text', placeholder: 'e.g. SH-99124 or CUST-...' },
-                { name: 'confirm', label: 'Order Decision (Confirm Status)', type: 'select', options: ['processing', 'accepted', 'rejected'], default: 'processing' },
-                { name: 'final_payable', label: 'Decided Price / Final Payable (₹)', type: 'number', step: '0.01', placeholder: 'Decide and enter price for custom piece' },
-                { name: 'custom_category', label: 'Custom Category', type: 'text', placeholder: 'Mukhut, Jhalar, Thakurji ka saman, Temple things' },
+                { name: 'order_number', label: 'Order Number', type: 'text', placeholder: 'e.g. SH-99124' },
                 { name: 'customer_name', label: 'Customer Name', type: 'text', placeholder: 'e.g. Radhika Sharma' },
                 { name: 'customer_phone', label: 'Customer Phone', type: 'text', placeholder: 'e.g. 9876543210' },
+                { name: 'customer_email', label: 'Customer Email', type: 'email', placeholder: 'e.g. radhika@example.com' },
                 { name: 'payment_status', label: 'Payment Status', type: 'select', options: ['PENDING', 'PAID', 'CANCELLED', 'FAILED'], default: 'PENDING' },
                 { name: 'total_amount', label: 'Total Amount (₹)', type: 'number', step: '0.01', placeholder: 'e.g. 1599.00' },
                 { name: 'discount_amount', label: 'Discount Amount (₹)', type: 'number', step: '0.01', default: 0 },
-                { name: 'description', label: 'Custom Specification / Notes', type: 'textarea', fullWidth: true },
+                { name: 'final_payable', label: 'Final Payable (₹)', type: 'number', step: '0.01', placeholder: 'e.g. 1599.00' },
+                { name: 'delivery_address', label: 'Delivery Address', type: 'textarea', fullWidth: true, placeholder: 'Street, City, State - Pincode' },
                 { name: 'user_id', label: 'User ID', type: 'number', placeholder: 'e.g. 1' },
                 { name: 'address_id', label: 'Address ID', type: 'number', placeholder: 'e.g. 1' }
             ],
@@ -1570,7 +1569,11 @@
             }
 
             const pkField = PK_MAP[activeEntity];
-            const headers = Object.keys(rows[0]);
+            let headers = Object.keys(rows[0]);
+            if (activeEntity === 'orders') {
+                // Strictly exclude confirm decision options (processing/accepted/rejected) and custom fields from ready-made catalog orders
+                headers = headers.filter(h => !['confirm', 'custom_category', 'is_custom', 'image', 'description'].includes(h));
+            }
             let headRow = '<tr>';
             headRow += `
                 <th class="checkbox-cell">
@@ -1680,7 +1683,7 @@
                                 ${showBadge ? badgeHtml : ''}
                             </td>`;
                         }
-                    } else if (h === 'confirm' && val !== '-') {
+                    } else if (h === 'confirm' && val !== '-' && activeEntity === 'custom_orders') {
                         const statusVal = String(val).toLowerCase();
                         let badgeBg = 'rgba(245, 158, 11, 0.15)';
                         let badgeColor = '#f59e0b';
@@ -1835,8 +1838,8 @@
                 });
             }
 
-            // If editing an order with inspiration images, render preview gallery at the top of modal
-            if ((activeEntity === 'orders' || activeEntity === 'custom_orders') && rowData && rowData.image) {
+            // If editing a custom order with inspiration images, render preview gallery at the top of modal
+            if (activeEntity === 'custom_orders' && rowData && rowData.image) {
                 let imgs = [];
                 try {
                     imgs = (typeof rowData.image === 'string' && rowData.image.startsWith('['))
@@ -1943,8 +1946,12 @@
             if (modal) modal.style.display = 'none';
         }
 
-        // Quick confirm status update from table row dropdown
+        // Quick confirm status update from table row dropdown (strictly for custom orders)
         async function quickUpdateOrderStatus(id, newStatus) {
+            if (activeEntity !== 'custom_orders') {
+                showToast('Decision statuses (processing/accepted/rejected) are only for customized orders.', true);
+                return;
+            }
             try {
                 let success = false;
                 try {

@@ -318,7 +318,7 @@ BEGIN
             ORDER BY ci.cart_item_id DESC;
         END
 
-        -- 10. Orders Entity Fetcher (with embedded items_json)
+        -- 10. Ready-made / Catalog Orders Entity Fetcher (is_custom = 0, strictly NO confirm or custom options)
         ELSE IF @proc_name IN ('orders', 'order', 'order_details')
         BEGIN
             DECLARE @OrderFilterId INT = TRY_CAST(@Condition AS INT);
@@ -334,18 +334,18 @@ BEGIN
                 o.order_id,
                 o.order_number,
                 o.user_id,
-                ISNULL(u.full_name, 'Guest Patron') AS customer_name,
-                '-' AS customer_email,
-                u.phone AS customer_phone,
+                COALESCE(o.customer_name, u.full_name, 'Guest Patron') AS customer_name,
+                COALESCE(o.customer_email, '-') AS customer_email,
+                COALESCE(o.customer_phone, u.phone, '-') AS customer_phone,
+                o.total_amount,
+                o.discount_amount,
+                o.final_payable,
+                o.payment_status,
                 o.address_id,
                 a.recipient_name,
                 a.city,
                 a.pincode,
                 ISNULL(a.street + ', ' + a.city + ' - ' + a.pincode, 'Registered Address') AS delivery_address,
-                o.total_amount,
-                o.discount_amount,
-                o.final_payable,
-                o.payment_status,
                 o.created_at,
                 (
                     SELECT 
@@ -372,9 +372,48 @@ BEGIN
             FROM dbo.orders o
             LEFT JOIN dbo.[user] u ON o.user_id = u.user_id
             LEFT JOIN dbo.address a ON o.address_id = a.address_id
-            WHERE (@OrderFilterId IS NOT NULL AND o.order_id = @OrderFilterId)
+            WHERE ((@OrderFilterId IS NOT NULL AND o.order_id = @OrderFilterId)
                OR (@OrderFilterUid IS NOT NULL AND o.user_id = @OrderFilterUid)
-               OR (@OrderFilterId IS NULL AND @OrderFilterUid IS NULL)
+               OR (@OrderFilterId IS NULL AND @OrderFilterUid IS NULL))
+               AND ISNULL(o.is_custom, 0) = 0
+            ORDER BY o.order_id DESC;
+        END
+
+        -- 10B. Bespoke Custom Orders Entity Fetcher (is_custom = 1, with confirm status, quotation & artisan review)
+        ELSE IF @proc_name IN ('custom_orders', 'custom_order')
+        BEGIN
+            DECLARE @CustOrderFilterId INT = TRY_CAST(@Condition AS INT);
+            DECLARE @CustOrderFilterUid INT = NULL;
+
+            IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
+            BEGIN
+                SET @CustOrderFilterId  = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.order_id') AS INT), @CustOrderFilterId);
+                SET @CustOrderFilterUid = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.user_id') AS INT);
+            END
+
+            SELECT 
+                o.order_id,
+                o.order_number,
+                ISNULL(o.confirm, 'processing') AS [confirm],
+                o.final_payable,
+                o.custom_category,
+                COALESCE(o.customer_name, u.full_name, 'Guest Patron') AS customer_name,
+                COALESCE(o.customer_phone, u.phone, '-') AS customer_phone,
+                COALESCE(o.customer_email, '-') AS customer_email,
+                o.payment_status,
+                o.description,
+                o.image,
+                o.total_amount,
+                o.discount_amount,
+                o.user_id,
+                o.address_id,
+                o.created_at
+            FROM dbo.orders o
+            LEFT JOIN dbo.[user] u ON o.user_id = u.user_id
+            WHERE ((@CustOrderFilterId IS NOT NULL AND o.order_id = @CustOrderFilterId)
+               OR (@CustOrderFilterUid IS NOT NULL AND o.user_id = @CustOrderFilterUid)
+               OR (@CustOrderFilterId IS NULL AND @CustOrderFilterUid IS NULL))
+               AND o.is_custom = 1
             ORDER BY o.order_id DESC;
         END
 
