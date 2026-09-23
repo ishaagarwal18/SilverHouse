@@ -509,3 +509,47 @@ export async function submitCustomOrderApi(formData) {
     return { success: false, error: err.message || 'Failed to submit custom order request.' };
   }
 }
+
+/**
+ * Fetches all custom orders belonging to the customer by userId or phone.
+ * @param {{ userId?: number, phone?: string }} params
+ * @returns {Promise<{success: boolean, orders: Array, total: number}>}
+ */
+export async function fetchCustomerCustomOrdersApi({ userId, phone } = {}) {
+  try {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    if (phone) params.append('phone', phone);
+
+    const url = `${API_BASE_URL}/custom-orders/my-orders?${params.toString()}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.success && Array.isArray(data.orders)) {
+      return data;
+    }
+    return { success: true, orders: [], total: 0 };
+  } catch (err) {
+    console.warn('[API Service] Error fetching customer custom orders:', err);
+    return { success: false, orders: [], total: 0, error: err.message };
+  }
+}
+
+/**
+ * Confirms payment for an approved custom order.
+ * @param {number|string} orderId
+ * @returns {Promise<{success: boolean, message?: string, order?: object, error?: string}>}
+ */
+export async function payCustomOrderApi(orderId) {
+  try {
+    const url = `${API_BASE_URL}/custom-orders/${orderId}/pay`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('[API Service] Error paying for custom order:', err);
+    return { success: false, error: err.message };
+  }
+}

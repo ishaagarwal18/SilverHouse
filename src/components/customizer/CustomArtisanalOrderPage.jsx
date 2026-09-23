@@ -317,6 +317,21 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
               <Clock className="w-4 h-4 text-indigo-600" /> Personalized Workshop Quotation
             </span>
           </div>
+
+          {/* Quick tracker for existing custom orders */}
+          {isAuthenticated && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/orders?tab=custom')}
+                className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-[var(--th-card)] hover:bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-xs font-bold text-[var(--th-primary)] transition-all cursor-pointer shadow-xs hover:border-[var(--th-accent)]"
+              >
+                <Crown className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                <span>Track Your Existing Custom Order Approvals & Quotations</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 2. UNIFIED CATEGORY SELECTION CARDS (5 CATEGORIES) */}
@@ -964,21 +979,28 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
             </div>
 
             {/* What happens next explanation */}
-            <div className="text-left text-xs space-y-2 text-[var(--th-text-muted)] bg-[var(--th-surface-alt)] p-4 rounded-2xl">
-              <div className="font-bold text-[var(--th-text-main)] text-xs uppercase tracking-wider mb-1">
-                What happens next?
+            <div className="text-left text-xs space-y-2.5 text-[var(--th-text-muted)] bg-[var(--th-surface-alt)] p-4 sm:p-5 rounded-2xl border border-[var(--th-border)]">
+              <div className="font-bold text-[var(--th-text-main)] text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                <span>Approval & Quotation Process:</span>
               </div>
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2.5">
                 <span className="w-5 h-5 rounded-full bg-[var(--th-primary)] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
-                <span>Our head silversmith examines your inspiration photos and dimensions.</span>
+                <div>
+                  <strong className="text-[var(--th-text-main)]">Workshop Review (Processing):</strong> Our head silversmith examines your inspiration photos, silver purity, and crafting complexity.
+                </div>
               </div>
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2.5">
                 <span className="w-5 h-5 rounded-full bg-[var(--th-primary)] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
-                <span>We calculate exact silver weight, labour cost, and crafting schedule.</span>
+                <div>
+                  <strong className="text-[var(--th-text-main)]">Admin Approval & Price Quotation:</strong> Once approved, the exact handcrafted price quotation will appear in your account and be dispatched to WhatsApp (<strong>{customerPhone}</strong>).
+                </div>
               </div>
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2.5">
                 <span className="w-5 h-5 rounded-full bg-[var(--th-primary)] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
-                <span>We will contact you at <strong>{customerPhone}</strong> with the official quotation.</span>
+                <div>
+                  <strong className="text-[var(--th-text-main)]">Accept Quotation & Production:</strong> You can review the quoted price and confirm your order to commence hand-carving.
+                </div>
               </div>
             </div>
 
@@ -988,11 +1010,12 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
                 type="button"
                 onClick={() => {
                   setSubmittedOrder(null);
-                  navigate('/orders');
+                  navigate('/orders?tab=custom');
                 }}
-                className="flex-1 py-3 px-4 rounded-xl bg-[var(--th-primary)] text-white font-bold text-xs uppercase tracking-wider hover:bg-[var(--th-primary-hover)] transition-colors cursor-pointer"
+                className="flex-1 py-3 px-4 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md flex items-center justify-center gap-1.5"
               >
-                View My Orders
+                <Crown className="w-3.5 h-3.5" />
+                <span>Track Custom Order & Quotation</span>
               </button>
               <button
                 type="button"

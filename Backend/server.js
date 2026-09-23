@@ -68,8 +68,8 @@ app.post('/api/upload-multiple', upload.array('images', 10), (req, res) => {
 // CUSTOM ARTISANAL ORDERS APIs
 // =========================================================================
 
-// Allowed confirmation statuses as enforced by DB constraint CK_orders_confirm
-const ALLOWED_CONFIRM_STATUSES = ['processing', 'rejected', 'accepted'];
+// Allowed confirmation statuses as enforced by DB constraint CK_orders_confirm (supports 'approved' as alias for 'accepted')
+const ALLOWED_CONFIRM_STATUSES = ['processing', 'rejected', 'accepted', 'approved'];
 
 // POST /api/custom-orders: Customer places custom order request with multi-image upload
 app.post('/api/custom-orders', upload.array('images', 10), async (req, res) => {
@@ -287,7 +287,7 @@ app.get('/api/admin/custom-orders', async (req, res) => {
     }
 });
 
-// PUT /api/admin/custom-orders/:id: Update quotation price and confirmation status
+// PUT /api/admin/custom-orders/:id: Update quotation price and confirmation status with automated customer notification
 app.put('/api/admin/custom-orders/:id', async (req, res) => {
     try {
         const orderId = parseInt(req.params.id, 10);
@@ -298,11 +298,12 @@ app.put('/api/admin/custom-orders/:id', async (req, res) => {
         const { confirm, final_payable } = req.body;
 
         if (confirm !== undefined && confirm !== null) {
-            const normalizedStatus = String(confirm).trim().toLowerCase();
-            if (!ALLOWED_CONFIRM_STATUSES.includes(normalizedStatus)) {
+            let normalizedStatus = String(confirm).trim().toLowerCase();
+            if (normalizedStatus === 'approved') normalizedStatus = 'accepted';
+            if (!['processing', 'rejected', 'accepted'].includes(normalizedStatus)) {
                 return res.status(400).json({
                     success: false,
-                    error: `Invalid confirm status '${confirm}'. Allowed values are strictly: 'processing', 'rejected', 'accepted'.`
+                    error: `Invalid confirm status '${confirm}'. Allowed values are strictly: 'processing', 'rejected', 'accepted' (or 'approved').`
                 });
             }
         }
@@ -312,16 +313,31 @@ app.put('/api/admin/custom-orders/:id', async (req, res) => {
             return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
         }
 
-        // Fetch current order to ensure it exists
+        // Fetch current order to ensure it exists and get customer contact info
         const checkReq = pool.request();
         checkReq.input('order_id', sql.Int, orderId);
-        const existing = await checkReq.query('SELECT order_id, [confirm], final_payable, total_amount FROM dbo.orders WHERE order_id = @order_id');
+        const existing = await checkReq.query(`
+            SELECT 
+                order_id, 
+                order_number, 
+                [confirm], 
+                final_payable, 
+                total_amount,
+                customer_name,
+                customer_phone,
+                customer_email,
+                custom_category
+            FROM dbo.orders 
+            WHERE order_id = @order_id
+        `);
+
         if (!existing.recordset || existing.recordset.length === 0) {
             return res.status(404).json({ success: false, error: 'Custom order not found.' });
         }
 
         const current = existing.recordset[0];
-        const newStatus = confirm !== undefined ? String(confirm).trim().toLowerCase() : current.confirm;
+        let newStatus = confirm !== undefined ? String(confirm).trim().toLowerCase() : current.confirm;
+        if (newStatus === 'approved') newStatus = 'accepted';
         const newPrice = final_payable !== undefined && !isNaN(parseFloat(final_payable)) ? parseFloat(final_payable) : current.final_payable;
 
         const updateReq = pool.request();
@@ -339,6 +355,31 @@ app.put('/api/admin/custom-orders/:id', async (req, res) => {
             WHERE order_id = @order_id;
         `);
 
+        // Send Automated Decision & Price Notification to Customer via WhatsApp
+        if (current.customer_phone) {
+            try {
+                const customerName = current.customer_name || 'Valued Patron';
+                const orderNum = current.order_number || `CUST-#${orderId}`;
+                const category = current.custom_category || 'Sacred Silver Artwork';
+                const formattedPrice = Number(newPrice).toLocaleString('en-IN');
+
+                let notificationMsg = '';
+                if (newStatus === 'accepted') {
+                    notificationMsg = `✨ *SilverHouse Artisanal Studio*\n\nNamaste ${customerName},\n\n👑 *Great News! Your Custom Order Request is APPROVED!*\n\n• *Order Number:* ${orderNum}\n• *Design / Category:* ${category}\n• *Approved Price Quotation:* ₹${formattedPrice}\n\nOur master silversmiths have reviewed your specifications and approved the commission. Hand-crafting in pure 925 hallmarked silver will commence upon your confirmation.\n\n👉 *View Details & Confirm Your Order:*\nhttps://silverhouse-silver.vercel.app/orders\n\n_Pure 925 & 999 Artisanal Silver_`;
+                } else if (newStatus === 'rejected') {
+                    notificationMsg = `✨ *SilverHouse Artisanal Studio*\n\nNamaste ${customerName},\n\nRegarding your custom order request (*${orderNum}* - ${category}):\n\nOur master silversmiths have carefully reviewed your design specifications. We regret to inform you that our workshop is unable to fulfill this particular custom commission at this time due to structural/casting constraints.\n\nYou are welcome to submit an alternate design or explore our ready-to-ship collections.\n\n_Pure 925 & 999 Artisanal Silver_`;
+                } else if (newStatus === 'processing') {
+                    notificationMsg = `✨ *SilverHouse Artisanal Studio*\n\nNamaste ${customerName},\n\nYour custom order (*${orderNum}* - ${category}) is currently *Under Artisan Review*.\n\nOur head silversmith is calculating silver weight and crafting hours. You will receive an official decision and price quotation shortly.\n\n_Pure 925 & 999 Artisanal Silver_`;
+                }
+
+                if (notificationMsg) {
+                    await sendWhatsAppMessage(current.customer_phone, notificationMsg);
+                }
+            } catch (notifyErr) {
+                console.warn('[WhatsApp Custom Order Notification Warning]:', notifyErr.message);
+            }
+        }
+
         return res.status(200).json({
             success: true,
             message: `Custom order #${orderId} updated successfully. Status: '${newStatus}', Price: ₹${newPrice}`,
@@ -351,6 +392,160 @@ app.put('/api/admin/custom-orders/:id', async (req, res) => {
 
     } catch (err) {
         console.error('[Custom Orders Update Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /api/custom-orders/my-orders: Customer fetches their custom orders
+app.get('/api/custom-orders/my-orders', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        const userId = req.query.userId ? parseInt(req.query.userId, 10) : null;
+        const phone = req.query.phone ? String(req.query.phone).trim() : null;
+        const last10 = phone ? phone.replace(/\D/g, '').slice(-10) : '';
+
+        if (!userId && !last10) {
+            return res.status(400).json({ success: false, error: 'userId or phone is required to retrieve custom orders.' });
+        }
+
+        let query = `
+            SELECT 
+                order_id,
+                order_number,
+                user_id,
+                total_amount,
+                discount_amount,
+                final_payable,
+                payment_status,
+                [confirm],
+                custom_category,
+                [description],
+                customer_name,
+                customer_phone,
+                customer_email,
+                is_custom,
+                [image],
+                created_at
+            FROM dbo.orders
+            WHERE is_custom = 1
+        `;
+
+        const request = pool.request();
+        if (userId && last10) {
+            request.input('userId', sql.Int, userId);
+            request.input('phonePattern', sql.NVarChar(20), '%' + last10);
+            query += ` AND (user_id = @userId OR customer_phone LIKE @phonePattern)`;
+        } else if (userId) {
+            request.input('userId', sql.Int, userId);
+            query += ` AND user_id = @userId`;
+        } else if (last10) {
+            request.input('phonePattern', sql.NVarChar(20), '%' + last10);
+            query += ` AND customer_phone LIKE @phonePattern`;
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        const result = await request.query(query);
+
+        const formatted = result.recordset.map(row => {
+            let images = [];
+            if (row.image) {
+                try {
+                    const parsed = JSON.parse(row.image);
+                    if (Array.isArray(parsed)) {
+                        images = parsed;
+                    } else if (typeof parsed === 'string') {
+                        images = [parsed];
+                    }
+                } catch (e) {
+                    images = row.image.split(',').map(s => s.trim()).filter(Boolean);
+                }
+            }
+            images = images.map(img => (img && !img.startsWith('http') && !img.startsWith('/') && !img.startsWith('data:')) ? `/${img}` : img);
+            return {
+                ...row,
+                images: images
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            total: formatted.length,
+            orders: formatted
+        });
+    } catch (err) {
+        console.error('[Customer Custom Orders Fetch Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// POST /api/custom-orders/:id/pay: Customer confirms and pays for approved custom order
+app.post('/api/custom-orders/:id/pay', async (req, res) => {
+    try {
+        const orderId = parseInt(req.params.id, 10);
+        if (isNaN(orderId)) {
+            return res.status(400).json({ success: false, error: 'Invalid order ID.' });
+        }
+
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        const checkReq = pool.request();
+        checkReq.input('order_id', sql.Int, orderId);
+        const existing = await checkReq.query(`
+            SELECT order_id, order_number, [confirm], final_payable, payment_status, customer_name, customer_phone 
+            FROM dbo.orders 
+            WHERE order_id = @order_id
+        `);
+
+        if (!existing.recordset || existing.recordset.length === 0) {
+            return res.status(404).json({ success: false, error: 'Custom order not found.' });
+        }
+
+        const order = existing.recordset[0];
+        if (order.confirm !== 'accepted') {
+            return res.status(400).json({
+                success: false,
+                error: 'Cannot confirm payment for an order that has not been approved by the workshop yet.'
+            });
+        }
+
+        const updateReq = pool.request();
+        updateReq.input('order_id', sql.Int, orderId);
+        await updateReq.query(`
+            UPDATE dbo.orders
+            SET payment_status = 'PAID'
+            WHERE order_id = @order_id;
+        `);
+
+        // Send payment confirmation message
+        if (order.customer_phone) {
+            try {
+                const message = `✨ *SilverHouse Artisanal Studio*\n\nNamaste ${order.customer_name || 'Patron'},\n\nPayment confirmed for your custom order (*${order.order_number}*)! 🎉\n\n• *Amount:* ₹${Number(order.final_payable).toLocaleString('en-IN')}\n• *Status:* Confirmed & In Production\n\nOur master silversmiths have scheduled hand-crafting and hallmarking. You will receive tracking details upon completion.\n\n_Pure 925 & 999 Artisanal Silver_`;
+                await sendWhatsAppMessage(order.customer_phone, message);
+            } catch (payNotifyErr) {
+                console.warn('[WhatsApp Payment Confirmation Warning]:', payNotifyErr.message);
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Custom order quotation accepted & payment confirmed successfully!',
+            order: {
+                order_id: orderId,
+                payment_status: 'PAID',
+                confirm: 'accepted',
+                final_payable: order.final_payable
+            }
+        });
+    } catch (err) {
+        console.error('[Pay Custom Order Error]:', err);
         return res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -511,13 +706,11 @@ function cleanPhoneNumber(rawPhone) {
     return cleaned;
 }
 
-async function sendWhatsAppOtp(phone, otp) {
-    const message = `✨ *SilverHouse Fine Jewelry*\n\nYour one-time WhatsApp verification code is: *${otp}*\n\nValid for 5 minutes. Please do not share this sacred code with anyone.\n\n_Pure 925 & 999 Artisanal Silver_`;
-
+async function sendWhatsAppMessage(phone, message) {
+    const cleaned = cleanPhoneNumber(phone) || phone;
     console.log(`\n======================================================`);
-    console.log(`[WhatsApp OTP Gateway] 💬 Outgoing WhatsApp Message:`);
-    console.log(`To: ${phone}`);
-    console.log(`OTP: ${otp}`);
+    console.log(`[WhatsApp Gateway] 💬 Outgoing WhatsApp Message:`);
+    console.log(`To: ${cleaned}`);
     console.log(`Message:\n${message}`);
     console.log(`======================================================\n`);
 
@@ -531,16 +724,21 @@ async function sendWhatsAppOtp(phone, otp) {
                     'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`
                 },
                 body: JSON.stringify({
-                    to: phone,
+                    to: cleaned,
                     message: message
                 })
             });
-            console.log(`[WhatsApp Gateway] Successfully dispatched to provider for ${phone}`);
+            console.log(`[WhatsApp Gateway] Successfully dispatched to provider for ${cleaned}`);
         } catch (apiErr) {
             console.warn(`[WhatsApp Gateway Warning] Provider dispatch failed:`, apiErr.message);
         }
     }
     return true;
+}
+
+async function sendWhatsAppOtp(phone, otp) {
+    const message = `✨ *SilverHouse Fine Jewelry*\n\nYour one-time WhatsApp verification code is: *${otp}*\n\nValid for 5 minutes. Please do not share this sacred code with anyone.\n\n_Pure 925 & 999 Artisanal Silver_`;
+    return await sendWhatsAppMessage(phone, message);
 }
 
 // 1. POST /api/auth/send-otp: Send OTP on WhatsApp

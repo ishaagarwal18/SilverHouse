@@ -1023,19 +1023,19 @@
 
                         <div class="action-box">
                             <div class="price-group">
-                                <label>Quoted Price:</label>
-                                <input type="number" step="100" min="0" class="price-input" id="price-${o.order_id}" value="${o.final_payable || 0}" placeholder="₹ Quotation" />
+                                <label>Quoted Price (₹):</label>
+                                <input type="number" step="100" min="0" class="price-input" id="price-${o.order_id}" value="${o.final_payable || 0}" placeholder="₹ Quotation" title="Price displayed to customer upon approval" />
                             </div>
 
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <select class="status-select" id="status-${o.order_id}">
                                     <option value="processing" ${o.confirm === 'processing' ? 'selected' : ''}>⏳ Processing</option>
-                                    <option value="accepted" ${o.confirm === 'accepted' ? 'selected' : ''}>✅ Accepted</option>
+                                    <option value="accepted" ${o.confirm === 'accepted' ? 'selected' : ''}>✅ Approved</option>
                                     <option value="rejected" ${o.confirm === 'rejected' ? 'selected' : ''}>❌ Rejected</option>
                                 </select>
 
-                                <button class="btn-update" onclick="updateCustomOrder(${o.order_id})" id="btn-${o.order_id}">
-                                    <i class="ph-bold ph-floppy-disk"></i> Save
+                                <button class="btn-update" onclick="updateCustomOrder(${o.order_id})" id="btn-${o.order_id}" title="Save decision, quotation & notify customer">
+                                    <i class="ph-bold ph-paper-plane-tilt"></i> Save & Notify
                                 </button>
                             </div>
                         </div>
@@ -1073,7 +1073,7 @@
 
                 const data = await res.json();
                 if (data.success) {
-                    showToast(`Order #${orderId} updated to '${newStatus}' with price ₹${newPrice}`, 'success');
+                    showToast(`Order #${orderId} marked as '${newStatus}' with price ₹${newPrice}. Customer notified!`, 'success');
                     // Update local state
                     const target = allOrders.find(o => o.order_id === orderId);
                     if (target) {

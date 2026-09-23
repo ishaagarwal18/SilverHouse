@@ -1406,9 +1406,10 @@ BEGIN
         IF @TargetOrderId IS NOT NULL AND @TargetOrderId > 0
         BEGIN
             SELECT 
-                o.order_id, o.order_number, o.user_id, u.full_name AS customer_name, u.email,
+                o.order_id, o.order_number, o.user_id, u.full_name AS customer_name, u.phone,
                 o.address_id, a.recipient_name, a.Block, a.street, a.area, a.city, a.[state], a.pincode, a.country,
                 o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.created_at,
+                o.[confirm], o.is_custom, o.custom_category, o.[description], o.[image],
                 (
                     SELECT 
                         oi.order_item_id, oi.product_id, p.title AS product_name,
@@ -1419,7 +1420,7 @@ BEGIN
                     FOR JSON PATH
                 ) AS items_json
             FROM dbo.orders o
-            INNER JOIN dbo.[user] u ON o.user_id = u.user_id
+            LEFT JOIN dbo.[user] u ON o.user_id = u.user_id
             LEFT JOIN dbo.address a ON o.address_id = a.address_id
             WHERE o.order_id = @TargetOrderId;
         END
@@ -1427,7 +1428,17 @@ BEGIN
         BEGIN
             SELECT 
                 o.order_id, o.order_number, o.user_id,
-                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.created_at
+                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.created_at,
+                o.[confirm], o.is_custom, o.custom_category, o.[description], o.[image],
+                (
+                    SELECT 
+                        oi.order_item_id, oi.product_id, p.title AS product_name,
+                        oi.unit_price, oi.discount_percent, oi.quantity, oi.subtotal
+                    FROM dbo.order_item oi
+                    INNER JOIN dbo.product p ON oi.product_id = p.product_id
+                    WHERE oi.order_id = o.order_id
+                    FOR JSON PATH
+                ) AS items_json
             FROM dbo.orders o
             WHERE o.user_id = @UserId
             ORDER BY o.order_id DESC;
@@ -1435,10 +1446,11 @@ BEGIN
         ELSE
         BEGIN
             SELECT 
-                o.order_id, o.order_number, o.user_id, u.full_name AS customer_name,
-                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.created_at
+                o.order_id, o.order_number, o.user_id, u.full_name AS customer_name, u.phone,
+                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.created_at,
+                o.[confirm], o.is_custom, o.custom_category, o.[description], o.[image]
             FROM dbo.orders o
-            INNER JOIN dbo.[user] u ON o.user_id = u.user_id
+            LEFT JOIN dbo.[user] u ON o.user_id = u.user_id
             ORDER BY o.order_id DESC;
         END
         RETURN;
