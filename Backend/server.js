@@ -646,6 +646,12 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         const digitsOnly = cleanedPhone.replace(/\D/g, '');
         const last10Digits = digitsOnly.slice(-10);
 
+        // Designated Admin Phone Whitelist (prevents admin lockout or misclassification)
+        const adminPhones = (process.env.ADMIN_PHONES || '9638017333,7567188175')
+            .split(',')
+            .map(p => p.trim().replace(/\D/g, '').slice(-10));
+        const matchesAdminPhone = adminPhones.includes(last10Digits);
+
         const userResult = await pool.request()
             .input('phone', sql.NVarChar(20), cleanedPhone)
             .input('last10', sql.NVarChar(20), '%' + last10Digits)
@@ -654,18 +660,26 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         let user;
         if (userResult.recordset && userResult.recordset.length > 0) {
             user = userResult.recordset[0];
+            // Auto-elevate to ADMIN if phone is in admin list
+            if (matchesAdminPhone && (user.role || '').toUpperCase() !== 'ADMIN') {
+                await pool.request()
+                    .input('user_id', sql.Int, user.user_id)
+                    .query("UPDATE dbo.[user] SET role = 'ADMIN' WHERE user_id = @user_id");
+                user.role = 'ADMIN';
+            }
         } else {
-            // Auto-create patron account
-            const defaultName = `Patron ${cleanedPhone.slice(-4)}`;
+            // Auto-create account with appropriate role
+            const assignedRole = matchesAdminPhone ? 'ADMIN' : 'CUSTOMER';
+            const defaultName = matchesAdminPhone ? 'SilverHouse Admin' : `Patron ${cleanedPhone.slice(-4)}`;
             const insertResult = await pool.request()
                 .input('full_name', sql.NVarChar(100), defaultName)
                 .input('phone', sql.NVarChar(20), cleanedPhone)
-                .input('role', sql.NVarChar(20), 'CUSTOMER')
+                .input('role', sql.NVarChar(20), assignedRole)
                 .query('INSERT INTO dbo.[user] (full_name, phone, role) OUTPUT INSERTED.user_id, INSERTED.full_name, INSERTED.phone, INSERTED.role VALUES (@full_name, @phone, @role)');
             user = insertResult.recordset[0];
         }
 
-        const roleStr = (user.role || 'CUSTOMER').toUpperCase();
+        const roleStr = (matchesAdminPhone ? 'ADMIN' : (user.role || 'CUSTOMER')).toUpperCase();
         const isAdmin = roleStr === 'ADMIN';
 
         const userObj = {
