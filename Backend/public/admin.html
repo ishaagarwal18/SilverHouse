@@ -1318,10 +1318,8 @@
             ],
             user: [
                 { name: 'full_name', label: 'Full Name', type: 'text', required: true, placeholder: 'e.g. Isha Agarwal' },
-                { name: 'email', label: 'Email Address', type: 'email', required: true, placeholder: 'e.g. isha@example.com' },
-                { name: 'phone', label: 'Phone Number', type: 'text', placeholder: 'e.g. 9876543210' },
-                { name: 'role', label: 'User Role', type: 'select', options: ['CUSTOMER', 'ADMIN'], default: 'CUSTOMER' },
-                { name: 'password_hash', label: 'Password / Hash', type: 'text', required: true, default: 'hash_default_secret', fullWidth: true }
+                { name: 'phone', label: 'Mobile Number', type: 'text', required: true, placeholder: 'e.g. +91 98765 43210' },
+                { name: 'role', label: 'User Role', type: 'select', options: ['CUSTOMER', 'ADMIN'], default: 'CUSTOMER' }
             ],
             address: [
                 { name: 'user_id', label: 'User ID', type: 'number', required: true, placeholder: 'e.g. 1' },

@@ -227,16 +227,16 @@ BEGIN
         -- 6. User Entity Fetcher
         ELSE IF @proc_name IN ('user', 'users')
         BEGIN
-            DECLARE @UserEmail NVARCHAR(150) = NULL;
+            DECLARE @UserPhone NVARCHAR(20) = NULL;
             IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
-                SET @UserEmail = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.email')));
+                SET @UserPhone = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.phone')));
 
             IF @Condition IS NOT NULL AND @Condition <> ''
-                SELECT user_id, full_name, email, phone, role, created_at FROM dbo.[user] WHERE user_id = TRY_CAST(@Condition AS INT) OR LOWER(email) = LOWER(@Condition);
-            ELSE IF @UserEmail IS NOT NULL AND @UserEmail <> ''
-                SELECT user_id, full_name, email, phone, role, created_at FROM dbo.[user] WHERE LOWER(email) = LOWER(@UserEmail);
+                SELECT user_id, full_name, phone, role, created_at FROM dbo.[user] WHERE user_id = TRY_CAST(@Condition AS INT) OR phone = @Condition;
+            ELSE IF @UserPhone IS NOT NULL AND @UserPhone <> ''
+                SELECT user_id, full_name, phone, role, created_at FROM dbo.[user] WHERE phone = @UserPhone;
             ELSE
-                SELECT user_id, full_name, email, phone, role, created_at FROM dbo.[user] ORDER BY user_id DESC;
+                SELECT user_id, full_name, phone, role, created_at FROM dbo.[user] ORDER BY user_id DESC;
         END
 
         -- 7. Address Entity Fetcher
@@ -265,7 +265,7 @@ BEGIN
                 c.cart_id,
                 c.user_id,
                 ISNULL(u.full_name, 'Guest Patron') AS user_name,
-                u.email AS user_email,
+                ISNULL(u.phone, '') AS user_phone,
                 c.guest_token,
                 (SELECT COUNT(*) FROM dbo.cart_item ci WHERE ci.cart_id = c.cart_id) AS total_items,
                 (SELECT ISNULL(SUM(ci.quantity), 0) FROM dbo.cart_item ci WHERE ci.cart_id = c.cart_id) AS total_quantity,
@@ -335,7 +335,7 @@ BEGIN
                 o.order_number,
                 o.user_id,
                 ISNULL(u.full_name, 'Guest Patron') AS customer_name,
-                u.email AS customer_email,
+                '-' AS customer_email,
                 u.phone AS customer_phone,
                 o.address_id,
                 a.recipient_name,
