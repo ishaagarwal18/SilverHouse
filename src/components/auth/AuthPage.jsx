@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
-  Sparkles, Lock, Mail, User, Phone, Eye, EyeOff, ShieldCheck,
-  ArrowRight, AlertCircle, Building2, LogOut, MapPin, ShoppingBag, ChevronRight, ArrowLeft, Package
+  Sparkles, Phone, ShieldCheck, ArrowRight, AlertCircle, Building2,
+  LogOut, MapPin, ShoppingBag, ChevronRight, ArrowLeft, Package,
+  MessageCircle, RotateCcw, CheckCircle2, Edit2
 } from 'lucide-react';
 import { getAdminUrl } from '../../utils/adminUrl';
 
@@ -11,71 +12,208 @@ export default function AuthPage({ onTriggerToast }) {
   const [searchParams] = useSearchParams();
   const redirectTarget = searchParams.get('redirect') || '/';
 
-  const [activeTab, setActiveTab] = useState(() => {
-    return window.location.pathname.includes('register') ? 'register' : 'login';
-  });
-  const [showPassword, setShowPassword] = useState(false);
+  // Step state: 'PHONE' or 'OTP'
+  const [step, setStep] = useState('PHONE');
+  const [phone, setPhone] = useState('');
+  const [formattedPhone, setFormattedPhone] = useState('');
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const [timer, setTimer] = useState(45);
+  const [canResend, setCanResend] = useState(false);
+  const [devOtpHint, setDevOtpHint] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Form State
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
+  const inputRefs = useRef([]);
 
-  const { user, login, register, logout, isAuthenticated, isAdmin } = useAuth();
+  const { user, requestOtp, verifyOtp, logout, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Timer countdown for OTP resend
+  useEffect(() => {
+    let interval = null;
+    if (step === 'OTP' && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (timer === 0) {
+      setCanResend(true);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [step, timer]);
+
+  // Focus first OTP input when entering OTP step
+  useEffect(() => {
+    if (step === 'OTP' && inputRefs.current[0]) {
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 150);
+    }
+  }, [step]);
+
+  // Handle Requesting OTP
+  const handleSendOtp = async (e) => {
+    if (e) e.preventDefault();
     setError('');
+
+    const clean = phone.replace(/[^0-9]/g, '');
+    if (clean.length < 10) {
+      setError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
     setLoading(true);
-
     try {
-      if (activeTab === 'login') {
-        const result = await login(email, password);
-        if (result.success) {
-          if (onTriggerToast) {
-            onTriggerToast(
-              'success',
-              result.isAdmin ? 'Admin Authenticated' : 'Welcome Back',
-              result.isAdmin
-                ? '👑 Admin Privileges Verified! Opening Admin Studio...'
-                : '✨ You have successfully signed in to SilverHouse.'
-            );
-          }
+      const res = await requestOtp(phone);
+      if (res.success) {
+        setFormattedPhone(res.formattedPhone || phone);
+        if (res.devOtp) {
+          setDevOtpHint(res.devOtp);
+        }
+        setStep('OTP');
+        setTimer(45);
+        setCanResend(false);
+        setOtpDigits(['', '', '', '', '', '']);
 
-          setTimeout(() => {
-            if (result.isAdmin || result.user?.role?.toUpperCase() === 'ADMIN') {
-              const targetUrl = (result.redirectUrl && result.redirectUrl.startsWith('http') && !result.redirectUrl.includes('localhost'))
-                ? result.redirectUrl
-                : getAdminUrl();
-              window.location.href = targetUrl;
-            } else if (redirectTarget === 'checkout' || redirectTarget === '/checkout') {
-              navigate('/?checkout=true');
-            } else {
-              navigate(redirectTarget);
-            }
-          }, 500);
+        if (onTriggerToast) {
+          onTriggerToast(
+            'success',
+            'OTP Sent on WhatsApp',
+            `💬 A 6-digit verification code was sent to ${res.formattedPhone || phone} via WhatsApp.`
+          );
         }
       } else {
-        const result = await register({ fullName, email, phone, password });
-        if (result.success) {
-          if (onTriggerToast) {
-            onTriggerToast('success', 'Account Created', '🎉 Welcome to SilverHouse! Your account is ready.');
-          }
-          setTimeout(() => {
-            if (redirectTarget === 'checkout' || redirectTarget === '/checkout') {
-              navigate('/?checkout=true');
-            } else {
-              navigate(redirectTarget);
-            }
-          }, 500);
-        }
+        setError(res.error || 'Failed to send OTP. Please try again.');
       }
     } catch (err) {
-      setError(err.message || 'Authentication failed. Please check your credentials.');
+      setError(err.message || 'Unable to send OTP. Please verify your phone number.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Resending OTP
+  const handleResendOtp = async () => {
+    if (!canResend || loading) return;
+    setError('');
+    setLoading(true);
+    try {
+      const res = await requestOtp(phone);
+      if (res.success) {
+        if (res.devOtp) {
+          setDevOtpHint(res.devOtp);
+        }
+        setTimer(45);
+        setCanResend(false);
+        setOtpDigits(['', '', '', '', '', '']);
+        if (inputRefs.current[0]) inputRefs.current[0].focus();
+
+        if (onTriggerToast) {
+          onTriggerToast('info', 'OTP Resent', '💬 A fresh code was sent to your WhatsApp.');
+        }
+      } else {
+        setError(res.error || 'Failed to resend OTP.');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to resend code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Individual OTP Input
+  const handleOtpChange = (index, value) => {
+    const cleanVal = value.replace(/[^0-9]/g, '');
+    if (!cleanVal) {
+      const newDigits = [...otpDigits];
+      newDigits[index] = '';
+      setOtpDigits(newDigits);
+      return;
+    }
+
+    // Single character entered
+    const char = cleanVal.slice(-1);
+    const newDigits = [...otpDigits];
+    newDigits[index] = char;
+    setOtpDigits(newDigits);
+
+    // Auto-advance to next box
+    if (index < 5 && char) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === 'Backspace') {
+      if (!otpDigits[index] && index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      }
+    }
+  };
+
+  // Support pasting full 6-digit code
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData('text').trim().replace(/[^0-9]/g, '');
+    if (pasteData.length >= 6) {
+      const digits = pasteData.slice(0, 6).split('');
+      setOtpDigits(digits);
+      inputRefs.current[5]?.focus();
+    }
+  };
+
+  // Quick auto-fill for testing/development
+  const handleFillDevOtp = () => {
+    if (devOtpHint && devOtpHint.length === 6) {
+      setOtpDigits(devOtpHint.split(''));
+      inputRefs.current[5]?.focus();
+    }
+  };
+
+  // Handle Verifying OTP
+  const handleVerifyOtp = async (e) => {
+    if (e) e.preventDefault();
+    setError('');
+
+    const fullOtp = otpDigits.join('');
+    if (fullOtp.length !== 6) {
+      setError('Please enter all 6 digits of the OTP.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await verifyOtp(formattedPhone || phone, fullOtp);
+      if (result.success) {
+        if (onTriggerToast) {
+          onTriggerToast(
+            'success',
+            result.isAdmin ? 'Admin Authenticated' : 'Welcome to SilverHouse',
+            result.isAdmin
+              ? '👑 Admin Privileges Verified! Opening Admin Studio...'
+              : '✨ You are successfully verified & signed in.'
+          );
+        }
+
+        setTimeout(() => {
+          if (result.isAdmin || result.user?.role?.toUpperCase() === 'ADMIN') {
+            const targetUrl = (result.redirectUrl && result.redirectUrl.startsWith('http') && !result.redirectUrl.includes('localhost'))
+              ? result.redirectUrl
+              : getAdminUrl();
+            window.location.href = targetUrl;
+          } else if (redirectTarget === 'checkout' || redirectTarget === '/checkout') {
+            navigate('/?checkout=true');
+          } else {
+            navigate(redirectTarget);
+          }
+        }, 500);
+      } else {
+        setError(result.error || 'Invalid OTP code. Please check and try again.');
+      }
+    } catch (err) {
+      setError(err.message || 'Verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -83,13 +221,16 @@ export default function AuthPage({ onTriggerToast }) {
 
   const handleLogout = () => {
     logout();
+    setStep('PHONE');
+    setPhone('');
+    setOtpDigits(['', '', '', '', '', '']);
     if (onTriggerToast) {
       onTriggerToast('info', 'Logged Out', '👋 You have been logged out securely.');
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-130px)] bg-[var(--th-bg)] text-[var(--th-text-main)] flex flex-col items-center justify-start pt-3 sm:pt-5 pb-8 px-3 sm:px-4 relative font-sans transition-colors duration-300">
+    <div className="min-h-[calc(100vh-130px)] bg-[var(--th-bg)] text-[var(--th-text-main)] flex flex-col items-center justify-start pt-3 sm:pt-6 pb-8 px-3 sm:px-4 relative font-sans transition-colors duration-300">
 
       {/* Subtle Ambient Background Glows */}
       <div className="absolute top-0 left-1/4 w-80 h-80 bg-[var(--th-primary)]/10 rounded-full blur-[100px] pointer-events-none" />
@@ -120,7 +261,7 @@ export default function AuthPage({ onTriggerToast }) {
             {/* User Profile Header */}
             <div className="flex items-center space-x-3 pb-4 border-b border-[var(--th-border)]/70">
               <div className="w-12 h-12 rounded-xl bg-[var(--th-primary)]/15 border border-[var(--th-accent)] text-[var(--th-primary)] flex items-center justify-center font-serif text-xl font-bold shadow-sm shrink-0">
-                {(user.fullName || user.email || 'U').charAt(0).toUpperCase()}
+                {(user.fullName || user.phone || 'P').charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2">
@@ -135,9 +276,13 @@ export default function AuthPage({ onTriggerToast }) {
                     {user.role || 'CUSTOMER'}
                   </span>
                 </div>
-                <p className="text-[11px] text-[var(--th-text-muted)] truncate">{user.email}</p>
-                {user.phone && (
-                  <p className="text-[10px] text-[var(--th-text-muted)]">📞 {user.phone}</p>
+                {user.phone ? (
+                  <p className="text-[11px] font-mono text-[var(--th-text-muted)] truncate flex items-center gap-1 mt-0.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    {user.phone}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-[var(--th-text-muted)] truncate">{user.email}</p>
                 )}
               </div>
             </div>
@@ -258,19 +403,26 @@ export default function AuthPage({ onTriggerToast }) {
 
           </div>
         ) : (
-          /* 2. GUEST VIEW: Login / Register Form (Compact 1-Screen) */
+          /* 2. GUEST VIEW: WhatsApp OTP Authentication Card */
           <div className="bg-[var(--th-card)] border border-[var(--th-border)] rounded-2xl shadow-xl overflow-hidden p-5 sm:p-6 backdrop-blur-md relative">
 
-            {/* Back Button & Brand Header Inside Card */}
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[var(--th-border)]/50">
+            {/* Top Navigation & Brand Header */}
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-[var(--th-border)]/50">
               <button
                 type="button"
-                onClick={() => navigate(-1)}
+                onClick={() => {
+                  if (step === 'OTP') {
+                    setStep('PHONE');
+                    setError('');
+                  } else {
+                    navigate(-1);
+                  }
+                }}
                 className="inline-flex items-center space-x-1.5 text-xs font-bold text-[var(--th-text-muted)] hover:text-[var(--th-primary)] px-2.5 py-1 rounded-lg hover:bg-[var(--th-surface-alt)] border border-[var(--th-border)] transition-all cursor-pointer group"
-                title="Go back to previous page"
+                title="Go back"
               >
                 <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
-                <span>Back</span>
+                <span>{step === 'OTP' ? 'Change Phone' : 'Back'}</span>
               </button>
 
               <div 
@@ -284,163 +436,184 @@ export default function AuthPage({ onTriggerToast }) {
               </div>
             </div>
 
-            {/* Subtitle */}
-            <div className="text-center mb-3">
-              <p className="text-[10px] text-[var(--th-text-muted)] tracking-widest uppercase">
-                SACRED 925 & 999 PURE SILVER
-              </p>
+            {/* WhatsApp Badge Banner */}
+            <div className="mb-4 flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold tracking-wide w-fit mx-auto">
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 fill-emerald-600/20" />
+              <span>Fast & Secure WhatsApp Login</span>
             </div>
 
-            {/* Segmented Auth Mode Switcher */}
-            <div className="flex bg-[var(--th-surface-alt)] p-1 rounded-xl border border-[var(--th-border)] mb-3">
-              <button
-                type="button"
-                onClick={() => { setActiveTab('login'); setError(''); }}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all uppercase tracking-wider cursor-pointer ${
-                  activeTab === 'login'
-                    ? 'bg-[var(--th-primary)] text-white shadow-sm'
-                    : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => { setActiveTab('register'); setError(''); }}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all uppercase tracking-wider cursor-pointer ${
-                  activeTab === 'register'
-                    ? 'bg-[var(--th-primary)] text-white shadow-sm'
-                    : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
-                }`}
-              >
-                Create Account
-              </button>
-            </div>
-
-            {/* Error Message */}
+            {/* Error Message Alert */}
             {error && (
-              <div className="mb-2.5 p-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center space-x-1.5 animate-in fade-in duration-200">
+              <div className="mb-3 p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center space-x-1.5 animate-in fade-in duration-200">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
-                <span className="truncate">{error}</span>
+                <span className="leading-tight">{error}</span>
               </div>
             )}
 
-            {/* Compact Form Fields */}
-            <form onSubmit={handleSubmit} className="space-y-2.5">
+            {/* STEP 1: PHONE NUMBER INPUT */}
+            {step === 'PHONE' && (
+              <form onSubmit={handleSendOtp} className="space-y-4">
+                <div className="text-center mb-2">
+                  <h1 className="text-lg font-bold text-[var(--th-text-main)] font-serif">
+                    Sign In with Phone
+                  </h1>
+                  <p className="text-xs text-[var(--th-text-muted)] mt-1">
+                    Enter your mobile number to receive a 6-digit WhatsApp verification code.
+                  </p>
+                </div>
 
-              {/* Full Name (Register only) */}
-              {activeTab === 'register' && (
                 <div>
-                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1">
-                    Full Name *
+                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1.5">
+                    Mobile Number *
                   </label>
-                  <div className="relative">
-                    <User className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="e.g. Yash Agarwal"
-                      className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] pl-9 pr-3 py-2 rounded-lg text-xs outline-none transition-all placeholder:text-[var(--th-text-muted)]/60 focus:ring-1 focus:ring-[var(--th-primary)]/20"
-                    />
+                  <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                    <div className="flex items-center gap-1 px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-text-main)] select-none">
+                      <span className="text-sm">🇮🇳</span>
+                      <span>+91</span>
+                    </div>
+                    <div className="relative flex-1">
+                      <input
+                        type="tel"
+                        autoFocus
+                        required
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="98765 43210"
+                        className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2.5 text-sm font-medium tracking-wide outline-none placeholder:text-[var(--th-text-muted)]/50"
+                      />
+                    </div>
                   </div>
+                  <p className="text-[10px] text-[var(--th-text-muted)] mt-1">
+                    No password required. New patrons are registered automatically.
+                  </p>
                 </div>
-              )}
 
-              {/* Email Address */}
-              <div>
-                <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1">
-                  Email Address *
-                </label>
-                <div className="relative">
-                  <Mail className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] pl-9 pr-3 py-2 rounded-lg text-xs outline-none transition-all placeholder:text-[var(--th-text-muted)]/60 focus:ring-1 focus:ring-[var(--th-primary)]/20"
-                  />
-                </div>
-              </div>
+                {/* Send OTP Button */}
+                <button
+                  type="submit"
+                  disabled={loading || !phone.trim()}
+                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 transform active:scale-98 disabled:opacity-50 cursor-pointer"
+                >
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <MessageCircle className="w-4 h-4 fill-white/20" />
+                      <span>Send WhatsApp OTP</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
 
-              {/* Phone field (Register only) */}
-              {activeTab === 'register' && (
-                <div>
-                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1">
-                    Phone Number (Optional)
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+91 98765 43210"
-                      className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] pl-9 pr-3 py-2 rounded-lg text-xs outline-none transition-all placeholder:text-[var(--th-text-muted)]/60 focus:ring-1 focus:ring-[var(--th-primary)]/20"
-                    />
+            {/* STEP 2: DEDICATED OTP CARD */}
+            {step === 'OTP' && (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div className="text-center mb-1">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 mx-auto mb-2 flex items-center justify-center shadow-xs">
+                    <CheckCircle2 className="w-5 h-5" />
                   </div>
-                </div>
-              )}
-
-              {/* Password field */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)]">
-                    Password *
-                  </label>
-                  {activeTab === 'login' && (
-                    <span
-                      onClick={() => alert("For password assistance, please contact support@silverhouse.com")}
-                      className="text-[10px] text-[var(--th-accent)] hover:underline cursor-pointer"
+                  <h2 className="text-lg font-bold text-[var(--th-text-main)] font-serif">
+                    Enter Verification Code
+                  </h2>
+                  <div className="flex items-center justify-center gap-1.5 text-xs text-[var(--th-text-muted)] mt-1">
+                    <span>Sent to WhatsApp:</span>
+                    <strong className="text-[var(--th-text-main)] font-mono">{formattedPhone || phone}</strong>
+                    <button
+                      type="button"
+                      onClick={() => { setStep('PHONE'); setError(''); }}
+                      className="text-[var(--th-accent)] hover:underline ml-1 inline-flex items-center gap-0.5 cursor-pointer"
+                      title="Edit phone number"
                     >
-                      Forgot?
+                      <Edit2 className="w-3 h-3" />
+                      <span>Edit</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 6 Digit Input Boxes */}
+                <div className="py-2">
+                  <div className="flex justify-between items-center gap-1.5 sm:gap-2" onPaste={handlePaste}>
+                    {otpDigits.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => (inputRefs.current[idx] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(idx, e)}
+                        className={`w-11 h-12 sm:w-12 sm:h-14 text-center font-mono text-xl font-bold rounded-xl border transition-all outline-none ${
+                          digit
+                            ? 'border-emerald-500 bg-emerald-50/20 text-[var(--th-text-main)] ring-1 ring-emerald-500/20'
+                            : 'border-[var(--th-border)] bg-[var(--th-surface-alt)] text-[var(--th-text-main)] focus:border-[var(--th-primary)] focus:ring-2 focus:ring-[var(--th-primary)]/20'
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Dev / Test OTP Helper Pill if available */}
+                  {devOtpHint && (
+                    <div className="mt-2.5 p-1.5 px-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center justify-between text-[11px] text-amber-800 dark:text-amber-200">
+                      <span>Test OTP: <strong className="font-mono tracking-widest">{devOtpHint}</strong></span>
+                      <button
+                        type="button"
+                        onClick={handleFillDevOtp}
+                        className="text-[10px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-100 underline hover:no-underline cursor-pointer"
+                      >
+                        Auto-fill
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Resend OTP Section */}
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <span className="text-[var(--th-text-muted)] text-[11px]">
+                    Didn't receive the WhatsApp message?
+                  </span>
+                  {canResend ? (
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={loading}
+                      className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Resend OTP</span>
+                    </button>
+                  ) : (
+                    <span className="font-mono font-semibold text-[var(--th-text-muted)] text-[11px]">
+                      Resend in {timer}s
                     </span>
                   )}
                 </div>
-                <div className="relative">
-                  <Lock className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] text-[var(--th-text-main)] pl-9 pr-9 py-2 rounded-lg text-xs outline-none transition-all placeholder:text-[var(--th-text-muted)]/60 focus:ring-1 focus:ring-[var(--th-primary)]/20"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] transition-colors cursor-pointer p-0.5"
-                  >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full mt-3 py-2.5 px-4 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center space-x-2 transform active:scale-98 disabled:opacity-50 cursor-pointer"
-              >
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <span>{activeTab === 'login' ? 'Sign In & Continue' : 'Create Account'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </>
-                )}
-              </button>
-            </form>
+                {/* Verify Button */}
+                <button
+                  type="submit"
+                  disabled={loading || otpDigits.join('').length !== 6}
+                  className="w-full py-3 px-4 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 transform active:scale-98 disabled:opacity-50 cursor-pointer"
+                >
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>Verify & Continue</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
 
             {/* Footer Trust Guarantee */}
-            <div className="mt-3 text-center text-[10px] text-[var(--th-text-muted)] flex items-center justify-center space-x-1">
-              <ShieldCheck className="w-3 h-3 text-[var(--th-accent)]" />
-              <span>256-Bit SSL Encrypted & BIS Hallmarked Trust</span>
+            <div className="mt-4 pt-3 border-t border-[var(--th-border)]/50 text-center text-[10px] text-[var(--th-text-muted)] flex items-center justify-center space-x-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[var(--th-accent)] shrink-0" />
+              <span>Official WhatsApp Business OTP & BIS Hallmarked Security</span>
             </div>
 
           </div>
@@ -450,3 +623,4 @@ export default function AuthPage({ onTriggerToast }) {
     </div>
   );
 }
+

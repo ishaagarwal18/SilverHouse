@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, registerUser, fetchCurrentUser } from '../services/auth';
+import { loginUser, registerUser, fetchCurrentUser, sendPhoneOtp, verifyPhoneOtp } from '../services/auth';
 
 const AuthContext = createContext(null);
 
@@ -55,6 +55,21 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const requestOtp = async (phone) => {
+    return await sendPhoneOtp(phone);
+  };
+
+  const verifyOtp = async (phone, otp) => {
+    const data = await verifyPhoneOtp(phone, otp);
+    if (data.success) {
+      setUser(data.user);
+      setToken(data.token);
+      localStorage.setItem('silverhouse_token', data.token);
+      localStorage.setItem('silverhouse_user', JSON.stringify(data.user));
+    }
+    return data;
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -72,6 +87,8 @@ export function AuthProvider({ children }) {
         loading,
         login,
         register,
+        requestOtp,
+        verifyOtp,
         logout,
         isAdmin,
         isAuthenticated: Boolean(user)

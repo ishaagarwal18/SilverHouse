@@ -23,6 +23,7 @@ export default function ProductListingPage({
 
   const colorQueryParam = searchParams.get('color');
   const minPriceQuery = searchParams.get('minPrice');
+
   const maxPriceQuery = searchParams.get('maxPrice');
 
   const categoryList = (categories && categories.length > 0) ? categories : CATEGORIES;
@@ -591,9 +592,9 @@ export default function ProductListingPage({
 
     // Database Categories Dynamic Matching
     categoryList.forEach(cat => {
-      const catCount = rawList.filter(p => 
-        p.category === cat.id || 
-        p.category_slug === cat.id || 
+      const catCount = rawList.filter(p =>
+        p.category === cat.id ||
+        p.category_slug === cat.id ||
         p.category_slug === cat.slug ||
         String(p.category_id) === String(cat.category_id)
       ).length;

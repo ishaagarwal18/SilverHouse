@@ -495,6 +495,204 @@ app.get('/api/admin/analytics', async (req, res) => {
     }
 });
 
+// =========================================================================
+// WHATSAPP OTP AUTHENTICATION HELPERS & APIS
+// =========================================================================
+
+function cleanPhoneNumber(rawPhone) {
+    if (!rawPhone) return '';
+    let cleaned = String(rawPhone).replace(/[^\d+]/g, '').trim();
+    // If 10 digits without prefix, default to India (+91)
+    if (/^\d{10}$/.test(cleaned)) {
+        cleaned = '+91' + cleaned;
+    } else if (/^91\d{10}$/.test(cleaned)) {
+        cleaned = '+' + cleaned;
+    }
+    return cleaned;
+}
+
+async function sendWhatsAppOtp(phone, otp) {
+    const message = `✨ *SilverHouse Fine Jewelry*\n\nYour one-time WhatsApp verification code is: *${otp}*\n\nValid for 5 minutes. Please do not share this sacred code with anyone.\n\n_Pure 925 & 999 Artisanal Silver_`;
+
+    console.log(`\n======================================================`);
+    console.log(`[WhatsApp OTP Gateway] 💬 Outgoing WhatsApp Message:`);
+    console.log(`To: ${phone}`);
+    console.log(`OTP: ${otp}`);
+    console.log(`Message:\n${message}`);
+    console.log(`======================================================\n`);
+
+    // Dispatches via external WhatsApp API gateway if configured
+    if (process.env.WHATSAPP_API_URL && process.env.WHATSAPP_API_TOKEN) {
+        try {
+            await fetch(process.env.WHATSAPP_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`
+                },
+                body: JSON.stringify({
+                    to: phone,
+                    message: message
+                })
+            });
+            console.log(`[WhatsApp Gateway] Successfully dispatched to provider for ${phone}`);
+        } catch (apiErr) {
+            console.warn(`[WhatsApp Gateway Warning] Provider dispatch failed:`, apiErr.message);
+        }
+    }
+    return true;
+}
+
+// 1. POST /api/auth/send-otp: Send OTP on WhatsApp
+app.post('/api/auth/send-otp', async (req, res) => {
+    try {
+        const { phone } = req.body;
+        const cleanedPhone = cleanPhoneNumber(phone);
+
+        if (!cleanedPhone || cleanedPhone.replace(/\D/g, '').length < 10) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please enter a valid 10-digit mobile number.'
+            });
+        }
+
+        // Generate 6-digit numeric OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
+
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        // Upsert OTP in dbo.phone_otp
+        await pool.request()
+            .input('phone', sql.NVarChar(20), cleanedPhone)
+            .input('otp_code', sql.NVarChar(10), otp)
+            .input('expires_at', sql.DateTime2, expiresAt)
+            .query(`
+                MERGE dbo.phone_otp AS target
+                USING (SELECT @phone AS phone) AS source
+                ON (target.phone = source.phone)
+                WHEN MATCHED THEN
+                    UPDATE SET otp_code = @otp_code, expires_at = @expires_at, attempts = 0, created_at = SYSUTCDATETIME()
+                WHEN NOT MATCHED THEN
+                    INSERT (phone, otp_code, expires_at, attempts, created_at)
+                    VALUES (@phone, @otp_code, @expires_at, 0, SYSUTCDATETIME());
+            `);
+
+        // Send via WhatsApp
+        await sendWhatsAppOtp(cleanedPhone, otp);
+
+        return res.status(200).json({
+            success: true,
+            message: `Verification code sent to WhatsApp (${cleanedPhone})`,
+            phone: cleanedPhone,
+            devOtp: otp
+        });
+    } catch (err) {
+        console.error('[Send OTP Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 2. POST /api/auth/verify-otp: Verify WhatsApp OTP & Login/Register Customer
+app.post('/api/auth/verify-otp', async (req, res) => {
+    try {
+        const { phone, otp } = req.body;
+        const cleanedPhone = cleanPhoneNumber(phone);
+
+        if (!cleanedPhone || !otp) {
+            return res.status(400).json({ success: false, error: 'Phone number and 6-digit OTP are required.' });
+        }
+
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        // Verify OTP against dbo.phone_otp
+        const otpResult = await pool.request()
+            .input('phone', sql.NVarChar(20), cleanedPhone)
+            .query('SELECT phone, otp_code, expires_at, attempts FROM dbo.phone_otp WHERE phone = @phone');
+
+        if (!otpResult.recordset || otpResult.recordset.length === 0) {
+            return res.status(400).json({ success: false, error: 'No active OTP found for this phone number. Please request a new code.' });
+        }
+
+        const record = otpResult.recordset[0];
+
+        if (new Date() > new Date(record.expires_at)) {
+            return res.status(400).json({ success: false, error: 'OTP has expired. Please request a new code on WhatsApp.' });
+        }
+
+        if (record.attempts >= 5) {
+            return res.status(429).json({ success: false, error: 'Too many incorrect attempts. Please request a new OTP.' });
+        }
+
+        if (record.otp_code.trim() !== String(otp).trim()) {
+            await pool.request()
+                .input('phone', sql.NVarChar(20), cleanedPhone)
+                .query('UPDATE dbo.phone_otp SET attempts = attempts + 1 WHERE phone = @phone');
+            return res.status(400).json({ success: false, error: 'Invalid verification code. Please check your WhatsApp.' });
+        }
+
+        // OTP is valid! Clean up consumed OTP
+        await pool.request()
+            .input('phone', sql.NVarChar(20), cleanedPhone)
+            .query('DELETE FROM dbo.phone_otp WHERE phone = @phone');
+
+        // Lookup user in dbo.[user] by phone or last 10 digits
+        const digitsOnly = cleanedPhone.replace(/\D/g, '');
+        const last10Digits = digitsOnly.slice(-10);
+
+        const userResult = await pool.request()
+            .input('phone', sql.NVarChar(20), cleanedPhone)
+            .input('last10', sql.NVarChar(20), '%' + last10Digits)
+            .query('SELECT TOP 1 user_id, full_name, email, phone, role FROM dbo.[user] WHERE phone = @phone OR phone LIKE @last10');
+
+        let user;
+        if (userResult.recordset && userResult.recordset.length > 0) {
+            user = userResult.recordset[0];
+        } else {
+            // Auto-create patron account
+            const defaultName = `Patron ${cleanedPhone.slice(-4)}`;
+            const insertResult = await pool.request()
+                .input('full_name', sql.NVarChar(100), defaultName)
+                .input('phone', sql.NVarChar(20), cleanedPhone)
+                .input('role', sql.NVarChar(20), 'CUSTOMER')
+                .query('INSERT INTO dbo.[user] (full_name, phone, role) OUTPUT INSERTED.user_id, INSERTED.full_name, INSERTED.email, INSERTED.phone, INSERTED.role VALUES (@full_name, @phone, @role)');
+            user = insertResult.recordset[0];
+        }
+
+        const roleStr = (user.role || 'CUSTOMER').toUpperCase();
+        const isAdmin = roleStr === 'ADMIN';
+
+        const userObj = {
+            userId: user.user_id,
+            fullName: user.full_name,
+            email: user.email || '',
+            phone: user.phone || cleanedPhone,
+            role: roleStr
+        };
+
+        const token = Buffer.from(JSON.stringify(userObj)).toString('base64');
+
+        return res.status(200).json({
+            success: true,
+            message: 'Phone verified successfully',
+            token: token,
+            user: userObj,
+            role: userObj.role,
+            isAdmin: isAdmin,
+            redirectUrl: isAdmin ? (process.env.ADMIN_URL || 'https://silverhouse-pap9.onrender.com/') : '/'
+        });
+    } catch (err) {
+        console.error('[Verify OTP Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // AUTHENTICATION ENDPOINTS (Login, Register, Session Verification)
 app.post('/api/auth/login', async (req, res) => {
     try {

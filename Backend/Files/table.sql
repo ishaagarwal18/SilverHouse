@@ -98,11 +98,24 @@ IF OBJECT_ID('dbo.[user]', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.[user] (
         user_id INT IDENTITY(1,1) PRIMARY KEY,
-        full_name NVARCHAR(100) NOT NULL,
-        email NVARCHAR(150) NOT NULL UNIQUE,
-        phone NVARCHAR(20) NULL,
-        password_hash NVARCHAR(255) NOT NULL,
+        full_name NVARCHAR(100) NOT NULL DEFAULT 'SilverHouse Patron',
+        email NVARCHAR(150) NULL,
+        phone NVARCHAR(20) NOT NULL,
+        password_hash NVARCHAR(255) NULL,
         [role] NVARCHAR(20) NOT NULL DEFAULT 'CUSTOMER',
+        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+END;
+GO
+
+-- 1B. PHONE OTP VERIFICATION TABLE
+IF OBJECT_ID('dbo.phone_otp', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.phone_otp (
+        phone NVARCHAR(20) PRIMARY KEY,
+        otp_code NVARCHAR(10) NOT NULL,
+        expires_at DATETIME2 NOT NULL,
+        attempts INT NOT NULL DEFAULT 0,
         created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
     );
 END;

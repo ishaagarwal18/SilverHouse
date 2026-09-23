@@ -57,6 +57,60 @@ export async function registerUser({ fullName, email, phone, password }) {
 }
 
 /**
+ * Send WhatsApp OTP to phone number
+ */
+export async function sendPhoneOtp(phone) {
+  try {
+    const res = await fetch(`${API_BASE}/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`Server returned status ${res.status}. Please ensure backend is running.`);
+    }
+
+    if (!res.ok || !data.success) {
+      throw new Error(data?.error || 'Failed to send OTP to WhatsApp.');
+    }
+    return data;
+  } catch (err) {
+    throw err;
+  }
+}
+
+/**
+ * Verify WhatsApp OTP and sign in / register
+ */
+export async function verifyPhoneOtp(phone, otp) {
+  try {
+    const res = await fetch(`${API_BASE}/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp })
+    });
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`Server returned status ${res.status}. Please ensure backend is running.`);
+    }
+
+    if (!res.ok || !data.success) {
+      throw new Error(data?.error || 'Invalid OTP code.');
+    }
+    return data;
+  } catch (err) {
+    throw err;
+  }
+}
+
+/**
  * Verify current active user session via token
  */
 export async function fetchCurrentUser(token) {
