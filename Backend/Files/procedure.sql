@@ -739,7 +739,7 @@ GO
 -- =========================================================================
 -- PROCEDURE 6: SP_User
 -- =========================================================================
-CREATE PROCEDURE dbo.SP_user
+CREATE PROCEDURE [dbo].[SP_user]
     @Opr       NVARCHAR(10),
     @JSONstr   NVARCHAR(MAX) = NULL,
     @Condition NVARCHAR(MAX) = NULL
@@ -748,71 +748,56 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @TargetUserId INT = TRY_CAST(@Condition AS INT);
     DECLARE @FullName NVARCHAR(100);
-    DECLARE @Email NVARCHAR(150);
     DECLARE @Phone NVARCHAR(20);
-    DECLARE @PasswordHash NVARCHAR (255);
     DECLARE @Role NVARCHAR(20);
 
     IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
     BEGIN
         SELECT
-            @FullName        = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.full_name'))),
-            @Email = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.email'))),
-            @Phone       = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.phone'))),
-            @PasswordHash    = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.password_hash'))),
-            @Role    = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.role')));
+            @FullName = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.full_name'))),
+            @Phone    = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.phone'))),
+            @Role     = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.role')));
     END
 
     IF @Opr ='Select'
     BEGIN
        IF @TargetUserId IS NOT NULL AND @TargetUserId > 0
         BEGIN
-            SELECT user_id, full_name, email, phone, [role], created_at
+            SELECT user_id, full_name, phone, [role], created_at
             FROM dbo.[user]
             WHERE user_id = @TargetUserId;
         END
-        ELSE IF @Email IS NOT NULL AND @Email <> ''
+        ELSE IF @Phone IS NOT NULL AND @Phone <> ''
         BEGIN
-            SELECT user_id, full_name, email, phone, password_hash, [role], created_at
+            SELECT user_id, full_name, phone, [role], created_at
             FROM dbo.[user]
-            WHERE email = @Email;
+            WHERE phone = @Phone;
         END
         ELSE
         BEGIN
-            SELECT user_id, full_name, email, phone, [role], created_at
+            SELECT user_id, full_name, phone, [role], created_at
             FROM dbo.[user]
             ORDER BY user_id DESC;
         END
         RETURN;
     END
+
     IF @Opr='ADD'
     BEGIN
+        IF @Phone IS NULL OR LEN(@Phone) = 0
+        BEGIN
+            RAISERROR('Validation Error: phone cannot be blank.', 16, 1);
+            RETURN;
+        END
+
         IF @FullName IS NULL OR LEN(@FullName) = 0
-        BEGIN
-            RAISERROR('Validation Error: full_name cannot be blank.', 16, 1);
-            RETURN;
-        END
-        IF @Email IS NULL OR LEN(@Email) = 0
-        BEGIN
-            RAISERROR('Validation Error: email cannot be blank.', 16, 1);
-            RETURN;
-        END
-        IF @PasswordHash IS NULL OR LEN(@PasswordHash) = 0
-        BEGIN
-            RAISERROR('Validation Error: password_hash cannot be blank.', 16, 1);
-            RETURN;
-        END
+            SET @FullName = 'SilverHouse Patron';
 
-        IF EXISTS (SELECT 1 FROM dbo.[user] WHERE email = @Email)
-        BEGIN
-            RAISERROR('Validation Error: An account with this email already exists.', 16, 1);
-            RETURN;
-        END
+        IF @Role IS NULL OR @Role = '' 
+            SET @Role = 'CUSTOMER';
 
-        IF @Role IS NULL OR @Role = '' SET @Role = 'CUSTOMER';
-
-        INSERT INTO dbo.[user] (full_name, email, phone, password_hash, [role])
-        VALUES (@FullName, @Email, @Phone, @PasswordHash, @Role);
+        INSERT INTO dbo.[user] (full_name, phone, [role])
+        VALUES (@FullName, @Phone, @Role);
 
         DECLARE @NewUserId INT = SCOPE_IDENTITY();
         SELECT @NewUserId AS user_id, 'User registered successfully' AS [Message];
@@ -827,18 +812,10 @@ BEGIN
             RETURN;
         END
 
-        IF @Email IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.[user] WHERE email = @Email AND user_id <> @TargetUserId)
-        BEGIN
-            RAISERROR('Validation Error: Email is already taken by another account.', 16, 1);
-            RETURN;
-        END
-
         UPDATE dbo.[user]
-        SET full_name     = ISNULL(@FullName, full_name),
-            email         = ISNULL(@Email, email),
-            phone         = ISNULL(@Phone, phone),
-            password_hash = ISNULL(@PasswordHash, password_hash),
-            [role]        = ISNULL(@Role, [role])
+        SET full_name = ISNULL(@FullName, full_name),
+            phone     = ISNULL(@Phone, phone),
+            [role]    = ISNULL(@Role, [role])
         WHERE user_id = @TargetUserId;
 
         SELECT @TargetUserId AS user_id, 'User profile updated successfully' AS [Message];
@@ -1473,15 +1450,15 @@ BEGIN
         -- Ensure valid user_id for NOT NULL constraint
         IF @UserId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.[user] WHERE user_id = @UserId)
         BEGIN
-            IF @CustomerEmail IS NOT NULL AND @CustomerEmail <> ''
+            IF @CustomerPhone IS NOT NULL AND @CustomerPhone <> ''
             BEGIN
-                SELECT TOP 1 @UserId = user_id FROM dbo.[user] WHERE LOWER(email) = LOWER(@CustomerEmail);
+                SELECT TOP 1 @UserId = user_id FROM dbo.[user] WHERE phone = @CustomerPhone;
             END
 
             IF @UserId IS NULL
             BEGIN
-                INSERT INTO dbo.[user] (full_name, email, phone, role, password_hash, created_at)
-                VALUES (COALESCE(@CustomerName, 'Valued Customer'), COALESCE(@CustomerEmail, 'guest@silverhouse.com'), @CustomerPhone, 'CUSTOMER', 'GUEST_NO_PASSWORD', SYSDATETIME());
+                INSERT INTO dbo.[user] (full_name, phone, role, created_at)
+                VALUES (COALESCE(@CustomerName, 'Valued Patron'), COALESCE(@CustomerPhone, '0000000000'), 'CUSTOMER', SYSUTCDATETIME());
                 SET @UserId = SCOPE_IDENTITY();
             END
 

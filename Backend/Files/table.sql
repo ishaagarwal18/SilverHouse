@@ -99,9 +99,7 @@ BEGIN
     CREATE TABLE dbo.[user] (
         user_id INT IDENTITY(1,1) PRIMARY KEY,
         full_name NVARCHAR(100) NOT NULL DEFAULT 'SilverHouse Patron',
-        email NVARCHAR(150) NULL,
         phone NVARCHAR(20) NOT NULL,
-        password_hash NVARCHAR(255) NULL,
         [role] NVARCHAR(20) NOT NULL DEFAULT 'CUSTOMER',
         created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
     );

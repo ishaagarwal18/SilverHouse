@@ -649,7 +649,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         const userResult = await pool.request()
             .input('phone', sql.NVarChar(20), cleanedPhone)
             .input('last10', sql.NVarChar(20), '%' + last10Digits)
-            .query('SELECT TOP 1 user_id, full_name, email, phone, role FROM dbo.[user] WHERE phone = @phone OR phone LIKE @last10');
+            .query('SELECT TOP 1 user_id, full_name, phone, role FROM dbo.[user] WHERE phone = @phone OR phone LIKE @last10');
 
         let user;
         if (userResult.recordset && userResult.recordset.length > 0) {
@@ -661,7 +661,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
                 .input('full_name', sql.NVarChar(100), defaultName)
                 .input('phone', sql.NVarChar(20), cleanedPhone)
                 .input('role', sql.NVarChar(20), 'CUSTOMER')
-                .query('INSERT INTO dbo.[user] (full_name, phone, role) OUTPUT INSERTED.user_id, INSERTED.full_name, INSERTED.email, INSERTED.phone, INSERTED.role VALUES (@full_name, @phone, @role)');
+                .query('INSERT INTO dbo.[user] (full_name, phone, role) OUTPUT INSERTED.user_id, INSERTED.full_name, INSERTED.phone, INSERTED.role VALUES (@full_name, @phone, @role)');
             user = insertResult.recordset[0];
         }
 
@@ -671,7 +671,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         const userObj = {
             userId: user.user_id,
             fullName: user.full_name,
-            email: user.email || '',
+            email: '',
             phone: user.phone || cleanedPhone,
             role: roleStr
         };
@@ -693,103 +693,19 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     }
 });
 
-// AUTHENTICATION ENDPOINTS (Login, Register, Session Verification)
+// AUTHENTICATION ENDPOINTS (Legacy redirects to WhatsApp OTP)
 app.post('/api/auth/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).json({ success: false, error: 'Email and password are required.' });
-        }
-
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('email', sql.NVarChar(150), email.trim())
-            .query('SELECT user_id, full_name, email, phone, password_hash, role FROM dbo.[user] WHERE LOWER(email) = LOWER(@email)');
-
-        if (!result.recordset || result.recordset.length === 0) {
-            return res.status(401).json({ success: false, error: 'Invalid email or password.' });
-        }
-
-        const user = result.recordset[0];
-        if (password.trim() !== user.password_hash.trim()) {
-            return res.status(401).json({ success: false, error: 'Invalid email or password.' });
-        }
-
-        const isAdmin = user.role.toUpperCase() === 'ADMIN';
-        const userObj = {
-            userId: user.user_id,
-            fullName: user.full_name,
-            email: user.email,
-            phone: user.phone || '',
-            role: user.role.toUpperCase()
-        };
-
-        const token = Buffer.from(JSON.stringify(userObj)).toString('base64');
-
-        return res.status(200).json({
-            success: true,
-            message: 'Login successful',
-            token: token,
-            user: userObj,
-            role: userObj.role,
-            isAdmin: isAdmin,
-            redirectUrl: isAdmin ? (process.env.ADMIN_URL || 'https://silverhouse-pap9.onrender.com/') : '/'
-        });
-    } catch (err) {
-        console.error('[Auth Error]:', err.message);
-        return res.status(500).json({ success: false, error: err.message });
-    }
+    return res.status(400).json({
+        success: false,
+        error: 'Email & password login has been upgraded to WhatsApp OTP. Please sign in using your mobile number.'
+    });
 });
 
 app.post('/api/auth/register', async (req, res) => {
-    try {
-        const { fullName, email, phone, password } = req.body;
-        if (!fullName || !email || !password) {
-            return res.status(400).json({ success: false, error: 'Full name, email, and password are required.' });
-        }
-
-        const pool = await poolPromise;
-        const checkResult = await pool.request()
-            .input('email', sql.NVarChar(150), email.trim())
-            .query('SELECT user_id FROM dbo.[user] WHERE LOWER(email) = LOWER(@email)');
-
-        if (checkResult.recordset && checkResult.recordset.length > 0) {
-            return res.status(400).json({ success: false, error: 'An account with this email already exists.' });
-        }
-
-        const insertResult = await pool.request()
-            .input('full_name', sql.NVarChar(100), fullName.trim())
-            .input('email', sql.NVarChar(150), email.trim())
-            .input('phone', sql.NVarChar(20), phone ? phone.trim() : null)
-            .input('password_hash', sql.NVarChar(255), password.trim())
-            .input('role', sql.NVarChar(20), 'CUSTOMER')
-            .query('INSERT INTO dbo.[user] (full_name, email, phone, password_hash, role) OUTPUT INSERTED.user_id VALUES (@full_name, @email, @phone, @password_hash, @role)');
-
-        const newUserId = insertResult.recordset[0].user_id;
-
-        const userObj = {
-            userId: newUserId,
-            fullName: fullName.trim(),
-            email: email.trim(),
-            phone: phone ? phone.trim() : '',
-            role: 'CUSTOMER'
-        };
-
-        const token = Buffer.from(JSON.stringify(userObj)).toString('base64');
-
-        return res.status(201).json({
-            success: true,
-            message: 'Registration successful',
-            token: token,
-            user: userObj,
-            role: 'CUSTOMER',
-            isAdmin: false,
-            redirectUrl: '/'
-        });
-    } catch (err) {
-        console.error('[Register Error]:', err.message);
-        return res.status(500).json({ success: false, error: err.message });
-    }
+    return res.status(400).json({
+        success: false,
+        error: 'Registration is now instant via WhatsApp OTP. Please enter your mobile number on the login page.'
+    });
 });
 
 app.get('/api/auth/me', async (req, res) => {
