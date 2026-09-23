@@ -29,6 +29,13 @@ export default function AuthPage({ onTriggerToast }) {
   const { user, requestOtp, verifyOtp, logout, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
 
+  // If an admin navigates to /login while authenticated, forward directly to the Admin Studio
+  useEffect(() => {
+    if (isAuthenticated && isAdmin) {
+      window.location.href = getAdminUrl();
+    }
+  }, [isAuthenticated, isAdmin]);
+
   // Timer countdown for OTP resend
   useEffect(() => {
     let interval = null;
