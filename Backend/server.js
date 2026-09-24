@@ -804,8 +804,9 @@ app.post('/api/auth/send-otp', async (req, res) => {
 // 2. POST /api/auth/verify-otp: Verify WhatsApp OTP & Login/Register Customer
 app.post('/api/auth/verify-otp', async (req, res) => {
     try {
-        const { phone, otp } = req.body;
+        const { phone, otp, fullName, userName, name } = req.body;
         const cleanedPhone = cleanPhoneNumber(phone);
+        const providedName = (fullName || userName || name || '').trim();
 
         if (!cleanedPhone || !otp) {
             return res.status(400).json({ success: false, error: 'Phone number and 6-digit OTP are required.' });
@@ -859,11 +860,19 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         let user;
         if (userResult.recordset && userResult.recordset.length > 0) {
             user = userResult.recordset[0];
+            // If user provided a name, update full_name if changed or previously default
+            if (providedName && (providedName !== user.full_name || !user.full_name || user.full_name.startsWith('Patron '))) {
+                await pool.request()
+                    .input('user_id', sql.Int, user.user_id)
+                    .input('full_name', sql.NVarChar(100), providedName)
+                    .query('UPDATE dbo.[user] SET full_name = @full_name WHERE user_id = @user_id');
+                user.full_name = providedName;
+            }
         } else {
-            // Dynamically register new user with default CUSTOMER role
-            const defaultName = `Patron ${last10Digits.slice(-4)}`;
+            // Dynamically register new user with provided name or default CUSTOMER role
+            const displayName = providedName || `Patron ${last10Digits.slice(-4)}`;
             const insertResult = await pool.request()
-                .input('full_name', sql.NVarChar(100), defaultName)
+                .input('full_name', sql.NVarChar(100), displayName)
                 .input('phone', sql.NVarChar(20), cleanedPhone)
                 .input('role', sql.NVarChar(20), 'CUSTOMER')
                 .query('INSERT INTO dbo.[user] (full_name, phone, role) OUTPUT INSERTED.user_id, INSERTED.full_name, INSERTED.phone, INSERTED.role VALUES (@full_name, @phone, @role)');
@@ -959,19 +968,77 @@ app.post('/api/auth/register', async (req, res) => {
     });
 });
 
-app.get('/api/auth/me', async (req, res) => {
+// POST & PUT /api/auth/profile: Update user profile details
+async function handleUpdateProfile(req, res) {
     try {
         const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, error: 'No token provided' });
+        let userId = req.body.userId;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            try {
+                const token = authHeader.split(' ')[1];
+                const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+                if (decoded && decoded.userId) {
+                    userId = decoded.userId;
+                }
+            } catch { }
         }
-        const token = authHeader.substring(7);
-        const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-        return res.status(200).json({ success: true, user: decoded });
-    } catch {
-        return res.status(401).json({ success: false, error: 'Invalid token' });
+
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'User session required to edit profile' });
+        }
+
+        const { fullName, phone } = req.body;
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable' });
+        }
+
+        const trimmedName = fullName ? fullName.trim() : null;
+        const cleanedPhone = phone ? cleanPhoneNumber(phone) : null;
+
+        await pool.request()
+            .input('userId', sql.Int, userId)
+            .input('fullName', sql.NVarChar(100), trimmedName)
+            .input('phone', sql.NVarChar(20), cleanedPhone)
+            .query(`
+                UPDATE dbo.[user]
+                SET full_name = COALESCE(@fullName, full_name),
+                    phone = COALESCE(@phone, phone)
+                WHERE user_id = @userId
+            `);
+
+        const updatedResult = await pool.request()
+            .input('userId', sql.Int, userId)
+            .query('SELECT TOP 1 user_id, full_name, phone, role FROM dbo.[user] WHERE user_id = @userId');
+
+        if (!updatedResult.recordset || updatedResult.recordset.length === 0) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        const user = updatedResult.recordset[0];
+        const roleStr = (user.role || 'CUSTOMER').toUpperCase();
+        const userObj = {
+            userId: user.user_id,
+            fullName: user.full_name,
+            phone: user.phone,
+            role: roleStr
+        };
+        const token = Buffer.from(JSON.stringify(userObj)).toString('base64');
+
+        return res.status(200).json({
+            success: true,
+            message: 'Profile updated successfully',
+            user: userObj,
+            token: token
+        });
+    } catch (err) {
+        console.error('[Update Profile Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
     }
-});
+}
+
+app.post('/api/auth/profile', handleUpdateProfile);
+app.put('/api/auth/profile', handleUpdateProfile);
 
 // 1. Single unified endpoint handling all operations from forms & API
 app.post('/api/data', async (req, res) => {
@@ -1129,7 +1196,7 @@ app.post('/api/data', async (req, res) => {
 
 // 2. Static assets & HTML views
 // Serve Backend/public (uploads, images, html, scripts)
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 

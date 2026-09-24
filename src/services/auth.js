@@ -86,12 +86,12 @@ export async function sendPhoneOtp(phone) {
 /**
  * Verify WhatsApp OTP and sign in / register
  */
-export async function verifyPhoneOtp(phone, otp) {
+export async function verifyPhoneOtp(phone, otp, fullName) {
   try {
     const res = await fetch(`${API_BASE}/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, otp })
+      body: JSON.stringify({ phone, otp, fullName })
     });
 
     let data;
@@ -126,3 +126,34 @@ export async function fetchCurrentUser(token) {
   }
   return null;
 }
+
+/**
+ * Update user profile details
+ */
+export async function updateUserProfile(profileData, token) {
+  try {
+    const res = await fetch(`${API_BASE}/profile`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(profileData)
+    });
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`Server returned unexpected response (status ${res.status}). Please make sure backend is running.`);
+    }
+
+    if (!res.ok || !data.success) {
+      throw new Error(data?.error || 'Failed to update profile.');
+    }
+    return data;
+  } catch (err) {
+    throw err;
+  }
+}
+

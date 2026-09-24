@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   Sparkles, Phone, ShieldCheck, ArrowRight, AlertCircle, Building2,
   LogOut, MapPin, ShoppingBag, ChevronRight, ArrowLeft, Package,
-  MessageCircle, RotateCcw, CheckCircle2, Edit2
+  MessageCircle, RotateCcw, CheckCircle2, Edit2, User
 } from 'lucide-react';
 import { getAdminUrl } from '../../utils/adminUrl';
 
@@ -14,6 +14,16 @@ export default function AuthPage({ onTriggerToast }) {
 
   // Step state: 'PHONE' or 'OTP'
   const [step, setStep] = useState('PHONE');
+  const [userName, setUserName] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('silverhouse_user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        return u.fullName || '';
+      }
+    } catch { }
+    return '';
+  });
   const [phone, setPhone] = useState('');
   const [formattedPhone, setFormattedPhone] = useState('');
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
@@ -24,10 +34,58 @@ export default function AuthPage({ onTriggerToast }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Profile Edit State
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editFullName, setEditFullName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
   const inputRefs = useRef([]);
 
-  const { user, requestOtp, verifyOtp, logout, isAuthenticated, isAdmin } = useAuth();
+  const { user, requestOtp, verifyOtp, updateProfile, logout, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
+
+  const handleStartEdit = () => {
+    setEditFullName(user?.fullName || '');
+    setEditPhone(user?.phone || '');
+    setIsEditingProfile(true);
+    setError('');
+  };
+
+  const handleSaveProfile = async (e) => {
+    if (e) e.preventDefault();
+    if (!editFullName.trim()) {
+      setError('Name cannot be empty.');
+      return;
+    }
+    const cleanP = editPhone.replace(/[^0-9]/g, '');
+    if (cleanP.length < 10) {
+      setError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    setSavingProfile(true);
+    setError('');
+    try {
+      const res = await updateProfile({
+        userId: user?.userId,
+        fullName: editFullName.trim(),
+        phone: editPhone.trim()
+      });
+      if (res && res.success) {
+        setIsEditingProfile(false);
+        if (onTriggerToast) {
+          onTriggerToast('success', 'Profile Updated', '✨ Your account details have been updated.');
+        }
+      } else {
+        setError(res?.error || 'Failed to update profile.');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to update profile.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   // If an admin navigates to /login while authenticated, forward directly to the Admin Studio
   useEffect(() => {
@@ -64,6 +122,11 @@ export default function AuthPage({ onTriggerToast }) {
   const handleSendOtp = async (e) => {
     if (e) e.preventDefault();
     setError('');
+
+    if (!userName.trim()) {
+      setError('Please enter your name / username.');
+      return;
+    }
 
     const clean = phone.replace(/[^0-9]/g, '');
     if (clean.length < 10) {
@@ -192,15 +255,15 @@ export default function AuthPage({ onTriggerToast }) {
 
     setLoading(true);
     try {
-      const result = await verifyOtp(formattedPhone || phone, fullOtp);
+      const result = await verifyOtp(formattedPhone || phone, fullOtp, userName.trim());
       if (result.success) {
         if (onTriggerToast) {
           onTriggerToast(
             'success',
-            result.isAdmin ? 'Admin Authenticated' : 'Welcome to SilverHouse',
+            result.isAdmin ? 'Admin Authenticated' : `Welcome, ${result.user?.fullName || userName.trim() || 'Patron'}`,
             result.isAdmin
               ? '👑 Admin Privileges Verified! Opening Admin Studio...'
-              : '✨ You are successfully verified & signed in.'
+              : `✨ Successfully signed in as ${result.user?.fullName || userName.trim()}.`
           );
         }
 
@@ -230,6 +293,7 @@ export default function AuthPage({ onTriggerToast }) {
     logout();
     setStep('PHONE');
     setPhone('');
+    setUserName('');
     setOtpDigits(['', '', '', '', '', '']);
     if (onTriggerToast) {
       onTriggerToast('info', 'Logged Out', '👋 You have been logged out securely.');
@@ -260,39 +324,129 @@ export default function AuthPage({ onTriggerToast }) {
                 <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
                 <span>Back</span>
               </button>
-              <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--th-text-muted)]">
-                Patron Dashboard
-              </span>
             </div>
 
-            {/* User Profile Header */}
-            <div className="flex items-center space-x-3 pb-4 border-b border-[var(--th-border)]/70">
-              <div className="w-12 h-12 rounded-xl bg-[var(--th-primary)]/15 border border-[var(--th-accent)] text-[var(--th-primary)] flex items-center justify-center font-serif text-xl font-bold shadow-sm shrink-0">
-                {(user.fullName || user.phone || 'P').charAt(0).toUpperCase()}
+            {/* Error banner if editing failed */}
+            {isEditingProfile && error && (
+              <div className="mb-3 p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center space-x-1.5 animate-in fade-in duration-200">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
+                <span className="leading-tight">{error}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2">
-                  <h2 className="text-base font-bold text-[var(--th-text-main)] truncate">
-                    {user.fullName || 'Valued Patron'}
-                  </h2>
-                  <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                    isAdmin
-                      ? 'bg-[var(--th-accent)] text-white'
-                      : 'bg-[var(--th-surface-alt)] text-[var(--th-primary)] border border-[var(--th-border)]'
-                  }`}>
-                    {user.role || 'CUSTOMER'}
-                  </span>
+            )}
+
+            {/* User Profile View / Edit Mode */}
+            {isEditingProfile ? (
+              <form onSubmit={handleSaveProfile} className="pb-4 border-b border-[var(--th-border)]/70 space-y-3 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--th-accent)]">
+                    Edit Your Details
+                  </h3>
                 </div>
-                {user.phone ? (
-                  <p className="text-[11px] font-mono text-[var(--th-text-muted)] truncate flex items-center gap-1 mt-0.5">
-                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                    {user.phone}
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-[var(--th-text-muted)] truncate">{user.email}</p>
-                )}
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1">
+                    Your Name *
+                  </label>
+                  <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                    <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={editFullName}
+                      onChange={(e) => setEditFullName(e.target.value)}
+                      placeholder="Your Name"
+                      className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1">
+                    Mobile Number *
+                  </label>
+                  <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                    <div className="flex items-center gap-1 px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-text-main)] select-none">
+                      <span className="text-sm">🇮🇳</span>
+                      <span>+91</span>
+                    </div>
+                    <input
+                      type="tel"
+                      required
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      placeholder="98765 43210"
+                      className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium font-mono outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingProfile(false);
+                      setError('');
+                    }}
+                    disabled={savingProfile}
+                    className="flex-1 py-2 px-3 rounded-xl border border-[var(--th-border)] text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingProfile || !editFullName.trim() || !editPhone.trim()}
+                    className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center justify-center space-x-1.5"
+                  >
+                    {savingProfile ? (
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <span>Save Changes</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="flex items-center justify-between pb-4 border-b border-[var(--th-border)]/70">
+                <div className="flex items-center space-x-3 min-w-0">
+                  <div className="w-12 h-12 rounded-xl bg-[var(--th-primary)]/15 border border-[var(--th-accent)] text-[var(--th-primary)] flex items-center justify-center font-serif text-xl font-bold shadow-sm shrink-0">
+                    {(user.fullName || user.phone || 'P').trim().charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center space-x-2">
+                      <h2 className="text-base font-bold text-[var(--th-text-main)] truncate">
+                        {user.fullName || 'Valued Patron'}
+                      </h2>
+                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${isAdmin
+                        ? 'bg-[var(--th-accent)] text-white'
+                        : 'bg-[var(--th-surface-alt)] text-[var(--th-primary)] border border-[var(--th-border)]'
+                        }`}>
+                        {user.role || 'CUSTOMER'}
+                      </span>
+                    </div>
+                    {user.phone ? (
+                      <p className="text-[11px] font-mono text-[var(--th-text-muted)] truncate flex items-center gap-1 mt-0.5">
+                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        {user.phone}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-[var(--th-text-muted)] truncate">{user.email}</p>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleStartEdit}
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-[var(--th-border)] hover:border-[var(--th-accent)] bg-[var(--th-surface-alt)] hover:bg-[var(--th-card)] text-[var(--th-text-main)] text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0 ml-2"
+                  title="Edit your account details"
+                >
+                  <Edit2 className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                  <span>Edit</span>
+                </button>
               </div>
-            </div>
+            )}
 
             {/* Quick Navigation Cards */}
             <div className="py-3.5 space-y-2">
@@ -432,8 +586,8 @@ export default function AuthPage({ onTriggerToast }) {
                 <span>{step === 'OTP' ? 'Change Phone' : 'Back'}</span>
               </button>
 
-              <div 
-                onClick={() => navigate('/')} 
+              <div
+                onClick={() => navigate('/')}
                 className="inline-flex items-center space-x-1 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5 text-[var(--th-accent)]" />
@@ -457,18 +611,42 @@ export default function AuthPage({ onTriggerToast }) {
               </div>
             )}
 
-            {/* STEP 1: PHONE NUMBER INPUT */}
+            {/* STEP 1: PHONE NUMBER & USERNAME INPUT */}
             {step === 'PHONE' && (
-              <form onSubmit={handleSendOtp} className="space-y-4">
+              <form onSubmit={handleSendOtp} className="space-y-3.5">
                 <div className="text-center mb-2">
                   <h1 className="text-lg font-bold text-[var(--th-text-main)] font-serif">
                     Sign In with Phone
                   </h1>
                   <p className="text-xs text-[var(--th-text-muted)] mt-1">
-                    Enter your mobile number to receive a 6-digit WhatsApp verification code.
+                    Enter your name and mobile number to receive a 6-digit WhatsApp code.
                   </p>
                 </div>
 
+                {/* Name / Username Field */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1.5 flex items-center justify-between">
+                    <span>Your Name / Username *</span>
+                  </label>
+                  <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                    <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        autoFocus
+                        required
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        placeholder="Your Name"
+                        className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2.5 text-sm font-medium tracking-wide outline-none placeholder:text-[var(--th-text-muted)]/50"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Phone Number Field */}
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1.5">
                     Mobile Number *
@@ -481,7 +659,6 @@ export default function AuthPage({ onTriggerToast }) {
                     <div className="relative flex-1">
                       <input
                         type="tel"
-                        autoFocus
                         required
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
@@ -491,14 +668,14 @@ export default function AuthPage({ onTriggerToast }) {
                     </div>
                   </div>
                   <p className="text-[10px] text-[var(--th-text-muted)] mt-1">
-                    No password required. New patrons are registered automatically.
+                    Enter mobile number to receive OTP on WhatsApp.
                   </p>
                 </div>
 
                 {/* Send OTP Button */}
                 <button
                   type="submit"
-                  disabled={loading || !phone.trim()}
+                  disabled={loading || !phone.trim() || !userName.trim()}
                   className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 transform active:scale-98 disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? (
@@ -524,6 +701,11 @@ export default function AuthPage({ onTriggerToast }) {
                   <h2 className="text-lg font-bold text-[var(--th-text-main)] font-serif">
                     Enter Verification Code
                   </h2>
+                  {userName.trim() && (
+                    <p className="text-xs font-semibold text-[var(--th-accent)] mt-0.5">
+                      Namaste, <strong className="text-[var(--th-text-main)]">{userName.trim()}</strong>!
+                    </p>
+                  )}
                   <div className="flex items-center justify-center gap-1.5 text-xs text-[var(--th-text-muted)] mt-1">
                     <span>Sent to WhatsApp:</span>
                     <strong className="text-[var(--th-text-main)] font-mono">{formattedPhone || phone}</strong>
@@ -531,7 +713,7 @@ export default function AuthPage({ onTriggerToast }) {
                       type="button"
                       onClick={() => { setStep('PHONE'); setError(''); }}
                       className="text-[var(--th-accent)] hover:underline ml-1 inline-flex items-center gap-0.5 cursor-pointer"
-                      title="Edit phone number"
+                      title="Edit phone number or name"
                     >
                       <Edit2 className="w-3 h-3" />
                       <span>Edit</span>
@@ -553,11 +735,10 @@ export default function AuthPage({ onTriggerToast }) {
                         value={digit}
                         onChange={(e) => handleOtpChange(idx, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(idx, e)}
-                        className={`w-11 h-12 sm:w-12 sm:h-14 text-center font-mono text-xl font-bold rounded-xl border transition-all outline-none ${
-                          digit
-                            ? 'border-emerald-500 bg-emerald-50/20 text-[var(--th-text-main)] ring-1 ring-emerald-500/20'
-                            : 'border-[var(--th-border)] bg-[var(--th-surface-alt)] text-[var(--th-text-main)] focus:border-[var(--th-primary)] focus:ring-2 focus:ring-[var(--th-primary)]/20'
-                        }`}
+                        className={`w-11 h-12 sm:w-12 sm:h-14 text-center font-mono text-xl font-bold rounded-xl border transition-all outline-none ${digit
+                          ? 'border-emerald-500 bg-emerald-50/20 text-[var(--th-text-main)] ring-1 ring-emerald-500/20'
+                          : 'border-[var(--th-border)] bg-[var(--th-surface-alt)] text-[var(--th-text-main)] focus:border-[var(--th-primary)] focus:ring-2 focus:ring-[var(--th-primary)]/20'
+                          }`}
                       />
                     ))}
                   </div>

@@ -1,5 +1,3 @@
-import { PRODUCTS } from '../data/products.js';
-
 // Base API URL (supports relative /api proxied through Vite/Vercel or explicit backend host)
 let rawApiUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) 
   ? String(import.meta.env.VITE_API_URL).trim() 

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { CATEGORIES } from '../../data/products';
-import { X, ChevronRight, ChevronDown, Sparkles, Phone, ShieldCheck } from 'lucide-react';
+import { X, ChevronRight, ChevronDown, Sparkles, Phone, ShieldCheck, User } from 'lucide-react';
 
 export default function MobileMenu({
   isOpen,
@@ -11,6 +13,8 @@ export default function MobileMenu({
   onNavigateYatraCustomizer
 }) {
   const [expandedCat, setExpandedCat] = useState(null);
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   if (!isOpen) return null;
 
@@ -35,10 +39,46 @@ export default function MobileMenu({
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-silver-600 hover:text-black"
+              className="p-2 text-silver-600 hover:text-black cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
+          </div>
+
+          {/* User Profile Bar in Mobile Menu */}
+          <div className="p-3 bg-amber-50/50 border-b border-amber-200/50">
+            {isAuthenticated && user ? (
+              <button
+                onClick={() => {
+                  onClose();
+                  navigate('/login');
+                }}
+                className="w-full flex items-center space-x-3 text-left cursor-pointer group"
+              >
+                <div className="w-9 h-9 rounded-full bg-[#1A1A1A] text-white font-bold text-xs flex items-center justify-center border border-[#D4AF37] shrink-0 shadow-xs">
+                  {user.fullName ? user.fullName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'SH'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-[#1A1A1A] truncate group-hover:text-[#D4AF37] transition-colors">
+                    {user.fullName || 'Valued Patron'}
+                  </p>
+                  <p className="text-[10px] text-emerald-700 font-medium truncate">
+                    Logged in • View profile →
+                  </p>
+                </div>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  onClose();
+                  navigate('/login');
+                }}
+                className="w-full py-2 px-3 rounded-lg bg-[#1A1A1A] text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center space-x-2 cursor-pointer shadow-xs hover:bg-[#333333] transition-colors"
+              >
+                <User className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span>Sign In / Register</span>
+              </button>
+            )}
           </div>
 
           {/* Quick Highlight Banner */}

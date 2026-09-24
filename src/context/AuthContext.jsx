@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, registerUser, fetchCurrentUser, sendPhoneOtp, verifyPhoneOtp } from '../services/auth';
+import { loginUser, registerUser, fetchCurrentUser, sendPhoneOtp, verifyPhoneOtp, updateUserProfile } from '../services/auth';
 
 const AuthContext = createContext(null);
 
@@ -59,12 +59,25 @@ export function AuthProvider({ children }) {
     return await sendPhoneOtp(phone);
   };
 
-  const verifyOtp = async (phone, otp) => {
-    const data = await verifyPhoneOtp(phone, otp);
+  const verifyOtp = async (phone, otp, fullName) => {
+    const data = await verifyPhoneOtp(phone, otp, fullName);
     if (data.success) {
       setUser(data.user);
       setToken(data.token);
       localStorage.setItem('silverhouse_token', data.token);
+      localStorage.setItem('silverhouse_user', JSON.stringify(data.user));
+    }
+    return data;
+  };
+
+  const updateProfile = async (profileData) => {
+    const data = await updateUserProfile(profileData, token);
+    if (data.success && data.user) {
+      setUser(data.user);
+      if (data.token) {
+        setToken(data.token);
+        localStorage.setItem('silverhouse_token', data.token);
+      }
       localStorage.setItem('silverhouse_user', JSON.stringify(data.user));
     }
     return data;
@@ -89,6 +102,7 @@ export function AuthProvider({ children }) {
         register,
         requestOtp,
         verifyOtp,
+        updateProfile,
         logout,
         isAdmin,
         isAuthenticated: Boolean(user)

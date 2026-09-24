@@ -469,11 +469,11 @@ export default function Header({
                   className="flex items-center space-x-1.5 p-1 rounded-full hover:bg-[var(--th-card)] transition-colors focus:outline-hidden cursor-pointer"
                   title={user.fullName || 'User Profile'}
                 >
-                  <div className="w-8 h-8 rounded-full bg-[var(--th-primary)] text-white font-bold text-xs flex items-center justify-center shadow-xs border border-[var(--th-accent)]/50">
-                    {user.fullName ? user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'SH'}
+                  <div className="w-8 h-8 rounded-full bg-[var(--th-primary)] text-white font-bold text-xs flex items-center justify-center shadow-xs border border-[var(--th-accent)]/50 shrink-0">
+                    {user.fullName ? user.fullName.trim().split(/\s+/).filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'SH'}
                   </div>
                   {isAdmin && (
-                    <span className="hidden xl:inline-block text-[10px] font-bold bg-[var(--th-accent)] text-white px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    <span className="hidden xl:inline-block text-[9px] font-bold bg-[var(--th-accent)] text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider">
                       ADMIN
                     </span>
                   )}
@@ -481,12 +481,12 @@ export default function Header({
               ) : (
                 <button
                   onClick={() => navigate('/login')}
-                  className="p-2 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer group"
+                  className="p-1.5 sm:px-2.5 sm:py-1.5 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer group border border-transparent hover:border-[var(--th-border)]"
                   title="Sign In / Register"
                 >
-                  <User className="w-5 h-5 text-[var(--th-accent)] group-hover:scale-110 transition-transform" />
+                  <User className="w-5 h-5 text-[var(--th-accent)] group-hover:scale-110 transition-transform shrink-0" />
                   <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-wider text-[var(--th-text-main)]">
-
+                    Sign In
                   </span>
                 </button>
               )}
@@ -496,12 +496,19 @@ export default function Header({
                 <div className="absolute right-0 top-full mt-2 w-64 bg-[var(--th-card)] rounded-2xl shadow-2xl border border-[var(--th-border)] p-4 z-50 animate-in fade-in slide-in-from-top-2 text-left">
                   <div className="pb-3 border-b border-[var(--th-border)]/60 mb-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-sm text-[var(--th-text-main)] truncate">{user.fullName || 'User'}</h4>
+                      <h4 className="font-bold text-sm text-[var(--th-text-main)] truncate">{user.fullName || 'Valued Patron'}</h4>
                       <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${isAdmin ? 'bg-[var(--th-accent)] text-white' : 'bg-[var(--th-surface-alt)] text-[var(--th-text-main)]'}`}>
                         {user.role || 'CUSTOMER'}
                       </span>
                     </div>
-                    <p className="text-xs text-[var(--th-text-muted)] truncate mt-0.5">{user.email}</p>
+                    {user.phone ? (
+                      <p className="text-xs font-mono text-[var(--th-text-muted)] truncate mt-0.5 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                        {user.phone}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-[var(--th-text-muted)] truncate mt-0.5">{user.email}</p>
+                    )}
                   </div>
 
                   <div className="space-y-1">

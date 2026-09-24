@@ -31,7 +31,7 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated } = useAuth();
-  const effectiveUserId = user?.userId || 1;
+  const effectiveUserId = user?.userId || null;
 
   // Datasets loaded live from Backend API
   const [products, setProducts] = useState(PRODUCTS);
@@ -55,35 +55,59 @@ export default function App() {
       console.warn('Failed to save cart', e);
     }
   }, [cartItems]);
+
   const [wishlistIds, setWishlistIds] = useState(() => {
     try {
-      const saved = localStorage.getItem('silverhouse_wishlist');
+      const savedUser = localStorage.getItem('silverhouse_user');
+      const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+      const key = parsedUser?.userId ? `silverhouse_wishlist_${parsedUser.userId}` : 'silverhouse_guest_wishlist';
+      const saved = localStorage.getItem(key);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
   });
 
-  // Sync wishlist to localStorage
+  // Sync wishlist to localStorage per user/guest
   useEffect(() => {
     try {
+      if (effectiveUserId) {
+        localStorage.setItem(`silverhouse_wishlist_${effectiveUserId}`, JSON.stringify(wishlistIds));
+      } else {
+        localStorage.setItem('silverhouse_guest_wishlist', JSON.stringify(wishlistIds));
+      }
       localStorage.setItem('silverhouse_wishlist', JSON.stringify(wishlistIds));
     } catch (e) {
       console.warn('Failed to save wishlist', e);
     }
-  }, [wishlistIds]);
+  }, [wishlistIds, effectiveUserId]);
 
   // Sync wishlist from SQL Server database table dbo.wishlist
   useEffect(() => {
     async function loadWishlistFromDb() {
+      if (!effectiveUserId) {
+        // Guest user: load from local guest storage only
+        try {
+          const guestSaved = localStorage.getItem('silverhouse_guest_wishlist');
+          setWishlistIds(guestSaved ? JSON.parse(guestSaved) : []);
+        } catch {
+          setWishlistIds([]);
+        }
+        return;
+      }
+
+      // Logged-in user: sync strictly from database for this specific user
       try {
         const dbWishlist = await fetchUserWishlist(effectiveUserId);
-        if (Array.isArray(dbWishlist) && dbWishlist.length > 0) {
+        if (Array.isArray(dbWishlist)) {
           const dbIds = dbWishlist.map(w => String(w.product_id));
           setWishlistIds(dbIds);
+        } else {
+          setWishlistIds([]);
         }
       } catch (err) {
         console.warn('Could not load wishlist from DB:', err);
+        setWishlistIds([]);
       }
     }
     loadWishlistFromDb();
@@ -328,22 +352,26 @@ export default function App() {
       setWishlistIds((prev) => prev.filter(id => String(id) !== prodId));
       triggerToast('info', 'Removed from Wishlist', `${prodTitle} removed from your saved items.`);
 
-      // Sync removal directly to database table dbo.wishlist
-      try {
-        await removeFromWishlistApi(effectiveUserId, prodId);
-      } catch (err) {
-        console.error('Failed to remove item from DB wishlist:', err);
+      // Sync removal directly to database table dbo.wishlist if logged in
+      if (effectiveUserId) {
+        try {
+          await removeFromWishlistApi(effectiveUserId, prodId);
+        } catch (err) {
+          console.error('Failed to remove item from DB wishlist:', err);
+        }
       }
     } else {
       // Optimistic state update
       setWishlistIds((prev) => [...prev, prodId]);
       triggerToast('success', 'Saved to Wishlist', `${prodTitle} added to your wishlist.`);
 
-      // Sync addition directly to database table dbo.wishlist
-      try {
-        await addToWishlistApi(effectiveUserId, prodId);
-      } catch (err) {
-        console.error('Failed to add item to DB wishlist:', err);
+      // Sync addition directly to database table dbo.wishlist if logged in
+      if (effectiveUserId) {
+        try {
+          await addToWishlistApi(effectiveUserId, prodId);
+        } catch (err) {
+          console.error('Failed to add item to DB wishlist:', err);
+        }
       }
     }
   };
