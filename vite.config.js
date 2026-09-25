@@ -11,17 +11,17 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
       },
       '/uploads': {
-        target: 'https://silverhouse-pap9.onrender.com',
+        target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
       },
       '/catalog': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
       }
