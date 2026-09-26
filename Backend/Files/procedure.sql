@@ -328,6 +328,7 @@ BEGIN
     DECLARE @Description VARCHAR(100);
     DECLARE @Slug VARCHAR(50);
     DECLARE @IdealFor VARCHAR(20);
+    DECLARE @ImageId INT;
 
     IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
     BEGIN
@@ -335,7 +336,8 @@ BEGIN
             @Name        = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.name'))),
             @Description = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.description'))),
             @Slug        = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.slug'))),
-            @IdealFor    = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.ideal_for')));
+            @IdealFor    = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.ideal_for'))),
+            @ImageId     = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.image_id') AS INT);
 
         -- Fallback if 'title' or 'category_name' was passed instead of 'name'
         IF @Name IS NULL OR @Name = ''
@@ -356,12 +358,14 @@ BEGIN
     IF @Opr = 'SELECT'
     BEGIN
         IF @TargetId IS NOT NULL AND @TargetId > 0
-            SELECT category_id, [name], [description], slug, ideal_for 
-            FROM dbo.category 
-            WHERE category_id = @TargetId;
+            SELECT c.category_id, c.[name], c.[description], c.slug, c.ideal_for, c.image_id, i.image_url 
+            FROM dbo.category c
+            LEFT JOIN dbo.[image] i ON c.image_id = i.image_id
+            WHERE c.category_id = @TargetId;
         ELSE
-            SELECT category_id, [name], [description], slug, ideal_for 
-            FROM dbo.category;
+            SELECT c.category_id, c.[name], c.[description], c.slug, c.ideal_for, c.image_id, i.image_url 
+            FROM dbo.category c
+            LEFT JOIN dbo.[image] i ON c.image_id = i.image_id;
     END
 
     ELSE IF @Opr = 'ADD'
@@ -390,8 +394,8 @@ BEGIN
 
         SELECT @NewCategoryId = ISNULL(MAX(category_id), 0) + 1 FROM dbo.category;
 
-        INSERT INTO dbo.category (category_id, [name], [description], slug, ideal_for)
-        VALUES (@NewCategoryId, @Name, @Description, @Slug, @IdealFor);
+        INSERT INTO dbo.category (category_id, [name], [description], slug, ideal_for, image_id)
+        VALUES (@NewCategoryId, @Name, @Description, @Slug, @IdealFor, @ImageId);
 
         SELECT @NewCategoryId AS NewCategoryId, 'Category added successfully' AS [Message];
     END
@@ -413,7 +417,8 @@ BEGIN
         SET [name]        = ISNULL(@Name, [name]),
             [description] = ISNULL(@Description, [description]),
             slug          = ISNULL(@Slug, slug),
-            ideal_for     = CASE WHEN @IdealFor IS NOT NULL THEN @IdealFor ELSE ideal_for END
+            ideal_for     = CASE WHEN @IdealFor IS NOT NULL THEN @IdealFor ELSE ideal_for END,
+            image_id      = CASE WHEN @ImageId IS NOT NULL THEN @ImageId ELSE image_id END
         WHERE category_id = @TargetId;
 
         SELECT @TargetId AS CategoryId, 'Category updated successfully' AS [Message];

@@ -1,13 +1,14 @@
-// Base API URL (supports relative /api proxied through Vite/Vercel or explicit backend host)
-let rawApiUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) 
-  ? String(import.meta.env.VITE_API_URL).trim() 
-  : '/api';
+// Base API URL (supports relative /api in local dev or explicit live Render backend in production)
+const DEPLOYED_RENDER_API = 'https://api.silverhouseindia.com/';
+let rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
 
-// Strip any accidental whitespace, tabs, or quotes from environment variable
-rawApiUrl = rawApiUrl.replace(/[\t\r\n"']/g, '').trim();
-
-if (!rawApiUrl || rawApiUrl === '/') {
-  rawApiUrl = '/api';
+// If no VITE_API_URL or it is relative '/api' on a live domain (like silverhouseindia.com), use the deployed Render backend
+if (!rawApiUrl || rawApiUrl === '/api') {
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    rawApiUrl = DEPLOYED_RENDER_API;
+  } else {
+    rawApiUrl = rawApiUrl || '/api';
+  }
 }
 
 // Ensure external host URLs point to the /api endpoint
@@ -18,38 +19,35 @@ if (rawApiUrl.startsWith('http') && !rawApiUrl.endsWith('/api')) {
 export const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
 
 /**
+ * Resolves image paths (absolute URLs, local assets, or backend uploads) to valid displayable URLs.
+ */
+export function resolveImageUrl(img) {
+  if (!img) return '';
+  const val = typeof img === 'object' ? (img.image_url || img.url || '') : String(img);
+  const trimmed = String(val).trim();
+  if (!trimmed) return '';
+  // Already an absolute HTTP/HTTPS or data URL
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+  // Static local bundled assets in /images/
+  if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  }
+  // Uploaded images from the deployed admin panel (/uploads/... or img-...)
+  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/') || trimmed.startsWith('img-')) {
+    const filename = trimmed.replace(/^\/?uploads\//, '');
+    const backendBase = API_BASE_URL.replace(/\/api\/?$/, '');
+    return `${backendBase}/uploads/${filename}`;
+  }
+  return trimmed;
+}
+
+/**
  * Normalizes raw backend product object to frontend component interface.
  */
 export function normalizeProduct(rawItem) {
   if (!rawItem) return null;
-
-  // Helper to resolve relative uploaded images to the deployed backend host
-  const resolveImageUrl = (img) => {
-    if (!img) return '';
-    const val = typeof img === 'object' ? (img.image_url || img.url || '') : String(img);
-    const trimmed = String(val).trim();
-    if (!trimmed) return '';
-    // Already an absolute HTTP/HTTPS or data URL
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
-      return trimmed;
-    }
-    // Static local bundled assets in /images/
-    if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
-      return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-    }
-    // Uploaded images from the deployed admin panel (/uploads/... or img-...)
-    if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/') || trimmed.startsWith('img-')) {
-      const filename = trimmed.replace(/^\/?uploads\//, '');
-      const rawEnv = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
-        ? String(import.meta.env.VITE_API_URL).trim()
-        : '';
-      const backendBase = (rawEnv && rawEnv.startsWith('http'))
-        ? rawEnv.replace(/\/api\/?$/, '')
-        : 'https://silverhouse-pap9.onrender.com';
-      return `${backendBase}/uploads/${filename}`;
-    }
-    return trimmed;
-  };
 
   // Process images array
   let images = [];
@@ -101,6 +99,7 @@ export function normalizeProduct(rawItem) {
   return {
     id: String(rawItem.id || rawItem.product_id || rawItem.code || Math.random().toString(36).substring(2, 9)),
     product_id: Number(rawItem.product_id || rawItem.id),
+    category_id: rawItem.category_id !== undefined && rawItem.category_id !== null ? Number(rawItem.category_id) : null,
     name: rawItem.product_name || rawItem.name || rawItem.title || 'Pure Silver Item',
     title: rawItem.title || rawItem.product_name || rawItem.name || 'Pure Silver Item',
     category: (rawItem.slug || rawItem.category_slug || rawItem.category_name || rawItem.category || 'silver-idols').toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
@@ -173,19 +172,22 @@ export async function fetchCategories() {
     });
 
     if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
-      return json.data.map(cat => ({
-        id: (cat.slug || cat.name || String(cat.category_id)).toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
-        slug: (cat.slug || cat.name || String(cat.category_id)).toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
-        category_id: cat.category_id,
-        name: cat.name || 'Category',
-        shortName: cat.name || 'Category',
-        description: cat.description || 'Sacred 925 & 999 Pure Silver Items',
-        idealFor: cat.ideal_for || 'All',
-        image_id: cat.image_id || null,
-        image_url: cat.image_url || null,
-        image: cat.image_url || null,
-        heroBanner: cat.image_url || '/images/hero_silver_coins.png'
-      }));
+      return json.data.map(cat => {
+        const resolvedImg = resolveImageUrl(cat.image_url || cat.image || null);
+        return {
+          id: (cat.slug || cat.name || String(cat.category_id)).toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+          slug: (cat.slug || cat.name || String(cat.category_id)).toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+          category_id: cat.category_id,
+          name: cat.name || 'Category',
+          shortName: cat.name || 'Category',
+          description: cat.description || 'Sacred 925 & 999 Pure Silver Items',
+          idealFor: cat.ideal_for || 'All',
+          image_id: cat.image_id || null,
+          image_url: resolvedImg,
+          image: resolvedImg,
+          heroBanner: resolvedImg || '/images/hero_silver_coins.png'
+        };
+      });
     }
   } catch (err) {
     console.warn('[API Service] Category fetch warning:', err);
@@ -551,3 +553,56 @@ export async function payCustomOrderApi(orderId) {
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Fetches store parameters (Theme, Announcement, WhatsApp API, Silver Rates, Shipping Rules).
+ * @returns {Promise<{success: boolean, parameters?: object, error?: string}>}
+ */
+export async function fetchStoreParameters() {
+  try {
+    const url = `${API_BASE_URL}/parameters`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.warn('[API Service] Error fetching store parameters, using defaults:', err);
+    return {
+      success: false,
+      parameters: {
+        default_theme: 'royal-gold',
+        announcement_bar_text: '✨ Special Offer: Free Silver Coin on orders above ₹4,999 | Code: FESTIVE500',
+        silver_rate_999_per_gram: 88.50,
+        silver_rate_925_per_gram: 81.86,
+        hallmarking_fee_per_item: 45.00,
+        gst_rate_pct: 3.00,
+        free_shipping_threshold: 1999.00,
+        standard_shipping_fee: 99.00,
+        cod_handling_fee: 50.00,
+        max_cod_amount: 15000.00
+      }
+    };
+  }
+}
+
+/**
+ * Updates store parameters (Admin only).
+ * @param {object} params
+ * @returns {Promise<{success: boolean, parameters?: object, error?: string}>}
+ */
+export async function updateStoreParameters(params) {
+  try {
+    const url = `${API_BASE_URL}/admin/parameters`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('[API Service] Error updating store parameters:', err);
+    return { success: false, error: err.message };
+  }
+}
+

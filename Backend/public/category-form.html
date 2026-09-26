@@ -463,6 +463,12 @@
                                 <option value="Puja">Puja</option>
                             </select>
                         </div>
+
+                        <div class="form-group">
+                            <label>Image ID (Optional)</label>
+                            <input type="number" name="image_id" id="image_id" placeholder="e.g. 1" min="1" />
+                            <small style="color: var(--text-muted); font-size: 11.5px; margin-top: 4px;">Enter the Image ID from the Images table (dbo.image) to map this category to an image.</small>
+                        </div>
                     </div>
 
                     <div class="form-actions">
@@ -554,8 +560,9 @@
             const table_values = {};
 
             formData.forEach((value, key) => {
-                if (value.trim() !== '') {
-                    table_values[key] = !isNaN(value) && value !== '' ? Number(value) : value;
+                const trimmed = (value || '').trim();
+                if (trimmed !== '') {
+                    table_values[key] = !isNaN(trimmed) && trimmed !== '' ? Number(trimmed) : trimmed;
                 }
             });
 

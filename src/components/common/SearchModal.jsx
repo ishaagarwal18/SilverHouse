@@ -8,21 +8,21 @@ export default function SearchModal({ isOpen, products, onClose, onSelectProduct
   if (!isOpen) return null;
 
   const productList = (products && products.length > 0) ? products : PRODUCTS;
-  const results = query.trim() === '' 
-    ? [] 
-    : productList.filter(p => 
-        p.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.category.toLowerCase().includes(query.toLowerCase()) ||
-        p.purity.toLowerCase().includes(query.toLowerCase()) ||
-        p.shortDesc.toLowerCase().includes(query.toLowerCase())
-      );
+  const results = query.trim() === ''
+    ? []
+    : productList.filter(p =>
+      p.name.toLowerCase().includes(query.toLowerCase()) ||
+      p.category.toLowerCase().includes(query.toLowerCase()) ||
+      p.purity.toLowerCase().includes(query.toLowerCase()) ||
+      p.shortDesc.toLowerCase().includes(query.toLowerCase())
+    );
 
   const POPULAR_SEARCHES = ["Lakshmi Ganesha Coin", "Baby Nazariya", "Rudraksha Mala", "Yatra Locket", "Silver Thali Set", "999 Silver Bar"];
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4">
       {/* Overlay */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
@@ -102,14 +102,14 @@ export default function SearchModal({ isOpen, products, onClose, onSelectProduct
                     className="group p-3 rounded-xl border border-silver-100 hover:border-[#D4AF37] hover:bg-silver-50/80 transition-all flex items-center justify-between cursor-pointer"
                   >
                     <div className="flex items-center space-x-4">
-                      <img 
-                        src={product.images[0]} 
-                        alt={product.name} 
+                      <img
+                        src={product.images[0]}
+                        alt={product.name}
                         className="w-14 h-14 object-cover rounded-lg border border-silver-200"
                       />
                       <div>
                         <span className="text-[10px] font-bold text-[#AA820A] bg-[#D4AF37]/10 px-2 py-0.5 rounded-full inline-block mb-1">
-                          {product.purity}
+                          {product.purity || (product.purityCode === '999' ? '999 Pure Silver' : '925 Sterling Silver')}
                         </span>
                         <h4 className="text-sm font-semibold text-[#1A1A1A] group-hover:text-[#AA820A] transition-colors line-clamp-1">
                           {product.name}

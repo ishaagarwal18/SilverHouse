@@ -13,7 +13,8 @@ export default function CartDrawer({
   onUpdateQty,
   onRemoveItem,
   onProceedCheckout,
-  onQuickView
+  onQuickView,
+  storeParams
 }) {
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -21,7 +22,8 @@ export default function CartDrawer({
 
   if (!isOpen) return null;
 
-  const FREE_SHIPPING_THRESHOLD = 5000;
+  const FREE_SHIPPING_THRESHOLD = Number(storeParams?.free_shipping_threshold) || 1999;
+  const STANDARD_SHIPPING_FEE = Number(storeParams?.standard_shipping_fee) || 99;
 
   // Total Calculations
   const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.product.price) || 0) * item.quantity, 0);
@@ -40,7 +42,7 @@ export default function CartDrawer({
     }
   }
 
-  const shippingFee = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : 199;
+  const shippingFee = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : STANDARD_SHIPPING_FEE;
   const finalTotal = Math.max(0, subtotal - discountAmount + shippingFee);
 
   const progressPercentage = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100));

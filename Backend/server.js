@@ -1194,6 +1194,108 @@ app.post('/api/data', async (req, res) => {
     }
 });
 
+// ==========================================
+// STORE PARAMETERS API (Theme, WhatsApp API, Silver Rates, Shipping)
+// ==========================================
+app.get('/api/parameters', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query('SELECT TOP 1 * FROM store_parameter ORDER BY id DESC');
+        if (!result.recordset || result.recordset.length === 0) {
+            return res.status(200).json({
+                success: true,
+                parameters: {
+                    default_theme: 'royal-gold',
+                    wp_api: 'https://graph.facebook.com/v20.0',
+                    current_festival: 'Diwali Festive Sale',
+                    announcement_bar_text: '✨ Special Offer: Free Silver Coin on orders above ₹4,999 | Code: FESTIVE500',
+                    silver_rate_999_per_gram: 88.50,
+                    silver_rate_925_per_gram: 81.86,
+                    hallmarking_fee_per_item: 45.00,
+                    gst_rate_pct: 3.00,
+                    free_shipping_threshold: 1999.00,
+                    standard_shipping_fee: 99.00,
+                    cod_handling_fee: 50.00,
+                    max_cod_amount: 15000.00
+                }
+            });
+        }
+
+        const row = result.recordset[0];
+        return res.status(200).json({
+            success: true,
+            parameters: {
+                ...row,
+                announcement_bar_text: row.announcement_bar_text || `✨ Special Festive Offer: Free Silver Coin on orders above ₹4,999 | ${row.current_festival || 'Festive Sale'}`,
+                silver_rate_999_per_gram: row.silver_rate_999_per_gram || 88.50,
+                silver_rate_925_per_gram: row.silver_rate_925_per_gram || 81.86,
+                hallmarking_fee_per_item: row.hallmarking_fee_per_item || 45.00,
+                gst_rate_pct: row.gst_rate_pct || 3.00,
+                free_shipping_threshold: row.free_shipping_threshold || 1999.00,
+                standard_shipping_fee: row.standard_shipping_fee || 99.00,
+                cod_handling_fee: row.cod_handling_fee || 50.00,
+                max_cod_amount: row.max_cod_amount || 15000.00
+            }
+        });
+    } catch (err) {
+        console.error('[Store Parameters GET Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/admin/parameters', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const {
+            default_theme,
+            wp_api,
+            wp_api_url,
+            current_festival
+        } = req.body;
+
+        const effectiveWpApi = wp_api || wp_api_url || null;
+        const request = pool.request();
+        const countRes = await pool.request().query('SELECT COUNT(*) as count FROM store_parameter');
+        const hasRow = countRes.recordset[0].count > 0;
+
+        let query = '';
+        if (hasRow) {
+            query = `
+                UPDATE TOP(1) store_parameter
+                SET default_theme = COALESCE(@default_theme, default_theme),
+                    wp_api = COALESCE(@wp_api, wp_api),
+                    current_festival = COALESCE(@current_festival, current_festival),
+                    updated_at = GETDATE();
+            `;
+        } else {
+            query = `
+                INSERT INTO store_parameter (
+                    default_theme, wp_api, current_festival
+                ) VALUES (
+                    COALESCE(@default_theme, 'royal-gold'),
+                    @wp_api,
+                    COALESCE(@current_festival, 'Diwali Festive Sale')
+                );
+            `;
+        }
+
+        request.input('default_theme', sql.NVarChar(50), default_theme || null);
+        request.input('wp_api', sql.NVarChar(500), effectiveWpApi);
+        request.input('current_festival', sql.NVarChar(100), current_festival || null);
+
+        await request.query(query);
+        const updated = await pool.request().query('SELECT TOP 1 * FROM store_parameter ORDER BY id DESC');
+        return res.status(200).json({
+            success: true,
+            message: 'Store parameters updated successfully.',
+            parameters: updated.recordset[0]
+        });
+    } catch (err) {
+        console.error('[Store Parameters UPDATE Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // 2. Static assets & HTML views
 // Serve Backend/public (uploads, images, html, scripts)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

@@ -235,3 +235,21 @@ BEGIN
     );
 END
 GO
+
+-- ========================================================
+-- Store Parameters Master Table (Theme, WhatsApp API, Festival)
+-- ========================================================
+IF OBJECT_ID('dbo.store_parameters', 'U') IS NOT NULL DROP TABLE dbo.store_parameters;
+IF OBJECT_ID('dbo.store_parameter', 'U') IS NOT NULL DROP TABLE dbo.store_parameter;
+IF OBJECT_ID('dbo.store_parameters', 'V') IS NOT NULL DROP VIEW dbo.store_parameters;
+GO
+
+CREATE TABLE dbo.store_parameter (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    default_theme NVARCHAR(50) NOT NULL DEFAULT 'royal-gold',
+    wp_api NVARCHAR(500) NULL,
+    current_festival NVARCHAR(100) NULL DEFAULT 'Diwali Festive Sale',
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    updated_at DATETIME NOT NULL DEFAULT GETDATE()
+);
+GO

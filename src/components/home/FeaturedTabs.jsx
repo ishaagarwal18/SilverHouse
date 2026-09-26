@@ -95,9 +95,13 @@ export default function FeaturedTabs({
                   )}
 
                   {/* Top Badges */}
-                  <div className="absolute top-3 left-3 flex flex-col space-y-1 z-10">
-                    <span className="bg-[#1A1A1A]/90 backdrop-blur-xs text-[#D4AF37] text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
-                      {product.purityCode === '999' ? '999 Fine Pure' : '925 Sterling'}
+                  <div className="absolute top-3 left-3 flex flex-col space-y-1.5 z-10 items-start">
+                    <span className="bg-black/95 text-white border border-amber-400 text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg uppercase tracking-wider inline-flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+                      <span className="text-amber-300 font-black">
+                        {product.purityCode === '999' || (product.purity && String(product.purity).includes('999')) ? '999 PURE' : '925 STERLING'}
+                      </span>
+                      <span className="text-white font-extrabold">SILVER</span>
                     </span>
                     {discountPct && (
                       <span className="bg-[#D4AF37] text-black text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
@@ -148,9 +152,11 @@ export default function FeaturedTabs({
                       )}
                     </div>
 
-                    {/* Weight & Rating */}
+                    {/* Purity, Weight & Rating */}
                     <div className="flex items-center justify-between text-[11px] text-silver-500 mb-1">
-                      <span className="font-semibold text-silver-700">Weight: {product.weightGrams}g</span>
+                      <span className="font-semibold text-silver-700">
+                        {product.purity || (product.purityCode === '999' ? '999 Pure' : '925 Sterling')} • {product.weightGrams}g
+                      </span>
                       <div className="flex items-center space-x-1 text-[#D4AF37]">
                         <Star className="w-3 h-3 fill-[#D4AF37]" />
                         <span className="font-bold text-[#1A1A1A]">{product.rating}</span>

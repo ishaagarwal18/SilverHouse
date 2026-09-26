@@ -273,7 +273,16 @@ export default function ProductListingPage({
     }
   };
 
-  const activeCategoryObj = categoryList.find(c => c.id === selectedCategory) || VIRTUAL_CATEGORIES[selectedCategory];
+  const activeCategoryObj = categoryList.find(c => 
+    String(c.id).toLowerCase() === String(selectedCategory).toLowerCase() || 
+    String(c.slug).toLowerCase() === String(selectedCategory).toLowerCase() || 
+    String(c.category_id) === String(selectedCategory)
+  ) || VIRTUAL_CATEGORIES[selectedCategory] || {
+    id: selectedCategory,
+    name: selectedCategory ? selectedCategory.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'All Products',
+    description: 'Explore authentic 925 sterling silver products from our curated collection.',
+    heroBanner: '/images/hero_silver_coins.png'
+  };
 
   // Accurate Matchers to eliminate bugs
   const isMenProduct = (p) => {
@@ -513,7 +522,14 @@ export default function ProductListingPage({
           (p.recipient || '').toLowerCase().includes('kids')
         );
       } else {
-        result = result.filter(p => p.category === selectedCategory || p.category_slug === selectedCategory);
+        const selLow = String(selectedCategory || '').toLowerCase().trim();
+        result = result.filter(p => 
+          (p.category && p.category.toLowerCase() === selLow) || 
+          (p.category_slug && p.category_slug.toLowerCase() === selLow) ||
+          (p.category_id && String(p.category_id) === String(selectedCategory)) ||
+          (p.id && String(p.id) === String(selectedCategory)) ||
+          (p.category_name && p.category_name.toLowerCase() === selLow)
+        );
       }
     }
 
@@ -1237,10 +1253,17 @@ export default function ProductListingPage({
                         )}
 
                         {/* Top Badges */}
-                        <div className="absolute top-3 left-3 flex flex-col space-y-1 z-10">
+                        <div className="absolute top-3 left-3 flex flex-col space-y-1.5 z-10 items-start">
+                          <span className="bg-black/95 text-white border border-amber-400 text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg uppercase tracking-wider inline-flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+                            <span className="text-amber-300 font-black">
+                              {product.purityCode === '999' || (product.purity && String(product.purity).includes('999')) ? '999 PURE' : '925 STERLING'}
+                            </span>
+                            <span className="text-white font-extrabold">SILVER</span>
+                          </span>
 
                           {product.color && product.color !== 'Silver' && (
-                            <span className="bg-[var(--th-primary)] text-[var(--th-badge-text)] border border-[var(--th-border)] text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
+                            <span className="bg-[var(--th-card)] text-[var(--th-text-main)] border border-[var(--th-border)] text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
                               {product.color}
                             </span>
                           )}
@@ -1285,8 +1308,8 @@ export default function ProductListingPage({
                       <div className="p-4 flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex items-center justify-between text-[11px] text-[var(--th-text-muted)] mb-1">
-                            <span className="font-semibold text-[var(--th-text-main)]">
-                              {product.color || 'Silver'} • {product.weightGrams}g
+                            <span className="font-semibold text-[var(--th-accent)] uppercase tracking-wider">
+                              {product.purity || (product.purityCode === '999' ? '999 Pure' : '925 Sterling')} • {product.weightGrams}g
                             </span>
                             <div className="flex items-center space-x-1 text-[var(--th-accent)]">
                               <Star className="w-3 h-3 fill-[var(--th-accent)] text-[var(--th-accent)]" />

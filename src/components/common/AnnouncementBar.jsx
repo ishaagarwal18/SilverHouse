@@ -8,25 +8,36 @@ const ANNOUNCEMENTS = [
   { text: "CUSTOM ENGRAVED YATRA LOCKETS & BULLION BARS MADE ON ORDER", icon: Sparkles }
 ];
 
-export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal }) {
+export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal, storeParams }) {
   const [index, setIndex] = useState(0);
 
+  const rate925 = storeParams?.silver_rate_925_per_gram || 81.86;
+  const rate999 = storeParams?.silver_rate_999_per_gram || 88.50;
+  const customAnnouncement = storeParams?.announcement_bar_text;
+
+  const announcements = React.useMemo(() => {
+    if (customAnnouncement) {
+      return [{ text: customAnnouncement, icon: Sparkles }, ...ANNOUNCEMENTS];
+    }
+    return ANNOUNCEMENTS;
+  }, [customAnnouncement]);
+
   const handlePrev = () => {
-    setIndex((prev) => (prev - 1 + ANNOUNCEMENTS.length) % ANNOUNCEMENTS.length);
+    setIndex((prev) => (prev - 1 + announcements.length) % announcements.length);
   };
 
   const handleNext = () => {
-    setIndex((prev) => (prev + 1) % ANNOUNCEMENTS.length);
+    setIndex((prev) => (prev + 1) % announcements.length);
   };
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % ANNOUNCEMENTS.length);
+      setIndex((prev) => (prev + 1) % announcements.length);
     }, 4500);
     return () => clearInterval(timer);
-  }, []);
+  }, [announcements.length]);
 
-  const current = ANNOUNCEMENTS[index];
+  const current = announcements[index % announcements.length] || announcements[0];
   const Icon = current.icon;
 
   return (
@@ -40,7 +51,7 @@ export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal 
             <span>Live Silver Rate</span>
           </span>
           <span className="font-semibold text-[11px] text-[var(--th-card)]/90">
-            925: <strong className="text-white">₹98.5/g</strong> | 999: <strong className="text-white">₹105.2/g</strong>
+            925: <strong className="text-white">₹{rate925}/g</strong> | 999: <strong className="text-white">₹{rate999}/g</strong>
           </span>
         </div>
 

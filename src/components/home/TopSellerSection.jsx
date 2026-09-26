@@ -113,10 +113,17 @@ export default function TopSellerSection({
                   />
 
                   {/* Top Rank & Sold Ribbon Tag */}
-                  <div className="absolute top-3 left-3 z-10 flex flex-col space-y-1">
+                  <div className="absolute top-3 left-3 z-10 flex flex-col space-y-1 items-start">
                     <span className="bg-[var(--th-primary)] text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center space-x-1 border border-white/20">
                       <Flame className="w-3 h-3 text-[var(--th-accent)] fill-[var(--th-accent)]" />
                       <span>#{index + 1} Best Seller</span>
+                    </span>
+                    <span className="bg-black/95 text-white border border-amber-400 text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg uppercase tracking-wider inline-flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+                      <span className="text-amber-300 font-black">
+                        {product.purityCode === '999' || (product.purity && String(product.purity).includes('999')) ? '999 PURE' : '925 STERLING'}
+                      </span>
+                      <span className="text-white font-extrabold">SILVER</span>
                     </span>
                   </div>
 

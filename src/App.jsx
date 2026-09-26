@@ -23,7 +23,8 @@ import {
   addToCartApi,
   updateCartQtyApi,
   removeCartItemApi,
-  getGuestToken
+  getGuestToken,
+  fetchStoreParameters
 } from './services/api';
 import { PRODUCTS, CATEGORIES } from './data/products';
 
@@ -36,6 +37,7 @@ export default function App() {
   // Datasets loaded live from Backend API
   const [products, setProducts] = useState(PRODUCTS);
   const [categories, setCategories] = useState(CATEGORIES);
+  const [storeParams, setStoreParams] = useState(null);
 
   // Cart & Wishlist State
   const [cartItems, setCartItems] = useState(() => {
@@ -117,9 +119,10 @@ export default function App() {
   useEffect(() => {
     async function loadDataFromBackend() {
       try {
-        const [backendProducts, backendCategories] = await Promise.all([
+        const [backendProducts, backendCategories, paramsRes] = await Promise.all([
           fetchProducts(),
-          fetchCategories()
+          fetchCategories(),
+          fetchStoreParameters()
         ]);
         if (Array.isArray(backendProducts) && backendProducts.length > 0) {
           setProducts(backendProducts);
@@ -127,17 +130,24 @@ export default function App() {
         if (Array.isArray(backendCategories) && backendCategories.length > 0) {
           setCategories(backendCategories);
         }
+        if (paramsRes?.parameters) {
+          setStoreParams(paramsRes.parameters);
+        }
       } catch (err) {
         console.error('Failed to load live database data:', err);
       }
     }
     loadDataFromBackend();
 
-    const handleProductsUpdated = () => {
+    const handleDataUpdated = () => {
       loadDataFromBackend();
     };
-    window.addEventListener('products_updated', handleProductsUpdated);
-    return () => window.removeEventListener('products_updated', handleProductsUpdated);
+    window.addEventListener('products_updated', handleDataUpdated);
+    window.addEventListener('categories_updated', handleDataUpdated);
+    return () => {
+      window.removeEventListener('products_updated', handleDataUpdated);
+      window.removeEventListener('categories_updated', handleDataUpdated);
+    };
   }, []);
 
   // Scroll to top on route change
@@ -393,7 +403,7 @@ export default function App() {
     <div className="min-h-screen bg-[#F6F1E8] flex flex-col justify-between selection:bg-[#D4AF37] selection:text-white">
       <div>
         {/* Top Announcement Bar */}
-        <AnnouncementBar onNavigateCategory={handleNavigateCategory} />
+        <AnnouncementBar onNavigateCategory={handleNavigateCategory} storeParams={storeParams} />
 
         {/* Sticky Header with MegaMenu */}
         <Header
@@ -471,6 +481,7 @@ export default function App() {
         onRemoveItem={handleRemoveCartItem}
         onProceedCheckout={handleProceedCheckout}
         onQuickView={(prod) => setQuickViewProduct(prod)}
+        storeParams={storeParams}
       />
 
       <WishlistDrawer
