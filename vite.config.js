@@ -11,6 +11,24 @@ export default defineConfig({
   build: {
     outDir: 'build',
     emptyOutDir: true,
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // Group specific heavy libraries into dedicated chunks
+            if (id.includes('@mui') || id.includes('lucide-react')) {
+              return 'ui-vendor';
+            }
+            if (id.includes('lodash') || id.includes('axios')) {
+              return 'utils-vendor';
+            }
+            // Fallback for all other vendor libraries
+            return 'vendor';
+          }
+        },
+      },
+    }
   },
   server: {
     proxy: {
