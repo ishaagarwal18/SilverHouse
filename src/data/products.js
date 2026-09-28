@@ -2,186 +2,158 @@
 
 export const CATEGORIES = [
   {
-    id: "silver-rings",
+    id: "anklets-payal",
     category_id: 1,
+    name: "Anklets & Payal",
+    shortName: "Payal & Anklets",
+    description: "Traditional and heavy handcrafted silver payal",
+    image: "/images/antique_ghungroo_payal.jpg",
+    image_url: "/images/antique_ghungroo_payal.jpg",
+    heroBanner: "/images/antique_ghungroo_payal.jpg",
+    idealFor: "Women"
+  },
+  {
+    id: "baby-silver",
+    category_id: 2,
+    name: "Baby Silver",
+    shortName: "Baby Silver",
+    description: "Pure silver utensils and feeding accessories for babies",
+    image: "/images/baby_feeding_set.png",
+    image_url: "/images/baby_feeding_set.png",
+    heroBanner: "/images/baby_feeding_set.png",
+    idealFor: "Kids"
+  },
+  {
+    id: "silver-idols",
+    category_id: 3,
+    name: "Silver Idols",
+    shortName: "Silver Idols",
+    description: "Divine pure silver idols of gods and goddesses",
+    image: "/images/bal_gopal.png",
+    image_url: "/images/bal_gopal.png",
+    heroBanner: "/images/bal_gopal.png",
+    idealFor: "Puja"
+  },
+  {
+    id: "car-accessories",
+    category_id: 4,
+    name: "Car Accessories",
+    shortName: "Car Accessories",
+    description: "Miniature silver idols for car dashboards",
+    image: "/images/car_dashboard.png",
+    image_url: "/images/car_dashboard.png",
+    heroBanner: "/images/car_dashboard.png",
+    idealFor: "Auto"
+  },
+  {
+    id: "rings",
+    category_id: 5,
     name: "Silver Rings",
     shortName: "Rings",
-    description: "Designer 925 sterling silver rings and bands",
-    heroBanner: "/images/hero_silver_coins.png",
-    icon: "Sparkles",
-    idealFor: "Women",
-    subcategories: [
-      { id: "solitaire-rings", name: "Solitaire & Halo Rings" },
-      { id: "floral-bands", name: "Floral Silver Bands" }
-    ]
+    description: "Sterling silver solitaire and statement rings",
+    image: "/images/cz_solitaire_ring.jpg",
+    image_url: "/images/cz_solitaire_ring.jpg",
+    heroBanner: "/images/cz_solitaire_ring.jpg",
+    idealFor: "Unisex"
   },
   {
-    id: "silver-pendants-chains",
-    category_id: 2,
-    name: "Silver Pendants & Chains",
-    shortName: "Pendants & Chains",
-    description: "Minimalist and devotional silver chains and lockets",
-    heroBanner: "/images/hero_yatra_locket.png",
-    icon: "Sparkles",
-    idealFor: "Women",
-    subcategories: [
-      { id: "lotus-mandala", name: "Lotus Mandala Pendants" },
-      { id: "devotional-lockets", name: "Devotional Lockets & Chains" }
-    ]
-  },
-  {
-    id: "silver-bangles-kadas",
-    category_id: 3,
-    name: "Silver Bangles & Kadas",
-    shortName: "Bangles & Kadas",
-    description: "Traditional antique kadas and dailywear silver bangles",
-    heroBanner: "/images/hero_silverware.png",
-    icon: "Sparkles",
-    idealFor: "Women",
-    subcategories: [
-      { id: "filigree-kadas", name: "Royal Filigree Kadas" },
-      { id: "dailywear-bangles", name: "Dailywear Silver Bangles" }
-    ]
-  },
-  {
-    id: "silver-payal-anklets",
-    category_id: 4,
-    name: "Silver Payal & Anklets",
-    shortName: "Payal & Anklets",
-    description: "Ethnic bridal payals and lightweight dailywear anklets",
-    heroBanner: "/images/hero_baby_nazariya.png",
-    icon: "Sparkles",
-    idealFor: "Women",
-    subcategories: [
-      { id: "bridal-ghungroo", name: "Bridal Ghungroo Payal" },
-      { id: "lightweight-anklets", name: "Lightweight Daily Anklets" }
-    ]
-  },
-  {
-    id: "silver-religious-idols",
-    category_id: 5,
-    name: "Silver Religious Idols",
-    shortName: "Religious Idols",
-    description: "Pure 999 fine silver devotional murti and puja items",
-    heroBanner: "/images/hero_silver_idols.png",
-    icon: "Sparkles",
-    idealFor: "ALL",
-    subcategories: [
-      { id: "ganesha-laxmi-murti", name: "Ganesha & Laxmi Murti Set" },
-      { id: "puja-temple-idols", name: "Puja Room Deity Idols" }
-    ]
-  },
-  {
-    id: "silver-coins-bars",
+    id: "spiritual-wear",
     category_id: 6,
-    name: "Silver Coins & Bars",
-    shortName: "Coins & Bars",
-    description: "Hallmarked 999 fine silver investment coins and bars",
-    heroBanner: "/images/hero_silver_coins.png",
-    icon: "Coins",
-    idealFor: "ALL",
-    subcategories: [
-      { id: "lotus-temple-coin", name: "Lotus Temple Coins" },
-      { id: "investment-bars", name: "Investment Bullion Bars" }
-    ]
+    name: "Spiritual Wear",
+    shortName: "Spiritual Wear",
+    description: "Sacred Rudraksha beads and yatra pendants",
+    image: "/images/sacred_rudraksha.png",
+    image_url: "/images/sacred_rudraksha.png",
+    heroBanner: "/images/sacred_rudraksha.png",
+    idealFor: "Unisex"
   },
   {
-    id: "men-silver-collection",
+    id: "silver-coins",
     category_id: 7,
-    name: "Men Silver Collection",
-    shortName: "Men Collection",
-    description: "Bold silver bracelets and rings crafted for men",
-    heroBanner: "/images/hero_sacred_rudraksha.png",
-    icon: "ShieldCheck",
-    idealFor: "Men",
-    subcategories: [
-      { id: "curb-link-bracelets", name: "Heavy Curb Link Bracelets" },
-      { id: "men-rings-kada", name: "Masculine Rings & Kadas" }
-    ]
+    name: "Silver Coins",
+    shortName: "Coins & Bars",
+    description: "999 pure silver coins for festive gifting & investment",
+    image: "/images/silver_coins.png",
+    image_url: "/images/silver_coins.png",
+    heroBanner: "/images/silver_coins.png",
+    idealFor: "Gifts"
   },
   {
-    id: "kids-nazariya-bracelets",
+    id: "pooja-articles",
     category_id: 8,
-    name: "Kids Nazariya & Bracelets",
-    shortName: "Kids Collection",
-    description: "Protective silver nazariya beads and charm bracelets",
-    heroBanner: "/images/hero_baby_nazariya.png",
-    icon: "Baby",
-    idealFor: "Kids",
-    subcategories: [
-      { id: "evil-eye-nazariya", name: "Evil Eye Silver Nazariya" },
-      { id: "baby-bangles", name: "Baby Charm Bracelets" }
-    ]
+    name: "Pooja Articles",
+    shortName: "Pooja Articles",
+    description: "Traditional pure silver diyas and ritual essentials",
+    image: "/images/silver_puja_diya.png",
+    image_url: "/images/silver_puja_diya.png",
+    heroBanner: "/images/silver_puja_diya.png",
+    idealFor: "Puja"
   },
   {
-    id: "silver-earrings",
+    id: "silverware",
     category_id: 9,
-    name: "Silver Earrings",
-    shortName: "Earrings",
-    description: "Sparkling 925 sterling silver snowflake studs, solitaire tops, and antique jhumkas",
-    heroBanner: "/images/categories/cat_earrings.jpg",
-    icon: "Sparkles",
-    idealFor: "Women",
-    subcategories: [
-      { id: "stud-earrings", name: "Snowflake & Solitaire Studs" },
-      { id: "drop-earrings", name: "Designer Drop Earrings" }
-    ]
+    name: "Silverware",
+    shortName: "Silverware",
+    description: "Elegant pure silver tableware and silverware sets",
+    image: "/images/silverware.png",
+    image_url: "/images/silverware.png",
+    heroBanner: "/images/silverware.png",
+    idealFor: "Gifts"
   },
   {
-    id: "silver-sets",
+    id: "bangles-bracelets",
     category_id: 10,
-    name: "Silver Sets",
-    shortName: "Sets",
-    description: "Exquisite 925 sterling silver ruby bridal sets, bangle pairs, and puja collections",
-    heroBanner: "/images/categories/cat_sets.jpg",
-    icon: "Sparkles",
-    idealFor: "Women",
-    subcategories: [
-      { id: "bridal-sets", name: "Ruby Halo Bridal Sets" },
-      { id: "combo-sets", name: "Devotional & Festive Sets" }
-    ]
+    name: "Bangles & Bracelets",
+    shortName: "Bangles & Bracelets",
+    description: "Antique temple design silver bangles and kadas",
+    image: "/images/temple_silver_bangle.jpg",
+    image_url: "/images/temple_silver_bangle.jpg",
+    heroBanner: "/images/temple_silver_bangle.jpg",
+    idealFor: "Women"
   },
   {
-    id: "silver-utensils-pooja",
+    id: "nazariya",
     category_id: 11,
-    name: "Silver Utensils & Pooja",
-    shortName: "Utensils",
-    description: "Sacred pure 999 and 925 silver pooja kalash, diya, thali, and ritual vessels",
-    heroBanner: "/images/categories/cat_utensils.jpg",
-    icon: "Sparkles",
-    idealFor: "ALL",
-    subcategories: [
-      { id: "puja-kalash-diya", name: "Kalash & Akhand Diya" },
-      { id: "panchpatra-thali", name: "Panchpatra & Pooja Thali" }
-    ]
+    name: "Nazariya",
+    shortName: "Nazariya",
+    description: "Nazariya Collection",
+    image: "/images/categories/cat_nazariya.jpg",
+    image_url: "/images/categories/cat_nazariya.jpg",
+    heroBanner: "/images/categories/cat_nazariya.jpg",
+    idealFor: "ALL"
   },
   {
-    id: "custom-yatra-lockets",
+    id: "pendants",
     category_id: 12,
-    name: "Sacred Yantra & Custom Yatra Lockets",
-    shortName: "Yantra",
-    description: "Consecrated Sri Yantra, Mahamrityunjaya kavach, and custom pilgrimage shrine lockets",
-    heroBanner: "/images/categories/cat_yantra.jpg",
-    icon: "Sparkles",
-    idealFor: "ALL",
-    subcategories: [
-      { id: "sri-yantra", name: "Sri Yantra & Mandalas" },
-      { id: "yatra-shrine", name: "Custom Gotra Pilgrimage Lockets" }
-    ]
+    name: "Pendants",
+    shortName: "Pendants",
+    description: "Pendants Collection",
+    image: "/images/categories/cat_pendants.jpg",
+    image_url: "/images/categories/cat_pendants.jpg",
+    heroBanner: "/images/categories/cat_pendants.jpg",
+    idealFor: "ALL"
   },
   {
     id: "silver-chains",
     category_id: 13,
-    name: "Pure Silver Chains",
-    shortName: "Chains",
-    description: "Heavy Cuban links, sleek Italian curb chains, and everyday pure silver chains",
+    name: "Silver Chains",
+    shortName: "Silver Chains",
+    description: "Silver Chains Collection",
+    image: "/images/categories/cat_silver_chains.jpg",
+    image_url: "/images/categories/cat_silver_chains.jpg",
     heroBanner: "/images/categories/cat_silver_chains.jpg",
-    icon: "Sparkles",
-    idealFor: "ALL",
-    subcategories: [
-      { id: "curb-chains", name: "Italian Curb Chains" },
-      { id: "cuban-chains", name: "Heavy Cuban Links" }
-    ]
+    idealFor: "ALL"
+  },
+  {
+    id: "yantra",
+    category_id: 14,
+    name: "Yantra",
+    shortName: "Yantra",
+    description: "Yantra Collection",
+    image: "/images/categories/cat_yantra.jpg",
+    image_url: "/images/categories/cat_yantra.jpg",
+    heroBanner: "/images/categories/cat_yantra.jpg",
+    idealFor: "ALL"
   }
 ];
 

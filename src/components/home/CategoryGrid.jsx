@@ -32,7 +32,7 @@ export default function CategoryGrid({ categories, onSelectCategory }) {
             >
               {/* Background Image */}
               <img
-                src={category.heroBanner}
+                src={category.image_url || category.image || category.heroBanner || '/images/placeholder.svg'}
                 alt={category.name}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />

@@ -27,28 +27,9 @@ export default function CategoryShowcaseStrip({ categories = [], products = [], 
 
       const catId = c.category_id || c.id;
 
-      // 1. Check if category itself has an image_url in DB
-      let resolvedImg = '';
-      if (c.image_url || c.image) {
-        resolvedImg = resolveImageUrl(c.image_url || c.image);
-      } 
-      // 2. Otherwise find the first product in this category with an image
-      else if (Array.isArray(products) && products.length > 0) {
-        const matchedProd = products.find(p =>
-          (p.category_id && String(p.category_id) === String(catId)) ||
-          (p.category && p.category.toLowerCase() === catSlug) ||
-          (p.category_slug && p.category_slug.toLowerCase() === catSlug)
-        );
-        if (matchedProd && Array.isArray(matchedProd.images) && matchedProd.images.length > 0) {
-          resolvedImg = resolveImageUrl(matchedProd.images[0]);
-        }
-      }
-
-      // 3. Fallback to local asset alias if applicable
-      if (!resolvedImg) {
-        const normalizedSlug = catSlug.replace(/[^a-z0-9]/g, '_');
-        resolvedImg = `/images/categories/cat_${normalizedSlug}.jpg`;
-      }
+      // The image of the category is fetched strictly from the category table path only
+      const rawImg = c.image_url || c.image || '';
+      const resolvedImg = resolveImageUrl(rawImg) || rawImg || '/images/placeholder.svg';
 
       return {
         id: catSlug || String(catId),

@@ -183,9 +183,9 @@ export async function fetchCategories() {
           description: cat.description || 'Sacred 925 & 999 Pure Silver Items',
           idealFor: cat.ideal_for || 'All',
           image_id: cat.image_id || null,
-          image_url: resolvedImg,
-          image: resolvedImg,
-          heroBanner: resolvedImg || '/images/hero_silver_coins.png'
+          image_url: resolvedImg || (cat.image_url || cat.image || ''),
+          image: resolvedImg || (cat.image_url || cat.image || ''),
+          heroBanner: resolvedImg || (cat.image_url || cat.image || '') || '/images/placeholder.svg'
         };
       });
     }
