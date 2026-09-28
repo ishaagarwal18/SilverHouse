@@ -31,7 +31,7 @@ export default function YatraLocketSpotlight({ onNavigateCustomizer }) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
+
           {/* Left Column: Headline & Steps */}
           <div>
             <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md border border-[#D4AF37]/40 px-3.5 py-1.5 rounded-full mb-6">
@@ -87,7 +87,7 @@ export default function YatraLocketSpotlight({ onNavigateCustomizer }) {
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden border-2 border-[#D4AF37]/50 silver-card-shadow bg-silver-800 p-6">
               <img
-                src="/images/hero_yatra_locket.png"
+                src="/images/section/hero_yatra_locket.png"
                 alt="Custom Yatra Locket Demo"
                 className="w-full h-80 object-cover rounded-xl mb-6 border border-white/10"
               />

@@ -5,6 +5,7 @@ import PolicyBadges from './PolicyBadges';
 import TopSellerSection from './TopSellerSection';
 import ShopByColor from './ShopByColor';
 import ShopOnBudget from './ShopOnBudget';
+import ShopByWeight from './ShopByWeight';
 import CuratedCollections from './CuratedCollections';
 import SilverTreasureSection from './SilverTreasureSection';
 import SegmentedTabsShowcase from './SegmentedTabsShowcase';
@@ -63,7 +64,13 @@ export default function HomePage({
         onNavigateCategory={onNavigateCategory}
       />
 
-      {/* 6. Curated Collections for Your Loved Ones */}
+      {/* 6. Shop by Weight (Grams) Section */}
+      <ShopByWeight
+        products={products}
+        onNavigateCategory={onNavigateCategory}
+      />
+
+      {/* 7. Curated Collections for Your Loved Ones */}
       <CuratedCollections
         onNavigateCategory={onNavigateCategory}
       />

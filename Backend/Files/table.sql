@@ -253,3 +253,4 @@ CREATE TABLE dbo.store_parameter (
     updated_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
+ 

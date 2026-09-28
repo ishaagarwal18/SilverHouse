@@ -232,6 +232,18 @@ export default function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // Keyboard Shortcut: Cmd/Ctrl + K to open search modal
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
   // Handlers for Router Navigation
   const handleNavigateHome = () => {
     navigate('/');
@@ -458,9 +470,12 @@ export default function App() {
       <SearchModal
         isOpen={isSearchOpen}
         products={products}
+        categories={categories}
         onClose={() => setIsSearchOpen(false)}
         onSelectProduct={handleSelectProduct}
         onNavigateCategory={handleNavigateCategory}
+        onQuickView={(p) => setQuickViewProduct(p)}
+        onAddToCart={handleAddToCart}
       />
 
       <QuickViewModal

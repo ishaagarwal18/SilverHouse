@@ -713,39 +713,110 @@ function cleanPhoneNumber(rawPhone) {
     return cleaned;
 }
 
-async function sendWhatsAppMessage(phone, message) {
+// Format phone specifically for WhatsApp gateway (91XXXXXXXXXX without +)
+function formatWhatsAppPhone(rawPhone) {
+    if (!rawPhone) return '';
+    let digits = String(rawPhone).replace(/\D/g, '').trim();
+    if (digits.length === 10) {
+        digits = '91' + digits;
+    } else if (digits.length === 11 && digits.startsWith('0')) {
+        digits = '91' + digits.substring(1);
+    } else if (digits.length === 12 && digits.startsWith('91')) {
+        // already valid 91XXXXXXXXXX
+    }
+    return digits;
+}
+
+// Fetch WhatsApp API URL from store_parameter table (or fallback to env)
+async function getWhatsAppApiUrl(pool) {
+    try {
+        const activePool = pool || (await poolPromise);
+        if (activePool) {
+            const result = await activePool.request().query(
+                'SELECT TOP 1 wp_api FROM dbo.store_parameter WHERE wp_api IS NOT NULL AND LEN(RTRIM(wp_api)) > 0 ORDER BY id DESC'
+            );
+            if (result.recordset && result.recordset.length > 0 && result.recordset[0].wp_api) {
+                return result.recordset[0].wp_api.trim();
+            }
+        }
+    } catch (err) {
+        console.warn('[WhatsApp] Could not fetch wp_api from store_parameter:', err.message);
+    }
+    return process.env.WHATSAPP_API_URL || null;
+}
+
+async function sendWhatsAppMessage(phone, message, pool = null) {
+    const waPhone = formatWhatsAppPhone(phone);
     const cleaned = cleanPhoneNumber(phone) || phone;
     console.log(`\n======================================================`);
     console.log(`[WhatsApp Gateway] 💬 Outgoing WhatsApp Message:`);
-    console.log(`To: ${cleaned}`);
+    console.log(`To: ${cleaned} (WA: ${waPhone})`);
     console.log(`Message:\n${message}`);
     console.log(`======================================================\n`);
 
-    // Dispatches via external WhatsApp API gateway if configured
-    if (process.env.WHATSAPP_API_URL && process.env.WHATSAPP_API_TOKEN) {
+    const apiUrl = await getWhatsAppApiUrl(pool);
+
+    if (apiUrl) {
         try {
-            await fetch(process.env.WHATSAPP_API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`
-                },
-                body: JSON.stringify({
-                    to: cleaned,
-                    message: message
-                })
+            const urlObj = new URL(apiUrl);
+            urlObj.searchParams.set('phone', waPhone);
+            urlObj.searchParams.set('message', message);
+
+            console.log(`[WhatsApp Gateway] Dispatching to: ${urlObj.origin}${urlObj.pathname}?phone=${waPhone}`);
+            const response = await fetch(urlObj.toString(), {
+                method: 'GET',
+                headers: { 'Accept': 'application/json, text/plain, */*' }
             });
-            console.log(`[WhatsApp Gateway] Successfully dispatched to provider for ${cleaned}`);
+            const data = await response.json().catch(() => ({}));
+            console.log(`[WhatsApp Gateway] Provider response:`, JSON.stringify(data));
+            return { success: true, data };
         } catch (apiErr) {
             console.warn(`[WhatsApp Gateway Warning] Provider dispatch failed:`, apiErr.message);
+            return { success: false, error: apiErr.message };
         }
     }
-    return true;
+    return { success: true };
 }
 
-async function sendWhatsAppOtp(phone, otp) {
-    const message = `✨ *SilverHouse Fine Jewelry*\n\nYour one-time WhatsApp verification code is: *${otp}*\n\nValid for 5 minutes. Please do not share this sacred code with anyone.\n\n_Pure 925 & 999 Artisanal Silver_`;
-    return await sendWhatsAppMessage(phone, message);
+async function sendWhatsAppOtp(phone, otp, pool = null) {
+    const waPhone = formatWhatsAppPhone(phone);
+    const cleaned = cleanPhoneNumber(phone) || phone;
+    console.log(`\n======================================================`);
+    console.log(`[WhatsApp Gateway] 🔐 Dispatching WhatsApp OTP:`);
+    console.log(`To: ${cleaned} (WA Phone: ${waPhone})`);
+    console.log(`OTP Code: ${otp}`);
+    console.log(`======================================================\n`);
+
+    const apiUrl = await getWhatsAppApiUrl(pool);
+
+    if (apiUrl) {
+        try {
+            const urlObj = new URL(apiUrl);
+            // WhatsApp API expects phone in 91XXXXXXXXXX format
+            urlObj.searchParams.set('phone', waPhone);
+
+            // Use message template configured in store_parameter or provide standard SilverHouse text
+            const existingMsg = (urlObj.searchParams.get('message') || '').trim();
+            const baseMsg = existingMsg || 'your SilverHouse Mobile verification OTP is';
+            const finalMsg = `${baseMsg} ${otp}. Valid for 5 minutes. Please do not share this OTP.`;
+            urlObj.searchParams.set('message', finalMsg);
+
+            console.log(`[WhatsApp Gateway] Calling provider URL for ${waPhone}...`);
+            const response = await fetch(urlObj.toString(), {
+                method: 'GET',
+                headers: { 'Accept': 'application/json, text/plain, */*' }
+            });
+            const data = await response.json().catch(() => ({}));
+            console.log(`[WhatsApp Gateway] Provider response:`, JSON.stringify(data));
+            return { success: true, data };
+        } catch (apiErr) {
+            console.warn(`[WhatsApp Gateway Warning] OTP dispatch failed:`, apiErr.message);
+            return { success: false, error: apiErr.message };
+        }
+    } else {
+        console.warn(`[WhatsApp Gateway] No wp_api found in store_parameter or environment.`);
+        return { success: false, error: 'No WhatsApp API gateway configured.' };
+    }
 }
 
 // 1. POST /api/auth/send-otp: Send OTP on WhatsApp
@@ -786,14 +857,14 @@ app.post('/api/auth/send-otp', async (req, res) => {
                     VALUES (@phone, @otp_code, @expires_at, 0, SYSUTCDATETIME());
             `);
 
-        // Send via WhatsApp
-        await sendWhatsAppOtp(cleanedPhone, otp);
+        // Send real OTP to customer WhatsApp using wp_api from store_parameter
+        const waDispatch = await sendWhatsAppOtp(cleanedPhone, otp, pool);
 
         return res.status(200).json({
             success: true,
             message: `Verification code sent to WhatsApp (${cleanedPhone})`,
-            phone: cleanedPhone,
-            devOtp: otp
+            phone: cleanedPhone
+            // devOtp removed so OTP is strictly received on WhatsApp
         });
     } catch (err) {
         console.error('[Send OTP Error]:', err.message);
@@ -900,7 +971,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             user: userObj,
             role: userObj.role,
             isAdmin: isAdmin,
-            redirectUrl: isAdmin ? (process.env.ADMIN_URL || 'https://silverhouse-pap9.onrender.com/') : '/'
+            redirectUrl: isAdmin ? (process.env.ADMIN_URL || 'https://api.silverhouseindia.com/') : '/'
         });
     } catch (err) {
         console.error('[Verify OTP Error]:', err.message);

@@ -27,9 +27,8 @@ export default function AuthPage({ onTriggerToast }) {
   const [phone, setPhone] = useState('');
   const [formattedPhone, setFormattedPhone] = useState('');
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
-  const [timer, setTimer] = useState(45);
+  const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
-  const [devOtpHint, setDevOtpHint] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -139,11 +138,8 @@ export default function AuthPage({ onTriggerToast }) {
       const res = await requestOtp(phone);
       if (res.success) {
         setFormattedPhone(res.formattedPhone || phone);
-        if (res.devOtp) {
-          setDevOtpHint(res.devOtp);
-        }
         setStep('OTP');
-        setTimer(45);
+        setTimer(60);
         setCanResend(false);
         setOtpDigits(['', '', '', '', '', '']);
 
@@ -172,10 +168,7 @@ export default function AuthPage({ onTriggerToast }) {
     try {
       const res = await requestOtp(phone);
       if (res.success) {
-        if (res.devOtp) {
-          setDevOtpHint(res.devOtp);
-        }
-        setTimer(45);
+        setTimer(60);
         setCanResend(false);
         setOtpDigits(['', '', '', '', '', '']);
         if (inputRefs.current[0]) inputRefs.current[0].focus();
@@ -230,14 +223,6 @@ export default function AuthPage({ onTriggerToast }) {
     if (pasteData.length >= 6) {
       const digits = pasteData.slice(0, 6).split('');
       setOtpDigits(digits);
-      inputRefs.current[5]?.focus();
-    }
-  };
-
-  // Quick auto-fill for testing/development
-  const handleFillDevOtp = () => {
-    if (devOtpHint && devOtpHint.length === 6) {
-      setOtpDigits(devOtpHint.split(''));
       inputRefs.current[5]?.focus();
     }
   };
@@ -743,19 +728,9 @@ export default function AuthPage({ onTriggerToast }) {
                     ))}
                   </div>
 
-                  {/* Dev / Test OTP Helper Pill if available */}
-                  {devOtpHint && (
-                    <div className="mt-2.5 p-1.5 px-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center justify-between text-[11px] text-amber-800 dark:text-amber-200">
-                      <span>Test OTP: <strong className="font-mono tracking-widest">{devOtpHint}</strong></span>
-                      <button
-                        type="button"
-                        onClick={handleFillDevOtp}
-                        className="text-[10px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-100 underline hover:no-underline cursor-pointer"
-                      >
-                        Auto-fill
-                      </button>
-                    </div>
-                  )}
+                  <p className="text-[11px] text-center text-[var(--th-text-muted)] mt-2">
+                    💬 WhatsApp delivery usually takes 10–25s. Valid for 5 mins.
+                  </p>
                 </div>
 
                 {/* Resend OTP Section */}

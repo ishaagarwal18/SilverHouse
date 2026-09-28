@@ -256,16 +256,26 @@ export default function Header({
           <div className="hidden md:flex flex-1 max-w-md lg:max-w-lg xl:max-w-xl mx-2">
             <div
               onClick={onOpenSearch}
-              className="w-full h-10 px-4 rounded-full bg-[var(--th-card)] border border-[var(--th-border)] hover:border-[var(--th-primary)] shadow-inner flex items-center justify-between cursor-pointer transition-all duration-200 group"
+              className="w-full h-11 px-4 rounded-full bg-[var(--th-card)] border-2 border-[var(--th-border)] hover:border-[var(--th-accent)] shadow-xs hover:shadow-md flex items-center justify-between cursor-pointer transition-all duration-300 group"
+              role="search"
+              aria-label="Search pure silver jewelry and artifacts"
             >
-              <div className="flex items-center space-x-2.5 text-xs text-[var(--th-text-muted)] group-hover:text-[var(--th-text-main)] truncate">
-                <Search className="w-4 h-4 text-[var(--th-accent)] shrink-0 group-hover:scale-110 transition-transform" />
-                <span className="truncate">Search 925 rings, pooja thalis, 999 coins, evil eye...</span>
+              <div className="flex items-center space-x-2.5 text-xs text-[var(--th-text-muted)] group-hover:text-[var(--th-text-main)] truncate flex-1 min-w-0 pr-2">
+                <div className="w-6 h-6 rounded-full bg-[var(--th-primary-light)] flex items-center justify-center text-[var(--th-accent)] group-hover:scale-110 transition-transform shrink-0">
+                  <Search className="w-3.5 h-3.5" />
+                </div>
+                <span className="truncate font-medium">Search 925 silver jewellery, 999 coins, payal, idols...</span>
               </div>
 
-              <span className="hidden xl:inline-block text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-[var(--th-surface-alt)] text-[var(--th-text-main)] border border-[var(--th-border)] shrink-0">
-                Live Catalog
-              </span>
+              <div className="flex items-center space-x-1.5 shrink-0">
+                <span className="hidden xl:inline-flex items-center space-x-0.5 text-[9.5px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-[var(--th-surface-alt)] text-[var(--th-text-muted)] border border-[var(--th-border)]">
+                  <span>⌘</span>
+                  <span>K</span>
+                </span>
+                <span className="text-[10px] font-extrabold tracking-wider uppercase px-2.5 py-1 rounded-full bg-[var(--th-primary)] text-white shadow-2xs group-hover:bg-[var(--th-accent)] transition-colors">
+                  Search
+                </span>
+              </div>
             </div>
           </div>
 

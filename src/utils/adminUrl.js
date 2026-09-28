@@ -1,4 +1,4 @@
-export const DEPLOYED_ADMIN_URL = 'https://silverhouse-pap9.onrender.com/';
+export const DEPLOYED_ADMIN_URL = 'https://api.silverhouseindia.com/';
 
 /**
  * Resolves the admin portal URL depending on environment and host.
