@@ -1,6 +1,7 @@
-// Auth service helper functions for communicating with backend auth APIs
+import { API_BASE_URL } from './api';
 
-const API_BASE = '/api/auth';
+// Resolves to /api/auth in local dev, or https://api.silverhouseindia.com/api/auth in production
+const API_BASE = `${API_BASE_URL}/auth`;
 
 /**
  * Login user with email & password
