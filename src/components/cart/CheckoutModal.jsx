@@ -29,16 +29,15 @@ export default function CheckoutModal({
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [isGuestCheckout, setIsGuestCheckout] = useState(!isAuthenticated);
 
-  // In-modal Customer Authentication State
-  const [authTab, setAuthTab] = useState('login'); // 'login' | 'register'
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authFullName, setAuthFullName] = useState('');
-  const [authPhone, setAuthPhone] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [showAuthPassword, setShowAuthPassword] = useState(false);
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsGuestCheckout(false);
+    } else {
+      setIsGuestCheckout(true);
+    }
+  }, [isAuthenticated, isOpen]);
 
   // Card Simulator state for Step 2
   const [cardDetails, setCardDetails] = useState({
@@ -57,14 +56,6 @@ export default function CheckoutModal({
   // Error message strip state (replaces browser alerts)
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Automatically redirect unauthenticated customers directly to login page
-  useEffect(() => {
-    if (isOpen && (!isAuthenticated || !user)) {
-      onClose();
-      navigate('/login?redirect=checkout');
-    }
-  }, [isOpen, isAuthenticated, user, navigate, onClose]);
-
   // Reset checkout step whenever modal is opened
   useEffect(() => {
     if (isOpen) {
@@ -74,8 +65,11 @@ export default function CheckoutModal({
       setIsAddingNewAddress(false);
       setCopiedOrderId(false);
       setErrorMessage('');
+      if (isAuthenticated) {
+        setIsGuestCheckout(false);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isAuthenticated]);
 
   // Shipping Form State (used when entering a new address or as guest)
   const [formData, setFormData] = useState({
@@ -167,11 +161,11 @@ export default function CheckoutModal({
     }
     return {
       fullName: formData.fullName || user?.fullName || 'Valued Customer',
-      phone: formData.phone,
-      email: formData.email,
+      phone: formData.phone || user?.phone || '',
+      email: formData.email || user?.email || '',
       fullAddress: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
       addressId: null,
-      addressType: formData.addressType
+      addressType: formData.addressType || 'Home'
     };
   };
 
@@ -218,43 +212,58 @@ export default function CheckoutModal({
     if (e && e.preventDefault) e.preventDefault();
     setErrorMessage('');
 
-    if (!isAuthenticated || !user || !user.userId) {
-      onClose();
-      navigate('/login?redirect=checkout');
+    if (!isAuthenticated && !isGuestCheckout) {
+      setErrorMessage('Please sign in or choose "Continue as Guest" to proceed.');
       return;
     }
 
-    // If entering a new address, validate fields
-    if (isAddingNewAddress || !selectedAddressId) {
-      if (!formData.fullName.trim() || !formData.phone.trim() || !formData.email.trim() || !formData.address.trim() || !formData.city.trim() || !formData.pincode.trim()) {
-        setErrorMessage('Please fill out all delivery address fields completely.');
-        return;
+    // If entering a new address or guest checkout, validate fields
+    if (isAddingNewAddress || !selectedAddressId || !isAuthenticated) {
+      if (isGuestCheckout) {
+        // In guest checkout, credentials (email/phone/name) are NOT required.
+        // Only the physical shipping destination is required so we know where to send the parcel.
+        if (!formData.address.trim() || !formData.city.trim() || !formData.pincode.trim()) {
+          setErrorMessage('Please provide your Street Address, City, and 6-digit PIN code.');
+          return;
+        }
+      } else {
+        if (!formData.fullName.trim() || !formData.phone.trim() || !formData.address.trim() || !formData.city.trim() || !formData.pincode.trim()) {
+          setErrorMessage('Please fill out all delivery address fields completely.');
+          return;
+        }
       }
       if (!/^\d{6}$/.test(formData.pincode.trim())) {
         setErrorMessage('Please enter a valid 6-digit PIN code.');
         return;
       }
 
-      // Automatically save address to user's database records for fast future checkout
-      try {
-        const newAddr = await addUserAddress({
-          userId: user.userId,
-          address_name: formData.addressType || 'Home',
-          recipient_name: formData.fullName.trim(),
-          Block: '',
-          street: formData.address.trim(),
-          area: formData.city.trim(),
-          city: formData.city.trim(),
-          state: formData.state,
-          pincode: formData.pincode.trim(),
-          country: 'India'
-        });
-        if (newAddr && newAddr.success && newAddr.address_id) {
-          setSelectedAddressId(newAddr.address_id);
+      // Automatically save address to user's database records for fast future checkout if logged in
+      if (isAuthenticated && user?.userId) {
+        try {
+          const newAddr = await addUserAddress({
+            userId: user.userId,
+            address_name: formData.addressType || 'Home',
+            recipient_name: formData.fullName.trim(),
+            Block: '',
+            street: formData.address.trim(),
+            area: formData.city.trim(),
+            city: formData.city.trim(),
+            state: formData.state,
+            pincode: formData.pincode.trim(),
+            country: 'India'
+          });
+          if (newAddr && newAddr.success && newAddr.address_id) {
+            setSelectedAddressId(newAddr.address_id);
+          }
+        } catch (err) {
+          console.warn('Could not auto-save new address to account:', err);
         }
-      } catch (err) {
-        console.warn('Could not auto-save new address to account:', err);
       }
+    }
+
+    // If checking out as guest, ensure COD is not selected
+    if ((!isAuthenticated || isGuestCheckout) && paymentMethod === 'cod') {
+      setPaymentMethod('upi');
     }
 
     setStep(2);
@@ -270,9 +279,15 @@ export default function CheckoutModal({
     if (isPlacingOrder) return;
     setErrorMessage('');
 
-    if (!isAuthenticated || !user || !user.userId) {
-      onClose();
-      navigate('/login?redirect=checkout');
+    const isGuest = !isAuthenticated || isGuestCheckout;
+
+    if (!isAuthenticated && !isGuestCheckout) {
+      setErrorMessage('Please sign in or continue as guest to complete your order.');
+      return;
+    }
+
+    if (isGuest && paymentMethod === 'cod') {
+      setErrorMessage('Cash on Delivery (COD) is disabled for guest orders to eliminate fake orders. Please choose an online payment method.');
       return;
     }
 
@@ -299,19 +314,45 @@ export default function CheckoutModal({
       };
     });
 
+    let effectiveUserId = (isAuthenticated && user?.userId) ? user.userId : null;
+    const guestDisplayName = effective.fullName?.trim() || 'Valued Guest';
+    const guestDisplayPhone = effective.phone?.trim() || '9999999999';
+    const guestDisplayEmail = effective.email?.trim() || null;
+
+    // For guest checkout, auto-provision guest patron in dbo.[user] so database foreign key and order creation succeed
+    if (!effectiveUserId) {
+      try {
+        const guestUserRes = await postApiData({
+          proc_name: 'user',
+          opr: 'ADD',
+          table_values: {
+            full_name: guestDisplayName,
+            phone: guestDisplayPhone,
+            role: 'CUSTOMER'
+          }
+        });
+        if (guestUserRes && guestUserRes.success && Array.isArray(guestUserRes.data) && guestUserRes.data[0]?.user_id) {
+          effectiveUserId = guestUserRes.data[0].user_id;
+        }
+      } catch (uErr) {
+        console.warn('Could not auto-register guest user record:', uErr);
+      }
+    }
+
     const orderData = {
       order_id: Date.now(),
       order_number: generatedID,
-      user_id: user.userId,
-      customer_name: effective.fullName,
-      customer_email: effective.email,
-      customer_phone: effective.phone,
+      user_id: effectiveUserId || 1,
+      customer_name: guestDisplayName,
+      customer_email: guestDisplayEmail,
+      customer_phone: guestDisplayPhone,
       delivery_address: effective.fullAddress,
       total_amount: totalAmount,
       discount_amount: discountAmount,
       final_payable: finalAmount,
       payment_status: paymentMethod === 'cod' ? 'PENDING' : 'PAID',
       payment_method: paymentMethod,
+      is_guest: isGuest,
       created_at: new Date().toISOString(),
       items: formattedItems
     };
@@ -322,11 +363,11 @@ export default function CheckoutModal({
       opr: 'INSERT',
       table_values: {
         order_number: generatedID,
-        user_id: user.userId,
+        user_id: effectiveUserId || 1,
         address_id: effective.addressId || null,
-        customer_name: effective.fullName,
-        customer_email: effective.email,
-        customer_phone: effective.phone,
+        customer_name: guestDisplayName,
+        customer_email: guestDisplayEmail,
+        customer_phone: guestDisplayPhone,
         delivery_address: effective.fullAddress,
         total_amount: totalAmount,
         discount_amount: discountAmount,
@@ -478,174 +519,43 @@ export default function CheckoutModal({
           )}
 
           {/* ========================================================= */}
-          {/* STEP 1: SHIPPING & DELIVERY ADDRESS / LOGIN REQUIREMENT */}
+          {/* STEP 1: SHIPPING & DELIVERY ADDRESS */}
           {/* ========================================================= */}
           {step === 1 && (
-            !isAuthenticated || !user ? (
-              /* In-Modal Customer Login / Registration Barrier */
-              <div className="space-y-6 py-2">
-                <div className="text-center space-y-2 max-w-md mx-auto">
-                  <div className="w-14 h-14 rounded-2xl bg-[var(--th-primary)]/10 text-[var(--th-primary)] flex items-center justify-center mx-auto ring-8 ring-[var(--th-primary)]/5 shadow-inner">
-                    <Lock className="w-7 h-7" />
+            <form onSubmit={handleProceedToPayment} className="space-y-6">
+              
+              {/* Account Status / Guest Banner */}
+              {(!isAuthenticated || isGuestCheckout) ? (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-900 dark:text-amber-200">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                    <span>
+                      <strong>Guest Checkout Active:</strong> No account login or credentials required. (Cash on Delivery is disabled for guests to eliminate fake orders).
+                    </span>
                   </div>
-                  <h3 className="font-serif font-extrabold text-2xl text-[var(--th-text-main)]">
-                    Customer Sign In Required
-                  </h3>
-                  <p className="text-xs text-[var(--th-text-muted)] leading-relaxed">
-                    To place an order with insured transit, BIS hallmarked certificate in your name, and direct tracking, please sign in or register your customer account.
-                  </p>
-                </div>
-
-                {/* Auth Switcher Tabs */}
-                <div className="max-w-md mx-auto flex items-center p-1 rounded-xl bg-[var(--th-surface-alt)] border border-[var(--th-border)]">
-                  <button
-                    type="button"
-                    onClick={() => { setAuthTab('login'); setAuthError(''); }}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      authTab === 'login'
-                        ? 'bg-[var(--th-card)] text-[var(--th-text-main)] shadow-xs border border-[var(--th-border)]'
-                        : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
-                    }`}
-                  >
-                    Sign In to Existing Account
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setAuthTab('register'); setAuthError(''); }}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      authTab === 'register'
-                        ? 'bg-[var(--th-card)] text-[var(--th-text-main)] shadow-xs border border-[var(--th-border)]'
-                        : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
-                    }`}
-                  >
-                    Create New Account
-                  </button>
-                </div>
-
-                {/* Error Banner */}
-                {authError && (
-                  <div className="max-w-md mx-auto p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{authError}</span>
-                  </div>
-                )}
-
-                {/* In-Modal Form */}
-                <form onSubmit={handleInModalAuth} className="max-w-md mx-auto space-y-4 text-xs">
-                  {authTab === 'register' && (
-                    <div>
-                      <label className="font-bold text-[var(--th-text-main)] block mb-1">Full Name *</label>
-                      <div className="relative">
-                        <User className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          required
-                          value={authFullName}
-                          onChange={(e) => setAuthFullName(e.target.value)}
-                          placeholder="e.g. Isha Agarwal"
-                          className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="font-bold text-[var(--th-text-main)] block mb-1">Email Address *</label>
-                    <div className="relative">
-                      <Mail className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="email"
-                        required
-                        value={authEmail}
-                        onChange={(e) => setAuthEmail(e.target.value)}
-                        placeholder="name@example.com"
-                        className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  {authTab === 'register' && (
-                    <div>
-                      <label className="font-bold text-[var(--th-text-main)] block mb-1">Phone / WhatsApp Number</label>
-                      <div className="relative">
-                        <Phone className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="tel"
-                          value={authPhone}
-                          onChange={(e) => setAuthPhone(e.target.value)}
-                          placeholder="+91 98765 43210"
-                          className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="font-bold text-[var(--th-text-main)] block mb-1">Password *</label>
-                    <div className="relative">
-                      <Lock className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type={showAuthPassword ? 'text' : 'password'}
-                        required
-                        value={authPassword}
-                        onChange={(e) => setAuthPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl pl-9 pr-10 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowAuthPassword(!showAuthPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] cursor-pointer"
-                      >
-                        {showAuthPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={authLoading}
-                    className="w-full py-3.5 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
-                  >
-                    {authLoading ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <span>{authTab === 'login' ? 'Sign In & Continue Checkout' : 'Create Account & Continue'}</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </>
-                    )}
-                  </button>
-                </form>
-
-                <div className="text-center pt-2">
                   <button
                     type="button"
                     onClick={() => {
                       onClose();
                       navigate('/login?redirect=checkout');
                     }}
-                    className="text-xs text-[var(--th-accent)] hover:underline font-semibold cursor-pointer inline-flex items-center gap-1"
+                    className="text-xs font-bold text-[var(--th-primary)] hover:underline shrink-0 text-left sm:text-right cursor-pointer"
                   >
-                    <span>Prefer full login page? Click here</span>
-                    <ChevronRight className="w-3 h-3" />
+                    Already have an account? Sign In →
                   </button>
                 </div>
-              </div>
-            ) : (
-              <form onSubmit={handleProceedToPayment} className="space-y-6">
-                
-                {/* Verified Customer Status Banner */}
+              ) : (
                 <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-[var(--th-text-muted)]">Signed in as:</span>
-                    <strong className="text-[var(--th-text-main)]">{user.fullName || user.email}</strong>
+                    <strong className="text-[var(--th-text-main)]">{user?.fullName || user?.email}</strong>
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
                     Verified Customer Account
                   </span>
                 </div>
+              )}
 
                 {/* Saved Addresses for Authenticated Users */}
                 {savedAddresses.length > 0 && !isAddingNewAddress ? (
@@ -741,6 +651,12 @@ export default function CheckoutModal({
                         ← Choose Saved Address
                       </button>
                     )}
+
+                    {isGuestCheckout && (
+                      <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                        ⚡ No Credentials Required
+                      </span>
+                    )}
                   </div>
 
                   {/* Address Type Selector Pills */}
@@ -768,48 +684,54 @@ export default function CheckoutModal({
                   {/* Form Fields Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div>
-                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">Full Name *</label>
+                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">
+                        Full Name {isGuestCheckout ? <span className="font-normal text-[var(--th-text-muted)]">(Optional)</span> : '*'}
+                      </label>
                       <div className="relative">
                         <User className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
                           name="fullName"
-                          required
+                          required={!isGuestCheckout}
                           value={formData.fullName}
                           onChange={handleInputChange}
-                          placeholder="e.g. Isha Agarwal"
+                          placeholder={isGuestCheckout ? "e.g. Isha (or leave blank)" : "e.g. Isha Agarwal"}
                           className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">Phone Number *</label>
+                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">
+                        Phone Number {isGuestCheckout ? <span className="font-normal text-[var(--th-text-muted)]">(Optional - for courier updates)</span> : '*'}
+                      </label>
                       <div className="relative">
                         <Phone className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="tel"
                           name="phone"
-                          required
+                          required={!isGuestCheckout}
                           value={formData.phone}
                           onChange={handleInputChange}
-                          placeholder="+91 98765 43210"
+                          placeholder="+91 98765 43210 (optional)"
                           className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
                         />
                       </div>
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">Email Address (For Invoicing & Certificate) *</label>
+                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">
+                        Email Address {isGuestCheckout ? <span className="font-normal text-[var(--th-text-muted)]">(Optional - for e-certificate & invoice)</span> : '*'}
+                      </label>
                       <div className="relative">
                         <Mail className="w-3.5 h-3.5 text-[var(--th-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="email"
                           name="email"
-                          required
+                          required={!isGuestCheckout}
                           value={formData.email}
                           onChange={handleInputChange}
-                          placeholder="isha@example.com"
+                          placeholder="name@example.com (optional)"
                           className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
                         />
                       </div>
@@ -879,7 +801,6 @@ export default function CheckoutModal({
                 </button>
               </div>
             </form>
-            )
           )}
 
           {/* ========================================================= */}
@@ -1191,37 +1112,74 @@ export default function CheckoutModal({
                   )}
                 </div>
 
-                {/* 4. Cash on Delivery (COD) */}
-                <div 
-                  onClick={() => setPaymentMethod('cod')}
-                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${
-                    paymentMethod === 'cod'
-                      ? 'border-[var(--th-primary)] bg-[var(--th-primary)]/5 ring-4 ring-[var(--th-primary)]/15 shadow-sm'
-                      : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-600 flex items-center justify-center shrink-0">
-                        <Truck className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h5 className="font-bold text-xs sm:text-sm text-[var(--th-text-main)]">
+                {/* 4. Cash on Delivery (COD) - Reserved for Verified Logged-in Accounts */}
+                {(!isAuthenticated || isGuestCheckout) ? (
+                  <div className="p-4 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-800/60 bg-amber-500/5 flex items-start space-x-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <h5 className="font-bold text-[var(--th-text-main)]">
                           Cash on Delivery (COD)
                         </h5>
-                        <p className="text-[11px] text-[var(--th-text-muted)] mt-0.5">
-                          Pay cash or UPI to delivery executive at your doorstep
-                        </p>
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200">
+                          Disabled for Guest Orders
+                        </span>
                       </div>
-                    </div>
-
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      paymentMethod === 'cod' ? 'border-[var(--th-primary)] bg-[var(--th-primary)] text-white' : 'border-[var(--th-border)]'
-                    }`}>
-                      {paymentMethod === 'cod' && <Check className="w-3 h-3" />}
+                      <p className="text-[11px] text-[var(--th-text-muted)] mt-1.5 leading-relaxed">
+                        To eliminate fake/unverified orders, <strong>Cash on Delivery (COD) is removed</strong> for guest checkouts. Please pay securely online via Instant UPI, Cards, or Net Banking.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          navigate('/login?redirect=checkout');
+                        }}
+                        className="mt-2 text-xs font-bold text-[var(--th-primary)] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Sign in with WhatsApp / Password to unlock COD</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div 
+                    onClick={() => setPaymentMethod('cod')}
+                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                      paymentMethod === 'cod'
+                        ? 'border-[var(--th-primary)] bg-[var(--th-primary)]/5 ring-4 ring-[var(--th-primary)]/15 shadow-sm'
+                        : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-600 flex items-center justify-center shrink-0">
+                          <Truck className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h5 className="font-bold text-xs sm:text-sm text-[var(--th-text-main)]">
+                              Cash on Delivery (COD)
+                            </h5>
+                            <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200 border border-emerald-300">
+                              Verified Member
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[var(--th-text-muted)] mt-0.5">
+                            Pay cash or UPI to delivery executive at your doorstep
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        paymentMethod === 'cod' ? 'border-[var(--th-primary)] bg-[var(--th-primary)] text-white' : 'border-[var(--th-border)]'
+                      }`}>
+                        {paymentMethod === 'cod' && <Check className="w-3 h-3" />}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               </div>
 

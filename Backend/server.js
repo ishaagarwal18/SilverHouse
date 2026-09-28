@@ -1210,14 +1210,30 @@ app.post('/api/data', async (req, res) => {
         }
         const effectiveJsonStr = table_values ? JSON.stringify({ table_values }) : jsonStr;
 
-        // Strict Customer Authentication for Order Creation
+        // Customer Order Validation (Supports verified accounts and guest checkout)
         if (mutationProc === 'orders' && (operation === 'ADD' || operation === 'INSERT')) {
             const parsedUserId = table_values && (table_values.user_id || table_values.userId);
-            if (!parsedUserId || isNaN(parseInt(parsedUserId, 10)) || parseInt(parsedUserId, 10) <= 0) {
-                return res.status(401).json({
-                    success: false,
-                    error: 'Customer must be logged in to place an order. Please sign in or register.'
-                });
+            const isGuest = !parsedUserId || isNaN(parseInt(parsedUserId, 10)) || parseInt(parsedUserId, 10) <= 0;
+            const paymentMethod = ((table_values && table_values.payment_method) || '').trim().toLowerCase();
+
+            if (isGuest) {
+                // Strictly disallow Cash on Delivery (COD) for guest orders to eliminate fake orders
+                if (paymentMethod === 'cod') {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Cash on Delivery (COD) is disabled for guest checkout to prevent fake orders. Please pay online or sign in to your account.'
+                    });
+                }
+
+                // Guest orders must provide customer contact information
+                const custPhone = table_values && (table_values.customer_phone || table_values.phone);
+                const custName = table_values && (table_values.customer_name || table_values.name);
+                if (!custPhone || !custName) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Customer name and phone number are required for guest checkout.'
+                    });
+                }
             }
         }
 

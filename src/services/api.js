@@ -223,11 +223,30 @@ export async function postApiData(payload) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify(payload),
     });
 
-    return await response.json();
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await response.json();
+      if (!response.ok && !data.error) {
+        data.error = data.message || `Server returned status ${response.status}`;
+      }
+      return data;
+    } else {
+      const text = await response.text();
+      console.warn('[API Service] Non-JSON response received:', response.status, text.slice(0, 300));
+      return {
+        success: false,
+        error: response.status === 401
+          ? 'Sign in is required for this action. Please sign in or continue as guest.'
+          : response.status === 404
+            ? 'Endpoint not found (404). Please ensure the API is reachable.'
+            : `Server returned status ${response.status}. Please try again.`
+      };
+    }
   } catch (error) {
     console.error('[API Service] Error sending data to backend:', error);
     return { success: false, error: error.message };
