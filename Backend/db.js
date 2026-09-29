@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const hasPassword = Boolean(process.env.DB_PASSWORD && process.env.DB_PASSWORD.trim() !== '');
 const isWindowsLocal = !hasPassword && process.platform === 'win32';
