@@ -11,9 +11,12 @@ const ANNOUNCEMENTS = [
 export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal, storeParams }) {
   const [index, setIndex] = useState(0);
 
-  const rate925 = storeParams?.silver_rate_925_per_gram || 81.86;
-  const rate999 = storeParams?.silver_rate_999_per_gram || 88.50;
-  const customAnnouncement = storeParams?.announcement_bar_text;
+  const rate925 = 81.86;
+  const rate999 = 88.50;
+  // Dynamic celebration message fetched directly from store_parameter.current_festival
+  const customAnnouncement = storeParams?.current_festival
+    ? `✨ ${storeParams.current_festival} Festive Special: Celebrate with Pure 925 Sterling & 999 Bullion Silver Collections`
+    : null;
 
   const announcements = React.useMemo(() => {
     if (customAnnouncement) {

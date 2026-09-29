@@ -955,7 +955,7 @@
 
                 const imagesHtml = Array.isArray(o.images) && o.images.length > 0
                     ? o.images.map(img => `
-                        <img src="${img}" alt="Inspiration" class="image-thumb" onclick="openLightbox('${img}')" onerror="this.onerror=null; this.src='https://placehold.co/120x120/1e293b/cbd5e1?text=Photo'; this.alt='Preview unavailable';" />
+                        <img src="${img}" alt="Inspiration" class="image-thumb" onclick="openLightbox('${img}')" onerror="this.onerror=null; this.src='/images/placeholder.svg'; this.alt='Preview unavailable';" />
                     `).join('')
                     : '<span class="no-images">No inspiration photos uploaded</span>';
 

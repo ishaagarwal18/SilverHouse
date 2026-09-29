@@ -14,6 +14,7 @@ import InfoModal from './components/common/InfoModal';
 import ThemeSwitcher from './components/common/ThemeSwitcher';
 import AppRouter from './router/AppRouter';
 import { useAuth } from './context/AuthContext';
+import { useTheme } from './context/ThemeContext';
 import { 
   fetchProducts, 
   fetchCategories, 
@@ -32,6 +33,7 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated } = useAuth();
+  const { setTheme, themes } = useTheme();
   const effectiveUserId = user?.userId || null;
 
   // Datasets loaded live from Backend API
@@ -132,6 +134,17 @@ export default function App() {
         }
         if (paramsRes?.parameters) {
           setStoreParams(paramsRes.parameters);
+          // Apply default_theme fetched directly from database table store_parameter
+          if (paramsRes.parameters.default_theme) {
+            const dbThemeRaw = paramsRes.parameters.default_theme.trim().toLowerCase();
+            const matchedTheme = themes.find(t => 
+              t.name.toLowerCase() === dbThemeRaw || 
+              t.id.toLowerCase() === dbThemeRaw
+            );
+            if (matchedTheme && !localStorage.getItem('silverhouse_theme_user_override')) {
+              setTheme(matchedTheme.id);
+            }
+          }
         }
       } catch (err) {
         console.error('Failed to load live database data:', err);

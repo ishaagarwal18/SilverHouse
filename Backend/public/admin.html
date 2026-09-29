@@ -1687,7 +1687,7 @@
                             const escapedList = JSON.stringify(imgList).replace(/"/g, '&quot;');
                             rowHtml += `<td>
                                 <div style="display:inline-flex; align-items:center; gap:6px;">
-                                    <img src="${firstImg}" class="img-thumb" style="cursor:pointer; object-fit:cover; border-radius:8px; border:1px solid var(--border); width:44px; height:44px; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" onclick="openLightboxModal('${firstImg}', ${escapedList})" onerror="this.src='https://via.placeholder.com/44x44/111827/9ca3af?text=N/A'" title="Click to inspect full image" />
+                                    <img src="${firstImg}" class="img-thumb" style="cursor:pointer; object-fit:cover; border-radius:8px; border:1px solid var(--border); width:44px; height:44px; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" onclick="openLightboxModal('${firstImg}', ${escapedList})" onerror="this.onerror=null; this.src='/images/placeholder.svg';" title="Click to inspect full image" />
                                     ${extraCount > 0 ? `<span onclick="openLightboxModal('${firstImg}', ${escapedList})" style="cursor:pointer; font-size:11px; font-weight:700; background:rgba(99,102,241,0.2); color:#818cf8; border:1px solid rgba(99,102,241,0.4); padding:3px 7px; border-radius:12px;" title="${extraCount} more inspiration images">+${extraCount}</span>` : ''}
                                 </div>
                                 ${showBadge ? badgeHtml : ''}
@@ -1872,7 +1872,7 @@
                     `;
                     imgs.forEach(u => {
                         const escapedList = JSON.stringify(imgs).replace(/"/g, '&quot;');
-                        inspoHtml += `<img src="${u}" style="width:64px; height:64px; border-radius:8px; object-fit:cover; border:1px solid var(--border); cursor:pointer; transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" onclick="openLightboxModal('${u}', ${escapedList})" title="Inspect full image" onerror="this.src='https://via.placeholder.com/64x64/111827/9ca3af?text=N/A'" />`;
+                        inspoHtml += `<img src="${u}" style="width:64px; height:64px; border-radius:8px; object-fit:cover; border:1px solid var(--border); cursor:pointer; transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" onclick="openLightboxModal('${u}', ${escapedList})" title="Inspect full image" onerror="this.onerror=null; this.src='/images/placeholder.svg';" />`;
                     });
                     inspoHtml += `
                             </div>

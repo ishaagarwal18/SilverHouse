@@ -5,9 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local": "vite --mode localhost",
+    "dev:render": "vite --mode render",
+    "dev:prod": "vite --mode production",
     "server": "node Backend/server.js",
     "backend": "node Backend/server.js",
     "build": "vite build",
+    "build:local": "vite build --mode localhost",
+    "build:render": "vite build --mode render",
+    "build:prod": "vite build --mode production",
     "lint": "oxlint",
     "preview": "vite preview"
   },

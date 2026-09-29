@@ -1,13 +1,12 @@
-// Base API URL (supports relative /api in local dev or explicit live Render backend in production)
-const DEPLOYED_RENDER_API = 'https://api.silverhouseindia.com/';
+// Base API URL configured via .env files (localhost, render, production)
+const DEFAULT_PRODUCTION_API = 'https://api.silverhouseindia.com/api';
 let rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
 
-// If no VITE_API_URL or it is relative '/api' on a live domain (like silverhouseindia.com), use the deployed Render backend
-if (!rawApiUrl || rawApiUrl === '/api') {
+if (!rawApiUrl) {
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    rawApiUrl = DEPLOYED_RENDER_API;
+    rawApiUrl = DEFAULT_PRODUCTION_API;
   } else {
-    rawApiUrl = rawApiUrl || '/api';
+    rawApiUrl = 'http://localhost:5001/api';
   }
 }
 
@@ -17,6 +16,11 @@ if (rawApiUrl.startsWith('http') && !rawApiUrl.endsWith('/api')) {
 }
 
 export const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
+
+// Helpful console info indicating active environment
+if (typeof window !== 'undefined') {
+  console.log(`%c[SilverHouse API] Active Environment: ${import.meta.env.VITE_ENV_NAME || 'default'} | Endpoint: ${API_BASE_URL}`, 'color: #0284c7; font-weight: bold;');
+}
 
 /**
  * Resolves image paths (absolute URLs, local assets, or backend uploads) to valid displayable URLs.
@@ -574,32 +578,24 @@ export async function payCustomOrderApi(orderId) {
 }
 
 /**
- * Fetches store parameters (Theme, Announcement, WhatsApp API, Silver Rates, Shipping Rules).
+ * Fetches store parameters (Theme, WhatsApp API, Current Festival) directly from the database table.
  * @returns {Promise<{success: boolean, parameters?: object, error?: string}>}
  */
 export async function fetchStoreParameters() {
   try {
     const url = `${API_BASE_URL}/parameters`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
     const data = await res.json();
     return data;
   } catch (err) {
-    console.warn('[API Service] Error fetching store parameters, using defaults:', err);
+    console.warn('[API Service] Notice: Could not load store_parameter from database:', err.message);
     return {
       success: false,
-      parameters: {
-        default_theme: 'royal-gold',
-        announcement_bar_text: '✨ Special Offer: Free Silver Coin on orders above ₹4,999 | Code: FESTIVE500',
-        silver_rate_999_per_gram: 88.50,
-        silver_rate_925_per_gram: 81.86,
-        hallmarking_fee_per_item: 45.00,
-        gst_rate_pct: 3.00,
-        free_shipping_threshold: 1999.00,
-        standard_shipping_fee: 99.00,
-        cod_handling_fee: 50.00,
-        max_cod_amount: 15000.00
-      }
+      error: err.message,
+      parameters: null
     };
   }
 }

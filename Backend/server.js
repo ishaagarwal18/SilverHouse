@@ -1282,7 +1282,7 @@ app.post('/api/data', async (req, res) => {
 });
 
 // ==========================================
-// STORE PARAMETERS API (Theme, WhatsApp API, Silver Rates, Shipping)
+// STORE PARAMETERS API (Directly from store_parameter database table)
 // ==========================================
 app.get('/api/parameters', async (req, res) => {
     try {
@@ -1291,38 +1291,14 @@ app.get('/api/parameters', async (req, res) => {
         if (!result.recordset || result.recordset.length === 0) {
             return res.status(200).json({
                 success: true,
-                parameters: {
-                    default_theme: 'royal-gold',
-                    wp_api: 'https://graph.facebook.com/v20.0',
-                    current_festival: 'Diwali Festive Sale',
-                    announcement_bar_text: '✨ Special Offer: Free Silver Coin on orders above ₹4,999 | Code: FESTIVE500',
-                    silver_rate_999_per_gram: 88.50,
-                    silver_rate_925_per_gram: 81.86,
-                    hallmarking_fee_per_item: 45.00,
-                    gst_rate_pct: 3.00,
-                    free_shipping_threshold: 1999.00,
-                    standard_shipping_fee: 99.00,
-                    cod_handling_fee: 50.00,
-                    max_cod_amount: 15000.00
-                }
+                parameters: null
             });
         }
 
         const row = result.recordset[0];
         return res.status(200).json({
             success: true,
-            parameters: {
-                ...row,
-                announcement_bar_text: row.announcement_bar_text || `✨ Special Festive Offer: Free Silver Coin on orders above ₹4,999 | ${row.current_festival || 'Festive Sale'}`,
-                silver_rate_999_per_gram: row.silver_rate_999_per_gram || 88.50,
-                silver_rate_925_per_gram: row.silver_rate_925_per_gram || 81.86,
-                hallmarking_fee_per_item: row.hallmarking_fee_per_item || 45.00,
-                gst_rate_pct: row.gst_rate_pct || 3.00,
-                free_shipping_threshold: row.free_shipping_threshold || 1999.00,
-                standard_shipping_fee: row.standard_shipping_fee || 99.00,
-                cod_handling_fee: row.cod_handling_fee || 50.00,
-                max_cod_amount: row.max_cod_amount || 15000.00
-            }
+            parameters: row
         });
     } catch (err) {
         console.error('[Store Parameters GET Error]:', err.message);
