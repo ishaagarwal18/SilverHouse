@@ -16,10 +16,16 @@
         const urlToken = urlParams.get('auth_token') || urlParams.get('token');
         if (urlToken) {
             localStorage.setItem(TOKEN_KEY, urlToken);
-            // Clean up the URL query params without reloading
             urlParams.delete('auth_token');
             urlParams.delete('token');
-            const cleanQuery = urlParams.toString() ? '?' + urlParams.toString() : '';
+        }
+        // Clean up any sensitive or accidental query params (e.g. GET form submissions)
+        if (urlParams.has('password') || urlParams.has('username')) {
+            urlParams.delete('username');
+            urlParams.delete('password');
+        }
+        const cleanQuery = urlParams.toString() ? '?' + urlParams.toString() : '';
+        if (window.location.search !== cleanQuery) {
             window.history.replaceState({}, document.title, window.location.pathname + cleanQuery + window.location.hash);
         }
     } catch (e) {
@@ -313,7 +319,7 @@
                 <div class="sh-login-body">
                     <div id="shAdminAlert" class="sh-alert-box">${initialErrorMsg || ''}</div>
 
-                    <form id="shAdminLoginForm" autocomplete="on">
+                    <form id="shAdminLoginForm" autocomplete="on" onsubmit="return false;">
                         <div class="sh-form-group">
                             <label class="sh-form-label" for="shInputUser">Admin Username or Mobile</label>
                             <div class="sh-input-wrapper">
@@ -379,6 +385,12 @@
         }
 
         // Handle Form Submission
+        const form = document.getElementById('shAdminLoginForm');
+        const errBox = document.getElementById('shAdminAlert');
+        const submitBtn = document.getElementById('shSubmitBtn');
+
+        if (!form) return;
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             errBox.style.display = 'none';
