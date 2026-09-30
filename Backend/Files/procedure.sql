@@ -771,6 +771,80 @@ BEGIN
     IF UPPER(ISNULL(@Role, '')) <> 'ADMIN'
         SET @Password = NULL;
 
+    -- 0. ADMIN AUTHENTICATION
+    IF UPPER(@Opr) = 'LOGIN' OR UPPER(@Opr) = 'AUTH'
+    BEGIN
+        DECLARE @InputUser NVARCHAR(100);
+        DECLARE @InputPass NVARCHAR(255);
+
+        IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
+        BEGIN
+            SELECT
+                @InputUser = LTRIM(RTRIM(COALESCE(
+                    JSON_VALUE(@JSONstr, '$.table_values.username'),
+                    JSON_VALUE(@JSONstr, '$.table_values.phone'),
+                    JSON_VALUE(@JSONstr, '$.table_values.full_name')
+                ))),
+                @InputPass = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.password')));
+        END
+
+        IF @InputUser IS NULL OR LEN(@InputUser) = 0 OR @InputPass IS NULL OR LEN(@InputPass) = 0
+        BEGIN
+            RAISERROR('Username/mobile and password are required.', 16, 1);
+            RETURN;
+        END
+
+        DECLARE @CleanDigits NVARCHAR(20) = REPLACE(REPLACE(REPLACE(@InputUser, ' ', ''), '-', ''), '+', '');
+        DECLARE @Last10 NVARCHAR(10) = CASE WHEN LEN(@CleanDigits) >= 10 THEN RIGHT(@CleanDigits, 10) ELSE NULL END;
+
+        DECLARE @AuthUserId INT;
+        DECLARE @AuthFullName NVARCHAR(100);
+        DECLARE @AuthPhone NVARCHAR(20);
+        DECLARE @AuthRole NVARCHAR(20);
+        DECLARE @DbPassword NVARCHAR(255);
+
+        SELECT TOP 1
+            @AuthUserId   = user_id,
+            @AuthFullName = full_name,
+            @AuthPhone    = phone,
+            @AuthRole     = role,
+            @DbPassword   = [password]
+        FROM dbo.[user]
+        WHERE UPPER(role) = 'ADMIN'
+          AND (
+              LOWER(full_name) = LOWER(@InputUser)
+              OR phone = @InputUser
+              OR (@Last10 IS NOT NULL AND phone LIKE '%' + @Last10)
+          );
+
+        IF @AuthUserId IS NULL
+        BEGIN
+            RAISERROR('Invalid admin username or password.', 16, 1);
+            RETURN;
+        END
+
+        IF @DbPassword IS NULL OR LEN(@DbPassword) = 0
+        BEGIN
+            RAISERROR('Admin account has no password set. Please contact administrator.', 16, 1);
+            RETURN;
+        END
+
+        DECLARE @HashedHex NVARCHAR(64) = LOWER(CONVERT(NVARCHAR(64), HASHBYTES('SHA2_256', @InputPass), 2));
+
+        IF @DbPassword <> @InputPass AND LOWER(@DbPassword) <> @HashedHex
+        BEGIN
+            RAISERROR('Invalid admin username or password.', 16, 1);
+            RETURN;
+        END
+
+        SELECT 
+            @AuthUserId AS user_id,
+            @AuthFullName AS full_name,
+            @AuthPhone AS phone,
+            @AuthRole AS [role];
+        RETURN;
+    END
+
     IF @Opr = 'Select'
     BEGIN
        IF @TargetUserId IS NOT NULL AND @TargetUserId > 0
@@ -2077,15 +2151,15 @@ BEGIN
         RETURN;
     END
 
-    -- Allow standard CRUD + RESTOCK and MERGE operations
-    IF @Opr NOT IN ('ADD', 'INSERT', 'EDIT', 'DELETE', 'SELECT', 'RESTOCK', 'MERGE', 'UPDATE_QTY')
+    -- Allow standard CRUD + RESTOCK, MERGE, and ADMIN AUTH operations
+    IF @Opr NOT IN ('ADD', 'INSERT', 'EDIT', 'DELETE', 'SELECT', 'RESTOCK', 'MERGE', 'UPDATE_QTY', 'LOGIN', 'AUTH')
     BEGIN
-        SET @Response = 'VALIDATION ERROR: Invalid operation "' + @Opr + '". Allowed: ADD, INSERT, EDIT, DELETE, SELECT, RESTOCK, MERGE, UPDATE_QTY.';
+        SET @Response = 'VALIDATION ERROR: Invalid operation "' + @Opr + '". Allowed: ADD, INSERT, EDIT, DELETE, SELECT, RESTOCK, MERGE, UPDATE_QTY, LOGIN, AUTH.';
         SELECT @Response AS [Response_Status];
         RETURN;
     END
 
-    IF @Opr IN ('ADD', 'INSERT', 'RESTOCK')
+    IF @Opr IN ('ADD', 'INSERT', 'RESTOCK', 'LOGIN', 'AUTH')
     BEGIN
         IF @JSONstr IS NULL OR ISJSON(@JSONstr) = 0
         BEGIN
