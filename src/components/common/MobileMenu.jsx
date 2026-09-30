@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { CATEGORIES } from '../../data/products';
-import { X, ChevronRight, ChevronDown, Sparkles, Phone, ShieldCheck, User } from 'lucide-react';
+import { X, ChevronRight, ChevronDown, Sparkles, Phone, ShieldCheck, User, FileText, ExternalLink, Mail } from 'lucide-react';
 
 export default function MobileMenu({
   isOpen,
@@ -10,8 +10,13 @@ export default function MobileMenu({
   categories,
   onSelectCategory,
   onSelectSubcategory,
-  onNavigateYatraCustomizer
+  onNavigateYatraCustomizer,
+  company,
+  onOpenPdf
 }) {
+  const comp = company || {};
+  const compPhone = comp.contact_number || '9537178477';
+  const compEmail = comp.email || 'sunilag28017@gmail.com';
   const [expandedCat, setExpandedCat] = useState(null);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -149,15 +154,58 @@ export default function MobileMenu({
           </div>
         </div>
 
-        {/* Footer info */}
-        <div className="p-4 bg-silver-50 border-t border-silver-200 text-xs text-silver-600 space-y-2">
-          <div className="flex items-center space-x-2">
-            <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
-            <span>100% BIS Hallmarked Silver</span>
+        {/* Footer info & PDF Documents */}
+        <div className="p-4 bg-silver-50 border-t border-silver-200 text-xs text-silver-700 space-y-2.5">
+          <div className="grid grid-cols-2 gap-2 pb-1">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                if (onOpenPdf) {
+                  onOpenPdf('about');
+                } else {
+                  window.open('/docs/Silver_House_About_Us.pdf', '_blank');
+                }
+              }}
+              className="flex items-center justify-center space-x-1.5 p-2 bg-white rounded-lg border border-silver-300 text-[11px] font-bold text-[#1A1A1A] hover:bg-silver-100 transition-colors shadow-2xs cursor-pointer"
+              title="Open Official Silver House Story PDF"
+            >
+              <FileText className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>About Us (PDF)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                if (onOpenPdf) {
+                  onOpenPdf('purity');
+                } else {
+                  window.open('/docs/Silver_House_Silver_Purity_Guide.pdf', '_blank');
+                }
+              }}
+              className="flex items-center justify-center space-x-1.5 p-2 bg-[#1A1A1A] rounded-lg border border-[#D4AF37] text-[11px] font-bold text-[#F3E5AB] hover:bg-[#333333] transition-colors shadow-2xs cursor-pointer"
+              title="Open Official Silver Purity Guide PDF"
+            >
+              <FileText className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>Purity Guide (PDF)</span>
+            </button>
           </div>
-          <div className="flex items-center space-x-2">
-            <Phone className="w-4 h-4 text-silver-500" />
-            <span>Support: +91 98765 43210</span>
+
+          <div className="flex items-center space-x-2 text-[11px]">
+            <ShieldCheck className="w-4 h-4 text-[#D4AF37] shrink-0" />
+            <span>100% BIS Hallmarked 925 & 999 Silver</span>
+          </div>
+          <div className="flex items-center space-x-2 text-[11px]">
+            <Phone className="w-4 h-4 text-silver-500 shrink-0" />
+            <a href={`tel:+91${compPhone}`} className="hover:text-black transition-colors">
+              WhatsApp / Care: +91 {compPhone}
+            </a>
+          </div>
+          <div className="flex items-center space-x-2 text-[11px]">
+            <Mail className="w-4 h-4 text-silver-500 shrink-0" />
+            <a href={`mailto:${compEmail}`} className="hover:text-black transition-colors">
+              {compEmail}
+            </a>
           </div>
         </div>
       </div>

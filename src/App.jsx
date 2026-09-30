@@ -11,6 +11,7 @@ import CartDrawer from './components/cart/CartDrawer';
 import CheckoutModal from './components/cart/CheckoutModal';
 import WishlistDrawer from './components/wishlist/WishlistDrawer';
 import InfoModal from './components/common/InfoModal';
+import PdfViewerModal from './components/common/PdfViewerModal';
 import ThemeSwitcher from './components/common/ThemeSwitcher';
 import AppRouter from './router/AppRouter';
 import { useAuth } from './context/AuthContext';
@@ -25,7 +26,9 @@ import {
   updateCartQtyApi,
   removeCartItemApi,
   getGuestToken,
-  fetchStoreParameters
+  fetchStoreParameters,
+  fetchCompanyDetails,
+  DEFAULT_COMPANY_DETAILS
 } from './services/api';
 import { PRODUCTS, CATEGORIES } from './data/products';
 
@@ -40,6 +43,8 @@ export default function App() {
   const [products, setProducts] = useState(PRODUCTS);
   const [categories, setCategories] = useState(CATEGORIES);
   const [storeParams, setStoreParams] = useState(null);
+  const [companyDetails, setCompanyDetails] = useState(DEFAULT_COMPANY_DETAILS);
+  const [pdfViewerDoc, setPdfViewerDoc] = useState(null); // 'about' | 'purity' | null
 
   // Cart & Wishlist State
   const [cartItems, setCartItems] = useState(() => {
@@ -121,16 +126,20 @@ export default function App() {
   useEffect(() => {
     async function loadDataFromBackend() {
       try {
-        const [backendProducts, backendCategories, paramsRes] = await Promise.all([
+        const [backendProducts, backendCategories, paramsRes, companyRes] = await Promise.all([
           fetchProducts(),
           fetchCategories(),
-          fetchStoreParameters()
+          fetchStoreParameters(),
+          fetchCompanyDetails()
         ]);
         if (Array.isArray(backendProducts) && backendProducts.length > 0) {
           setProducts(backendProducts);
         }
         if (Array.isArray(backendCategories) && backendCategories.length > 0) {
           setCategories(backendCategories);
+        }
+        if (companyRes?.company) {
+          setCompanyDetails(companyRes.company);
         }
         if (paramsRes?.parameters) {
           setStoreParams(paramsRes.parameters);
@@ -423,7 +432,11 @@ export default function App() {
     <div className="min-h-screen bg-[#F6F1E8] flex flex-col justify-between selection:bg-[#D4AF37] selection:text-white">
       <div>
         {/* Top Announcement Bar */}
-        <AnnouncementBar onNavigateCategory={handleNavigateCategory} storeParams={storeParams} />
+        <AnnouncementBar 
+          onNavigateCategory={handleNavigateCategory} 
+          storeParams={storeParams} 
+          onOpenPdf={(type) => setPdfViewerDoc(type)}
+        />
 
         {/* Sticky Header with MegaMenu */}
         <Header
@@ -462,6 +475,8 @@ export default function App() {
         onNavigateCategory={handleNavigateCategory}
         onNavigateYatraCustomizer={handleNavigateYatraCustomizer}
         onOpenInfoModal={handleOpenInfoModal}
+        company={companyDetails}
+        onOpenPdf={(type) => setPdfViewerDoc(type)}
       />
 
       {/* Overlays & Drawers */}
@@ -473,6 +488,8 @@ export default function App() {
         onSelectSubcategory={handleNavigateSubcategory}
         onNavigateYatraCustomizer={handleNavigateYatraCustomizer}
         onOpenInfoModal={handleOpenInfoModal}
+        company={companyDetails}
+        onOpenPdf={(type) => setPdfViewerDoc(type)}
       />
 
       <SearchModal
@@ -540,6 +557,16 @@ export default function App() {
         initialTab={infoModalTab || 'about'}
         onClose={() => setInfoModalTab(null)}
         onNavigateCategory={handleNavigateCategory}
+        company={companyDetails}
+        onOpenPdf={(type) => setPdfViewerDoc(type)}
+      />
+
+      {/* Official In-App React PDF Viewer Modal */}
+      <PdfViewerModal
+        isOpen={!!pdfViewerDoc}
+        docType={pdfViewerDoc || 'purity'}
+        onClose={() => setPdfViewerDoc(null)}
+        company={companyDetails}
       />
 
       <ThemeSwitcher variant="floating" />

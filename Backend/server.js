@@ -789,33 +789,50 @@ async function sendWhatsAppOtp(phone, otp, pool = null) {
 
     const apiUrl = await getWhatsAppApiUrl(pool);
 
-    if (apiUrl) {
-        try {
-            const urlObj = new URL(apiUrl);
-            // WhatsApp API expects phone in 91XXXXXXXXXX format
-            urlObj.searchParams.set('phone', waPhone);
-
-            // Use message template configured in store_parameter or provide standard SilverHouse text
-            const existingMsg = (urlObj.searchParams.get('message') || '').trim();
-            const baseMsg = existingMsg || 'your SilverHouse Mobile verification OTP is';
-            const finalMsg = `${baseMsg} ${otp}. Valid for 5 minutes. Please do not share this OTP.`;
-            urlObj.searchParams.set('message', finalMsg);
-
-            console.log(`[WhatsApp Gateway] Calling provider URL for ${waPhone}...`);
-            const response = await fetch(urlObj.toString(), {
-                method: 'GET',
-                headers: { 'Accept': 'application/json, text/plain, */*' }
-            });
-            const data = await response.json().catch(() => ({}));
-            console.log(`[WhatsApp Gateway] Provider response:`, JSON.stringify(data));
-            return { success: true, data };
-        } catch (apiErr) {
-            console.warn(`[WhatsApp Gateway Warning] OTP dispatch failed:`, apiErr.message);
-            return { success: false, error: apiErr.message };
-        }
-    } else {
+    if (!apiUrl) {
         console.warn(`[WhatsApp Gateway] No wp_api found in store_parameter or environment.`);
-        return { success: false, error: 'No WhatsApp API gateway configured.' };
+        return { success: false, error: 'No WhatsApp API gateway configured in store_parameter.' };
+    }
+
+    try {
+        const urlObj = new URL(apiUrl);
+        // WhatsApp API expects phone in 91XXXXXXXXXX format
+        urlObj.searchParams.set('phone', waPhone);
+
+        // Use message template configured in store_parameter or provide standard SilverHouse text
+        const existingMsg = (urlObj.searchParams.get('message') || '').trim();
+        const baseMsg = existingMsg || 'your SilverHouse Mobile verification OTP is';
+        const finalMsg = `${baseMsg} ${otp}. Valid for 5 minutes. Please do not share this OTP.`;
+        urlObj.searchParams.set('message', finalMsg);
+
+        console.log(`[WhatsApp Gateway] Calling provider URL for ${waPhone}...`);
+        
+        // 10-second timeout to prevent requests from hanging indefinitely
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const response = await fetch(urlObj.toString(), {
+            method: 'GET',
+            headers: { 'Accept': 'application/json, text/plain, */*' },
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        const data = await response.json().catch(() => ({}));
+        console.log(`[WhatsApp Gateway] Provider response (${response.status}):`, JSON.stringify(data));
+
+        if (!response.ok || (data.status && data.status !== 'success')) {
+            const errDetail = data.message || `Provider returned HTTP ${response.status}`;
+            return { success: false, error: errDetail, data };
+        }
+
+        return { success: true, data };
+    } catch (apiErr) {
+        console.warn(`[WhatsApp Gateway Warning] OTP dispatch failed:`, apiErr.message);
+        return { 
+            success: false, 
+            error: apiErr.name === 'AbortError' ? 'WhatsApp gateway timed out after 10s' : apiErr.message 
+        };
     }
 }
 
@@ -860,11 +877,19 @@ app.post('/api/auth/send-otp', async (req, res) => {
         // Send real OTP to customer WhatsApp using wp_api from store_parameter
         const waDispatch = await sendWhatsAppOtp(cleanedPhone, otp, pool);
 
+        if (!waDispatch.success) {
+            console.error(`[Send OTP Warning] WhatsApp gateway dispatch failed: ${waDispatch.error}`);
+            return res.status(502).json({
+                success: false,
+                error: `Unable to deliver WhatsApp message: ${waDispatch.error}. Please check your phone number or try again.`,
+                phone: cleanedPhone
+            });
+        }
+
         return res.status(200).json({
             success: true,
             message: `Verification code sent to WhatsApp (${cleanedPhone})`,
             phone: cleanedPhone
-            // devOtp removed so OTP is strictly received on WhatsApp
         });
     } catch (err) {
         console.error('[Send OTP Error]:', err.message);
@@ -1302,6 +1327,30 @@ app.get('/api/parameters', async (req, res) => {
         });
     } catch (err) {
         console.error('[Store Parameters GET Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ==========================================
+// COMPANY DETAILS API (Directly from dbo.SP_Fetchdata / dbo.company)
+// ==========================================
+app.get('/api/company', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const fetchReq = pool.request();
+        fetchReq.input('proc_name', sql.NVarChar(50), 'company');
+        fetchReq.input('JSONstr', sql.NVarChar(sql.MAX), null);
+        fetchReq.input('Condition', sql.NVarChar(255), null);
+
+        const fetchResult = await fetchReq.execute('dbo.SP_Fetchdata');
+        const company = (fetchResult.recordset && fetchResult.recordset[0]) || null;
+
+        return res.status(200).json({
+            success: true,
+            company
+        });
+    } catch (err) {
+        console.error('[Company Details GET Error]:', err.message);
         return res.status(500).json({ success: false, error: err.message });
     }
 });

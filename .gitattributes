@@ -1,0 +1,9 @@
+# Treat binary assets properly to avoid CRLF conversions
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.webp binary
+*.zip binary

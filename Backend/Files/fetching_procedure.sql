@@ -479,6 +479,24 @@ BEGIN
             ORDER BY w.wishlist_id DESC;
         END
 
+        -- 13. Company Entity Fetcher
+        ELSE IF @proc_name IN ('company', 'companies')
+        BEGIN
+            IF @Condition IS NOT NULL AND @Condition <> ''
+            BEGIN
+                SELECT company_id, [name], [address], city, [state], pincode, gst_no, pan_card, contact_number, email, created_at, updated_at
+                FROM dbo.company
+                WHERE company_id = TRY_CAST(@Condition AS INT) 
+                   OR LOWER([name]) LIKE '%' + LOWER(@Condition) + '%';
+            END
+            ELSE
+            BEGIN
+                SELECT TOP 1 company_id, [name], [address], city, [state], pincode, gst_no, pan_card, contact_number, email, created_at, updated_at
+                FROM dbo.company
+                ORDER BY company_id ASC;
+            END
+        END
+
         ELSE
         BEGIN
             SET @Response = 'ERROR: Unsupported proc_name "' + @proc_name + '".';

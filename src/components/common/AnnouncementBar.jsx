@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Sparkles, MapPin, Truck, Award } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, MapPin, Truck, Award, ExternalLink } from 'lucide-react';
 
 const ANNOUNCEMENTS = [
   { text: "100% BIS HALLMARKED 925 STERLING & 999 PURE SILVER", icon: Award },
@@ -8,7 +8,7 @@ const ANNOUNCEMENTS = [
   { text: "CUSTOM ENGRAVED YATRA LOCKETS & BULLION BARS MADE ON ORDER", icon: Sparkles }
 ];
 
-export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal, storeParams }) {
+export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal, storeParams, onOpenPdf }) {
   const [index, setIndex] = useState(0);
 
   const rate925 = 81.86;
@@ -88,18 +88,28 @@ export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal,
         </div>
 
         {/* Right Side: Quick Links */}
-        <div className="hidden md:flex items-center space-x-4 text-[11px] text-[#EADFCB]">
-          <span className="hover:text-white transition-colors cursor-pointer" onClick={() => onNavigateCategory && onNavigateCategory("all")}>
-            Track Order
-          </span>
+        <div className="hidden md:flex items-center space-x-3.5 text-[11px] text-[#EADFCB]">
+          <button
+            onClick={() => onOpenPdf ? onOpenPdf('about') : window.open('/docs/Silver_House_About_Us.pdf', '_blank')}
+            className="hover:text-white transition-colors cursor-pointer flex items-center space-x-1"
+            title="Open Silver House Story & Heritage Document (PDF Viewer)"
+          >
+            <span>About Us (PDF)</span>
+            <ExternalLink className="w-2.5 h-2.5 text-[#D4AF37]/70" />
+          </button>
           <span className="text-[#D4AF37]/40">•</span>
           <span className="hover:text-white transition-colors cursor-pointer" onClick={() => onNavigateCategory && onNavigateCategory("silver-coins-bars")}>
             999 Bullion
           </span>
           <span className="text-[#D4AF37]/40">•</span>
-          <span className="hover:text-white transition-colors cursor-pointer font-semibold text-[#F3E5AB]" onClick={() => onNavigateCategory && onNavigateCategory("all")}>
-            Purity Guarantee
-          </span>
+          <button
+            onClick={() => onOpenPdf ? onOpenPdf('purity') : window.open('/docs/Silver_House_Silver_Purity_Guide.pdf', '_blank')}
+            className="hover:text-white transition-colors cursor-pointer font-semibold text-[#F3E5AB] flex items-center space-x-1"
+            title="Open Silver Purity & BIS Hallmarking Guide (PDF Viewer)"
+          >
+            <span>Purity Guide (PDF)</span>
+            <ExternalLink className="w-2.5 h-2.5 text-[#D4AF37]" />
+          </button>
         </div>
 
       </div>

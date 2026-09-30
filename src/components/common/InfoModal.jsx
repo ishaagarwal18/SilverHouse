@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, ShieldCheck, Truck, X, MapPin, Phone, Mail, Award, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Sparkles, ShieldCheck, Truck, X, MapPin, Phone, Mail, Award, CheckCircle2, ArrowRight, FileText, ExternalLink } from 'lucide-react';
 
-export default function InfoModal({ isOpen, initialTab = 'about', onClose, onNavigateCategory }) {
+export default function InfoModal({ isOpen, initialTab = 'about', onClose, onNavigateCategory, company, onOpenPdf }) {
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  const comp = company || {};
+  const compName = comp.name || 'Silver House';
+  const compAddress = comp.address || '217, Kanak Chamber, Gandhi Road';
+  const compCity = comp.city || 'Ahmedabad';
+  const compState = comp.state || 'Gujarat';
+  const compPincode = comp.pincode || '380058';
+  const compPhone = comp.contact_number || '9537178477';
+  const compEmail = comp.email || 'sunilag28017@gmail.com';
+  const compPan = comp.pan_card || 'ADDPA8283B';
+  const compGst = comp.gst_no || null;
+  const fullAddress = `${compAddress}, ${compCity} - ${compPincode}, ${compState}`;
 
   useEffect(() => {
     if (initialTab) {
@@ -96,6 +108,25 @@ export default function InfoModal({ isOpen, initialTab = 'about', onClose, onNav
                 <p className="text-silver-700 text-xs sm:text-sm leading-relaxed">
                   SILVERHOUSE is dedicated to crafting 100% BIS Hallmarked 925 Sterling Silver jewellery, 999 Fine Pure Silver Murti idols, bullion coins, baby nazariya, and custom Yatra shrine lockets. Every piece is handcrafted by traditional silver artisans in India with certified metal purity and anti-tarnish protective coating.
                 </p>
+
+                {/* About Us Official PDF Banner */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      if (onOpenPdf) {
+                        onOpenPdf('about');
+                      } else {
+                        window.open('/docs/Silver_House_About_Us.pdf', '_blank');
+                      }
+                    }}
+                    className="inline-flex items-center space-x-2 px-4 py-2 bg-[#1A1A1A] hover:bg-[#333333] text-[#F3E5AB] rounded-xl text-xs font-bold transition-all shadow-xs border border-[var(--th-accent)] cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4 text-[var(--th-accent)]" />
+                    <span>View Official Silver House Story & Heritage Document (PDF Viewer) ↗</span>
+                  </button>
+                </div>
               </div>
 
               {/* Pillars Grid */}
@@ -133,21 +164,36 @@ export default function InfoModal({ isOpen, initialTab = 'about', onClose, onNav
                 </div>
               </div>
 
-              {/* Store & Contact Info */}
+              {/* Store & Verified Business Info */}
               <div className="border-t border-silver-200 pt-6 space-y-3">
-                <h4 className="font-serif font-bold text-base text-[#1A1A1A]">Store & Customer Care Details</h4>
+                <h4 className="font-serif font-bold text-base text-[#1A1A1A]">Registered Business & Workshop Details</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-silver-700">
                   <div className="flex items-start space-x-2">
                     <MapPin className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                    <span>SILVERHOUSE Heritage Tower, Connaught Place, New Delhi 110001</span>
+                    <span>{fullAddress}</span>
                   </div>
                   <div className="flex items-start space-x-2">
                     <Phone className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                    <span>Care Line: +91 98765 43210<br />(Mon - Sat, 10 AM - 7 PM)</span>
+                    <span>
+                      <a href={`tel:+91${compPhone}`} className="hover:underline">
+                        Mobile / WhatsApp: +91 {compPhone}
+                      </a>
+                      <br />(Mon - Sat, 10 AM - 8 PM)
+                    </span>
                   </div>
                   <div className="flex items-start space-x-2">
                     <Mail className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                    <span>Official Email: care@silverhouse.com</span>
+                    <span>
+                      <a href={`mailto:${compEmail}`} className="hover:underline">
+                        Official Email: {compEmail}
+                      </a>
+                      {compPan && (
+                        <><br /><strong className="text-[#1A1A1A] font-mono">PAN: {compPan}</strong></>
+                      )}
+                      {compGst && (
+                        <><br /><strong className="text-[#1A1A1A] font-mono">GSTIN: {compGst}</strong></>
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -207,6 +253,33 @@ export default function InfoModal({ isOpen, initialTab = 'about', onClose, onNav
                   <span className="font-bold text-[#1A1A1A] block">Physical Assay Certificate Included</span>
                   <span className="text-silver-700">Every order includes a physical invoice & authenticity card certifying the silver weight, purity, and hallmark details.</span>
                 </div>
+              </div>
+
+              {/* Silver Purity Guide PDF Banner */}
+              <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-linear-to-r from-amber-50 to-white border border-[#D4AF37]/50 rounded-xl gap-3">
+                <div className="flex items-center space-x-3">
+                  <FileText className="w-5 h-5 text-[#AA820A] shrink-0" />
+                  <div>
+                    <h5 className="font-bold text-xs text-[#1A1A1A]">Official Silver Purity Consumer Guide</h5>
+                    <p className="text-[11px] text-silver-600">Download our complete guide covering 999 vs 925 purity, alloy weight formulas, and HUID verification.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onOpenPdf) {
+                      onOpenPdf('purity');
+                    } else {
+                      window.open('/docs/Silver_House_Silver_Purity_Guide.pdf', '_blank');
+                    }
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 bg-[#D4AF37] hover:bg-[#AA820A] text-black hover:text-white rounded-lg text-xs font-bold transition-all shrink-0 shadow-xs cursor-pointer"
+                  title="Open Silver Purity Guide in React PDF Viewer"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Open Purity Guide in PDF Viewer ↗</span>
+                </button>
               </div>
             </div>
           )}

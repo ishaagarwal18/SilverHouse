@@ -1889,7 +1889,138 @@ END;
 GO
 
 -- =========================================================================
--- PROCEDURE 11: SP_GETDATA
+-- PROCEDURE 11: SP_company
+-- =========================================================================
+CREATE OR ALTER PROCEDURE dbo.SP_company
+    @Opr       NVARCHAR(10),
+    @JSONstr   NVARCHAR(MAX) = NULL,
+    @Condition NVARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @TargetCompanyId INT = TRY_CAST(@Condition AS INT);
+    DECLARE @Name           NVARCHAR(150);
+    DECLARE @Address        NVARCHAR(255);
+    DECLARE @City           NVARCHAR(100);
+    DECLARE @State          NVARCHAR(100);
+    DECLARE @Pincode        VARCHAR(10);
+    DECLARE @GstNo          VARCHAR(15);
+    DECLARE @PanCard        VARCHAR(10);
+    DECLARE @ContactNumber  VARCHAR(20);
+    DECLARE @Email          NVARCHAR(150);
+
+    IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
+    BEGIN
+        SELECT
+            @Name          = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.name'))),
+            @Address       = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.address'))),
+            @City          = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.city'))),
+            @State         = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.state'))),
+            @Pincode       = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.pincode'))),
+            @GstNo         = NULLIF(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.gst_no'))), ''),
+            @PanCard       = NULLIF(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.pan_card'))), ''),
+            @ContactNumber = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.contact_number'))),
+            @Email         = NULLIF(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.email'))), '');
+            
+        IF @TargetCompanyId IS NULL OR @TargetCompanyId = 0
+            SET @TargetCompanyId = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.company_id') AS INT);
+    END
+
+    -- SELECT
+    IF @Opr = 'SELECT'
+    BEGIN
+        IF @TargetCompanyId IS NOT NULL AND @TargetCompanyId > 0
+        BEGIN
+            SELECT company_id, [name], [address], city, [state], pincode, gst_no, pan_card, contact_number, email, created_at, updated_at
+            FROM dbo.company
+            WHERE company_id = @TargetCompanyId;
+        END
+        ELSE
+        BEGIN
+            SELECT TOP 1 company_id, [name], [address], city, [state], pincode, gst_no, pan_card, contact_number, email, created_at, updated_at
+            FROM dbo.company
+            ORDER BY company_id ASC;
+        END
+        RETURN;
+    END
+
+    -- ADD / INSERT
+    IF @Opr IN ('ADD', 'INSERT')
+    BEGIN
+        IF @Name IS NULL OR LEN(@Name) = 0
+        BEGIN
+            RAISERROR('Validation Error: Company name cannot be blank.', 16, 1);
+            RETURN;
+        END
+        IF @Address IS NULL OR LEN(@Address) = 0
+        BEGIN
+            RAISERROR('Validation Error: Company address cannot be blank.', 16, 1);
+            RETURN;
+        END
+        IF @ContactNumber IS NULL OR LEN(@ContactNumber) = 0
+        BEGIN
+            RAISERROR('Validation Error: Contact number cannot be blank.', 16, 1);
+            RETURN;
+        END
+
+        INSERT INTO dbo.company ([name], [address], city, [state], pincode, gst_no, pan_card, contact_number, email, created_at, updated_at)
+        VALUES (@Name, @Address, COALESCE(@City, 'Ahmedabad'), COALESCE(@State, 'Gujarat'), COALESCE(@Pincode, '380058'), @GstNo, @PanCard, @ContactNumber, @Email, SYSUTCDATETIME(), SYSUTCDATETIME());
+
+        SELECT SCOPE_IDENTITY() AS company_id, 'Company created successfully' AS message;
+        RETURN;
+    END
+
+    -- EDIT / UPDATE
+    IF @Opr = 'EDIT'
+    BEGIN
+        IF @TargetCompanyId IS NULL OR @TargetCompanyId = 0
+        BEGIN
+            SELECT TOP 1 @TargetCompanyId = company_id FROM dbo.company ORDER BY company_id ASC;
+        END
+
+        IF @TargetCompanyId IS NULL OR @TargetCompanyId = 0
+        BEGIN
+            RAISERROR('Validation Error: No company record found to update.', 16, 1);
+            RETURN;
+        END
+
+        UPDATE dbo.company
+        SET 
+            [name]         = COALESCE(@Name, [name]),
+            [address]      = COALESCE(@Address, [address]),
+            city           = COALESCE(@City, city),
+            [state]        = COALESCE(@State, [state]),
+            pincode        = COALESCE(@Pincode, pincode),
+            gst_no         = COALESCE(@GstNo, gst_no),
+            pan_card       = COALESCE(@PanCard, pan_card),
+            contact_number = COALESCE(@ContactNumber, contact_number),
+            email          = COALESCE(@Email, email),
+            updated_at     = SYSUTCDATETIME()
+        WHERE company_id = @TargetCompanyId;
+
+        SELECT @TargetCompanyId AS company_id, 'Company updated successfully' AS message;
+        RETURN;
+    END
+
+    -- DELETE
+    IF @Opr = 'DELETE'
+    BEGIN
+        IF @TargetCompanyId IS NULL OR @TargetCompanyId = 0
+        BEGIN
+            RAISERROR('Validation Error: company_id is required for deletion.', 16, 1);
+            RETURN;
+        END
+
+        DELETE FROM dbo.company WHERE company_id = @TargetCompanyId;
+        SELECT @TargetCompanyId AS company_id, 'Company deleted successfully' AS message;
+        RETURN;
+    END
+END;
+GO
+
+-- =========================================================================
+-- PROCEDURE 12: SP_GETDATA
 -- =========================================================================
 CREATE OR ALTER PROCEDURE dbo.SP_GETDATA
     @proc_name   NVARCHAR(50),
@@ -1912,8 +2043,8 @@ BEGIN
         RETURN;
     END
 
-    -- Whitelist includes catalog entities and new e-commerce entities
-    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'product_image', 'user', 'address', 'cart', 'cart_item', 'orders', 'order', 'order_item', 'wishlist')
+    -- Whitelist includes catalog entities, e-commerce entities, and company
+    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'product_image', 'user', 'address', 'cart', 'cart_item', 'orders', 'order', 'order_item', 'wishlist', 'company')
     BEGIN
         SET @Response = 'SECURITY ERROR: Unauthorized or unsupported proc_name "' + @proc_name + '".';
         SELECT @Response AS [Response_Status];
@@ -1970,6 +2101,8 @@ BEGIN
             EXEC dbo.SP_order_item @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
         ELSE IF @proc_name = 'wishlist'
             EXEC dbo.SP_wishlist @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
+        ELSE IF @proc_name = 'company'
+            EXEC dbo.SP_company @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
 
         SET @Response = 'OK';
         SELECT @Response AS [Response_Status];

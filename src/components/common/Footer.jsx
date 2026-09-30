@@ -1,7 +1,19 @@
 import React from 'react';
-import { Sparkles, ShieldCheck, Mail, Phone, MapPin, Award, Heart, ArrowRight } from 'lucide-react';
+import { Sparkles, ShieldCheck, Mail, Phone, MapPin, Award, Heart, ArrowRight, FileText, ExternalLink } from 'lucide-react';
 
-export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, onOpenInfoModal }) {
+export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, onOpenInfoModal, company, onOpenPdf }) {
+  const comp = company || {};
+  const compName = comp.name || 'Silver House';
+  const compAddress = comp.address || '217, Kanak Chamber, Gandhi Road';
+  const compCity = comp.city || 'Ahmedabad';
+  const compState = comp.state || 'Gujarat';
+  const compPincode = comp.pincode || '380058';
+  const compPhone = comp.contact_number || '9537178477';
+  const compEmail = comp.email || 'sunilag28017@gmail.com';
+  const compPan = comp.pan_card || 'ADDPA8283B';
+  const compGst = comp.gst_no || null;
+  const fullAddress = `${compAddress}, ${compCity} - ${compPincode}, ${compState}`;
+
   return (
     <footer
       className="text-white pt-16 pb-8 border-t-2 border-[var(--th-accent)]"
@@ -49,8 +61,8 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
               <div className="w-10 h-10 rounded-full bg-white/10 border border-[var(--th-accent)] flex items-center justify-center shadow-sm">
                 <Sparkles className="w-5 h-5 text-[var(--th-accent)]" />
               </div>
-              <span className="font-serif text-2xl font-bold tracking-tight text-white">
-                SILVER<span className="text-[var(--th-accent)] font-light">HOUSE</span>
+              <span className="font-serif text-2xl font-bold tracking-tight text-white uppercase">
+                {compName.split(' ')[0]}<span className="text-[var(--th-accent)] font-light">{compName.split(' ').slice(1).join(' ') || 'HOUSE'}</span>
               </span>
             </div>
 
@@ -58,18 +70,35 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
               India's premier high-conversion destination for 100% BIS Hallmarked 925 Sterling & 999 Fine Pure Silver Coins, Murti Idols, Utensils, Certified Rudraksha, and Handcrafted Custom Yatra Lockets.
             </p>
 
-            <div className="space-y-2 text-white/60">
-              <div className="flex items-center space-x-2">
-                <MapPin className="w-4 h-4 text-[var(--th-accent)]" />
-                <span>SILVERHOUSE Heritage Tower, Connaught Place, New Delhi 110001</span>
+            {/* Dynamic Company Details from Database */}
+            <div className="space-y-2.5 text-white/75 text-xs">
+              <div className="flex items-start space-x-2">
+                <MapPin className="w-4 h-4 text-[var(--th-accent)] shrink-0 mt-0.5" />
+                <span>{fullAddress}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Phone className="w-4 h-4 text-[var(--th-accent)]" />
-                <span>Care Line: +91 98765 43210 (Mon-Sat 10 AM - 7 PM)</span>
+                <Phone className="w-4 h-4 text-[var(--th-accent)] shrink-0" />
+                <a href={`tel:+91${compPhone}`} className="hover:text-white transition-colors">
+                  Mobile / WhatsApp: +91 {compPhone}
+                </a>
               </div>
               <div className="flex items-center space-x-2">
-                <Mail className="w-4 h-4 text-[var(--th-accent)]" />
-                <span>Support: care@silverhouse.com</span>
+                <Mail className="w-4 h-4 text-[var(--th-accent)] shrink-0" />
+                <a href={`mailto:${compEmail}`} className="hover:text-white transition-colors">
+                  Email: {compEmail}
+                </a>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#F3E5AB]">
+                <ShieldCheck className="w-3.5 h-3.5 text-[var(--th-accent)] shrink-0" />
+                {compPan && <span className="font-mono tracking-wider">PAN: {compPan}</span>}
+                {compGst && (
+                  <>
+                    <span className="text-white/40">•</span>
+                    <span className="font-mono tracking-wider">GSTIN: {compGst}</span>
+                  </>
+                )}
+                <span className="text-white/40">•</span>
+                <span>Sunil K Agarwal</span>
               </div>
             </div>
           </div>
@@ -130,14 +159,20 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
                 </button>
               </li>
               <li>
-                <button onClick={() => onOpenInfoModal && onOpenInfoModal('about')} className="hover:text-white transition-colors text-left cursor-pointer">
-                  About SilverHouse Story
+                <button
+                  type="button"
+                  onClick={() => onOpenPdf ? onOpenPdf('about') : window.open('/docs/Silver_House_About_Us.pdf', '_blank')}
+                  className="hover:text-white transition-colors text-left flex items-center space-x-1.5 cursor-pointer text-white/80 group"
+                  title="Open Silver House Story & Heritage Document (PDF Viewer)"
+                >
+                  <span>About SilverHouse Story (PDF)</span>
+                  <ExternalLink className="w-3 h-3 text-[var(--th-accent)] opacity-70 group-hover:opacity-100" />
                 </button>
               </li>
             </ul>
           </div>
 
-          {/* Col 4: Hallmark Stamps */}
+          {/* Col 4: Hallmark Stamps & Purity Guide */}
           <div>
             <h4 className="font-serif font-bold text-sm text-[var(--th-accent)] mb-4 uppercase tracking-wider">
               Purity Guarantee
@@ -150,6 +185,15 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
               <p className="text-[11px] text-white/70 leading-relaxed">
                 Every product comes stamped with Bureau of Indian Standards (BIS) Hallmark identification and Assay Certificate.
               </p>
+              <button
+                type="button"
+                onClick={() => onOpenPdf ? onOpenPdf('purity') : window.open('/docs/Silver_House_Silver_Purity_Guide.pdf', '_blank')}
+                className="inline-flex items-center space-x-2 w-full justify-center px-3 py-2 rounded-lg bg-[var(--th-accent)]/20 hover:bg-[var(--th-accent)]/30 border border-[var(--th-accent)]/50 text-[11px] font-bold text-[#F3E5AB] transition-colors cursor-pointer"
+                title="Open Silver Purity & Hallmarking Consumer Guide (PDF Viewer)"
+              >
+                <FileText className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                <span>Open Silver Purity Guide (PDF) ↗</span>
+              </button>
             </div>
           </div>
 
@@ -157,7 +201,7 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
 
         {/* Bottom Copyright */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-white/60 gap-4">
-          <p>© 2026 SILVERHOUSE Fine Artifacts Pvt. Ltd. All Rights Reserved.</p>
+          <p>© {new Date().getFullYear()} {compName} • Manufacturer & Trader of Silver Products • {compCity}, {compState}. All Rights Reserved.</p>
           <div className="flex items-center space-x-6">
             <a href="#privacy" className="hover:text-white">Privacy Policy</a>
             <a href="#terms" className="hover:text-white">Terms of Service</a>

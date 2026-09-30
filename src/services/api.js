@@ -620,4 +620,44 @@ export async function updateStoreParameters(params) {
     return { success: false, error: err.message };
   }
 }
+/**
+ * Official verified company details for Silver House
+ */
+export const DEFAULT_COMPANY_DETAILS = {
+  company_id: 1,
+  name: 'Silver House',
+  proprietor: 'Sunil K Agarwal',
+  business_type: 'Manufacturer & Trader of Silver Products',
+  address: '217, Kanak Chamber, Gandhi Road',
+  city: 'Ahmedabad',
+  state: 'Gujarat',
+  pincode: '380058',
+  contact_number: '9537178477',
+  email: 'sunilag28017@gmail.com',
+  pan_card: 'ADDPA8283B',
+  gst_no: null
+};
 
+/**
+ * Fetches official company details directly from the database table (dbo.company / SP_Fetchdata).
+ */
+export async function fetchCompanyDetails() {
+  try {
+    const url = `${API_BASE_URL}/company`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    if (data.success && data.company) {
+      return { success: true, company: data.company };
+    }
+    return { success: true, company: DEFAULT_COMPANY_DETAILS };
+  } catch (err) {
+    console.warn('[API Service] Notice: Using official company details fallback:', err.message);
+    return {
+      success: true,
+      company: DEFAULT_COMPANY_DETAILS
+    };
+  }
+}
