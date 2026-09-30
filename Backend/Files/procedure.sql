@@ -742,9 +742,10 @@ END;
 GO
 
 -- =========================================================================
+-- =========================================================================
 -- PROCEDURE 6: SP_User
 -- =========================================================================
-CREATE PROCEDURE [dbo].[SP_user]
+CREATE OR ALTER PROCEDURE [dbo].[SP_user]
     @Opr       NVARCHAR(10),
     @JSONstr   NVARCHAR(MAX) = NULL,
     @Condition NVARCHAR(MAX) = NULL
@@ -755,16 +756,22 @@ BEGIN
     DECLARE @FullName NVARCHAR(100);
     DECLARE @Phone NVARCHAR(20);
     DECLARE @Role NVARCHAR(20);
+    DECLARE @Password NVARCHAR(255);
 
     IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
     BEGIN
         SELECT
             @FullName = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.full_name'))),
             @Phone    = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.phone'))),
-            @Role     = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.role')));
+            @Role     = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.role'))),
+            @Password = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.password')));
     END
 
-    IF @Opr ='Select'
+    -- Ensure password is ONLY stored for ADMIN role, strictly NULL for customers
+    IF UPPER(ISNULL(@Role, '')) <> 'ADMIN'
+        SET @Password = NULL;
+
+    IF @Opr = 'Select'
     BEGIN
        IF @TargetUserId IS NOT NULL AND @TargetUserId > 0
         BEGIN
@@ -787,7 +794,7 @@ BEGIN
         RETURN;
     END
 
-    IF @Opr='ADD'
+    IF @Opr = 'ADD' OR @Opr = 'INSERT'
     BEGIN
         IF @Phone IS NULL OR LEN(@Phone) = 0
         BEGIN
@@ -801,15 +808,21 @@ BEGIN
         IF @Role IS NULL OR @Role = '' 
             SET @Role = 'CUSTOMER';
 
-        INSERT INTO dbo.[user] (full_name, phone, [role])
-        VALUES (@FullName, @Phone, @Role);
+        -- If Admin, ensure default password if not provided
+        IF UPPER(@Role) = 'ADMIN' AND (@Password IS NULL OR LEN(@Password) = 0)
+            SET @Password = 'admin123';
+        ELSE IF UPPER(@Role) <> 'ADMIN'
+            SET @Password = NULL;
+
+        INSERT INTO dbo.[user] (full_name, phone, [role], [password])
+        VALUES (@FullName, @Phone, @Role, @Password);
 
         DECLARE @NewUserId INT = SCOPE_IDENTITY();
         SELECT @NewUserId AS user_id, 'User registered successfully' AS [Message];
         RETURN;
     END
 
-    IF @Opr='Edit'
+    IF @Opr = 'Edit'
     BEGIN
         IF @TargetUserId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.[user] WHERE user_id = @TargetUserId)
         BEGIN
@@ -817,10 +830,16 @@ BEGIN
             RETURN;
         END
 
+        DECLARE @EffectiveRole NVARCHAR(20) = UPPER(ISNULL(@Role, (SELECT [role] FROM dbo.[user] WHERE user_id = @TargetUserId)));
+
         UPDATE dbo.[user]
-        SET full_name = ISNULL(@FullName, full_name),
-            phone     = ISNULL(@Phone, phone),
-            [role]    = ISNULL(@Role, [role])
+        SET full_name  = ISNULL(@FullName, full_name),
+            phone      = ISNULL(@Phone, phone),
+            [role]     = ISNULL(@Role, [role]),
+            [password] = CASE 
+                            WHEN @EffectiveRole = 'ADMIN' THEN ISNULL(@Password, [password])
+                            ELSE NULL -- Clear password if demoted to customer
+                         END
         WHERE user_id = @TargetUserId;
 
         SELECT @TargetUserId AS user_id, 'User profile updated successfully' AS [Message];

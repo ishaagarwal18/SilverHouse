@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const multer = require('multer');
 const { sql, poolPromise } = require('./db');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
@@ -989,6 +990,13 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 
         const token = Buffer.from(JSON.stringify(userObj)).toString('base64');
 
+        let adminRedirectUrl = '/';
+        if (isAdmin) {
+            const baseAdmin = (process.env.ADMIN_URL || 'https://api.silverhouseindia.com/').trim();
+            const delim = baseAdmin.includes('?') ? '&' : '?';
+            adminRedirectUrl = `${baseAdmin}${delim}auth_token=${encodeURIComponent(token)}`;
+        }
+
         return res.status(200).json({
             success: true,
             message: 'Phone verified successfully',
@@ -996,7 +1004,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             user: userObj,
             role: userObj.role,
             isAdmin: isAdmin,
-            redirectUrl: isAdmin ? (process.env.ADMIN_URL || 'https://api.silverhouseindia.com/') : '/'
+            redirectUrl: adminRedirectUrl
         });
     } catch (err) {
         console.error('[Verify OTP Error]:', err.message);
@@ -1049,11 +1057,195 @@ app.get('/api/auth/me', async (req, res) => {
     }
 });
 
+// ==========================================
+// ADMIN PORTAL DIRECT CREDENTIALS AUTHENTICATION
+// (Username / Phone & Password for Admins only)
+// ==========================================
+app.post('/api/admin/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const cleanUser = String(username || '').trim();
+        const cleanPass = String(password || '').trim();
+
+        if (!cleanUser || !cleanPass) {
+            return res.status(400).json({
+                success: false,
+                error: 'Both username/phone and password are required.'
+            });
+        }
+
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        // Match admin by full_name or phone
+        const digitsOnly = cleanUser.replace(/\D/g, '');
+        const last10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : null;
+
+        let query = `
+            SELECT TOP 1 user_id, full_name, phone, role, password 
+            FROM dbo.[user] 
+            WHERE UPPER(role) = 'ADMIN' 
+              AND (LOWER(full_name) = LOWER(@username) OR phone = @username
+        `;
+        const request = pool.request()
+            .input('username', sql.NVarChar(100), cleanUser);
+
+        if (last10) {
+            query += ` OR phone LIKE @last10`;
+            request.input('last10', sql.NVarChar(20), '%' + last10);
+        }
+        query += `)`;
+
+        const result = await request.query(query);
+        if (!result.recordset || result.recordset.length === 0) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid admin username or password.'
+            });
+        }
+
+        const adminUser = result.recordset[0];
+        if (!adminUser.password) {
+            return res.status(401).json({
+                success: false,
+                error: 'This admin account does not have a password configured. Please contact the administrator.'
+            });
+        }
+
+        const sha256 = crypto.createHash('sha256').update(cleanPass).digest('hex');
+        const isMatch = (adminUser.password === cleanPass) || (adminUser.password === sha256);
+
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid admin username or password.'
+            });
+        }
+
+        const userObj = {
+            userId: adminUser.user_id,
+            fullName: adminUser.full_name,
+            phone: adminUser.phone,
+            role: 'ADMIN'
+        };
+        const token = Buffer.from(JSON.stringify(userObj)).toString('base64');
+
+        return res.status(200).json({
+            success: true,
+            message: `Welcome back, ${adminUser.full_name}!`,
+            token,
+            user: userObj,
+            isAdmin: true
+        });
+    } catch (err) {
+        console.error('[Admin Login Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /api/admin/me: Verify active admin token session
+app.get('/api/admin/me', async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, error: 'Admin authorization header required' });
+        }
+        const token = authHeader.split(' ')[1];
+        let decoded;
+        try {
+            decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+        } catch {
+            return res.status(401).json({ success: false, error: 'Invalid admin token' });
+        }
+
+        if (!decoded || !decoded.userId) {
+            return res.status(401).json({ success: false, error: 'Invalid admin token payload' });
+        }
+
+        const pool = await poolPromise;
+        const userRes = await pool.request()
+            .input('user_id', sql.Int, decoded.userId)
+            .query('SELECT TOP 1 user_id, full_name, phone, role FROM dbo.[user] WHERE user_id = @user_id AND UPPER(role) = \'ADMIN\'');
+
+        if (!userRes.recordset || userRes.recordset.length === 0) {
+            return res.status(403).json({ success: false, error: 'User is not an authorized administrator.' });
+        }
+
+        const admin = userRes.recordset[0];
+        return res.status(200).json({
+            success: true,
+            isAdmin: true,
+            user: {
+                userId: admin.user_id,
+                fullName: admin.full_name,
+                phone: admin.phone,
+                role: 'ADMIN'
+            }
+        });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// POST /api/admin/change-password: Change admin account password
+app.post('/api/admin/change-password', async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, error: 'Admin authorization required' });
+        }
+        const token = authHeader.split(' ')[1];
+        let decoded;
+        try {
+            decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+        } catch {
+            return res.status(401).json({ success: false, error: 'Invalid token' });
+        }
+
+        const { currentPassword, newPassword } = req.body;
+        if (!newPassword || newPassword.trim().length < 4) {
+            return res.status(400).json({ success: false, error: 'New password must be at least 4 characters long.' });
+        }
+
+        const pool = await poolPromise;
+        const adminCheck = await pool.request()
+            .input('user_id', sql.Int, decoded.userId)
+            .query('SELECT TOP 1 user_id, full_name, role, password FROM dbo.[user] WHERE user_id = @user_id AND UPPER(role) = \'ADMIN\'');
+
+        if (!adminCheck.recordset || adminCheck.recordset.length === 0) {
+            return res.status(403).json({ success: false, error: 'Unauthorized admin user' });
+        }
+
+        const admin = adminCheck.recordset[0];
+        if (currentPassword) {
+            const sha256 = crypto.createHash('sha256').update(currentPassword.trim()).digest('hex');
+            const isMatch = (admin.password === currentPassword.trim()) || (admin.password === sha256);
+            if (!isMatch) {
+                return res.status(400).json({ success: false, error: 'Current password is incorrect.' });
+            }
+        }
+
+        await pool.request()
+            .input('user_id', sql.Int, admin.user_id)
+            .input('new_password', sql.NVarChar(255), newPassword.trim())
+            .query('UPDATE dbo.[user] SET [password] = @new_password WHERE user_id = @user_id');
+
+        return res.status(200).json({
+            success: true,
+            message: 'Admin password updated successfully.'
+        });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // AUTHENTICATION ENDPOINTS (Legacy redirects to WhatsApp OTP)
 app.post('/api/auth/login', async (req, res) => {
     return res.status(400).json({
         success: false,
-        error: 'Email & password login has been upgraded to WhatsApp OTP. Please sign in using your mobile number.'
+        error: 'Customer login uses WhatsApp OTP. If you are an admin, please sign in via the Admin Studio.'
     });
 });
 
@@ -1231,6 +1423,16 @@ app.post('/api/data', async (req, res) => {
             if (!table_values.is_custom) {
                 delete table_values.confirm;
                 delete table_values.custom_category;
+            }
+        }
+
+        // Only ADMINs are permitted to have password; customers are strictly NULL
+        if (mutationProc === 'user' && table_values) {
+            const userRole = (table_values.role || '').toUpperCase();
+            if (userRole !== 'ADMIN') {
+                table_values.password = null;
+            } else if (table_values.password) {
+                table_values.password = String(table_values.password).trim();
             }
         }
         const effectiveJsonStr = table_values ? JSON.stringify({ table_values }) : jsonStr;

@@ -16,6 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="/admin-auth.js"></script>
 
     <style>
         :root {
@@ -1328,7 +1329,8 @@
             user: [
                 { name: 'full_name', label: 'Full Name', type: 'text', required: true, placeholder: 'e.g. Isha Agarwal' },
                 { name: 'phone', label: 'Mobile Number', type: 'text', required: true, placeholder: 'e.g. +91 98765 43210' },
-                { name: 'role', label: 'User Role', type: 'select', options: ['CUSTOMER', 'ADMIN'], default: 'CUSTOMER' }
+                { name: 'role', label: 'User Role', type: 'select', options: ['CUSTOMER', 'ADMIN'], default: 'CUSTOMER' },
+                { name: 'password', label: 'Password (Admins Only)', type: 'password', placeholder: 'Enter password for Admin' }
             ],
             address: [
                 { name: 'user_id', label: 'User ID', type: 'number', required: true, placeholder: 'e.g. 1' },
@@ -1489,7 +1491,7 @@
                 'confirm', 'custom_category', 'is_custom',
                 'role', 'email', 'full_name', 'phone', 'address_line1', 'address_line2',
                 'city', 'state', 'postal_code', 'country', 'order_number', 'payment_status',
-                'password_hash', 'remark', 'status', 'created_at', 'updated_at'
+                'password_hash', 'password', 'remark', 'status', 'created_at', 'updated_at'
             ];
             if (varcharBlacklist.includes(col)) return false;
             if (col.includes('url') || col.includes('name') || col.includes('desc') || col.includes('date') ||
@@ -1660,7 +1662,7 @@
                     const isIdColumn = hLower.endsWith('_id') || hLower.endsWith('id') || hLower === 'id';
                     const isImageColumn = !isIdColumn && (h === 'image' || h === 'images' || hLower.includes('image_url') || hLower.includes('img_url') || (hLower.includes('image') && !hLower.includes('id')) || (hLower.includes('url') && !hLower.includes('id')));
 
-                    if (h === 'password_hash') {
+                    if (h === 'password_hash' || h === 'password') {
                         rowHtml += `<td><span style="font-family:monospace;letter-spacing:2px;color:var(--text-muted)">••••••••</span>${showBadge ? badgeHtml : ''}</td>`;
                     } else if (isImageColumn && val !== '-') {
                         let imgList = [];
