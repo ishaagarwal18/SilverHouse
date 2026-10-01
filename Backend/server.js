@@ -734,6 +734,7 @@ function formatWhatsAppPhone(rawPhone) {
 
 // Fetch WhatsApp API URL from store_parameter table (or fallback to env)
 async function getWhatsAppApiUrl(pool) {
+    let url = null;
     try {
         const activePool = pool || (await poolPromise);
         if (activePool) {
@@ -741,13 +742,23 @@ async function getWhatsAppApiUrl(pool) {
                 'SELECT TOP 1 wp_api FROM dbo.store_parameter WHERE wp_api IS NOT NULL AND LEN(RTRIM(wp_api)) > 0 ORDER BY id DESC'
             );
             if (result.recordset && result.recordset.length > 0 && result.recordset[0].wp_api) {
-                return result.recordset[0].wp_api.trim();
+                url = result.recordset[0].wp_api.trim();
             }
         }
     } catch (err) {
         console.warn('[WhatsApp] Could not fetch wp_api from store_parameter:', err.message);
     }
-    return process.env.WHATSAPP_API_URL || null;
+
+    if (!url) {
+        url = process.env.WHATSAPP_API_URL || null;
+    }
+
+    // Always ensure HTTPS for cloud VPS outbound security & fast delivery
+    if (url && url.startsWith('http://wtsapp.aronertech.com')) {
+        url = url.replace('http://', 'https://');
+    }
+
+    return url;
 }
 
 async function sendWhatsAppMessage(phone, message, pool = null) {
