@@ -382,7 +382,17 @@ export default function ProductDetailPage({
 
                 <button
                   disabled={currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0}
-                  onClick={() => onAddToCart(currentProduct, qty, { customText, uploadedImagePreview })}
+                  onClick={() => {
+                    const hasCustomization = Boolean(customText && customText.trim()) || Boolean(uploadedImagePreview);
+                    const customConfigPayload = hasCustomization
+                      ? {
+                          shrineName: currentProduct.isYatraLocket ? (currentProduct.name || 'Sacred Locket') : currentProduct.name,
+                          engravingText: customText ? customText.trim() : '',
+                          allUploadedImages: uploadedImagePreview ? [uploadedImagePreview] : []
+                        }
+                      : null;
+                    onAddToCart(currentProduct, qty, customConfigPayload);
+                  }}
                   className={`flex-1 py-3.5 bg-[#1A1A1A] hover:bg-[#D4AF37] text-white hover:text-black font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 ${currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0 ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                 >

@@ -248,12 +248,17 @@ export default function CartDrawer({
                               </span>
                             </div>
 
-                            {/* Custom Yatra Configuration Details */}
+                            {/* Custom Yatra / Personalization Configuration Details */}
                             {item.customConfig && (
+                              Boolean(item.customConfig.engravingText && item.customConfig.engravingText.trim()) ||
+                              Boolean(item.customConfig.shrineName && item.customConfig.shrineName !== 'Sacred Locket') ||
+                              Boolean(item.customConfig.allUploadedImages && item.customConfig.allUploadedImages.length > 0) ||
+                              Boolean(item.customConfig.familyGotra && item.customConfig.familyGotra !== 'N/A')
+                            ) && (
                               <div className="mt-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-[10px] space-y-0.5">
                                 <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center space-x-1">
                                   <Sparkles className="w-3 h-3 text-[#D4AF37]" />
-                                  <span>Customized: {item.customConfig.shrineName || 'Sacred Locket'}</span>
+                                  <span>Customized: {item.customConfig.shrineName || item.product?.name || 'Personalized Artifact'}</span>
                                 </div>
                                 {item.customConfig.engravingText && (
                                   <div className="text-[10px] text-[var(--th-text-muted)] truncate">

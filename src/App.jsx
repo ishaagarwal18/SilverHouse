@@ -51,7 +51,24 @@ export default function App() {
   const [cartItems, setCartItems] = useState(() => {
     try {
       const saved = localStorage.getItem('silverhouse_cart');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      // Clean up phantom empty customConfigs from older items in localStorage
+      return parsed.map(item => {
+        if (item.customConfig) {
+          const cfg = item.customConfig;
+          const hasRealData = Boolean(
+            (cfg.engravingText && cfg.engravingText.trim()) ||
+            (cfg.shrineName && cfg.shrineName !== 'Sacred Locket' && cfg.shrineName.trim()) ||
+            (cfg.allUploadedImages && cfg.allUploadedImages.length > 0) ||
+            (cfg.familyGotra && cfg.familyGotra !== 'N/A' && cfg.familyGotra.trim())
+          );
+          if (!hasRealData) {
+            return { ...item, customConfig: null };
+          }
+        }
+        return item;
+      });
     } catch {
       return [];
     }
@@ -305,14 +322,28 @@ export default function App() {
     const prodId = product.id || product.product_id;
     const prodTitle = product.name || product.title || product.product_name || 'Sacred Creation';
 
+    // Sanitize customConfig: ensure it contains real personalization data
+    let sanitizedConfig = null;
+    if (customConfig && typeof customConfig === 'object') {
+      const hasRealData = Boolean(
+        (customConfig.engravingText && customConfig.engravingText.trim()) ||
+        (customConfig.shrineName && customConfig.shrineName !== 'Sacred Locket' && customConfig.shrineName.trim()) ||
+        (customConfig.allUploadedImages && customConfig.allUploadedImages.length > 0) ||
+        (customConfig.familyGotra && customConfig.familyGotra !== 'N/A' && customConfig.familyGotra.trim())
+      );
+      if (hasRealData) {
+        sanitizedConfig = customConfig;
+      }
+    }
+
     setCartItems((prev) => {
-      const existingIdx = prev.findIndex(item => (item.product.id || item.product.product_id) === prodId && JSON.stringify(item.customConfig) === JSON.stringify(customConfig));
+      const existingIdx = prev.findIndex(item => (item.product.id || item.product.product_id) === prodId && JSON.stringify(item.customConfig) === JSON.stringify(sanitizedConfig));
       if (existingIdx > -1) {
         const updated = [...prev];
         updated[existingIdx].quantity += quantity;
         return updated;
       } else {
-        return [...prev, { product, quantity, customConfig }];
+        return [...prev, { product, quantity, customConfig: sanitizedConfig }];
       }
     });
 
