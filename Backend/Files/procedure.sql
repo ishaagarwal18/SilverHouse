@@ -2114,30 +2114,6 @@ END;
 GO
 
 -- =========================================================================
--- PROCEDURE 12: SP_GETDATA
--- =========================================================================
-CREATE OR ALTER PROCEDURE dbo.SP_GETDATA
-    @proc_name   NVARCHAR(50),
-    @Opr         NVARCHAR(10),
-    @JSONstr     NVARCHAR(MAX) = NULL,
-    @Condition   NVARCHAR(255) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @Response NVARCHAR(MAX) = 'OK';
-
-    SET @proc_name = LOWER(LTRIM(RTRIM(@proc_name)));
-    SET @Opr = UPPER(LTRIM(RTRIM(@Opr)));
-
-    IF @proc_name IS NULL OR @proc_name = ''
-    BEGIN
-        SET @Response = 'ERROR: proc_name cannot be empty.';
-        SELECT @Response AS [Response_Status];
-        RETURN;
-    END
-
--- =========================================================================
 -- PROCEDURE 13: SP_viewed
 -- =========================================================================
 CREATE OR ALTER PROCEDURE dbo.SP_viewed
@@ -2313,8 +2289,8 @@ BEGIN
         RETURN;
     END
 
-    -- Whitelist includes catalog entities, e-commerce entities, company, and viewed
-    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'product_image', 'user', 'address', 'cart', 'cart_item', 'orders', 'order', 'order_item', 'wishlist', 'company', 'viewed')
+    -- Whitelist includes catalog entities, e-commerce entities, company, viewed, store_parameter, phone_otp
+    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'product_image', 'user', 'address', 'cart', 'cart_item', 'orders', 'order', 'order_item', 'wishlist', 'company', 'viewed', 'store_parameter', 'phone_otp')
     BEGIN
         SET @Response = 'SECURITY ERROR: Unauthorized or unsupported proc_name "' + @proc_name + '".';
         SELECT @Response AS [Response_Status];
@@ -2375,6 +2351,16 @@ BEGIN
             EXEC dbo.SP_company @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
         ELSE IF @proc_name = 'viewed'
             EXEC dbo.SP_viewed @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
+        ELSE IF @proc_name = 'store_parameter'
+        BEGIN
+            IF @Opr = 'DELETE' AND @Condition IS NOT NULL
+                DELETE FROM dbo.store_parameter WHERE id = TRY_CAST(@Condition AS INT);
+        END
+        ELSE IF @proc_name = 'phone_otp'
+        BEGIN
+            IF @Opr = 'DELETE' AND @Condition IS NOT NULL
+                DELETE FROM dbo.phone_otp WHERE phone = @Condition;
+        END
 
         SET @Response = 'OK';
         SELECT @Response AS [Response_Status];

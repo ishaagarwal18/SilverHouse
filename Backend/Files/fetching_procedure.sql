@@ -491,7 +491,7 @@ BEGIN
             END
             ELSE
             BEGIN
-                SELECT TOP 1 company_id, [name], [address], city, [state], pincode, gst_no, pan_card, contact_number, email, created_at, updated_at
+                SELECT company_id, [name], [address], city, [state], pincode, gst_no, pan_card, contact_number, email, created_at, updated_at
                 FROM dbo.company
                 ORDER BY company_id ASC;
             END
@@ -545,20 +545,35 @@ BEGIN
             END
             ELSE
             BEGIN
-                SELECT TOP 50
+                SELECT 
                     v.viewid,
                     v.productid,
+                    p.title AS product_name,
                     v.userid,
-                    v.createdAT,
-                    p.title,
-                    p.price,
-                    u.full_name AS customer_name,
-                    u.phone AS customer_phone
+                    ISNULL(u.full_name, 'Guest Patron') AS customer_name,
+                    u.phone AS customer_phone,
+                    v.createdAT
                 FROM dbo.viewed v
-                JOIN dbo.product p ON v.productid = p.product_id
+                LEFT JOIN dbo.product p ON v.productid = p.product_id
                 LEFT JOIN dbo.[user] u ON v.userid = u.user_id
                 ORDER BY v.createdAT DESC;
             END
+        END
+
+        -- 15. Store Parameters Entity Fetcher
+        ELSE IF @proc_name IN ('store_parameter', 'store_parameters')
+        BEGIN
+            SELECT id, default_theme, wp_api, current_festival, created_at, updated_at
+            FROM dbo.store_parameter
+            ORDER BY id DESC;
+        END
+
+        -- 16. Phone OTP Verification Logs Fetcher
+        ELSE IF @proc_name IN ('phone_otp', 'phone_otps', 'otp')
+        BEGIN
+            SELECT phone, otp_code, expires_at, attempts, created_at
+            FROM dbo.phone_otp
+            ORDER BY created_at DESC;
         END
 
         ELSE
