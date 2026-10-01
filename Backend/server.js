@@ -1071,7 +1071,13 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 
         let adminRedirectUrl = '/';
         if (isAdmin) {
-            const baseAdmin = (process.env.ADMIN_URL || 'https://api.silverhouseindia.com/').trim();
+            let baseAdmin = (process.env.ADMIN_URL || 'https://api.silverhouseindia.com/').trim();
+            if (!baseAdmin || baseAdmin.includes('onrender.com') || baseAdmin.includes('localhost')) {
+                baseAdmin = 'https://api.silverhouseindia.com/';
+            }
+            if (!baseAdmin.endsWith('/')) {
+                baseAdmin += '/';
+            }
             const delim = baseAdmin.includes('?') ? '&' : '?';
             adminRedirectUrl = `${baseAdmin}${delim}auth_token=${encodeURIComponent(token)}`;
         }

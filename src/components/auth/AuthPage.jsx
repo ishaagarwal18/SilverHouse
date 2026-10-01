@@ -255,7 +255,7 @@ export default function AuthPage({ onTriggerToast }) {
 
         setTimeout(() => {
           if (result.isAdmin || result.user?.role?.toUpperCase() === 'ADMIN') {
-            const targetUrl = (result.redirectUrl && result.redirectUrl.startsWith('http') && !result.redirectUrl.includes('localhost'))
+            const targetUrl = (result.redirectUrl && result.redirectUrl.startsWith('http') && !result.redirectUrl.includes('localhost') && !result.redirectUrl.includes('onrender.com'))
               ? result.redirectUrl
               : getAdminUrl();
             window.location.href = targetUrl;
