@@ -573,7 +573,7 @@ BEGIN
         BEGIN
             DELETE FROM dbo.phone_otp WHERE expires_at < SYSUTCDATETIME();
 
-            SELECT phone, otp_code, expires_at, attempts, created_at
+            SELECT id, phone, otp_code, expires_at, attempts, is_verified, created_at
             FROM dbo.phone_otp
             ORDER BY created_at DESC;
         END

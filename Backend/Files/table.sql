@@ -110,12 +110,15 @@ GO
 IF OBJECT_ID('dbo.phone_otp', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.phone_otp (
-        phone NVARCHAR(20) PRIMARY KEY,
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        phone NVARCHAR(20) NOT NULL,
         otp_code NVARCHAR(10) NOT NULL,
         expires_at DATETIME2 NOT NULL,
         attempts INT NOT NULL DEFAULT 0,
+        is_verified BIT NOT NULL DEFAULT 0,
         created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
     );
+    CREATE INDEX IX_phone_otp_phone ON dbo.phone_otp (phone, expires_at);
 END;
 GO
 

@@ -772,6 +772,19 @@ BEGIN
     IF UPPER(ISNULL(@Role, '')) <> 'ADMIN'
         SET @Password = NULL;
 
+    -- Normalize @Phone to 10 digits (strip +91, 91, 0, spaces, dashes)
+    IF @Phone IS NOT NULL AND LEN(@Phone) > 0
+    BEGIN
+        DECLARE @CleanPhone NVARCHAR(30) = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@Phone, '+', ''), '-', ''), ' ', ''), '(', ''), ')', '');
+        IF LEN(@CleanPhone) = 11 AND LEFT(@CleanPhone, 1) = '0'
+            SET @CleanPhone = RIGHT(@CleanPhone, 10);
+        ELSE IF LEN(@CleanPhone) = 12 AND LEFT(@CleanPhone, 2) = '91'
+            SET @CleanPhone = RIGHT(@CleanPhone, 10);
+        ELSE IF LEN(@CleanPhone) > 10
+            SET @CleanPhone = RIGHT(@CleanPhone, 10);
+        SET @Phone = @CleanPhone;
+    END
+
     -- 0. ADMIN AUTHENTICATION
     IF UPPER(@Opr) = 'LOGIN' OR UPPER(@Opr) = 'AUTH'
     BEGIN
