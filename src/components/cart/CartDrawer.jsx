@@ -242,8 +242,8 @@ export default function CartDrawer({
                                 <Scale className="w-3 h-3 text-[var(--th-accent)]" />
                                 <span>{weightVal}g</span>
                               </span>
-                              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 font-semibold">
-                                <ShieldCheck className="w-3 h-3" />
+                              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 font-semibold">
+                                <ShieldCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                                 <span>BIS Certified</span>
                               </span>
                             </div>
