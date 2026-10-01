@@ -571,6 +571,8 @@ BEGIN
         -- 16. Phone OTP Verification Logs Fetcher
         ELSE IF @proc_name IN ('phone_otp', 'phone_otps', 'otp')
         BEGIN
+            DELETE FROM dbo.phone_otp WHERE expires_at < SYSUTCDATETIME();
+
             SELECT phone, otp_code, expires_at, attempts, created_at
             FROM dbo.phone_otp
             ORDER BY created_at DESC;

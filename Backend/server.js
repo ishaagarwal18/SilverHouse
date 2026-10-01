@@ -887,6 +887,13 @@ app.post('/api/auth/send-otp', async (req, res) => {
             return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
         }
 
+        // Clean up any previously expired OTPs from dbo.phone_otp before upserting
+        try {
+            await pool.request().query('DELETE FROM dbo.phone_otp WHERE expires_at < SYSUTCDATETIME()');
+        } catch (cleanupErr) {
+            console.warn('[Send OTP Cleanup Warning]:', cleanupErr.message);
+        }
+
         // Upsert OTP in dbo.phone_otp
         await pool.request()
             .input('phone', sql.NVarChar(20), cleanedPhone)
@@ -932,6 +939,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     try {
         const { phone, otp, fullName, userName, name } = req.body;
         const cleanedPhone = cleanPhoneNumber(phone);
+        const rawPhone = (phone || '').toString().trim();
         const providedName = (fullName || userName || name || '').trim();
 
         if (!cleanedPhone || !otp) {
@@ -943,35 +951,52 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
         }
 
+        // Delete any expired OTP records for this phone number right away
+        await pool.request()
+            .input('phone', sql.NVarChar(20), cleanedPhone)
+            .input('rawPhone', sql.NVarChar(20), rawPhone)
+            .query('DELETE FROM dbo.phone_otp WHERE (phone = @phone OR phone = @rawPhone) AND expires_at < SYSUTCDATETIME()');
+
         // Verify OTP against dbo.phone_otp
         const otpResult = await pool.request()
             .input('phone', sql.NVarChar(20), cleanedPhone)
-            .query('SELECT phone, otp_code, expires_at, attempts FROM dbo.phone_otp WHERE phone = @phone');
+            .input('rawPhone', sql.NVarChar(20), rawPhone)
+            .query('SELECT phone, otp_code, expires_at, attempts FROM dbo.phone_otp WHERE phone = @phone OR phone = @rawPhone');
 
         if (!otpResult.recordset || otpResult.recordset.length === 0) {
-            return res.status(400).json({ success: false, error: 'No active OTP found for this phone number. Please request a new code.' });
+            return res.status(400).json({ success: false, error: 'No active OTP found for this phone number or code has expired. Please request a new code.' });
         }
 
         const record = otpResult.recordset[0];
 
+        // Check if expired
         if (new Date() > new Date(record.expires_at)) {
+            // Delete expired record immediately from dbo.phone_otp
+            await pool.request()
+                .input('phone', sql.NVarChar(20), record.phone)
+                .query('DELETE FROM dbo.phone_otp WHERE phone = @phone');
             return res.status(400).json({ success: false, error: 'OTP has expired. Please request a new code on WhatsApp.' });
         }
 
+        // Check maximum attempts limit
         if (record.attempts >= 5) {
+            // Delete exhausted OTP record so user must request a fresh OTP
+            await pool.request()
+                .input('phone', sql.NVarChar(20), record.phone)
+                .query('DELETE FROM dbo.phone_otp WHERE phone = @phone');
             return res.status(429).json({ success: false, error: 'Too many incorrect attempts. Please request a new OTP.' });
         }
 
         if (record.otp_code.trim() !== String(otp).trim()) {
             await pool.request()
-                .input('phone', sql.NVarChar(20), cleanedPhone)
+                .input('phone', sql.NVarChar(20), record.phone)
                 .query('UPDATE dbo.phone_otp SET attempts = attempts + 1 WHERE phone = @phone');
             return res.status(400).json({ success: false, error: 'Invalid verification code. Please check your WhatsApp.' });
         }
 
-        // OTP is valid! Clean up consumed OTP
+        // OTP is valid! Clean up consumed OTP immediately
         await pool.request()
-            .input('phone', sql.NVarChar(20), cleanedPhone)
+            .input('phone', sql.NVarChar(20), record.phone)
             .query('DELETE FROM dbo.phone_otp WHERE phone = @phone');
 
         // Dynamic DB lookup in dbo.[user] by phone or last 10 digits
@@ -2053,3 +2078,24 @@ app.listen(PORT, () => {
     console.log(`Product Catalog: http://localhost:${PORT}/catalog`);
     console.log(`Data API Endpoint: http://localhost:${PORT}/api/data`);
 });
+
+// =========================================================================
+// AUTOMATIC EXPIRED OTP CLEANUP JOB
+// =========================================================================
+async function cleanupExpiredOtps() {
+    try {
+        const pool = await poolPromise;
+        if (pool) {
+            const cleanupResult = await pool.request().query('DELETE FROM dbo.phone_otp WHERE expires_at < SYSUTCDATETIME()');
+            if (cleanupResult.rowsAffected && cleanupResult.rowsAffected[0] > 0) {
+                console.log(`[OTP Auto-Cleanup] Purged ${cleanupResult.rowsAffected[0]} expired OTP record(s) from dbo.phone_otp.`);
+            }
+        }
+    } catch (err) {
+        console.warn('[OTP Auto-Cleanup Warning]:', err.message);
+    }
+}
+
+// Initial purge after startup and recurring every 30 seconds
+setTimeout(cleanupExpiredOtps, 3000);
+setInterval(cleanupExpiredOtps, 30 * 1000);
