@@ -497,6 +497,70 @@ BEGIN
             END
         END
 
+        -- 14. Viewed / Recently Viewed Products Entity Fetcher
+        ELSE IF @proc_name IN ('viewed', 'recently_viewed')
+        BEGIN
+            DECLARE @ViewUserId INT = TRY_CAST(@Condition AS INT);
+            IF @ViewUserId IS NULL AND @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
+            BEGIN
+                SET @ViewUserId = TRY_CAST(COALESCE(JSON_VALUE(@JSONstr, '$.table_values.userid'), JSON_VALUE(@JSONstr, '$.userid'), JSON_VALUE(@JSONstr, '$.userId')) AS INT);
+            END
+
+            IF @ViewUserId IS NOT NULL AND @ViewUserId > 0
+            BEGIN
+                SELECT TOP 20
+                    v.viewid,
+                    v.productid,
+                    v.userid,
+                    v.createdAT,
+                    p.product_id,
+                    p.product_id AS id,
+                    p.category_id,
+                    p.title,
+                    p.title AS name,
+                    p.description,
+                    p.price,
+                    p.discount,
+                    p.quantity,
+                    p.purity,
+                    p.weight,
+                    p.ideal_for,
+                    p.color,
+                    p.review,
+                    p.sold,
+                    c.[name] AS category_name,
+                    c.slug AS category_slug,
+                    (
+                        SELECT img.image_url 
+                        FROM dbo.product_image pi2 
+                        JOIN dbo.image img ON pi2.image_id = img.image_id 
+                        WHERE pi2.product_id = p.product_id 
+                        FOR JSON PATH
+                    ) AS images_json
+                FROM dbo.viewed v
+                JOIN dbo.product p ON v.productid = p.product_id
+                LEFT JOIN dbo.category c ON p.category_id = c.category_id
+                WHERE v.userid = @ViewUserId
+                ORDER BY v.createdAT DESC;
+            END
+            ELSE
+            BEGIN
+                SELECT TOP 50
+                    v.viewid,
+                    v.productid,
+                    v.userid,
+                    v.createdAT,
+                    p.title,
+                    p.price,
+                    u.full_name AS customer_name,
+                    u.phone AS customer_phone
+                FROM dbo.viewed v
+                JOIN dbo.product p ON v.productid = p.product_id
+                LEFT JOIN dbo.[user] u ON v.userid = u.user_id
+                ORDER BY v.createdAT DESC;
+            END
+        END
+
         ELSE
         BEGIN
             SET @Response = 'ERROR: Unsupported proc_name "' + @proc_name + '".';

@@ -253,4 +253,24 @@ CREATE TABLE dbo.store_parameter (
     updated_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 GO
+
+-- ========================================================
+-- Viewed / Recently Viewed Products Table
+-- ========================================================
+IF OBJECT_ID('dbo.viewed', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.viewed (
+        viewid INT IDENTITY(1,1) PRIMARY KEY,
+        productid INT NOT NULL,
+        userid INT NULL,
+        createdAT DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT FK_viewed_product FOREIGN KEY (productid) REFERENCES dbo.product(product_id) ON DELETE CASCADE,
+        CONSTRAINT FK_viewed_user FOREIGN KEY (userid) REFERENCES dbo.[user](user_id) ON DELETE SET NULL
+    );
+
+    CREATE INDEX IX_viewed_user_created ON dbo.viewed (userid, createdAT DESC);
+    CREATE INDEX IX_viewed_product ON dbo.viewed (productid);
+END;
+GO
+
  

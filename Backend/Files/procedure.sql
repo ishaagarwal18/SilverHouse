@@ -15,6 +15,7 @@ IF OBJECT_ID('dbo.SP_cart_item', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_cart_ite
 IF OBJECT_ID('dbo.SP_orders', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_orders;
 IF OBJECT_ID('dbo.SP_order_item', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_order_item;
 IF OBJECT_ID('dbo.SP_wishlist', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_wishlist;
+IF OBJECT_ID('dbo.SP_viewed', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_viewed;
 GO
 
 -- =========================================================================
