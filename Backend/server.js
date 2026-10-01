@@ -878,9 +878,12 @@ app.post('/api/auth/send-otp', async (req, res) => {
             });
         }
 
-        // Generate 6-digit numeric OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
+        // Generate 6-digit numeric OTP (fixed 123456 with 10 days validity for test phone 9999999999)
+        const isPermanentTestNumber = cleanedPhone.includes('9999999999');
+        const otp = isPermanentTestNumber ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = isPermanentTestNumber
+            ? new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) // 10 days
+            : new Date(Date.now() + 5 * 60 * 1000); // 5 mins
 
         const pool = await poolPromise;
         if (!pool) {
@@ -909,6 +912,16 @@ app.post('/api/auth/send-otp', async (req, res) => {
                     INSERT (phone, otp_code, expires_at, attempts, created_at)
                     VALUES (@phone, @otp_code, @expires_at, 0, SYSUTCDATETIME());
             `);
+
+        // If permanent test account, return immediately without calling WhatsApp gateway
+        if (isPermanentTestNumber) {
+            return res.status(200).json({
+                success: true,
+                message: `Static test verification code active for 10 days (${cleanedPhone})`,
+                phone: cleanedPhone,
+                formattedPhone: cleanedPhone
+            });
+        }
 
         // Send real OTP to customer WhatsApp using wp_api from store_parameter
         const waDispatch = await sendWhatsAppOtp(cleanedPhone, otp, pool);
@@ -978,12 +991,17 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             return res.status(400).json({ success: false, error: 'OTP has expired. Please request a new code on WhatsApp.' });
         }
 
-        // Check maximum attempts limit
-        if (record.attempts >= 5) {
+        // Check maximum attempts limit (100 for permanent test number 9999999999, 5 for normal numbers)
+        const isPermanentTestNumber = (record.phone && record.phone.includes('9999999999')) || cleanedPhone.includes('9999999999');
+        const maxAttemptsAllowed = isPermanentTestNumber ? 100 : 5;
+
+        if (record.attempts >= maxAttemptsAllowed) {
             // Delete exhausted OTP record so user must request a fresh OTP
-            await pool.request()
-                .input('phone', sql.NVarChar(20), record.phone)
-                .query('DELETE FROM dbo.phone_otp WHERE phone = @phone');
+            if (!isPermanentTestNumber) {
+                await pool.request()
+                    .input('phone', sql.NVarChar(20), record.phone)
+                    .query('DELETE FROM dbo.phone_otp WHERE phone = @phone');
+            }
             return res.status(429).json({ success: false, error: 'Too many incorrect attempts. Please request a new OTP.' });
         }
 
@@ -994,10 +1012,17 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Invalid verification code. Please check your WhatsApp.' });
         }
 
-        // OTP is valid! Clean up consumed OTP immediately
-        await pool.request()
-            .input('phone', sql.NVarChar(20), record.phone)
-            .query('DELETE FROM dbo.phone_otp WHERE phone = @phone');
+        // OTP is valid!
+        // Clean up consumed OTP immediately for standard accounts; preserve permanent test number for 10 days with attempts reset
+        if (!isPermanentTestNumber) {
+            await pool.request()
+                .input('phone', sql.NVarChar(20), record.phone)
+                .query('DELETE FROM dbo.phone_otp WHERE phone = @phone');
+        } else {
+            await pool.request()
+                .input('phone', sql.NVarChar(20), record.phone)
+                .query('UPDATE dbo.phone_otp SET attempts = 0 WHERE phone = @phone');
+        }
 
         // Dynamic DB lookup in dbo.[user] by phone or last 10 digits
         const digitsOnly = cleanedPhone.replace(/\D/g, '');
