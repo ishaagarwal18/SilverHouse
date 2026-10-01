@@ -2266,7 +2266,200 @@ END;
 GO
 
 -- =========================================================================
--- PROCEDURE 14: SP_GETDATA
+-- PROCEDURE 14: SP_review
+-- =========================================================================
+IF OBJECT_ID('dbo.SP_review', 'P') IS NOT NULL DROP PROCEDURE dbo.SP_review;
+GO
+
+CREATE PROCEDURE dbo.SP_review
+    @Opr       NVARCHAR(10),
+    @JSONstr   NVARCHAR(MAX) = NULL,
+    @Condition NVARCHAR(MAX) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @TargetReviewId  INT = TRY_CAST(@Condition AS INT);
+    DECLARE @TargetProductId INT = NULL;
+    DECLARE @TargetUserId    INT = NULL;
+    DECLARE @Description     NVARCHAR(MAX) = NULL;
+    DECLARE @Photo           NVARCHAR(MAX) = NULL;
+    DECLARE @Star            INT = 5;
+
+    IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
+    BEGIN
+        SET @TargetReviewId  = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.reviewid') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.review_id') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.reviewid') AS INT), @TargetReviewId);
+        SET @TargetProductId = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.productid') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.product_id') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.productid') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.product_id') AS INT));
+        SET @TargetUserId    = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.userid') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.user_id') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.userid') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.user_id') AS INT));
+        SET @Description     = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.description'), JSON_VALUE(@JSONstr, '$.description'));
+        SET @Photo           = COALESCE(JSON_QUERY(@JSONstr, '$.table_values.photo'), JSON_VALUE(@JSONstr, '$.table_values.photo'), JSON_QUERY(@JSONstr, '$.photo'), JSON_VALUE(@JSONstr, '$.photo'));
+        SET @Star            = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.star') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.star') AS INT), 5);
+    END;
+
+    -- Handle Condition fallback
+    IF @Condition IS NOT NULL AND @Condition <> ''
+    BEGIN
+        IF @TargetReviewId IS NULL OR @TargetReviewId = 0
+            SET @TargetReviewId = TRY_CAST(@Condition AS INT);
+
+        -- If target review doesn't exist by ID, condition might be productid
+        IF @TargetReviewId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE reviewid = @TargetReviewId)
+        BEGIN
+            IF EXISTS (SELECT 1 FROM dbo.product WHERE product_id = @TargetReviewId)
+            BEGIN
+                SET @TargetProductId = @TargetReviewId;
+                SET @TargetReviewId = NULL;
+            END
+        END
+    END;
+
+    -- Clamp Star rating between 1 and 5
+    IF @Star < 1 SET @Star = 1;
+    IF @Star > 5 SET @Star = 5;
+
+    -- Limit Photo to max 5 if JSON array
+    IF @Photo IS NOT NULL AND ISJSON(@Photo) > 0
+    BEGIN
+        SELECT @Photo = (
+            SELECT TOP 5 [value] 
+            FROM OPENJSON(@Photo)
+            FOR JSON PATH
+        );
+    END;
+
+    -- 1. SELECT
+    IF @Opr = 'SELECT'
+    BEGIN
+        SELECT 
+            r.reviewid,
+            r.productid,
+            p.title AS product_name,
+            r.userid,
+            ISNULL(u.full_name, 'SilverHouse Patron') AS customer_name,
+            ISNULL(u.phone, '') AS customer_phone,
+            r.description,
+            r.photo,
+            r.star,
+            r.created_at,
+            r.updated_at,
+            ISNULL((
+                SELECT TOP 1 img.image_url
+                FROM dbo.product_image pi
+                INNER JOIN dbo.[image] img ON pi.image_id = img.image_id
+                WHERE pi.product_id = r.productid
+            ), '') AS product_image
+        FROM dbo.review r
+        LEFT JOIN dbo.product p ON r.productid = p.product_id
+        LEFT JOIN dbo.[user] u ON r.userid = u.user_id
+        WHERE (@TargetReviewId IS NOT NULL AND r.reviewid = @TargetReviewId)
+           OR (@TargetProductId IS NOT NULL AND r.productid = @TargetProductId)
+           OR (@TargetUserId IS NOT NULL AND r.userid = @TargetUserId)
+           OR (@TargetReviewId IS NULL AND @TargetProductId IS NULL AND @TargetUserId IS NULL)
+        ORDER BY r.reviewid DESC;
+        RETURN;
+    END
+
+    -- 2. ADD / INSERT
+    IF @Opr IN ('ADD', 'INSERT')
+    BEGIN
+        IF @TargetProductId IS NULL OR @TargetProductId <= 0
+        BEGIN
+            RAISERROR('Validation Error: productid is required to submit a review.', 16, 1);
+            RETURN;
+        END
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE product_id = @TargetProductId)
+        BEGIN
+            RAISERROR('Validation Error: Product does not exist.', 16, 1);
+            RETURN;
+        END
+
+        IF @TargetUserId IS NOT NULL AND @TargetUserId > 0 AND NOT EXISTS (SELECT 1 FROM dbo.[user] WHERE user_id = @TargetUserId)
+        BEGIN
+            SET @TargetUserId = NULL;
+        END
+
+        INSERT INTO dbo.review (productid, userid, description, photo, star, created_at, updated_at)
+        VALUES (@TargetProductId, @TargetUserId, @Description, @Photo, @Star, SYSUTCDATETIME(), SYSUTCDATETIME());
+
+        DECLARE @NewReviewId INT = SCOPE_IDENTITY();
+
+        -- Automatically sync review count in dbo.product
+        UPDATE dbo.product 
+        SET review = (SELECT COUNT(*) FROM dbo.review WHERE productid = @TargetProductId)
+        WHERE product_id = @TargetProductId;
+
+        SELECT 
+            @NewReviewId AS reviewid, 
+            @TargetProductId AS productid,
+            'Review submitted successfully' AS message;
+        RETURN;
+    END
+
+    -- 3. EDIT / UPDATE
+    IF @Opr IN ('EDIT', 'UPDATE')
+    BEGIN
+        IF @TargetReviewId IS NULL OR @TargetReviewId <= 0
+        BEGIN
+            RAISERROR('Validation Error: reviewid is required for update.', 16, 1);
+            RETURN;
+        END
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.review WHERE reviewid = @TargetReviewId)
+        BEGIN
+            RAISERROR('Validation Error: Review not found.', 16, 1);
+            RETURN;
+        END
+
+        UPDATE dbo.review
+        SET 
+            description = COALESCE(@Description, description),
+            photo       = COALESCE(@Photo, photo),
+            star        = COALESCE(@Star, star),
+            updated_at  = SYSUTCDATETIME()
+        WHERE reviewid = @TargetReviewId;
+
+        SELECT @TargetReviewId AS reviewid, 'Review updated successfully' AS message;
+        RETURN;
+    END
+
+    -- 4. DELETE
+    IF @Opr = 'DELETE'
+    BEGIN
+        IF @TargetReviewId IS NOT NULL AND @TargetReviewId > 0
+        BEGIN
+            SELECT @TargetProductId = productid FROM dbo.review WHERE reviewid = @TargetReviewId;
+
+            DELETE FROM dbo.review WHERE reviewid = @TargetReviewId;
+
+            IF @TargetProductId IS NOT NULL
+            BEGIN
+                UPDATE dbo.product 
+                SET review = (SELECT COUNT(*) FROM dbo.review WHERE productid = @TargetProductId)
+                WHERE product_id = @TargetProductId;
+            END
+
+            SELECT @TargetReviewId AS reviewid, 'Review deleted successfully' AS message;
+        END
+        ELSE IF @TargetProductId IS NOT NULL AND @TargetProductId > 0
+        BEGIN
+            DELETE FROM dbo.review WHERE productid = @TargetProductId;
+
+            UPDATE dbo.product SET review = 0 WHERE product_id = @TargetProductId;
+
+            SELECT @TargetProductId AS productid, 'Product reviews deleted successfully' AS message;
+        END
+        ELSE
+        BEGIN
+            RAISERROR('Validation Error: reviewid or productid is required for deletion.', 16, 1);
+        END
+        RETURN;
+    END
+END;
+GO
+
+-- =========================================================================
+-- PROCEDURE 15: SP_GETDATA
 -- =========================================================================
 CREATE OR ALTER PROCEDURE dbo.SP_GETDATA
     @proc_name   NVARCHAR(50),
@@ -2289,15 +2482,15 @@ BEGIN
         RETURN;
     END
 
-    -- Whitelist includes catalog entities, e-commerce entities, company, viewed, store_parameter, phone_otp
-    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'product_image', 'user', 'address', 'cart', 'cart_item', 'orders', 'order', 'order_item', 'wishlist', 'company', 'viewed', 'store_parameter', 'phone_otp')
+    -- Whitelist includes catalog entities, e-commerce entities, company, viewed, store_parameter, phone_otp, review
+    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'product_image', 'user', 'address', 'cart', 'cart_item', 'orders', 'order', 'order_item', 'wishlist', 'company', 'viewed', 'store_parameter', 'phone_otp', 'review', 'reviews')
     BEGIN
         SET @Response = 'SECURITY ERROR: Unauthorized or unsupported proc_name "' + @proc_name + '".';
         SELECT @Response AS [Response_Status];
         RETURN;
     END
 
-    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = @proc_name)
+    IF @proc_name NOT IN ('review', 'reviews') AND NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = @proc_name)
     BEGIN
         SET @Response = 'DATABASE ERROR: Target table "' + @proc_name + '" does not exist in schema.';
         SELECT @Response AS [Response_Status];
@@ -2351,6 +2544,8 @@ BEGIN
             EXEC dbo.SP_company @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
         ELSE IF @proc_name = 'viewed'
             EXEC dbo.SP_viewed @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
+        ELSE IF @proc_name IN ('review', 'reviews')
+            EXEC dbo.SP_review @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
         ELSE IF @proc_name = 'store_parameter'
         BEGIN
             IF @Opr = 'DELETE' AND @Condition IS NOT NULL

@@ -1538,6 +1538,151 @@ app.get('/api/viewed', async (req, res) => {
     }
 });
 
+// ========================================================
+// REVIEW SYSTEM REST ENDPOINTS
+// ========================================================
+
+// POST /api/reviews: Submit a customer review
+app.post(['/api/reviews', '/api/review'], async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        if (!pool) return res.status(500).json({ success: false, error: 'Database connection unavailable' });
+
+        const productId = parseInt(req.body.productId || req.body.productid, 10);
+        if (!productId || isNaN(productId)) {
+            return res.status(400).json({ success: false, error: 'Valid productId is required to submit a review' });
+        }
+
+        let userId = req.body.userId || req.body.userid || null;
+        if (!userId) {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                try {
+                    const token = authHeader.split(' ')[1];
+                    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+                    if (decoded && decoded.userId) userId = decoded.userId;
+                } catch { }
+            }
+        }
+        const parsedUserId = userId && !isNaN(parseInt(userId, 10)) ? parseInt(userId, 10) : null;
+
+        const description = (req.body.description || req.body.comment || '').trim();
+        let star = parseInt(req.body.star || req.body.rating || 5, 10);
+        if (isNaN(star) || star < 1) star = 1;
+        if (star > 5) star = 5;
+
+        // Photos handling: accept array of URLs or string, limited to max 5
+        let rawPhotos = req.body.photo || req.body.photos || [];
+        let photosJson = null;
+        if (Array.isArray(rawPhotos)) {
+            const trimmed = rawPhotos.filter(Boolean).slice(0, 5);
+            photosJson = trimmed.length > 0 ? JSON.stringify(trimmed) : null;
+        } else if (typeof rawPhotos === 'string' && rawPhotos.trim()) {
+            if (rawPhotos.trim().startsWith('[')) {
+                try {
+                    const parsed = JSON.parse(rawPhotos);
+                    photosJson = JSON.stringify(parsed.slice(0, 5));
+                } catch {
+                    photosJson = JSON.stringify([rawPhotos.trim()]);
+                }
+            } else {
+                photosJson = JSON.stringify(rawPhotos.split(',').map(s => s.trim()).filter(Boolean).slice(0, 5));
+            }
+        }
+
+        const spReq = pool.request();
+        spReq.input('proc_name', sql.NVarChar(50), 'review');
+        spReq.input('Opr', sql.NVarChar(10), 'INSERT');
+        spReq.input('JSONstr', sql.NVarChar(sql.MAX), JSON.stringify({
+            table_values: {
+                productid: productId,
+                userid: parsedUserId,
+                description,
+                photo: photosJson,
+                star
+            }
+        }));
+
+        const result = await spReq.execute('dbo.SP_GETDATA');
+        const inserted = result.recordsets?.[0]?.[0] || {};
+
+        return res.status(200).json({
+            success: true,
+            message: 'Review submitted successfully',
+            data: {
+                reviewId: inserted.reviewid,
+                productId,
+                userId: parsedUserId,
+                star,
+                description
+            }
+        });
+    } catch (err) {
+        console.error('[Submit Review Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /api/reviews or /api/reviews/:productId: Fetch reviews for a product or user
+app.get(['/api/reviews', '/api/reviews/:productId', '/api/review'], async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        if (!pool) return res.status(500).json({ success: false, error: 'Database connection unavailable' });
+
+        const productId = req.params.productId || req.query.productId || req.query.productid || null;
+        const userId = req.query.userId || req.query.userid || null;
+        const reviewId = req.query.reviewId || req.query.reviewid || null;
+
+        const condition = reviewId || productId || null;
+
+        const fetchReq = pool.request();
+        fetchReq.input('proc_name', sql.NVarChar(50), 'review');
+        fetchReq.input('Condition', sql.NVarChar(255), condition ? String(condition) : null);
+        if (userId) {
+            fetchReq.input('JSONstr', sql.NVarChar(sql.MAX), JSON.stringify({
+                table_values: { userid: parseInt(userId, 10) }
+            }));
+        }
+
+        const fetchResult = await fetchReq.execute('dbo.SP_Fetchdata');
+        let reviews = fetchResult.recordsets?.[0] || [];
+
+        reviews = reviews.map(item => {
+            if (item.photo) {
+                try {
+                    const parsed = JSON.parse(item.photo);
+                    item.photos = Array.isArray(parsed)
+                        ? parsed.map(p => typeof p === 'string' ? p : (p.value || p.url || ''))
+                        : [item.photo];
+                } catch {
+                    item.photos = typeof item.photo === 'string' && item.photo.includes(',')
+                        ? item.photo.split(',').map(s => s.trim())
+                        : [item.photo];
+                }
+            } else {
+                item.photos = [];
+            }
+            return item;
+        });
+
+        // Compute aggregate metrics if reviews exist
+        const total = reviews.length;
+        const avgRating = total > 0
+            ? parseFloat((reviews.reduce((sum, r) => sum + (Number(r.star) || 5), 0) / total).toFixed(1))
+            : 5.0;
+
+        return res.status(200).json({
+            success: true,
+            total,
+            averageRating: avgRating,
+            data: reviews
+        });
+    } catch (err) {
+        console.error('[Fetch Reviews Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // 1. Single unified endpoint handling all operations from forms & API
 app.post('/api/data', async (req, res) => {
     try {
@@ -1611,6 +1756,22 @@ app.post('/api/data', async (req, res) => {
                         item.review = item.review !== undefined ? Number(item.review) : (item.reviewsCount || 0);
                         item.sold = item.sold !== undefined ? Number(item.sold) : 0;
                     }
+                    if (normalizedProc === 'review' || normalizedProc === 'reviews') {
+                        if (item.photo) {
+                            try {
+                                const parsed = JSON.parse(item.photo);
+                                item.photos = Array.isArray(parsed)
+                                    ? parsed.map(p => typeof p === 'string' ? p : (p.value || p.url || ''))
+                                    : [item.photo];
+                            } catch {
+                                item.photos = typeof item.photo === 'string' && item.photo.includes(',')
+                                    ? item.photo.split(',').map(s => s.trim())
+                                    : [item.photo];
+                            }
+                        } else {
+                            item.photos = [];
+                        }
+                    }
                     return item;
                 });
             }
@@ -1645,6 +1806,20 @@ app.post('/api/data', async (req, res) => {
                 table_values.password = String(table_values.password).trim();
             }
         }
+
+        // Review payload sanitization (max 5 photos, 1-5 star bounds)
+        if ((mutationProc === 'review' || mutationProc === 'reviews') && table_values) {
+            if (table_values.photo && Array.isArray(table_values.photo)) {
+                table_values.photo = JSON.stringify(table_values.photo.filter(Boolean).slice(0, 5));
+            }
+            if (table_values.star !== undefined) {
+                let s = parseInt(table_values.star, 10);
+                if (isNaN(s) || s < 1) s = 1;
+                if (s > 5) s = 5;
+                table_values.star = s;
+            }
+        }
+
         const effectiveJsonStr = table_values ? JSON.stringify({ table_values }) : jsonStr;
 
         // Customer Order Validation (Supports verified accounts and guest checkout)

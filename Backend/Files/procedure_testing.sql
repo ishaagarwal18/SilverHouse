@@ -306,3 +306,34 @@ EXEC dbo.SP_GETDATA
 EXEC dbo.SP_GETDATA 
     @proc_name = 'product', 
     @Opr = 'SELECT';
+
+-- ========================================================
+-- REVIEW SYSTEM TESTING
+-- ========================================================
+
+-- 1. Insert review for product 1 with 5 stars and 2 photos
+EXEC dbo.SP_GETDATA 
+    @proc_name = 'review', 
+    @Opr = 'INSERT', 
+    @JSONstr = '{"table_values": {"productid": 1, "description": "Outstanding quality, pure solid silver!", "photo": "[\"https://example.com/payal1.jpg\", \"https://example.com/payal2.jpg\"]", "star": 5}}';
+
+-- 2. Fetch all reviews for product 1 via SP_Fetchdata
+EXEC dbo.SP_Fetchdata 
+    @proc_name = 'review', 
+    @Condition = '1';
+
+-- 3. Fetch all reviews across the store
+EXEC dbo.SP_Fetchdata 
+    @proc_name = 'review';
+
+-- 4. Update review (e.g. reviewid 1)
+EXEC dbo.SP_GETDATA 
+    @proc_name = 'review', 
+    @Opr = 'EDIT', 
+    @JSONstr = '{"table_values": {"reviewid": 1, "description": "Updated: Even better in real life!", "star": 5}}';
+
+-- 5. Delete review
+EXEC dbo.SP_GETDATA 
+    @proc_name = 'review', 
+    @Opr = 'DELETE', 
+    @Condition = '1';

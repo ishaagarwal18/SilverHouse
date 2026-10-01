@@ -4,6 +4,7 @@ import { PRODUCTS, PINCODES } from '../../data/products';
 import { recordProductView } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import RecentlyViewedSection from '../common/RecentlyViewedSection';
+import ProductReviewsSection from './ProductReviewsSection';
 import {
   Star, ShieldCheck, Award, Truck, Heart, ShoppingBag,
   Sparkles, Upload, CheckCircle2, ChevronDown, ChevronRight, RefreshCw, FileText, ArrowLeft
@@ -242,11 +243,21 @@ export default function ProductDetailPage({
             <div>
               {/* Rating & SKU */}
               <div className="flex items-center justify-between text-xs mb-2">
-                <div className="flex items-center space-x-1 text-[#D4AF37]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('customer-reviews-section');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="flex items-center space-x-1 text-[#D4AF37] hover:underline cursor-pointer group"
+                  title="View customer reviews & ratings"
+                >
                   <Star className="w-4 h-4 fill-[#D4AF37]" />
                   <span className="font-bold text-[#1A1A1A]">{currentProduct.rating}</span>
-                  <span className="text-silver-400">({currentProduct.reviewsCount} Customer Reviews)</span>
-                </div>
+                  <span className="text-silver-400 group-hover:text-[#D4AF37] transition-colors">
+                    ({currentProduct.reviewsCount} Customer Reviews)
+                  </span>
+                </button>
                 <span className="text-silver-400 font-mono">SKU: {currentProduct.id.toUpperCase()}</span>
               </div>
 
@@ -484,6 +495,13 @@ export default function ProductDetailPage({
           </div>
 
         </div>
+
+        {/* Customer Reviews & Ratings Section */}
+        <ProductReviewsSection
+          product={currentProduct}
+          user={user}
+          onTriggerToast={onTriggerToast}
+        />
 
         {/* Related Products Section */}
         {relatedProducts.length > 0 && (

@@ -273,4 +273,27 @@ BEGIN
 END;
 GO
 
- 
+-- ========================================================
+-- Review Table
+-- ========================================================
+IF OBJECT_ID('dbo.review', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.review (
+        reviewid INT IDENTITY(1,1) PRIMARY KEY,
+        productid INT NOT NULL,
+        userid INT NULL,
+        description NVARCHAR(MAX) NULL,
+        photo NVARCHAR(MAX) NULL, -- Stores JSON array or string of up to 5 photos
+        star INT NOT NULL DEFAULT 5,
+        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        updated_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT FK_review_product FOREIGN KEY (productid) REFERENCES dbo.product(product_id) ON DELETE CASCADE,
+        CONSTRAINT FK_review_user FOREIGN KEY (userid) REFERENCES dbo.[user](user_id) ON DELETE SET NULL,
+        CONSTRAINT CK_review_star CHECK (star >= 1 AND star <= 5)
+    );
+
+    CREATE INDEX IX_review_productid ON dbo.review (productid);
+    CREATE INDEX IX_review_userid ON dbo.review (userid);
+    CREATE INDEX IX_review_created_at ON dbo.review (created_at DESC);
+END;
+GO

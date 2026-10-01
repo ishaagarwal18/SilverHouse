@@ -763,3 +763,84 @@ export async function fetchRecentlyViewed(userId = null) {
   }
 }
 
+/**
+ * Fetches all reviews for a product from the backend.
+ */
+export async function fetchProductReviews(productId) {
+  if (!productId) return { reviews: [], total: 0, averageRating: 5.0 };
+  try {
+    const res = await fetch(`${API_BASE_URL}/reviews?productId=${productId}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        return {
+          reviews: json.data,
+          total: json.total !== undefined ? json.total : json.data.length,
+          averageRating: json.averageRating !== undefined ? json.averageRating : 5.0
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[API Service] fetchProductReviews error:', err.message);
+  }
+  return { reviews: [], total: 0, averageRating: 5.0 };
+}
+
+/**
+ * Uploads customer review photos to the backend.
+ */
+export async function uploadReviewPhotos(files) {
+  if (!files || files.length === 0) return [];
+  try {
+    const formData = new FormData();
+    const slice = Array.from(files).slice(0, 5);
+    slice.forEach(f => formData.append('images', f));
+
+    const res = await fetch(`${API_BASE_URL}/upload-multiple`, {
+      method: 'POST',
+      body: formData
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && Array.isArray(json.imageUrls)) {
+        return json.imageUrls;
+      }
+    }
+  } catch (err) {
+    console.warn('[API Service] uploadReviewPhotos error:', err.message);
+  }
+  return [];
+}
+
+/**
+ * Submits a new customer review to the backend.
+ */
+export async function submitProductReview({ productId, userId = null, star = 5, description = '', photos = [] }) {
+  try {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('silverhouse_token') : '';
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE_URL}/reviews`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        productId,
+        userId,
+        star,
+        description,
+        photos
+      })
+    });
+
+    const json = await res.json();
+    return json;
+  } catch (err) {
+    console.error('[API Service] submitProductReview error:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+

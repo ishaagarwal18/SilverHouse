@@ -1018,6 +1018,10 @@
                     <i class="ph-bold ph-eye"></i>
                     <span>Recently Viewed</span>
                 </li>
+                <li class="nav-item" onclick="navigate('review')">
+                    <i class="ph-bold ph-star"></i>
+                    <span>Product Reviews</span>
+                </li>
             </ul>
 
             <div class="nav-label" style="margin-top: 24px;">System & Configuration</div>
@@ -1218,6 +1222,7 @@
             user: 'user_id',
             address: 'address_id',
             viewed: 'viewid',
+            review: 'reviewid',
             company: 'company_id',
             store_parameter: 'id',
             phone_otp: 'phone'
@@ -1303,6 +1308,7 @@
             user: { singular: 'User', plural: 'Users' },
             address: { singular: 'Address', plural: 'Addresses' },
             viewed: { singular: 'Viewed Product', plural: 'Recently Viewed' },
+            review: { singular: 'Customer Review', plural: 'Product Reviews' },
             company: { singular: 'Company Profile', plural: 'Company Details' },
             store_parameter: { singular: 'Store Parameter', plural: 'Store Parameters' },
             phone_otp: { singular: 'Phone OTP Log', plural: 'Phone OTP Logs' }
@@ -1375,6 +1381,13 @@
             viewed: [
                 { name: 'productid', label: 'Product ID', type: 'number', required: true, placeholder: 'e.g. 1' },
                 { name: 'userid', label: 'User ID', type: 'number', placeholder: 'e.g. 2 (leave blank for guest views)' }
+            ],
+            review: [
+                { name: 'productid', label: 'Product ID', type: 'number', required: true, placeholder: 'e.g. 1' },
+                { name: 'userid', label: 'User ID', type: 'number', placeholder: 'e.g. 2 (optional for patron)' },
+                { name: 'star', label: 'Rating (1 to 5 Stars)', type: 'select', options: ['5', '4', '3', '2', '1'], default: '5' },
+                { name: 'description', label: 'Review Description', type: 'textarea', fullWidth: true, placeholder: 'Customer feedback...' },
+                { name: 'photo', label: 'Photo URLs (JSON array or comma separated, max 5)', type: 'textarea', fullWidth: true, placeholder: '["https://example.com/p1.jpg"]' }
             ],
             company: [
                 { name: 'name', label: 'Company Name', type: 'text', required: true, placeholder: 'e.g. SilverHouse Jewels' },

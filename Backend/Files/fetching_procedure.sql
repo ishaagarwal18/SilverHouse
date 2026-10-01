@@ -576,6 +576,58 @@ BEGIN
             ORDER BY created_at DESC;
         END
 
+        -- 17. Review Entity Fetcher
+        ELSE IF @proc_name IN ('review', 'reviews')
+        BEGIN
+            DECLARE @ReviewFilterId   INT = TRY_CAST(@Condition AS INT);
+            DECLARE @ReviewProductId  INT = NULL;
+            DECLARE @ReviewUserId     INT = NULL;
+
+            IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
+            BEGIN
+                SET @ReviewFilterId  = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.reviewid') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.reviewid') AS INT), @ReviewFilterId);
+                SET @ReviewProductId = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.productid') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.product_id') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.productid') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.product_id') AS INT));
+                SET @ReviewUserId    = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.userid') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.user_id') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.userid') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.user_id') AS INT));
+            END
+
+            -- If Condition is a product ID and no review matches that ID
+            IF @ReviewFilterId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.review WHERE reviewid = @ReviewFilterId)
+            BEGIN
+                IF EXISTS (SELECT 1 FROM dbo.product WHERE product_id = @ReviewFilterId)
+                BEGIN
+                    SET @ReviewProductId = @ReviewFilterId;
+                    SET @ReviewFilterId = NULL;
+                END
+            END
+
+            SELECT 
+                r.reviewid,
+                r.productid,
+                p.title AS product_name,
+                r.userid,
+                ISNULL(u.full_name, 'SilverHouse Patron') AS customer_name,
+                ISNULL(u.phone, '') AS customer_phone,
+                r.description,
+                r.photo,
+                r.star,
+                r.created_at,
+                r.updated_at,
+                ISNULL((
+                    SELECT TOP 1 img.image_url
+                    FROM dbo.product_image pi
+                    INNER JOIN dbo.[image] img ON pi.image_id = img.image_id
+                    WHERE pi.product_id = r.productid
+                ), '') AS product_image
+            FROM dbo.review r
+            LEFT JOIN dbo.product p ON r.productid = p.product_id
+            LEFT JOIN dbo.[user] u ON r.userid = u.user_id
+            WHERE (@ReviewFilterId IS NOT NULL AND r.reviewid = @ReviewFilterId)
+               OR (@ReviewProductId IS NOT NULL AND r.productid = @ReviewProductId)
+               OR (@ReviewUserId IS NOT NULL AND r.userid = @ReviewUserId)
+               OR (@ReviewFilterId IS NULL AND @ReviewProductId IS NULL AND @ReviewUserId IS NULL)
+            ORDER BY r.reviewid DESC;
+        END
+
         ELSE
         BEGIN
             SET @Response = 'ERROR: Unsupported proc_name "' + @proc_name + '".';
