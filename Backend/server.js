@@ -704,24 +704,28 @@ app.get('/api/admin/analytics', async (req, res) => {
 
 function cleanPhoneNumber(rawPhone) {
     if (!rawPhone) return '';
-    let cleaned = String(rawPhone).replace(/[^\d+]/g, '').trim();
-    // If 10 digits without prefix, default to India (+91)
-    if (/^\d{10}$/.test(cleaned)) {
-        cleaned = '+91' + cleaned;
-    } else if (/^91\d{10}$/.test(cleaned)) {
-        cleaned = '+' + cleaned;
+    let digits = String(rawPhone).replace(/\D/g, '').trim();
+    if (digits.length === 11 && digits.startsWith('0')) {
+        digits = digits.substring(1);
     }
-    return cleaned;
+    if (digits.length === 12 && digits.startsWith('91')) {
+        digits = digits.substring(2);
+    }
+    if (digits.length === 10) {
+        return '+91' + digits;
+    }
+    return '+' + digits;
 }
 
 // Format phone specifically for WhatsApp gateway (91XXXXXXXXXX without +)
 function formatWhatsAppPhone(rawPhone) {
     if (!rawPhone) return '';
     let digits = String(rawPhone).replace(/\D/g, '').trim();
+    if (digits.length === 11 && digits.startsWith('0')) {
+        digits = digits.substring(1);
+    }
     if (digits.length === 10) {
         digits = '91' + digits;
-    } else if (digits.length === 11 && digits.startsWith('0')) {
-        digits = '91' + digits.substring(1);
     } else if (digits.length === 12 && digits.startsWith('91')) {
         // already valid 91XXXXXXXXXX
     }
@@ -760,11 +764,17 @@ async function sendWhatsAppMessage(phone, message, pool = null) {
     if (apiUrl) {
         try {
             const urlObj = new URL(apiUrl);
-            urlObj.searchParams.set('phone', waPhone);
-            urlObj.searchParams.set('message', message);
+            const token = urlObj.searchParams.get('token') || '';
+
+            const queryParams = new URLSearchParams();
+            if (token) queryParams.set('token', token);
+            queryParams.set('phone', waPhone);
+            queryParams.set('message', message);
+
+            const targetUrl = `${urlObj.origin}${urlObj.pathname}?${queryParams.toString().replace(/\+/g, '%20')}`;
 
             console.log(`[WhatsApp Gateway] Dispatching to: ${urlObj.origin}${urlObj.pathname}?phone=${waPhone}`);
-            const response = await fetch(urlObj.toString(), {
+            const response = await fetch(targetUrl, {
                 method: 'GET',
                 headers: { 'Accept': 'application/json, text/plain, */*' }
             });
@@ -797,22 +807,29 @@ async function sendWhatsAppOtp(phone, otp, pool = null) {
 
     try {
         const urlObj = new URL(apiUrl);
-        // WhatsApp API expects phone in 91XXXXXXXXXX format
-        urlObj.searchParams.set('phone', waPhone);
+        const token = urlObj.searchParams.get('token') || '';
 
         // Use message template configured in store_parameter or provide standard SilverHouse text
         const existingMsg = (urlObj.searchParams.get('message') || '').trim();
         const baseMsg = existingMsg || 'your SilverHouse Mobile verification OTP is';
         const finalMsg = `${baseMsg} ${otp}. Valid for 5 minutes. Please do not share this OTP.`;
-        urlObj.searchParams.set('message', finalMsg);
+
+        // Explicitly format query string with %20 encoding for spaces instead of '+'
+        const queryParams = new URLSearchParams();
+        if (token) queryParams.set('token', token);
+        queryParams.set('phone', waPhone);
+        queryParams.set('message', finalMsg);
+
+        // Replace '+' with '%20' so all third-party WhatsApp parsers decode correctly
+        const targetUrl = `${urlObj.origin}${urlObj.pathname}?${queryParams.toString().replace(/\+/g, '%20')}`;
 
         console.log(`[WhatsApp Gateway] Calling provider URL for ${waPhone}...`);
         
-        // 10-second timeout to prevent requests from hanging indefinitely
+        // 15-second timeout to prevent requests from hanging indefinitely
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-        const response = await fetch(urlObj.toString(), {
+        const response = await fetch(targetUrl, {
             method: 'GET',
             headers: { 'Accept': 'application/json, text/plain, */*' },
             signal: controller.signal
@@ -832,7 +849,7 @@ async function sendWhatsAppOtp(phone, otp, pool = null) {
         console.warn(`[WhatsApp Gateway Warning] OTP dispatch failed:`, apiErr.message);
         return { 
             success: false, 
-            error: apiErr.name === 'AbortError' ? 'WhatsApp gateway timed out after 10s' : apiErr.message 
+            error: apiErr.name === 'AbortError' ? 'WhatsApp gateway timed out after 15s' : apiErr.message 
         };
     }
 }
@@ -890,7 +907,8 @@ app.post('/api/auth/send-otp', async (req, res) => {
         return res.status(200).json({
             success: true,
             message: `Verification code sent to WhatsApp (${cleanedPhone})`,
-            phone: cleanedPhone
+            phone: cleanedPhone,
+            formattedPhone: cleanedPhone
         });
     } catch (err) {
         console.error('[Send OTP Error]:', err.message);

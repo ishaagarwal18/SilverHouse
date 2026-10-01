@@ -135,9 +135,9 @@ export default function AuthPage({ onTriggerToast }) {
 
     setLoading(true);
     try {
-      const res = await requestOtp(phone);
+      const res = await requestOtp(clean);
       if (res.success) {
-        setFormattedPhone(res.formattedPhone || phone);
+        setFormattedPhone(res.formattedPhone || clean);
         setStep('OTP');
         setTimer(60);
         setCanResend(false);
@@ -147,7 +147,7 @@ export default function AuthPage({ onTriggerToast }) {
           onTriggerToast(
             'success',
             'OTP Sent on WhatsApp',
-            `💬 A 6-digit verification code was sent to ${res.formattedPhone || phone} via WhatsApp.`
+            `💬 A 6-digit verification code was sent to ${res.formattedPhone || clean} via WhatsApp.`
           );
         }
       } else {
@@ -166,7 +166,8 @@ export default function AuthPage({ onTriggerToast }) {
     setError('');
     setLoading(true);
     try {
-      const res = await requestOtp(phone);
+      const clean = phone.replace(/[^0-9]/g, '');
+      const res = await requestOtp(clean);
       if (res.success) {
         setTimer(60);
         setCanResend(false);

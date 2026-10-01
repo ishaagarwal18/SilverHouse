@@ -2,6 +2,14 @@
 const DEFAULT_PRODUCTION_API = 'https://api.silverhouseindia.com/api';
 let rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
 
+// When running frontend in local browser development (localhost / 127.0.0.1),
+// automatically route requests to the local backend server on port 5001.
+if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+  if (!rawApiUrl.includes('localhost') && !rawApiUrl.includes('127.0.0.1') && !import.meta.env.VITE_FORCE_REMOTE) {
+    rawApiUrl = 'http://localhost:5001/api';
+  }
+}
+
 if (!rawApiUrl) {
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     rawApiUrl = DEFAULT_PRODUCTION_API;
