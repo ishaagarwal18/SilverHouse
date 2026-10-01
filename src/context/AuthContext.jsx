@@ -88,6 +88,11 @@ export function AuthProvider({ children }) {
     setToken(null);
     localStorage.removeItem('silverhouse_token');
     localStorage.removeItem('silverhouse_user');
+    localStorage.removeItem('silverhouse_cart');
+    localStorage.removeItem('silverhouse_guest_cart');
+    localStorage.removeItem('silverhouse_guest_wishlist');
+    localStorage.removeItem('silverhouse_guest_token');
+    window.dispatchEvent(new Event('silverhouse_logout'));
   };
 
   const isAdmin = Boolean(user && user.role && user.role.toUpperCase() === 'ADMIN');

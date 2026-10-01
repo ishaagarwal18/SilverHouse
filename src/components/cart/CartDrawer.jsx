@@ -170,7 +170,7 @@ export default function CartDrawer({
                 {cartItems.map((item, idx) => {
                   const imgSrc = (Array.isArray(item.product.images) && item.product.images.length > 0 && item.product.images[0])
                     ? item.product.images[0]
-                    : '/images/hero_silver_coins.png';
+                    : (item.product.image || '/images/hero_silver_coins.png');
 
                   const unitPrice = Number(item.product.price) || 0;
                   const originalPrice = item.product.original_price ? Number(item.product.original_price) : Math.round(unitPrice * 1.15);

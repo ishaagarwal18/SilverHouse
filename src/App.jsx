@@ -25,6 +25,8 @@ import {
   addToCartApi,
   updateCartQtyApi,
   removeCartItemApi,
+  fetchUserCartApi,
+  clearCartApi,
   getGuestToken,
   fetchStoreParameters,
   fetchCompanyDetails,
@@ -47,10 +49,13 @@ export default function App() {
   const [companyDetails, setCompanyDetails] = useState(DEFAULT_COMPANY_DETAILS);
   const [pdfViewerDoc, setPdfViewerDoc] = useState(null); // 'about' | 'purity' | null
 
-  // Cart & Wishlist State
+  // Cart & Wishlist State - Strictly Isolated & User-Scoped
   const [cartItems, setCartItems] = useState(() => {
     try {
-      const saved = localStorage.getItem('silverhouse_cart');
+      const savedUser = localStorage.getItem('silverhouse_user');
+      const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+      const key = parsedUser?.userId ? `silverhouse_cart_${parsedUser.userId}` : 'silverhouse_guest_cart';
+      const saved = localStorage.getItem(key);
       if (!saved) return [];
       const parsed = JSON.parse(saved);
       // Clean up phantom empty customConfigs from older items in localStorage
@@ -74,14 +79,103 @@ export default function App() {
     }
   });
 
-  // Sync cart to localStorage
+  // Sync cart to user-scoped localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('silverhouse_cart', JSON.stringify(cartItems));
+      if (effectiveUserId) {
+        localStorage.setItem(`silverhouse_cart_${effectiveUserId}`, JSON.stringify(cartItems));
+      } else {
+        localStorage.setItem('silverhouse_guest_cart', JSON.stringify(cartItems));
+      }
+      // Remove old legacy un-isolated key
+      localStorage.removeItem('silverhouse_cart');
     } catch (e) {
       console.warn('Failed to save cart', e);
     }
-  }, [cartItems]);
+  }, [cartItems, effectiveUserId]);
+
+  // Sync cart items from SQL Server database table dbo.cart and dbo.cart_item
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadCartFromDb() {
+      if (!effectiveUserId) {
+        // Guest user: load from local guest storage only
+        try {
+          const guestSaved = localStorage.getItem('silverhouse_guest_cart');
+          if (!isCancelled) {
+            setCartItems(guestSaved ? JSON.parse(guestSaved) : []);
+          }
+        } catch {
+          if (!isCancelled) setCartItems([]);
+        }
+        return;
+      }
+
+      // Fast display of local cached items for this specific user
+      try {
+        const userSaved = localStorage.getItem(`silverhouse_cart_${effectiveUserId}`);
+        if (userSaved && !isCancelled) {
+          setCartItems(JSON.parse(userSaved));
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // Authoritative sync from database table dbo.cart_item
+      try {
+        const dbItems = await fetchUserCartApi({ userId: effectiveUserId });
+        if (isCancelled) return;
+
+        if (Array.isArray(dbItems)) {
+          if (dbItems.length === 0) {
+            setCartItems([]);
+          } else {
+            const currentProducts = (products && products.length > 0) ? products : PRODUCTS;
+            const mappedItems = dbItems.map(dbItem => {
+              const matchedProduct = currentProducts.find(p => 
+                String(p.id || p.product_id) === String(dbItem.product_id)
+              );
+              const prod = matchedProduct || {
+                id: dbItem.product_id,
+                product_id: dbItem.product_id,
+                title: dbItem.product_name,
+                name: dbItem.product_name,
+                price: Number(dbItem.unit_price) || 0,
+                image: dbItem.image_url || '/images/hero_silver_coins.png',
+                images: [dbItem.image_url || '/images/hero_silver_coins.png'],
+                category: 'All'
+              };
+              return {
+                product: prod,
+                quantity: Number(dbItem.quantity) || 1,
+                customConfig: null
+              };
+            });
+            setCartItems(mappedItems);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load user cart from DB:', err);
+      }
+    }
+
+    loadCartFromDb();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [effectiveUserId, products]);
+
+  // Clear state immediately when user logs out
+  useEffect(() => {
+    const handleLogout = () => {
+      setCartItems([]);
+      setWishlistIds([]);
+    };
+    window.addEventListener('silverhouse_logout', handleLogout);
+    return () => window.removeEventListener('silverhouse_logout', handleLogout);
+  }, []);
 
   const [wishlistIds, setWishlistIds] = useState(() => {
     try {
@@ -576,12 +670,19 @@ export default function App() {
         totalAmount={checkoutData.totalAmount}
         discountAmount={checkoutData.discountAmount}
         appliedCoupon={checkoutData.appliedCoupon}
-        onClearCart={() => {
+        onClearCart={async () => {
           setCartItems([]);
           try {
+            if (effectiveUserId) {
+              localStorage.removeItem(`silverhouse_cart_${effectiveUserId}`);
+              await clearCartApi({ userId: effectiveUserId });
+            } else {
+              localStorage.removeItem('silverhouse_guest_cart');
+              await clearCartApi({ guestToken: getGuestToken() });
+            }
             localStorage.removeItem('silverhouse_cart');
           } catch (e) {
-            console.warn(e);
+            console.warn('Error clearing cart:', e);
           }
         }}
         onNavigateHome={handleNavigateHome}

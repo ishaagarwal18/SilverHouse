@@ -483,6 +483,26 @@ export async function removeCartItemApi({ userId, guestToken, productId }) {
 }
 
 /**
+ * Clears all items from user's or guest's cart in dbo.cart_item.
+ */
+export async function clearCartApi({ userId, guestToken }) {
+  try {
+    const token = guestToken || getGuestToken();
+    return await postApiData({
+      proc_name: 'cart_item',
+      opr: 'DELETE',
+      table_values: {
+        user_id: userId ? Number(userId) : null,
+        guest_token: token
+      }
+    });
+  } catch (err) {
+    console.error('[API Service] Error clearing cart in DB:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * Creates an order record in dbo.orders and order items in dbo.order_item.
  */
 export async function createOrderApi(orderPayload) {
