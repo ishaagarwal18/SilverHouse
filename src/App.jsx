@@ -28,7 +28,8 @@ import {
   getGuestToken,
   fetchStoreParameters,
   fetchCompanyDetails,
-  DEFAULT_COMPANY_DETAILS
+  DEFAULT_COMPANY_DETAILS,
+  recordProductView
 } from './services/api';
 import { PRODUCTS, CATEGORIES } from './data/products';
 
@@ -288,6 +289,9 @@ export default function App() {
   };
 
   const handleSelectProduct = (product) => {
+    if (product && (product.product_id || product.id)) {
+      recordProductView(product.product_id || product.id, effectiveUserId);
+    }
     navigate(`/product/${product.id}`);
   };
 

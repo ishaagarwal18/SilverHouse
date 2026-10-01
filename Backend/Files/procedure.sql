@@ -2136,8 +2136,184 @@ BEGIN
         RETURN;
     END
 
-    -- Whitelist includes catalog entities, e-commerce entities, and company
-    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'product_image', 'user', 'address', 'cart', 'cart_item', 'orders', 'order', 'order_item', 'wishlist', 'company')
+-- =========================================================================
+-- PROCEDURE 13: SP_viewed
+-- =========================================================================
+CREATE OR ALTER PROCEDURE dbo.SP_viewed
+    @Opr       NVARCHAR(10),
+    @JSONstr   NVARCHAR(MAX) = NULL,
+    @Condition NVARCHAR(MAX) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @TargetViewId INT = TRY_CAST(@Condition AS INT);
+    DECLARE @TargetUserId INT;
+    DECLARE @TargetProductId INT;
+
+    IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
+    BEGIN
+        SET @TargetProductId = TRY_CAST(COALESCE(JSON_VALUE(@JSONstr, '$.table_values.productid'), JSON_VALUE(@JSONstr, '$.table_values.product_id'), JSON_VALUE(@JSONstr, '$.productid'), JSON_VALUE(@JSONstr, '$.productId')) AS INT);
+        SET @TargetUserId = TRY_CAST(COALESCE(JSON_VALUE(@JSONstr, '$.table_values.userid'), JSON_VALUE(@JSONstr, '$.table_values.user_id'), JSON_VALUE(@JSONstr, '$.userid'), JSON_VALUE(@JSONstr, '$.userId')) AS INT);
+        IF @TargetViewId IS NULL OR @TargetViewId = 0
+            SET @TargetViewId = TRY_CAST(COALESCE(JSON_VALUE(@JSONstr, '$.table_values.viewid'), JSON_VALUE(@JSONstr, '$.table_values.view_id'), JSON_VALUE(@JSONstr, '$.viewid')) AS INT);
+    END;
+
+    IF @TargetUserId IS NULL AND @Condition IS NOT NULL
+    BEGIN
+        SET @TargetUserId = TRY_CAST(@Condition AS INT);
+    END;
+
+    -- 1. SELECT
+    IF @Opr = 'SELECT'
+    BEGIN
+        IF @TargetUserId IS NOT NULL AND @TargetUserId > 0
+        BEGIN
+            SELECT TOP 20
+                v.viewid,
+                v.productid,
+                v.userid,
+                v.createdAT,
+                p.product_id,
+                p.product_id AS id,
+                p.category_id,
+                p.title,
+                p.title AS name,
+                p.description,
+                p.price,
+                p.discount,
+                p.quantity,
+                p.purity,
+                p.weight,
+                p.ideal_for,
+                p.color,
+                p.review,
+                p.sold,
+                c.[name] AS category_name,
+                c.slug AS category_slug,
+                (
+                    SELECT img.image_url 
+                    FROM dbo.product_image pi2 
+                    JOIN dbo.image img ON pi2.image_id = img.image_id 
+                    WHERE pi2.product_id = p.product_id 
+                    FOR JSON PATH
+                ) AS images_json
+            FROM dbo.viewed v
+            JOIN dbo.product p ON v.productid = p.product_id
+            LEFT JOIN dbo.category c ON p.category_id = c.category_id
+            WHERE v.userid = @TargetUserId
+            ORDER BY v.createdAT DESC;
+        END
+        ELSE IF @TargetViewId IS NOT NULL AND @TargetViewId > 0
+        BEGIN
+            SELECT v.viewid, v.productid, v.userid, v.createdAT, p.title, p.price, p.discount
+            FROM dbo.viewed v
+            JOIN dbo.product p ON v.productid = p.product_id
+            WHERE v.viewid = @TargetViewId;
+        END
+        ELSE
+        BEGIN
+            SELECT TOP 50
+                v.viewid,
+                v.productid,
+                v.userid,
+                v.createdAT,
+                p.title,
+                p.price,
+                u.full_name AS customer_name,
+                u.phone AS customer_phone
+            FROM dbo.viewed v
+            JOIN dbo.product p ON v.productid = p.product_id
+            LEFT JOIN dbo.[user] u ON v.userid = u.user_id
+            ORDER BY v.createdAT DESC;
+        END
+        RETURN;
+    END
+
+    -- 2. ADD / INSERT / MERGE (UPSERT)
+    IF @Opr IN ('ADD', 'INSERT', 'MERGE')
+    BEGIN
+        IF @TargetProductId IS NULL OR @TargetProductId <= 0
+        BEGIN
+            RAISERROR('Validation Error: Valid productid is required.', 16, 1);
+            RETURN;
+        END
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.product WHERE product_id = @TargetProductId)
+        BEGIN
+            RAISERROR('Validation Error: Product does not exist.', 16, 1);
+            RETURN;
+        END
+
+        IF @TargetUserId IS NOT NULL AND @TargetUserId > 0
+        BEGIN
+            MERGE dbo.viewed AS target
+            USING (SELECT @TargetProductId AS productid, @TargetUserId AS userid) AS source
+            ON (target.productid = source.productid AND target.userid = source.userid)
+            WHEN MATCHED THEN
+                UPDATE SET createdAT = SYSUTCDATETIME()
+            WHEN NOT MATCHED THEN
+                INSERT (productid, userid, createdAT)
+                VALUES (source.productid, source.userid, SYSUTCDATETIME());
+        END
+        ELSE
+        BEGIN
+            INSERT INTO dbo.viewed (productid, userid, createdAT)
+            VALUES (@TargetProductId, NULL, SYSUTCDATETIME());
+        END
+
+        SELECT SCOPE_IDENTITY() AS viewid, 'Product view recorded successfully' AS message;
+        RETURN;
+    END
+
+    -- 3. DELETE
+    IF @Opr = 'DELETE'
+    BEGIN
+        IF @TargetViewId IS NOT NULL AND @TargetViewId > 0
+        BEGIN
+            DELETE FROM dbo.viewed WHERE viewid = @TargetViewId;
+            SELECT @TargetViewId AS viewid, 'View record deleted successfully' AS message;
+        END
+        ELSE IF @TargetUserId IS NOT NULL AND @TargetUserId > 0
+        BEGIN
+            DELETE FROM dbo.viewed WHERE userid = @TargetUserId;
+            SELECT @TargetUserId AS userid, 'User view history cleared successfully' AS message;
+        END
+        ELSE
+        BEGIN
+            RAISERROR('Validation Error: viewid or userid is required for deletion.', 16, 1);
+        END
+        RETURN;
+    END
+END;
+GO
+
+-- =========================================================================
+-- PROCEDURE 14: SP_GETDATA
+-- =========================================================================
+CREATE OR ALTER PROCEDURE dbo.SP_GETDATA
+    @proc_name   NVARCHAR(50),
+    @Opr         NVARCHAR(10),
+    @JSONstr     NVARCHAR(MAX) = NULL,
+    @Condition   NVARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Response NVARCHAR(MAX) = 'OK';
+
+    SET @proc_name = LOWER(LTRIM(RTRIM(@proc_name)));
+    SET @Opr = UPPER(LTRIM(RTRIM(@Opr)));
+
+    IF @proc_name IS NULL OR @proc_name = ''
+    BEGIN
+        SET @Response = 'ERROR: proc_name cannot be empty.';
+        SELECT @Response AS [Response_Status];
+        RETURN;
+    END
+
+    -- Whitelist includes catalog entities, e-commerce entities, company, and viewed
+    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'product_image', 'user', 'address', 'cart', 'cart_item', 'orders', 'order', 'order_item', 'wishlist', 'company', 'viewed')
     BEGIN
         SET @Response = 'SECURITY ERROR: Unauthorized or unsupported proc_name "' + @proc_name + '".';
         SELECT @Response AS [Response_Status];
@@ -2196,6 +2372,8 @@ BEGIN
             EXEC dbo.SP_wishlist @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
         ELSE IF @proc_name = 'company'
             EXEC dbo.SP_company @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
+        ELSE IF @proc_name = 'viewed'
+            EXEC dbo.SP_viewed @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
 
         SET @Response = 'OK';
         SELECT @Response AS [Response_Status];
@@ -2206,3 +2384,4 @@ BEGIN
     END CATCH
 END;
 GO
+

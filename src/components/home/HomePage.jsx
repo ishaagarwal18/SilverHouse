@@ -13,6 +13,7 @@ import SilverCoinsSection from './SilverCoinsSection';
 import YatraLocketSpotlight from './YatraLocketSpotlight';
 import ExploreCatalogGrid from './ExploreCatalogGrid';
 import Testimonials from './Testimonials';
+import RecentlyViewedSection from '../common/RecentlyViewedSection';
 
 export default function HomePage({
   products = [],
@@ -112,6 +113,15 @@ export default function HomePage({
         onQuickView={onQuickView}
         onSelectProduct={onSelectProduct}
         onNavigateCategory={onNavigateCategory}
+      />
+
+      {/* 11. Recently Viewed Products Section */}
+      <RecentlyViewedSection
+        onAddToCart={onAddToCart}
+        onToggleWishlist={onToggleWishlist}
+        wishlistIds={wishlistIds}
+        onQuickView={onQuickView}
+        onSelectProduct={onSelectProduct}
       />
 
       {/* Customer Testimonials & Reviews */}

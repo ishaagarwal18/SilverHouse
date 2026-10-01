@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PRODUCTS, PINCODES } from '../../data/products';
+import { recordProductView } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import RecentlyViewedSection from '../common/RecentlyViewedSection';
 import {
   Star, ShieldCheck, Award, Truck, Heart, ShoppingBag,
   Sparkles, Upload, CheckCircle2, ChevronDown, ChevronRight, RefreshCw, FileText, ArrowLeft
@@ -19,6 +22,8 @@ export default function ProductDetailPage({
 }) {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const auth = useAuth();
+  const user = auth ? auth.user : null;
   const [selectedImage, setSelectedImage] = useState(0);
   const [qty, setQty] = useState(1);
   const [activeAccordion, setActiveAccordion] = useState('specs');
@@ -36,6 +41,15 @@ export default function ProductDetailPage({
   const currentProduct = product || productList.find(p => String(p.id) === String(productId)) || productList[0];
 
   if (!currentProduct) return null;
+
+  // Record product view into dbo.viewed table
+  useEffect(() => {
+    if (currentProduct && (currentProduct.product_id || currentProduct.id)) {
+      const pId = currentProduct.product_id || currentProduct.id;
+      const uId = user ? (user.userId || user.user_id || user.id) : null;
+      recordProductView(pId, uId);
+    }
+  }, [currentProduct?.id, currentProduct?.product_id, user?.userId, user?.user_id, user?.id]);
 
   const discountPct = currentProduct.discount !== undefined && currentProduct.discount !== null && Number(currentProduct.discount) > 0
     ? Number(currentProduct.discount)
@@ -495,6 +509,16 @@ export default function ProductDetailPage({
             </div>
           </div>
         )}
+
+        {/* Recently Viewed Products Section */}
+        <RecentlyViewedSection
+          excludeProductId={currentProduct.product_id || currentProduct.id}
+          onSelectProduct={onSelectProduct}
+          onAddToCart={onAddToCart}
+          onToggleWishlist={onToggleWishlist}
+          wishlistIds={wishlistIds}
+          className="mt-16 pt-10 border-t border-silver-200"
+        />
 
       </div>
     </div>

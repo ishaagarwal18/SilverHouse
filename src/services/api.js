@@ -669,3 +669,97 @@ export async function fetchCompanyDetails() {
     };
   }
 }
+
+/**
+ * Records a customer's product view into dbo.viewed (and local storage for guests).
+ */
+export async function recordProductView(productId, userId = null) {
+  if (!productId) return;
+  const numId = parseInt(productId, 10);
+  if (isNaN(numId)) return;
+
+  // 1. Maintain local history in localStorage for instant retrieval & offline resilience
+  try {
+    const rawLocal = localStorage.getItem('silverhouse_recently_viewed');
+    let localIds = rawLocal ? JSON.parse(rawLocal) : [];
+    if (!Array.isArray(localIds)) localIds = [];
+    localIds = [numId, ...localIds.filter(id => Number(id) !== numId)].slice(0, 15);
+    localStorage.setItem('silverhouse_recently_viewed', JSON.stringify(localIds));
+  } catch (e) {
+    console.warn('[Recently Viewed] LocalStorage write failed:', e);
+  }
+
+  // 2. Synchronize with database table dbo.viewed
+  try {
+    const activeUserId = userId || (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('silverhouse_user') || '{}');
+        return u.userId || u.user_id || u.id || null;
+      } catch {
+        return null;
+      }
+    })();
+
+    const token = localStorage.getItem('silverhouse_token') || '';
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    await fetch(`${API_BASE_URL}/viewed`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        productId: numId,
+        userId: activeUserId
+      })
+    });
+  } catch (err) {
+    // Non-blocking background sync notice
+    console.warn('[Recently Viewed] Backend sync notice:', err.message);
+  }
+}
+
+/**
+ * Fetches recently viewed products from dbo.viewed (or local IDs fallback).
+ */
+export async function fetchRecentlyViewed(userId = null) {
+  try {
+    const activeUserId = userId || (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('silverhouse_user') || '{}');
+        return u.userId || u.user_id || u.id || null;
+      } catch {
+        return null;
+      }
+    })();
+
+    const rawLocal = localStorage.getItem('silverhouse_recently_viewed');
+    const localIds = rawLocal ? JSON.parse(rawLocal) : [];
+    const localIdStr = Array.isArray(localIds) && localIds.length > 0 ? localIds.join(',') : '';
+
+    let url = `${API_BASE_URL}/viewed`;
+    if (activeUserId) {
+      url += `?userId=${activeUserId}`;
+    } else if (localIdStr) {
+      url += `?productIds=${localIdStr}`;
+    } else {
+      return [];
+    }
+
+    const token = localStorage.getItem('silverhouse_token') || '';
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(url, { headers });
+    if (!res.ok) return [];
+    const json = await res.json();
+
+    if (json.success && Array.isArray(json.data)) {
+      return json.data.map(normalizeProduct).filter(Boolean);
+    }
+    return [];
+  } catch (err) {
+    console.warn('[Recently Viewed] Fetch error:', err.message);
+    return [];
+  }
+}
+

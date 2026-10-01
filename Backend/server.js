@@ -1357,6 +1357,187 @@ async function handleUpdateProfile(req, res) {
 app.post('/api/auth/profile', handleUpdateProfile);
 app.put('/api/auth/profile', handleUpdateProfile);
 
+// =========================================================================
+// RECENTLY VIEWED PRODUCTS API (dbo.viewed)
+// =========================================================================
+
+// POST /api/viewed: Record a product view for a customer
+app.post('/api/viewed', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        if (!pool) return res.status(500).json({ success: false, error: 'Database connection unavailable' });
+
+        let userId = req.body.userId || req.body.userid || null;
+        const productId = parseInt(req.body.productId || req.body.productid, 10);
+
+        if (!productId || isNaN(productId)) {
+            return res.status(400).json({ success: false, error: 'Valid productId is required' });
+        }
+
+        // Try extracting userId from Bearer token if not explicitly provided in body
+        if (!userId) {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                try {
+                    const token = authHeader.split(' ')[1];
+                    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+                    if (decoded && decoded.userId) userId = decoded.userId;
+                } catch { }
+            }
+        }
+
+        const parsedUserId = userId && !isNaN(parseInt(userId, 10)) ? parseInt(userId, 10) : null;
+
+        const spReq = pool.request();
+        spReq.input('Opr', sql.NVarChar(10), 'INSERT');
+        spReq.input('JSONstr', sql.NVarChar(sql.MAX), JSON.stringify({
+            table_values: {
+                productid: productId,
+                userid: parsedUserId
+            }
+        }));
+
+        await spReq.execute('dbo.SP_viewed');
+
+        return res.status(200).json({
+            success: true,
+            message: 'Product view recorded in dbo.viewed',
+            data: { productId, userId: parsedUserId }
+        });
+    } catch (err) {
+        console.error('[Record Product View Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// GET /api/viewed: Fetch recently viewed products for a customer (or list of productIds for guests)
+app.get('/api/viewed', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        if (!pool) return res.status(500).json({ success: false, error: 'Database connection unavailable' });
+
+        let userId = req.query.userId || req.query.userid || null;
+
+        // Try extracting userId from Bearer token if not in query
+        if (!userId) {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                try {
+                    const token = authHeader.split(' ')[1];
+                    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+                    if (decoded && decoded.userId) userId = decoded.userId;
+                } catch { }
+            }
+        }
+
+        const parsedUserId = userId && !isNaN(parseInt(userId, 10)) ? parseInt(userId, 10) : null;
+
+        // If user is logged in, query from dbo.viewed via SP_viewed
+        if (parsedUserId) {
+            const spReq = pool.request();
+            spReq.input('Opr', sql.NVarChar(10), 'SELECT');
+            spReq.input('Condition', sql.NVarChar(255), String(parsedUserId));
+
+            const result = await spReq.execute('dbo.SP_viewed');
+            let items = result.recordset || [];
+
+            items = items.map(item => {
+                if (item.images_json) {
+                    try {
+                        const parsed = JSON.parse(item.images_json);
+                        item.images = Array.isArray(parsed)
+                            ? parsed.map(img => typeof img === 'string' ? img : (img.image_url || img.url || ''))
+                            : [];
+                    } catch {
+                        item.images = [];
+                    }
+                    delete item.images_json;
+                } else if (!item.images) {
+                    item.images = [];
+                }
+                item.product_name = item.title;
+                return item;
+            });
+
+            return res.status(200).json({
+                success: true,
+                count: items.length,
+                data: items
+            });
+        }
+
+        // If guest provided productIds (comma-separated: ?productIds=1,2,3)
+        const productIdsStr = req.query.productIds || req.query.ids;
+        if (productIdsStr) {
+            const ids = productIdsStr.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id) && id > 0);
+            if (ids.length > 0) {
+                const idList = ids.slice(0, 20).join(',');
+                const guestQuery = `
+                    SELECT 
+                        p.product_id,
+                        p.product_id AS id,
+                        p.category_id,
+                        p.title,
+                        p.title AS name,
+                        p.title AS product_name,
+                        p.description,
+                        p.price,
+                        p.discount,
+                        p.quantity,
+                        p.purity,
+                        p.weight,
+                        p.ideal_for,
+                        p.color,
+                        p.review,
+                        p.sold,
+                        c.[name] AS category_name,
+                        c.slug AS category_slug,
+                        (
+                            SELECT img.image_url 
+                            FROM dbo.product_image pi2 
+                            JOIN dbo.image img ON pi2.image_id = img.image_id 
+                            WHERE pi2.product_id = p.product_id 
+                            FOR JSON PATH
+                        ) AS images_json
+                    FROM dbo.product p
+                    LEFT JOIN dbo.category c ON p.category_id = c.category_id
+                    WHERE p.product_id IN (${idList});
+                `;
+                const guestRes = await pool.request().query(guestQuery);
+                let guestItems = guestRes.recordset || [];
+                guestItems = guestItems.map(item => {
+                    if (item.images_json) {
+                        try {
+                            const parsed = JSON.parse(item.images_json);
+                            item.images = Array.isArray(parsed)
+                                ? parsed.map(img => typeof img === 'string' ? img : (img.image_url || img.url || ''))
+                                : [];
+                        } catch {
+                            item.images = [];
+                        }
+                        delete item.images_json;
+                    }
+                    return item;
+                });
+
+                // Preserve original order of IDs
+                guestItems.sort((a, b) => ids.indexOf(a.product_id) - ids.indexOf(b.product_id));
+
+                return res.status(200).json({
+                    success: true,
+                    count: guestItems.length,
+                    data: guestItems
+                });
+            }
+        }
+
+        return res.status(200).json({ success: true, count: 0, data: [] });
+    } catch (err) {
+        console.error('[Fetch Recently Viewed Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // 1. Single unified endpoint handling all operations from forms & API
 app.post('/api/data', async (req, res) => {
     try {
