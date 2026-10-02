@@ -101,7 +101,7 @@ BEGIN
         full_name NVARCHAR(100) NOT NULL DEFAULT 'SilverHouse Patron',
         phone NVARCHAR(20) NOT NULL,
         [role] NVARCHAR(20) NOT NULL DEFAULT 'CUSTOMER',
-        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+        created_at DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME())
     );
 END;
 GO
@@ -116,7 +116,7 @@ BEGIN
         expires_at DATETIME2 NOT NULL,
         attempts INT NOT NULL DEFAULT 0,
         is_verified BIT NOT NULL DEFAULT 0,
-        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+        created_at DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME())
     );
     CREATE INDEX IX_phone_otp_phone ON dbo.phone_otp (phone, expires_at);
 END;
@@ -148,7 +148,7 @@ BEGIN
         cart_id INT IDENTITY(1,1) PRIMARY KEY,
         user_id INT NULL FOREIGN KEY REFERENCES dbo.[user](user_id) ON DELETE SET NULL,
         guest_token NVARCHAR(100) NULL,
-        updated_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+        updated_at DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME())
     );
 END;
 GO
@@ -161,7 +161,7 @@ BEGIN
         cart_id INT NOT NULL FOREIGN KEY REFERENCES dbo.cart(cart_id) ON DELETE CASCADE,
         product_id INT NOT NULL FOREIGN KEY REFERENCES dbo.product(product_id),
         quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
-        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        created_at DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME()),
         CONSTRAINT UQ_cart_product UNIQUE (cart_id, product_id)
     );
 END;
@@ -179,7 +179,7 @@ BEGIN
         discount_amount DECIMAL(18,2) NOT NULL DEFAULT 0.00,
         final_payable DECIMAL(18,2) NOT NULL,
         payment_status NVARCHAR(20) NOT NULL DEFAULT 'PENDING',
-        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+        created_at DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME())
     );
 END;
 GO
@@ -206,7 +206,7 @@ BEGIN
         wishlist_id INT IDENTITY(1,1) PRIMARY KEY,
         user_id INT NOT NULL FOREIGN KEY REFERENCES dbo.[user](user_id) ON DELETE CASCADE,
         product_id INT NOT NULL FOREIGN KEY REFERENCES dbo.product(product_id) ON DELETE CASCADE,
-        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        created_at DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME()),
         CONSTRAINT UQ_wishlist_user_product UNIQUE (user_id, product_id)
     );
 END;
@@ -229,8 +229,8 @@ BEGIN
         pan_card        VARCHAR(10) NULL,            -- 10-digit alphanumeric PAN
         contact_number  VARCHAR(20) NOT NULL,
         email           NVARCHAR(150) NULL,
-        created_at      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        updated_at      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        created_at      DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME()),
+        updated_at      DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME()),
 
         -- Optional Validation Constraints
         CONSTRAINT CK_company_gst_length CHECK (gst_no IS NULL OR LEN(gst_no) = 15),
@@ -252,8 +252,8 @@ CREATE TABLE dbo.store_parameter (
     default_theme NVARCHAR(50) NOT NULL DEFAULT 'royal-gold',
     wp_api NVARCHAR(500) NULL,
     current_festival NVARCHAR(100) NULL DEFAULT 'Diwali Festive Sale',
-    created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME NOT NULL DEFAULT GETDATE()
+    created_at DATETIME NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME()),
+    updated_at DATETIME NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME())
 );
 GO
 
@@ -266,7 +266,7 @@ BEGIN
         viewid INT IDENTITY(1,1) PRIMARY KEY,
         productid INT NOT NULL,
         userid INT NULL,
-        createdAT DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        createdAT DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME()),
         CONSTRAINT FK_viewed_product FOREIGN KEY (productid) REFERENCES dbo.product(product_id) ON DELETE CASCADE,
         CONSTRAINT FK_viewed_user FOREIGN KEY (userid) REFERENCES dbo.[user](user_id) ON DELETE SET NULL
     );
@@ -288,8 +288,8 @@ BEGIN
         description NVARCHAR(MAX) NULL,
         photo NVARCHAR(MAX) NULL, -- Stores JSON array or string of up to 5 photos
         star INT NOT NULL DEFAULT 5,
-        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        updated_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        created_at DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME()),
+        updated_at DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME()),
         CONSTRAINT FK_review_product FOREIGN KEY (productid) REFERENCES dbo.product(product_id) ON DELETE CASCADE,
         CONSTRAINT FK_review_user FOREIGN KEY (userid) REFERENCES dbo.[user](user_id) ON DELETE SET NULL,
         CONSTRAINT CK_review_star CHECK (star >= 1 AND star <= 5)

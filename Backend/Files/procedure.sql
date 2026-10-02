@@ -1219,7 +1219,7 @@ BEGIN
             VALUES (@CartId, @ProductId, @Quantity);
         END
 
-        UPDATE dbo.cart SET updated_at = SYSUTCDATETIME() WHERE cart_id = @CartId;
+        UPDATE dbo.cart SET updated_at = DATEADD(minute, 330, SYSUTCDATETIME()) WHERE cart_id = @CartId;
 
         SELECT @CartId AS cart_id, @ProductId AS product_id, 'Product added to cart successfully' AS [Message];
         RETURN;
@@ -1245,7 +1245,7 @@ BEGIN
             SET quantity = @Quantity
             WHERE cart_id = @CartId AND product_id = @ProductId;
 
-            UPDATE dbo.cart SET updated_at = SYSUTCDATETIME() WHERE cart_id = @CartId;
+            UPDATE dbo.cart SET updated_at = DATEADD(minute, 330, SYSUTCDATETIME()) WHERE cart_id = @CartId;
             SELECT @CartId AS cart_id, @ProductId AS product_id, @Quantity AS quantity, 'Quantity updated successfully' AS [Message];
         END
         RETURN;
@@ -1271,7 +1271,7 @@ BEGIN
             SELECT @CartId AS cart_id, 'Cart cleared completely' AS [Message];
         END
 
-        UPDATE dbo.cart SET updated_at = SYSUTCDATETIME() WHERE cart_id = @CartId;
+        UPDATE dbo.cart SET updated_at = DATEADD(minute, 330, SYSUTCDATETIME()) WHERE cart_id = @CartId;
         RETURN;
     END
 
@@ -1341,7 +1341,7 @@ BEGIN
             SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE user_id = @UserId ORDER BY cart_id DESC;
             IF @CartId IS NULL
             BEGIN
-                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (@UserId, NULL, SYSDATETIME());
+                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (@UserId, NULL, DATEADD(minute, 330, SYSUTCDATETIME()));
                 SET @CartId = SCOPE_IDENTITY();
             END
         END
@@ -1350,7 +1350,7 @@ BEGIN
             SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE guest_token = @GuestToken ORDER BY cart_id DESC;
             IF @CartId IS NULL
             BEGIN
-                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (NULL, @GuestToken, SYSDATETIME());
+                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (NULL, @GuestToken, DATEADD(minute, 330, SYSUTCDATETIME()));
                 SET @CartId = SCOPE_IDENTITY();
             END
         END
@@ -1405,10 +1405,10 @@ BEGIN
         ELSE
         BEGIN
             INSERT INTO dbo.cart_item (cart_id, product_id, quantity, created_at)
-            VALUES (@CartId, @ProductId, @Quantity, SYSDATETIME());
+            VALUES (@CartId, @ProductId, @Quantity, DATEADD(minute, 330, SYSUTCDATETIME()));
         END
 
-        UPDATE dbo.cart SET updated_at = SYSDATETIME() WHERE cart_id = @CartId;
+        UPDATE dbo.cart SET updated_at = DATEADD(minute, 330, SYSUTCDATETIME()) WHERE cart_id = @CartId;
 
         DECLARE @RetItemId INT;
         SELECT TOP 1 @RetItemId = cart_item_id FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId;
@@ -1442,7 +1442,7 @@ BEGIN
         END
 
         IF @CartId IS NOT NULL
-            UPDATE dbo.cart SET updated_at = SYSDATETIME() WHERE cart_id = @CartId;
+            UPDATE dbo.cart SET updated_at = DATEADD(minute, 330, SYSUTCDATETIME()) WHERE cart_id = @CartId;
         RETURN;
     END
 
@@ -1582,7 +1582,7 @@ BEGIN
             IF @UserId IS NULL
             BEGIN
                 INSERT INTO dbo.[user] (full_name, phone, role, created_at)
-                VALUES (COALESCE(@CustomerName, 'Valued Patron'), COALESCE(@CustomerPhone, '0000000000'), 'CUSTOMER', SYSUTCDATETIME());
+                VALUES (COALESCE(@CustomerName, 'Valued Patron'), COALESCE(@CustomerPhone, '0000000000'), 'CUSTOMER', DATEADD(minute, 330, SYSUTCDATETIME()));
                 SET @UserId = SCOPE_IDENTITY();
             END
 
@@ -1597,7 +1597,7 @@ BEGIN
 
         -- Generate Order Number if not provided
         IF @OrderNumber IS NULL OR @OrderNumber = ''
-            SET @OrderNumber = 'SH-' + CONVERT(VARCHAR(8), GETDATE(), 112) + '-' + RIGHT(CAST(NEWID() AS VARCHAR(36)), 4);
+            SET @OrderNumber = 'SH-' + CONVERT(VARCHAR(8), DATEADD(minute, 330, SYSUTCDATETIME()), 112) + '-' + RIGHT(CAST(NEWID() AS VARCHAR(36)), 4);
 
         -- Check if items are passed in JSON
         DECLARE @HasJsonItems BIT = 0;
@@ -1654,7 +1654,7 @@ BEGIN
         BEGIN TRY
             -- 1. Insert into orders
             INSERT INTO dbo.orders (order_number, user_id, address_id, total_amount, discount_amount, final_payable, payment_status, created_at)
-            VALUES (@OrderNumber, @UserId, @AddressId, @TotalAmount, @DiscountAmount, @FinalPayable, @PaymentStatus, SYSDATETIME());
+            VALUES (@OrderNumber, @UserId, @AddressId, @TotalAmount, @DiscountAmount, @FinalPayable, @PaymentStatus, DATEADD(minute, 330, SYSUTCDATETIME()));
 
             DECLARE @NewOrderId INT = SCOPE_IDENTITY();
 
@@ -2072,7 +2072,7 @@ BEGIN
         END
 
         INSERT INTO dbo.company ([name], [address], city, [state], pincode, gst_no, pan_card, contact_number, email, created_at, updated_at)
-        VALUES (@Name, @Address, COALESCE(@City, 'Ahmedabad'), COALESCE(@State, 'Gujarat'), COALESCE(@Pincode, '380058'), @GstNo, @PanCard, @ContactNumber, @Email, SYSUTCDATETIME(), SYSUTCDATETIME());
+        VALUES (@Name, @Address, COALESCE(@City, 'Ahmedabad'), COALESCE(@State, 'Gujarat'), COALESCE(@Pincode, '380058'), @GstNo, @PanCard, @ContactNumber, @Email, DATEADD(minute, 330, SYSUTCDATETIME()), DATEADD(minute, 330, SYSUTCDATETIME()));
 
         SELECT SCOPE_IDENTITY() AS company_id, 'Company created successfully' AS message;
         RETURN;
@@ -2103,7 +2103,7 @@ BEGIN
             pan_card       = COALESCE(@PanCard, pan_card),
             contact_number = COALESCE(@ContactNumber, contact_number),
             email          = COALESCE(@Email, email),
-            updated_at     = SYSUTCDATETIME()
+            updated_at     = DATEADD(minute, 330, SYSUTCDATETIME())
         WHERE company_id = @TargetCompanyId;
 
         SELECT @TargetCompanyId AS company_id, 'Company updated successfully' AS message;
@@ -2241,15 +2241,15 @@ BEGIN
             USING (SELECT @TargetProductId AS productid, @TargetUserId AS userid) AS source
             ON (target.productid = source.productid AND target.userid = source.userid)
             WHEN MATCHED THEN
-                UPDATE SET createdAT = SYSUTCDATETIME()
+                UPDATE SET createdAT = DATEADD(minute, 330, SYSUTCDATETIME())
             WHEN NOT MATCHED THEN
                 INSERT (productid, userid, createdAT)
-                VALUES (source.productid, source.userid, SYSUTCDATETIME());
+                VALUES (source.productid, source.userid, DATEADD(minute, 330, SYSUTCDATETIME()));
         END
         ELSE
         BEGIN
             INSERT INTO dbo.viewed (productid, userid, createdAT)
-            VALUES (@TargetProductId, NULL, SYSUTCDATETIME());
+            VALUES (@TargetProductId, NULL, DATEADD(minute, 330, SYSUTCDATETIME()));
         END
 
         SELECT SCOPE_IDENTITY() AS viewid, 'Product view recorded successfully' AS message;
@@ -2393,7 +2393,7 @@ BEGIN
         END
 
         INSERT INTO dbo.review (productid, userid, description, photo, star, created_at, updated_at)
-        VALUES (@TargetProductId, @TargetUserId, @Description, @Photo, @Star, SYSUTCDATETIME(), SYSUTCDATETIME());
+        VALUES (@TargetProductId, @TargetUserId, @Description, @Photo, @Star, DATEADD(minute, 330, SYSUTCDATETIME()), DATEADD(minute, 330, SYSUTCDATETIME()));
 
         DECLARE @NewReviewId INT = SCOPE_IDENTITY();
 
@@ -2429,7 +2429,7 @@ BEGIN
             description = COALESCE(@Description, description),
             photo       = COALESCE(@Photo, photo),
             star        = COALESCE(@Star, star),
-            updated_at  = SYSUTCDATETIME()
+            updated_at  = DATEADD(minute, 330, SYSUTCDATETIME())
         WHERE reviewid = @TargetReviewId;
 
         SELECT @TargetReviewId AS reviewid, 'Review updated successfully' AS message;

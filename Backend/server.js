@@ -175,7 +175,7 @@ app.post('/api/custom-orders', upload.array('images', 10), async (req, res) => {
                 @customer_email,
                 1,
                 @image,
-                SYSUTCDATETIME()
+                DATEADD(minute, 330, SYSUTCDATETIME())
             );
         `;
 
@@ -881,9 +881,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
         // Generate 6-digit numeric OTP (fixed 123456 with 10 days validity for test phone 9999999999)
         const isPermanentTestNumber = cleanedPhone.includes('9999999999');
         const otp = isPermanentTestNumber ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = isPermanentTestNumber
-            ? new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) // 10 days
-            : new Date(Date.now() + 5 * 60 * 1000); // 5 mins
+        const expiryMinutes = isPermanentTestNumber ? (10 * 24 * 60) : 5;
 
         const pool = await poolPromise;
         if (!pool) {
@@ -892,7 +890,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
 
         // Clean up any previously expired OTPs from dbo.phone_otp before upserting
         try {
-            await pool.request().query('DELETE FROM dbo.phone_otp WHERE expires_at < SYSUTCDATETIME()');
+            await pool.request().query('DELETE FROM dbo.phone_otp WHERE expires_at < DATEADD(minute, 330, SYSUTCDATETIME())');
         } catch (cleanupErr) {
             console.warn('[Send OTP Cleanup Warning]:', cleanupErr.message);
         }
@@ -901,16 +899,16 @@ app.post('/api/auth/send-otp', async (req, res) => {
         await pool.request()
             .input('phone', sql.NVarChar(20), cleanedPhone)
             .input('otp_code', sql.NVarChar(10), otp)
-            .input('expires_at', sql.DateTime2, expiresAt)
+            .input('expiry_minutes', sql.Int, expiryMinutes)
             .query(`
                 MERGE dbo.phone_otp AS target
                 USING (SELECT @phone AS phone) AS source
                 ON (target.phone = source.phone)
                 WHEN MATCHED THEN
-                    UPDATE SET otp_code = @otp_code, expires_at = @expires_at, attempts = 0, created_at = SYSUTCDATETIME()
+                    UPDATE SET otp_code = @otp_code, expires_at = DATEADD(minute, 330 + @expiry_minutes, SYSUTCDATETIME()), attempts = 0, created_at = DATEADD(minute, 330, SYSUTCDATETIME())
                 WHEN NOT MATCHED THEN
                     INSERT (phone, otp_code, expires_at, attempts, created_at)
-                    VALUES (@phone, @otp_code, @expires_at, 0, SYSUTCDATETIME());
+                    VALUES (@phone, @otp_code, DATEADD(minute, 330 + @expiry_minutes, SYSUTCDATETIME()), 0, DATEADD(minute, 330, SYSUTCDATETIME()));
             `);
 
         // If permanent test account, return immediately without calling WhatsApp gateway
@@ -968,13 +966,13 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         await pool.request()
             .input('phone', sql.NVarChar(20), cleanedPhone)
             .input('rawPhone', sql.NVarChar(20), rawPhone)
-            .query('DELETE FROM dbo.phone_otp WHERE (phone = @phone OR phone = @rawPhone) AND expires_at < SYSUTCDATETIME()');
+            .query('DELETE FROM dbo.phone_otp WHERE (phone = @phone OR phone = @rawPhone) AND expires_at < DATEADD(minute, 330, SYSUTCDATETIME())');
 
         // Verify OTP against dbo.phone_otp
         const otpResult = await pool.request()
             .input('phone', sql.NVarChar(20), cleanedPhone)
             .input('rawPhone', sql.NVarChar(20), rawPhone)
-            .query('SELECT phone, otp_code, expires_at, attempts FROM dbo.phone_otp WHERE phone = @phone OR phone = @rawPhone');
+            .query('SELECT phone, otp_code, expires_at, attempts, CASE WHEN expires_at < DATEADD(minute, 330, SYSUTCDATETIME()) THEN 1 ELSE 0 END AS is_expired FROM dbo.phone_otp WHERE phone = @phone OR phone = @rawPhone');
 
         if (!otpResult.recordset || otpResult.recordset.length === 0) {
             return res.status(400).json({ success: false, error: 'No active OTP found for this phone number or code has expired. Please request a new code.' });
@@ -983,7 +981,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         const record = otpResult.recordset[0];
 
         // Check if expired
-        if (new Date() > new Date(record.expires_at)) {
+        if (record.is_expired === 1) {
             // Delete expired record immediately from dbo.phone_otp
             await pool.request()
                 .input('phone', sql.NVarChar(20), record.phone)
@@ -2020,7 +2018,7 @@ app.post('/api/admin/parameters', async (req, res) => {
                 SET default_theme = COALESCE(@default_theme, default_theme),
                     wp_api = COALESCE(@wp_api, wp_api),
                     current_festival = COALESCE(@current_festival, current_festival),
-                    updated_at = GETDATE();
+                    updated_at = DATEADD(minute, 330, SYSUTCDATETIME());
             `;
         } else {
             query = `
@@ -2117,7 +2115,7 @@ async function cleanupExpiredOtps() {
     try {
         const pool = await poolPromise;
         if (pool) {
-            const cleanupResult = await pool.request().query('DELETE FROM dbo.phone_otp WHERE expires_at < SYSUTCDATETIME()');
+            const cleanupResult = await pool.request().query('DELETE FROM dbo.phone_otp WHERE expires_at < DATEADD(minute, 330, SYSUTCDATETIME())');
             if (cleanupResult.rowsAffected && cleanupResult.rowsAffected[0] > 0) {
                 console.log(`[OTP Auto-Cleanup] Purged ${cleanupResult.rowsAffected[0]} expired OTP record(s) from dbo.phone_otp.`);
             }
