@@ -50,7 +50,7 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
   const slide = SLIDES[currentSlide];
 
   return (
-    <div className="relative w-full h-[300px] sm:h-[350px] md:h-[390px] lg:h-[420px] bg-[#1A1A1A] overflow-hidden border-b-2 border-[#D4AF37]/40">
+    <div className="relative w-full min-h-[340px] h-[340px] sm:h-[380px] md:h-[420px] lg:h-[460px] xl:h-[500px] bg-[#1A1A1A] overflow-hidden border-b-2 border-[#D4AF37]/40">
       {/* Background Image with Overlay */}
       {SLIDES.map((item, idx) => (
         <div
@@ -63,29 +63,29 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
             alt={item.title}
             className="w-full h-full object-cover object-center brightness-60"
           />
-          <div className="absolute inset-0 bg-linear-to-r from-black/80 via-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-r from-black/85 via-black/55 to-transparent" />
         </div>
       ))}
 
       {/* Content Container */}
-      <div className="relative max-w-7xl mx-auto h-full px-6 lg:px-8 flex items-center z-10">
-        <div className="max-w-2xl text-white space-y-2.5 sm:space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-500">
-          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md border border-[#D4AF37]/50 px-3 py-1 rounded-full">
-            <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span className="text-[10px] sm:text-xs font-bold tracking-widest text-[#D4AF37] uppercase">
+      <div className="relative max-w-7xl mx-auto h-full px-4 sm:px-8 lg:px-12 flex items-center z-10">
+        <div className="max-w-2xl text-white space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-500 py-4">
+          <div className="inline-flex items-center space-x-1.5 sm:space-x-2 bg-white/10 backdrop-blur-md border border-[#D4AF37]/50 px-2.5 sm:px-3 py-1 rounded-full">
+            <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#D4AF37]" />
+            <span className="text-[9px] sm:text-xs font-bold tracking-widest text-[#D4AF37] uppercase">
               {slide.tag}
             </span>
           </div>
 
-          <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold tracking-tight leading-snug text-silver-50">
+          <h1 className="font-serif text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold tracking-tight leading-snug text-silver-50">
             {slide.title}
           </h1>
 
-          <p className="text-xs sm:text-sm text-silver-300 font-normal max-w-lg leading-relaxed line-clamp-2">
+          <p className="text-xs sm:text-sm text-silver-300 font-normal max-w-lg leading-relaxed line-clamp-2 sm:line-clamp-none">
             {slide.subtitle}
           </p>
 
-          <div className="pt-2 sm:pt-3 flex flex-wrap gap-3 sm:gap-4 items-center">
+          <div className="pt-1.5 sm:pt-3 flex flex-wrap gap-2.5 sm:gap-4 items-center">
             <button
               onClick={() => {
                 if (slide.categoryId === "custom-gifting") {
@@ -94,44 +94,44 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
                   onNavigateCategory(slide.categoryId);
                 }
               }}
-              className="px-6 py-2.5 sm:px-7 sm:py-3 bg-linear-to-r from-[#D4AF37] to-[#AA820A] hover:from-[#E6CA65] hover:to-[#D4AF37] text-black font-bold text-xs sm:text-sm rounded-lg transition-all flex items-center space-x-2 group cursor-pointer"
+              className="px-5 py-2 sm:px-7 sm:py-3 bg-linear-to-r from-[#D4AF37] to-[#AA820A] hover:from-[#E6CA65] hover:to-[#D4AF37] text-black font-bold text-xs sm:text-sm rounded-lg transition-all flex items-center space-x-2 group cursor-pointer shadow-md"
             >
               <span>{slide.ctaText}</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
             </button>
 
-            <div className="flex items-center space-x-2 text-[11px] sm:text-xs text-silver-300 border-l border-white/20 pl-3 sm:pl-4 py-1.5">
-              <Shield className="w-4 h-4 text-[#D4AF37]" />
-              <span>{slide.badge}</span>
+            <div className="flex items-center space-x-1.5 sm:space-x-2 text-[10px] sm:text-xs text-silver-300 border-l border-white/20 pl-2.5 sm:pl-4 py-1">
+              <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D4AF37] shrink-0" />
+              <span className="whitespace-nowrap">{slide.badge}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Slider Controls */}
+      {/* Slider Controls - hidden on mobile touch, visible on sm+ screens */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/40 hover:bg-white text-white hover:text-black transition-all border border-white/20"
+        className="hidden sm:flex absolute left-3 md:left-4 top-1/2 -translate-y-1/2 z-20 p-2.5 md:p-3 rounded-full bg-black/40 hover:bg-white text-white hover:text-black transition-all border border-white/20 items-center justify-center cursor-pointer shadow-md"
         aria-label="Previous Slide"
       >
-        <ChevronLeft className="w-5 h-5" />
+        <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
       </button>
 
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/40 hover:bg-white text-white hover:text-black transition-all border border-white/20"
+        className="hidden sm:flex absolute right-3 md:right-4 top-1/2 -translate-y-1/2 z-20 p-2.5 md:p-3 rounded-full bg-black/40 hover:bg-white text-white hover:text-black transition-all border border-white/20 items-center justify-center cursor-pointer shadow-md"
         aria-label="Next Slide"
       >
-        <ChevronRight className="w-5 h-5" />
+        <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
       </button>
 
       {/* Dots Indicator */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex space-x-2">
+      <div className="absolute bottom-2.5 sm:bottom-3 left-1/2 -translate-x-1/2 z-20 flex space-x-2">
         {SLIDES.map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrentSlide(idx)}
-            className={`h-2 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-8 bg-[#D4AF37]' : 'w-2 bg-white/40 hover:bg-white'
+            className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-6 sm:w-8 bg-[#D4AF37]' : 'w-1.5 sm:w-2 bg-white/40 hover:bg-white'
               }`}
           />
         ))}

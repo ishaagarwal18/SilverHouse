@@ -212,7 +212,7 @@ export default function ProductDetailPage({
             )}
 
             {/* Trust Stamps Row */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-silver-200">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-4 border-t border-silver-200">
               <div className="p-3 bg-white rounded-xl border border-silver-200 flex items-center space-x-3 text-xs">
                 <ShieldCheck className="w-6 h-6 text-[#D4AF37] shrink-0" />
                 <div>
@@ -547,6 +547,38 @@ export default function ProductDetailPage({
           wishlistIds={wishlistIds}
           className="mt-16 pt-10 border-t border-silver-200"
         />
+
+        {/* Mobile Sticky Add-to-Cart / Buy Now Bar */}
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-silver-200 p-3 md:hidden flex items-center justify-between gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] text-silver-500 font-medium uppercase tracking-wider">Total Price</span>
+            <span className="text-base font-bold text-[var(--th-primary)] font-outfit leading-tight truncate">
+              ₹{currentProduct.price.toLocaleString('en-IN')}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              disabled={currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0}
+              onClick={() => {
+                const hasCustomization = Boolean(customText && customText.trim()) || Boolean(uploadedImagePreview);
+                const customConfigPayload = hasCustomization
+                  ? {
+                      shrineName: currentProduct.isYatraLocket ? (currentProduct.name || 'Sacred Locket') : currentProduct.name,
+                      engravingText: customText ? customText.trim() : '',
+                      allUploadedImages: uploadedImagePreview ? [uploadedImagePreview] : []
+                    }
+                  : null;
+                onAddToCart(currentProduct, qty, customConfigPayload);
+              }}
+              className={`py-2.5 px-4 bg-[#1A1A1A] active:bg-[#D4AF37] text-white active:text-black font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+                currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4 shrink-0" />
+              <span>{currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0 ? 'Out of Stock' : 'Buy Now'}</span>
+            </button>
+          </div>
+        </div>
 
       </div>
     </div>

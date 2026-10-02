@@ -22,13 +22,13 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Top Newsletter Bar */}
-        <div className="p-8 rounded-3xl bg-white/5 backdrop-blur-md border border-[var(--th-accent)]/30 mb-16 flex flex-col lg:flex-row items-center justify-between gap-6 shadow-xl">
+        <div className="p-6 sm:p-8 rounded-3xl bg-white/5 backdrop-blur-md border border-[var(--th-accent)]/30 mb-12 sm:mb-16 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 shadow-xl">
           <div className="max-w-xl">
             <div className="flex items-center space-x-2 text-[var(--th-accent)] mb-1">
               <Sparkles className="w-4 h-4" />
-              <span className="text-xs font-bold uppercase tracking-wider">JOIN SILVERHOUSE INNER CIRCLE</span>
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">JOIN SILVERHOUSE INNER CIRCLE</span>
             </div>
-            <h3 className="font-serif text-2xl font-bold text-white">
+            <h3 className="font-serif text-xl sm:text-2xl font-bold text-white">
               Receive Festival Offers & Daily Silver Rate Updates
             </h3>
             <p className="text-xs text-white/70 mt-1">
@@ -36,7 +36,7 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
             </p>
           </div>
 
-          <form onSubmit={(e) => e.preventDefault()} className="flex w-full lg:w-auto space-x-2">
+          <form onSubmit={(e) => e.preventDefault()} className="flex flex-col sm:flex-row w-full lg:w-auto gap-2.5">
             <input
               type="email"
               placeholder="Enter your email address..."
@@ -44,7 +44,7 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
             />
             <button
               type="submit"
-              className="px-6 py-3 bg-[var(--th-accent)] hover:brightness-110 text-white font-bold text-xs rounded-xl transition-all shrink-0 flex items-center space-x-1 cursor-pointer"
+              className="px-6 py-3 bg-[var(--th-accent)] hover:brightness-110 text-white font-bold text-xs rounded-xl transition-all shrink-0 flex items-center justify-center space-x-1 cursor-pointer shadow-md"
             >
               <span>Subscribe</span>
               <ArrowRight className="w-4 h-4" />
@@ -53,7 +53,7 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
         </div>
 
         {/* Main Footer Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-white/10 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-12 border-b border-white/10 text-xs">
 
           {/* Col 1: Brand Info */}
           <div className="lg:col-span-2 space-y-4">

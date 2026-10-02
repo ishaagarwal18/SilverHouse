@@ -912,10 +912,206 @@
             color: #0284c7;
             border: 1px solid rgba(2, 132, 199, 0.3);
         }
+
+        /* Responsive Navigation & Mobile Drawer */
+        .btn-sidebar-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            font-size: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .btn-sidebar-toggle:hover {
+            background: var(--surface-hover);
+            transform: scale(1.05);
+        }
+
+        .btn-sidebar-close {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 16px;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-left: 6px;
+        }
+
+        .btn-sidebar-close:hover {
+            background: var(--surface-hover);
+            color: var(--text-main);
+        }
+
+        .sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .sidebar-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 280px;
+                max-width: 85vw;
+                z-index: 1000;
+                transform: translateX(-100%);
+                box-shadow: none;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            }
+
+            .btn-sidebar-toggle {
+                display: inline-flex;
+            }
+
+            .btn-sidebar-close {
+                display: inline-flex;
+            }
+
+            .top-bar {
+                padding: 16px 20px;
+                flex-wrap: wrap;
+                gap: 14px;
+            }
+
+            .content-area {
+                padding: 16px 20px;
+            }
+
+            .action-controls {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .top-bar {
+                padding: 12px 14px;
+            }
+
+            .title-box h1 {
+                font-size: 18px;
+            }
+
+            .title-box p {
+                font-size: 11.5px;
+            }
+
+            .content-area {
+                padding: 12px 14px;
+            }
+
+            .action-controls {
+                gap: 8px;
+            }
+
+            .action-controls .btn,
+            .action-controls select {
+                font-size: 12px;
+                padding: 8px 12px;
+                flex: 1 1 auto;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-group.full-width {
+                grid-column: span 1;
+            }
+
+            .modal-card {
+                width: 95vw;
+                max-height: 92vh;
+                border-radius: 12px;
+            }
+
+            .modal-header {
+                padding: 14px 16px;
+            }
+
+            .modal-body {
+                padding: 16px;
+            }
+
+            .modal-footer {
+                padding: 12px 16px;
+                flex-direction: column-reverse;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .bulk-action-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 12px 14px;
+            }
+
+            .bulk-action-btns {
+                width: 100%;
+            }
+
+            .bulk-action-btns .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            th, td {
+                padding: 10px 12px;
+                font-size: 12px;
+            }
+
+            .toast {
+                left: 14px;
+                right: 14px;
+                bottom: 14px;
+                justify-content: center;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 
 <body>
+
+    <!-- Responsive Sidebar Backdrop -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
 
     <!-- =========================================
        SIDEBAR NAVIGATION
@@ -931,6 +1127,9 @@
             </div>
             <button class="btn-theme-toggle" onclick="toggleTheme()" title="Toggle Light / Dark Mode">
                 <i class="ph-bold ph-moon" id="sidebarThemeIcon"></i>
+            </button>
+            <button class="btn-sidebar-close" onclick="toggleSidebar(false)" aria-label="Close sidebar">
+                <i class="ph-bold ph-x"></i>
             </button>
         </div>
 
@@ -1047,9 +1246,14 @@
   ========================================= -->
     <main class="main-wrapper">
         <header class="top-bar">
-            <div class="title-box">
-                <h1 id="pageTitle">PRODUCT</h1>
-                <p id="pageDescription">Manage, search, and edit database records</p>
+            <div style="display:flex; align-items:center; gap:14px;">
+                <button type="button" class="btn-sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation drawer">
+                    <i class="ph-bold ph-list"></i>
+                </button>
+                <div class="title-box">
+                    <h1 id="pageTitle">PRODUCT</h1>
+                    <p id="pageDescription">Manage, search, and edit database records</p>
+                </div>
             </div>
 
             <div class="action-controls">
@@ -1415,7 +1619,24 @@
         let currentSortCol = null;
         let currentSortDir = null; // 'asc' or 'desc' or null
 
+        function toggleSidebar(forceState) {
+            const sidebar = document.querySelector('.sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (!sidebar || !backdrop) return;
+            const shouldOpen = typeof forceState === 'boolean' ? forceState : !sidebar.classList.contains('open');
+            if (shouldOpen) {
+                sidebar.classList.add('open');
+                backdrop.classList.add('open');
+            } else {
+                sidebar.classList.remove('open');
+                backdrop.classList.remove('open');
+            }
+        }
+
         function navigate(procName) {
+            if (window.innerWidth <= 1024) {
+                toggleSidebar(false);
+            }
             activeEntity = procName;
             editId = null;
             highlightMap = {};

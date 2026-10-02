@@ -129,15 +129,18 @@ export default function ThemeSwitcher({ variant = 'floating' }) {
 
   // Variant: Floating Widget (fixed at bottom right)
   return (
-    <div className="fixed bottom-6 right-6 z-40" ref={dropdownRef}>
+    <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 z-30" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2.5 px-4 py-2.5 rounded-full bg-[var(--th-primary)] text-[var(--th-btn-text)] shadow-xl hover:opacity-95 transition-all duration-300 border-2 border-[var(--th-accent)] cursor-pointer group"
-        title="Theme Palette Selector"
+        className="flex items-center space-x-2 p-2.5 sm:px-3.5 sm:py-2 rounded-full bg-[var(--th-primary)] text-[var(--th-btn-text)] shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 border-2 border-[var(--th-accent)] cursor-pointer group shrink-0"
+        title={`Theme Palette: ${currentThemeObj.name}`}
+        aria-label="Switch Theme Palette"
       >
-        <Palette className="w-4 h-4 text-[var(--th-accent)] group-hover:rotate-45 transition-transform" />
-        <span className="text-xs font-bold tracking-wide hidden sm:inline">Theme: {currentThemeObj.name}</span>
-        <div className="flex items-center -space-x-1">
+        <Palette className="w-4 h-4 text-[var(--th-accent)] group-hover:rotate-45 transition-transform shrink-0" />
+        <span className="text-xs font-bold tracking-wide hidden lg:inline whitespace-nowrap">
+          {currentThemeObj.name}
+        </span>
+        <div className="flex items-center -space-x-1 shrink-0">
           <span
             className="w-2.5 h-2.5 rounded-full border border-white/60"
             style={{ backgroundColor: currentThemeObj.preview.primary }}
@@ -150,7 +153,7 @@ export default function ThemeSwitcher({ variant = 'floating' }) {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-14 right-0 w-80 sm:w-96 rounded-2xl p-4 bg-[var(--th-card)] border-2 border-[var(--th-border)] shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2">
+        <div className="absolute bottom-12 right-0 w-[calc(100vw-1.5rem)] sm:w-84 md:w-96 max-w-sm rounded-2xl p-4 bg-[var(--th-card)] border-2 border-[var(--th-border)] shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--th-border)]">
             <div className="flex items-center space-x-2 text-[var(--th-text-main)]">
               <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />

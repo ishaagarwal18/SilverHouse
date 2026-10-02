@@ -131,14 +131,14 @@ export default function SegmentedTabsShowcase({
           {/* Interactive Tabs and Slider Controls */}
           <div className="flex flex-wrap items-center gap-3">
             {/* Segmented Interactive Buttons */}
-            <div className="inline-flex p-1.5 rounded-full bg-[var(--th-card)] border border-[var(--th-border)] shadow-xs">
+            <div className="inline-flex p-1 sm:p-1.5 rounded-full bg-[var(--th-card)] border border-[var(--th-border)] shadow-xs max-w-full overflow-x-auto no-scrollbar">
               {TABS.map((tab) => {
                 const isActive = tab.id === activeTab;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`px-5 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-300 cursor-pointer ${isActive
+                    className={`px-3.5 sm:px-6 py-1.5 sm:py-2.5 rounded-full text-[11px] sm:text-xs font-bold tracking-wider uppercase transition-all duration-300 cursor-pointer whitespace-nowrap ${isActive
                       ? 'bg-[var(--th-primary)] text-white shadow-md'
                       : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)]'
                       }`}
@@ -213,7 +213,7 @@ export default function SegmentedTabsShowcase({
                   return (
                     <div
                       key={product.id}
-                      className="w-[260px] sm:w-[280px] lg:w-[300px] shrink-0 snap-start group/card relative flex flex-col justify-between bg-[var(--th-card)] rounded-2xl border border-[var(--th-border)] overflow-hidden hover:shadow-xl hover:border-[var(--th-accent)] transition-all duration-300"
+                      className="w-[210px] xs:w-[240px] sm:w-[280px] lg:w-[300px] shrink-0 snap-start group/card relative flex flex-col justify-between bg-[var(--th-card)] rounded-xl sm:rounded-2xl border border-[var(--th-border)] overflow-hidden hover:shadow-xl hover:border-[var(--th-accent)] transition-all duration-300"
                     >
                       {/* Image Container */}
                       <div className="relative aspect-square overflow-hidden bg-[var(--th-pedestal)]">

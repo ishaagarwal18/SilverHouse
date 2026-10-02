@@ -101,7 +101,7 @@ export default function TopSellerSection({
             return (
               <div
                 key={product.id}
-                className="w-[270px] sm:w-[290px] shrink-0 snap-start group relative flex flex-col justify-between bg-[var(--th-card)] rounded-2xl border border-[var(--th-border)] overflow-hidden hover:shadow-xl hover:border-[var(--th-accent)] transition-all duration-300"
+                className="w-[230px] xs:w-[250px] sm:w-[280px] md:w-[290px] shrink-0 snap-start group relative flex flex-col justify-between bg-[var(--th-card)] rounded-2xl border border-[var(--th-border)] overflow-hidden hover:shadow-xl hover:border-[var(--th-accent)] transition-all duration-300"
               >
                 {/* Image Container with Zoom & Ribbons */}
                 <div className="relative aspect-square overflow-hidden bg-[var(--th-pedestal)]">
@@ -112,18 +112,18 @@ export default function TopSellerSection({
                     onClick={() => onSelectProduct && onSelectProduct(product)}
                   />
 
-                  {/* Top Rank & Sold Ribbon Tag */}
-                  <div className="absolute top-3 left-3 z-10 flex flex-col space-y-1 items-start">
-                    <span className="bg-[var(--th-primary)] text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center space-x-1 border border-white/20">
-                      <Flame className="w-3 h-3 text-[var(--th-accent)] fill-[var(--th-accent)]" />
-                      <span>#{index + 1} Best Seller</span>
+                  {/* Top Rank & Sold Ribbon Tag - constrained so it never overlaps the heart */}
+                  <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 z-10 flex flex-col space-y-1 items-start max-w-[calc(100%-2.75rem)]">
+                    <span className="bg-[var(--th-primary)] text-white text-[9px] sm:text-[10px] font-extrabold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center space-x-1 border border-white/20 truncate">
+                      <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[var(--th-accent)] fill-[var(--th-accent)] shrink-0" />
+                      <span className="truncate">#{index + 1} Best Seller</span>
                     </span>
-                    <span className="bg-black/95 text-white border border-amber-400 text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg uppercase tracking-wider inline-flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
-                      <span className="text-amber-300 font-black">
+                    <span className="bg-black/95 text-white border border-amber-400 text-[9px] sm:text-[10px] font-black px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full shadow-lg uppercase tracking-wider inline-flex items-center gap-1 sm:gap-1.5 truncate">
+                      <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 fill-amber-400 shrink-0" />
+                      <span className="text-amber-300 font-black truncate">
                         {product.purityCode === '999' || (product.purity && String(product.purity).includes('999')) ? '999 PURE' : '925 STERLING'}
                       </span>
-                      <span className="text-white font-extrabold">SILVER</span>
+                      <span className="text-white font-extrabold hidden xs:inline">SILVER</span>
                     </span>
                   </div>
 
@@ -133,7 +133,7 @@ export default function TopSellerSection({
                       e.stopPropagation();
                       onToggleWishlist && onToggleWishlist(product);
                     }}
-                    className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${isWishlisted
+                    className={`absolute top-2.5 sm:top-3 right-2.5 sm:right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${isWishlisted
                       ? 'bg-rose-100 text-rose-700 shadow-md border border-rose-300'
                       : 'bg-[var(--th-card)]/90 text-[var(--th-text-muted)] hover:text-[var(--th-primary)] hover:bg-[var(--th-card)] shadow-xs border border-[var(--th-border)]'
                       }`}

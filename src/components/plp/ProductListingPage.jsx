@@ -892,21 +892,39 @@ export default function ProductListingPage({
           </div>
         </div>
 
+        {/* Mobile Filter Backdrop */}
+        {isMobileFilterOpen && (
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden animate-in fade-in"
+            onClick={() => setIsMobileFilterOpen(false)}
+          />
+        )}
+
         {/* Main Content Layout: Sidebar + Grid */}
         <div className="flex gap-8 items-start">
 
-          {/* Interactive Sidebar Filters (Desktop) */}
-          <aside className={`w-72 bg-[var(--th-card)] p-6 rounded-2xl border border-[var(--th-border)] shadow-sm space-y-6 shrink-0 transition-colors ${isMobileFilterOpen ? 'fixed inset-y-0 left-0 z-50 overflow-y-auto w-80 shadow-2xl block bg-[var(--th-card)]' : 'hidden lg:block sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto'
+          {/* Interactive Sidebar Filters (Desktop & Mobile Drawer) */}
+          <aside className={`w-72 bg-[var(--th-card)] p-6 rounded-2xl border border-[var(--th-border)] shadow-sm space-y-6 shrink-0 transition-colors ${isMobileFilterOpen ? 'fixed inset-y-0 left-0 z-50 overflow-y-auto w-80 max-w-[85vw] shadow-2xl block bg-[var(--th-card)]' : 'hidden lg:block sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto'
             }`}>
             <div className="flex items-center justify-between border-b border-[var(--th-border-subtle)] pb-3">
               <h3 className="font-serif font-bold text-base text-[var(--th-text-main)] flex items-center space-x-2">
                 <Filter className="w-4 h-4 text-[var(--th-primary)]" />
                 <span>Filter Catalog</span>
               </h3>
-              <button onClick={resetFilters} className="text-xs text-[var(--th-primary)] hover:text-[var(--th-primary-hover)] hover:underline font-semibold flex items-center space-x-1">
-                <RotateCcw className="w-3 h-3" />
-                <span>Reset</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button onClick={resetFilters} className="text-xs text-[var(--th-primary)] hover:text-[var(--th-primary-hover)] hover:underline font-semibold flex items-center space-x-1 cursor-pointer">
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="lg:hidden p-1 rounded-lg text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] cursor-pointer"
+                  aria-label="Close filters"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Search Keyword Filter */}
@@ -1339,9 +1357,9 @@ export default function ProductListingPage({
                 </div>
               </div>
             ) : (
-              <div className={`grid gap-6 ${gridCols === 2 ? 'grid-cols-1 sm:grid-cols-2' :
-                gridCols === 3 ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3' :
-                  'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4'
+              <div className={`grid gap-3 sm:gap-6 ${gridCols === 2 ? 'grid-cols-2' :
+                gridCols === 3 ? 'grid-cols-2 md:grid-cols-3' :
+                  'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4'
                 }`}>
                 {filteredProducts.map((product) => {
                   const isWishlisted = wishlistIds.some(id => String(id) === String(product.id));
@@ -1354,7 +1372,7 @@ export default function ProductListingPage({
                   return (
                     <div
                       key={product.id}
-                      className="group bg-[var(--th-card)] rounded-2xl border border-[var(--th-border)] hover:border-[var(--th-primary)] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative"
+                      className="group bg-[var(--th-card)] rounded-xl sm:rounded-2xl border border-[var(--th-border)] hover:border-[var(--th-primary)] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative"
                     >
                       {/* Image Preview */}
                       <div
@@ -1383,23 +1401,23 @@ export default function ProductListingPage({
                         )}
 
                         {/* Top Badges */}
-                        <div className="absolute top-3 left-3 flex flex-col space-y-1.5 z-10 items-start">
-                          <span className="bg-black/95 text-white border border-amber-400 text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg uppercase tracking-wider inline-flex items-center gap-1.5">
-                            <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+                        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col space-y-1 sm:space-y-1.5 z-10 items-start">
+                          <span className="bg-black/95 text-white border border-amber-400 text-[8px] sm:text-[10px] font-black px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-lg uppercase tracking-wider inline-flex items-center gap-1 sm:gap-1.5">
+                            <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 fill-amber-400 shrink-0" />
                             <span className="text-amber-300 font-black">
-                              {product.purityCode === '999' || (product.purity && String(product.purity).includes('999')) ? '999 PURE' : '925 STERLING'}
+                              {product.purityCode === '999' || (product.purity && String(product.purity).includes('999')) ? '999' : '925'}
                             </span>
-                            <span className="text-white font-extrabold">SILVER</span>
+                            <span className="text-white font-extrabold hidden xs:inline">SILVER</span>
                           </span>
 
                           {product.color && product.color !== 'Silver' && (
-                            <span className="bg-[var(--th-card)] text-[var(--th-text-main)] border border-[var(--th-border)] text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
+                            <span className="bg-[var(--th-card)] text-[var(--th-text-main)] border border-[var(--th-border)] text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full shadow-xs uppercase tracking-wider">
                               {product.color}
                             </span>
                           )}
 
                           {discountPct !== null && discountPct > 0 && (
-                            <span className="bg-[#DC2626] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                            <span className="bg-[#DC2626] text-white text-[8.5px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full shadow-xs">
                               {discountPct}% OFF
                             </span>
                           )}
@@ -1411,16 +1429,16 @@ export default function ProductListingPage({
                             e.stopPropagation();
                             onToggleWishlist(product);
                           }}
-                          className={`absolute top-3 right-3 z-10 p-2 rounded-full backdrop-blur-md transition-all shadow-md ${isWishlisted
+                          className={`absolute top-2 right-2 sm:top-3 sm:right-3 z-10 p-1.5 sm:p-2 rounded-full backdrop-blur-md transition-all shadow-md ${isWishlisted
                             ? 'bg-rose-600 text-white'
                             : 'bg-white/90 text-[var(--th-primary)] hover:bg-[var(--th-primary)] hover:text-white'
                             }`}
                         >
-                          <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-white' : ''}`} />
+                          <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWishlisted ? 'fill-white' : ''}`} />
                         </button>
 
-                        {/* Quick View Button */}
-                        <div className="absolute inset-x-4 bottom-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        {/* Quick View Button (Desktop only) */}
+                        <div className="hidden sm:block absolute inset-x-4 bottom-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1435,16 +1453,16 @@ export default function ProductListingPage({
                       </div>
 
                       {/* Info Area */}
-                      <div className="p-4 flex-1 flex flex-col justify-between">
+                      <div className="p-2.5 sm:p-4 flex-1 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center justify-between text-[11px] text-[var(--th-text-muted)] mb-1">
-                            <span className="font-semibold text-[var(--th-accent)] uppercase tracking-wider">
+                          <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-[var(--th-text-muted)] mb-1">
+                            <span className="font-semibold text-[var(--th-accent)] uppercase tracking-wider truncate mr-1">
                               {product.purity || (product.purityCode === '999' ? '999 Pure' : '925 Sterling')} • {product.weightGrams}g
                             </span>
-                            <div className="flex items-center space-x-1 text-[var(--th-accent)]">
+                            <div className="flex items-center space-x-0.5 sm:space-x-1 text-[var(--th-accent)] shrink-0">
                               <Star className="w-3 h-3 fill-[var(--th-accent)] text-[var(--th-accent)]" />
-                              <span className="font-bold text-[var(--th-text-main)]">{product.rating}</span>
-                              <span className="text-[10px] text-[var(--th-text-muted)]">
+                              <span className="font-bold text-[var(--th-text-main)] text-[10px] sm:text-xs">{product.rating}</span>
+                              <span className="text-[9px] sm:text-[10px] text-[var(--th-text-muted)] hidden xs:inline">
                                 ({product.reviewsCount !== undefined ? product.reviewsCount : (product.review !== undefined ? product.review : 0)})
                               </span>
                             </div>
@@ -1452,14 +1470,14 @@ export default function ProductListingPage({
 
                           <h3
                             onClick={() => onSelectProduct(product)}
-                            className="font-semibold text-sm text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-colors line-clamp-2 cursor-pointer mb-1.5"
+                            className="font-semibold text-xs sm:text-sm text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-colors line-clamp-2 cursor-pointer mb-1 sm:mb-1.5"
                           >
                             {product.name}
                           </h3>
 
                           {/* Live Stock & Sold Badge */}
-                          <div className="flex items-center justify-between text-[11px] mb-2">
-                            <span className={`font-semibold ${product.quantity > 5 ? 'text-emerald-600 dark:text-emerald-400' : (product.quantity > 0 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-rose-500 font-bold')
+                          <div className="flex items-center justify-between text-[10px] sm:text-[11px] mb-1.5 sm:mb-2">
+                            <span className={`font-semibold truncate ${product.quantity > 5 ? 'text-emerald-600 dark:text-emerald-400' : (product.quantity > 0 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-rose-500 font-bold')
                               }`}>
                               {product.quantity > 5 ? `In Stock (${product.quantity})` : (product.quantity > 0 ? `Only ${product.quantity} left!` : 'Sold Out')}
                             </span>
@@ -1467,12 +1485,12 @@ export default function ProductListingPage({
                         </div>
 
                         <div>
-                          <div className="flex items-baseline space-x-2 my-2">
-                            <span className="text-base font-bold text-[var(--th-primary)] font-outfit tracking-tight">
+                          <div className="flex items-baseline space-x-1.5 sm:space-x-2 my-1.5 sm:my-2">
+                            <span className="text-sm sm:text-base font-bold text-[var(--th-primary)] font-outfit tracking-tight">
                               ₹{product.price.toLocaleString('en-IN')}
                             </span>
                             {product.originalPrice && product.originalPrice > product.price && (
-                              <span className="text-xs text-[var(--th-text-muted)] line-through font-outfit font-medium">
+                              <span className="text-[10px] sm:text-xs text-[var(--th-text-muted)] line-through font-outfit font-medium">
                                 ₹{product.originalPrice.toLocaleString('en-IN')}
                               </span>
                             )}
@@ -1481,19 +1499,19 @@ export default function ProductListingPage({
                           {product.isYatraLocket ? (
                             <button
                               onClick={onNavigateYatraCustomizer}
-                              className="w-full py-2.5 bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] hover:from-[var(--th-accent)] hover:to-[#9A650C] text-white hover:text-white font-semibold text-xs rounded-lg transition-all flex items-center justify-center space-x-1.5"
+                              className="w-full py-2 sm:py-2.5 bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] hover:from-[var(--th-accent)] hover:to-[#9A650C] text-white hover:text-white font-semibold text-[11px] sm:text-xs rounded-lg transition-all flex items-center justify-center space-x-1 sm:space-x-1.5"
                             >
-                              <Sparkles className="w-3.5 h-3.5 text-[var(--th-accent)]" />
-                              <span>Customize Locket</span>
+                              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--th-accent)] shrink-0" />
+                              <span>Customize</span>
                             </button>
                           ) : (
                             <button
                               disabled={product.quantity !== undefined && product.quantity !== null && product.quantity <= 0}
                               onClick={() => onAddToCart(product, 1)}
-                              className={`w-full py-2.5 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center space-x-1.5 cursor-pointer shadow-xs hover:shadow-md ${product.quantity !== undefined && product.quantity !== null && product.quantity <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+                              className={`w-full py-2 sm:py-2.5 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-semibold text-[11px] sm:text-xs rounded-lg transition-colors flex items-center justify-center space-x-1 sm:space-x-1.5 cursor-pointer shadow-xs hover:shadow-md ${product.quantity !== undefined && product.quantity !== null && product.quantity <= 0 ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
                             >
-                              <ShoppingBag className="w-3.5 h-3.5" />
+                              <ShoppingBag className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                               <span>{product.quantity !== undefined && product.quantity !== null && product.quantity <= 0 ? 'Sold Out' : 'Add to Cart'}</span>
                             </button>
                           )}

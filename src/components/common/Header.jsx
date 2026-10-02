@@ -253,7 +253,7 @@ export default function Header({
           </div>
 
           {/* Center: Integrated Luxury Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-md lg:max-w-lg xl:max-w-xl mx-2">
+          <div className="hidden md:flex flex-1 min-w-0 max-w-md lg:max-w-lg xl:max-w-xl mx-2">
             <div
               onClick={onOpenSearch}
               className="w-full h-11 px-4 rounded-full bg-[var(--th-card)] border-2 border-[var(--th-border)] hover:border-[var(--th-accent)] shadow-xs hover:shadow-md flex items-center justify-between cursor-pointer transition-all duration-300 group"
@@ -280,7 +280,7 @@ export default function Header({
           </div>
 
           {/* Right Action Utilities (Back Button, Theme Switcher, Pincode, Stores, Account, Wishlist, Cart) */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
 
             {/* Navbar Back Button (Visible in navbar when navigated away from home without shifting brand logo) */}
             {location.pathname !== '/' && (
@@ -491,11 +491,11 @@ export default function Header({
               ) : (
                 <button
                   onClick={() => navigate('/login')}
-                  className="p-1.5 sm:px-2.5 sm:py-1.5 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer group border border-transparent hover:border-[var(--th-border)]"
+                  className="p-1.5 sm:px-2.5 sm:py-1.5 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer group border border-transparent hover:border-[var(--th-border)] shrink-0"
                   title="Sign In / Register"
                 >
                   <User className="w-5 h-5 text-[var(--th-accent)] group-hover:scale-110 transition-transform shrink-0" />
-                  <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-wider text-[var(--th-text-main)]">
+                  <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-wider text-[var(--th-text-main)] whitespace-nowrap">
                     Sign In
                   </span>
                 </button>
@@ -625,7 +625,7 @@ export default function Header({
         </div>
 
         {/* Secondary Row: Desktop Category Navigation Links */}
-        <nav className="hidden lg:flex items-center justify-center space-x-2 xl:space-x-4 border-t border-[var(--th-border)]/80 py-2.5">
+        <nav className="hidden lg:flex items-center justify-start xl:justify-center space-x-1 xl:space-x-3 border-t border-[var(--th-border)]/80 py-2.5 overflow-x-auto no-scrollbar">
 
           {/* SHOP ALL (MegaMenu Trigger) */}
           <div
