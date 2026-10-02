@@ -2474,7 +2474,11 @@ GO
 -- =========================================================================
 -- PROCEDURE 15: SP_GETDATA
 -- =========================================================================
-CREATE OR ALTER PROCEDURE dbo.SP_GETDATA
+IF OBJECT_ID('dbo.SP_GETDATA', 'P') IS NOT NULL 
+    DROP PROCEDURE dbo.SP_GETDATA;
+GO
+
+CREATE PROCEDURE dbo.SP_GETDATA
     @proc_name   NVARCHAR(50),
     @Opr         NVARCHAR(10),
     @JSONstr     NVARCHAR(MAX) = NULL,
