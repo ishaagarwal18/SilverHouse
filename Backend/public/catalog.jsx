@@ -1,22 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
+import React, { useEffect, useRef } from 'react';
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SilverHouse Studio - Executive Inventory & Product Catalog Management</title>
-
-    <!-- Google Fonts & Phosphor Icons -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Chart.js for P&L and Financial Analytics Visualizations -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="/admin-auth.js?v=2.0"></script>
-
-    <style>
+const COMPONENT_STYLES = `
         :root {
             /* HIGH-CONTRAST LIGHT LUXURY PALETTE (Cashmere Sand & Royal Midnight Sapphire) */
             --bg: #F8F5F0;
@@ -1394,11 +1378,9 @@
             border-radius: 10px;
             margin-left: 2px;
         }
-    </style>
-</head>
+    `;
 
-<body>
-    <!-- ================= SIDEBAR FILTER & NAVIGATION ================= -->
+const COMPONENT_MARKUP = `<!-- ================= SIDEBAR FILTER & NAVIGATION ================= -->
     <aside class="sidebar-filter">
         <div class="brand-header">
             <a href="/admin" class="brand-box" title="Return to Admin Studio">
@@ -1894,8 +1876,15 @@
         <span id="toastMsg">Action completed successfully</span>
     </div>
 
-    <!-- ================= PRODUCTION JAVASCRIPT ================= -->
-    <script>
+    <!-- ================= PRODUCTION JAVASCRIPT ================= -->`;
+
+export default function InventoryCatalog() {
+    const rootRef = useRef(null);
+
+    useEffect(() => {
+        // Execute component script & expose functions to window for DOM event handlers
+        (function() {
+
         // Global State
         let allProducts = [];
         let filteredProducts = [];
@@ -3066,7 +3055,66 @@
         initTheme();
         fetchInitialData();
         checkPendingCustomOrdersBadge();
-    </script>
-</body>
+    
 
-</html>
+            // Expose declared functions to window for inline HTML onclick/onchange/oninput handlers
+            if (typeof getSafeImageUrl !== 'undefined') window.getSafeImageUrl = getSafeImageUrl;
+            if (typeof initTheme !== 'undefined') window.initTheme = initTheme;
+            if (typeof toggleTheme !== 'undefined') window.toggleTheme = toggleTheme;
+            if (typeof applyTheme !== 'undefined') window.applyTheme = applyTheme;
+            if (typeof switchView !== 'undefined') window.switchView = switchView;
+            if (typeof showToast !== 'undefined') window.showToast = showToast;
+            if (typeof fetchInitialData !== 'undefined') window.fetchInitialData = fetchInitialData;
+            if (typeof fetchCatalogData !== 'undefined') window.fetchCatalogData = fetchCatalogData;
+            if (typeof updateKpiMetrics !== 'undefined') window.updateKpiMetrics = updateKpiMetrics;
+            if (typeof populateFilterSidebarOptions !== 'undefined') window.populateFilterSidebarOptions = populateFilterSidebarOptions;
+            if (typeof setStockStatus !== 'undefined') window.setStockStatus = setStockStatus;
+            if (typeof setAudience !== 'undefined') window.setAudience = setAudience;
+            if (typeof setCategory !== 'undefined') window.setCategory = setCategory;
+            if (typeof setMake !== 'undefined') window.setMake = setMake;
+            if (typeof setColor !== 'undefined') window.setColor = setColor;
+            if (typeof setPurity !== 'undefined') window.setPurity = setPurity;
+            if (typeof onSortChange !== 'undefined') window.onSortChange = onSortChange;
+            if (typeof onDualPriceInput !== 'undefined') window.onDualPriceInput = onDualPriceInput;
+            if (typeof resetFilters !== 'undefined') window.resetFilters = resetFilters;
+            if (typeof applyAllFilters !== 'undefined') window.applyAllFilters = applyAllFilters;
+            if (typeof renderProducts !== 'undefined') window.renderProducts = renderProducts;
+            if (typeof renderCardsGrid !== 'undefined') window.renderCardsGrid = renderCardsGrid;
+            if (typeof renderDenseTable !== 'undefined') window.renderDenseTable = renderDenseTable;
+            if (typeof quickAdjustStock !== 'undefined') window.quickAdjustStock = quickAdjustStock;
+            if (typeof quickSetStock !== 'undefined') window.quickSetStock = quickSetStock;
+            if (typeof updateProductStockOnServer !== 'undefined') window.updateProductStockOnServer = updateProductStockOnServer;
+            if (typeof toggleProductSelection !== 'undefined') window.toggleProductSelection = toggleProductSelection;
+            if (typeof toggleSelectAllInView !== 'undefined') window.toggleSelectAllInView = toggleSelectAllInView;
+            if (typeof clearSelection !== 'undefined') window.clearSelection = clearSelection;
+            if (typeof updateBulkActionBar !== 'undefined') window.updateBulkActionBar = updateBulkActionBar;
+            if (typeof promptDeleteProduct !== 'undefined') window.promptDeleteProduct = promptDeleteProduct;
+            if (typeof promptBulkDelete !== 'undefined') window.promptBulkDelete = promptBulkDelete;
+            if (typeof closeDeleteModal !== 'undefined') window.closeDeleteModal = closeDeleteModal;
+            if (typeof executeConfirmedDelete !== 'undefined') window.executeConfirmedDelete = executeConfirmedDelete;
+            if (typeof populateModalSelects !== 'undefined') window.populateModalSelects = populateModalSelects;
+            if (typeof openProductAddModal !== 'undefined') window.openProductAddModal = openProductAddModal;
+            if (typeof openProductEditModal !== 'undefined') window.openProductEditModal = openProductEditModal;
+            if (typeof closeProductModal !== 'undefined') window.closeProductModal = closeProductModal;
+            if (typeof updateModalImagePreview !== 'undefined') window.updateModalImagePreview = updateModalImagePreview;
+            if (typeof handleImageUpload !== 'undefined') window.handleImageUpload = handleImageUpload;
+            if (typeof calculateModalMargin !== 'undefined') window.calculateModalMargin = calculateModalMargin;
+            if (typeof handleProductFormSubmit !== 'undefined') window.handleProductFormSubmit = handleProductFormSubmit;
+            if (typeof checkPendingCustomOrdersBadge !== 'undefined') window.checkPendingCustomOrdersBadge = checkPendingCustomOrdersBadge;
+        })();
+    }, []);
+
+    return (
+        <div ref={rootRef} className="inventorycatalog-root-container" style={{ width: '100%', height: '100%' }}>
+            <style dangerouslySetInnerHTML={{ __html: COMPONENT_STYLES }} />
+            <div dangerouslySetInnerHTML={{ __html: COMPONENT_MARKUP }} style={{ width: '100%', height: '100%' }} />
+        </div>
+    );
+}
+
+if (typeof window !== 'undefined' && document.getElementById('root')) {
+    const rootElement = document.getElementById('root');
+    if (window.ReactDOM && window.ReactDOM.createRoot) {
+        window.ReactDOM.createRoot(rootElement).render(<InventoryCatalog />);
+    }
+}

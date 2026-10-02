@@ -2049,8 +2049,13 @@ app.post('/api/admin/parameters', async (req, res) => {
     }
 });
 
-// 2. Static assets & HTML views
-// Serve Backend/public (uploads, images, html, scripts)
+// Ensure .jsx files are served with application/javascript MIME type
+if (express.static.mime && express.static.mime.define) {
+    express.static.mime.define({ 'application/javascript': ['jsx'] });
+}
+
+// 2. Static assets & JSX views
+// Serve Backend/public (uploads, images, jsx, scripts)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
@@ -2059,43 +2064,87 @@ app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 app.use('/images', express.static(path.join(__dirname, '..', 'public', 'images')));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Universal JSX View Shell Renderer
+function renderJsxPage(res, jsxFileName, pageTitle = 'SilverHouse Studio') {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${pageTitle}</title>
+
+    <!-- Google Fonts & Phosphor Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="/admin-auth.js?v=2.0"></script>
+
+    <!-- React 18 & Babel Standalone to execute JSX views seamlessly -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body style="margin:0;padding:0;overflow:hidden;">
+    <div id="root"></div>
+    <script type="text/babel" data-type="module" src="/${jsxFileName}"></script>
+</body>
+</html>`);
+}
+
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+    renderJsxPage(res, 'admin.jsx', 'SilverHouse Studio Admin');
 });
 
 app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+    renderJsxPage(res, 'admin.jsx', 'SilverHouse Studio Admin');
 });
 
 app.get('/catalog', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'catalog.html'));
+    renderJsxPage(res, 'catalog.jsx', 'SilverHouse Studio - Inventory & Product Catalog');
 });
 
 app.get('/custom-orders', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'custom-orders.html'));
+    renderJsxPage(res, 'custom-orders.jsx', 'Custom Artisanal Orders | SilverHouse Admin');
 });
 
 app.get('/admin/custom-orders', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'custom-orders.html'));
+    renderJsxPage(res, 'custom-orders.jsx', 'Custom Artisanal Orders | SilverHouse Admin');
 });
 
 app.get('/analytics', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'analytics.html'));
+    renderJsxPage(res, 'analytics.jsx', 'Financial Analytics & P&L Dashboard | SilverHouse Studio');
 });
 
 app.get('/admin/analytics', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'analytics.html'));
+    renderJsxPage(res, 'analytics.jsx', 'Financial Analytics & P&L Dashboard | SilverHouse Studio');
 });
 
 app.get('/api/data', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+    renderJsxPage(res, 'admin.jsx', 'SilverHouse Studio Admin');
+});
+
+// Dynamic JSX view router for forms (product-form, category-form, make-master-form, image-form, product-image-form, etc.)
+app.get('/:page', (req, res, next) => {
+    const page = req.params.page;
+    let jsxName = page.endsWith('.jsx') ? page : `${page.replace(/\.html$/, '')}.jsx`;
+    const filePath = path.join(__dirname, 'public', jsxName);
+    if (fs.existsSync(filePath)) {
+        return renderJsxPage(res, jsxName, `SilverHouse - ${page.replace(/[-_]/g, ' ')}`);
+    }
+    next();
 });
 
 app.get('/api/:file', (req, res, next) => {
-    const file = req.params.file;
-    const filePath = path.join(__dirname, 'public', file);
-    if (file.endsWith('.html') && fs.existsSync(filePath)) {
-        return res.sendFile(filePath);
+    const file = req.params.file.replace(/\.html$/, '');
+    let jsxName = file.endsWith('.jsx') ? file : `${file}.jsx`;
+    const filePath = path.join(__dirname, 'public', jsxName);
+    if (fs.existsSync(filePath)) {
+        return renderJsxPage(res, jsxName, `SilverHouse - ${file.replace(/[-_]/g, ' ')}`);
     }
     next();
 });
