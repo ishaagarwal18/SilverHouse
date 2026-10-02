@@ -1,6 +1,24 @@
-import React, { useEffect, useRef } from 'react';
+<!DOCTYPE html>
+<html lang="en">
 
-const COMPONENT_STYLES = `
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SilverHouse Studio Admin</title>
+
+    <!-- SheetJS & Mammoth for file imports -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <!-- Google Fonts & Phosphor Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="/admin-auth.js?v=2.0"></script>
+
+    <style>
         :root {
             --bg: #f8fafc;
             --surface: #ffffff;
@@ -894,9 +912,12 @@ const COMPONENT_STYLES = `
             color: #0284c7;
             border: 1px solid rgba(2, 132, 199, 0.3);
         }
-    `;
+    </style>
+</head>
 
-const COMPONENT_MARKUP = `<!-- =========================================
+<body>
+
+    <!-- =========================================
        SIDEBAR NAVIGATION
   ========================================= -->
     <aside class="sidebar">
@@ -1166,15 +1187,9 @@ const COMPONENT_MARKUP = `<!-- =========================================
             <div id="lightboxThumbs"
                 style="display:flex; gap:10px; margin-top:14px; overflow-x:auto; max-width:86vw; padding:4px;"></div>
         </div>
-    </div>`;
+    </div>
 
-export default function AdminStudio() {
-    const rootRef = useRef(null);
-
-    useEffect(() => {
-        // Execute component script & expose functions to window for DOM event handlers
-        (function() {
-
+    <script>
         let activeEntity = 'product';
         let currentRows = [];
         let editId = null;
@@ -2975,62 +2990,7 @@ export default function AdminStudio() {
 
         // Initial load
         loadData();
-    
+    </script>
+</body>
 
-            // Expose declared functions to window for inline HTML onclick/onchange/oninput handlers
-            if (typeof loadDropdownOptions !== 'undefined') window.loadDropdownOptions = loadDropdownOptions;
-            if (typeof populateSelectOptions !== 'undefined') window.populateSelectOptions = populateSelectOptions;
-            if (typeof navigate !== 'undefined') window.navigate = navigate;
-            if (typeof toggleSelectAll !== 'undefined') window.toggleSelectAll = toggleSelectAll;
-            if (typeof handleRowSelectChange !== 'undefined') window.handleRowSelectChange = handleRowSelectChange;
-            if (typeof clearSelectedRecords !== 'undefined') window.clearSelectedRecords = clearSelectedRecords;
-            if (typeof updateBulkActionBar !== 'undefined') window.updateBulkActionBar = updateBulkActionBar;
-            if (typeof triggerBulkDelete !== 'undefined') window.triggerBulkDelete = triggerBulkDelete;
-            if (typeof loadData !== 'undefined') window.loadData = loadData;
-            if (typeof isNumericCol !== 'undefined') window.isNumericCol = isNumericCol;
-            if (typeof handleSort !== 'undefined') window.handleSort = handleSort;
-            if (typeof sortAndRender !== 'undefined') window.sortAndRender = sortAndRender;
-            if (typeof renderTable !== 'undefined') window.renderTable = renderTable;
-            if (typeof openAddModal !== 'undefined') window.openAddModal = openAddModal;
-            if (typeof openEditModal !== 'undefined') window.openEditModal = openEditModal;
-            if (typeof openInPageModal !== 'undefined') window.openInPageModal = openInPageModal;
-            if (typeof closeRecordModal !== 'undefined') window.closeRecordModal = closeRecordModal;
-            if (typeof openLightboxModal !== 'undefined') window.openLightboxModal = openLightboxModal;
-            if (typeof closeLightboxModal !== 'undefined') window.closeLightboxModal = closeLightboxModal;
-            if (typeof quickUpdateOrderStatus !== 'undefined') window.quickUpdateOrderStatus = quickUpdateOrderStatus;
-            if (typeof updatePendingCustomOrderCount !== 'undefined') window.updatePendingCustomOrderCount = updatePendingCustomOrderCount;
-            if (typeof handleRecordFormSubmit !== 'undefined') window.handleRecordFormSubmit = handleRecordFormSubmit;
-            if (typeof initActiveEntity !== 'undefined') window.initActiveEntity = initActiveEntity;
-            if (typeof submitForm !== 'undefined') window.submitForm = submitForm;
-            if (typeof deleteRecord !== 'undefined') window.deleteRecord = deleteRecord;
-            if (typeof openDeleteConfirmModal !== 'undefined') window.openDeleteConfirmModal = openDeleteConfirmModal;
-            if (typeof closeDeleteConfirmModal !== 'undefined') window.closeDeleteConfirmModal = closeDeleteConfirmModal;
-            if (typeof executePendingDelete !== 'undefined') window.executePendingDelete = executePendingDelete;
-            if (typeof resolveOrCreateCategory !== 'undefined') window.resolveOrCreateCategory = resolveOrCreateCategory;
-            if (typeof resolveOrCreateMake !== 'undefined') window.resolveOrCreateMake = resolveOrCreateMake;
-            if (typeof normalizeRowData !== 'undefined') window.normalizeRowData = normalizeRowData;
-            if (typeof formatErrorRemark !== 'undefined') window.formatErrorRemark = formatErrorRemark;
-            if (typeof triggerFileImport !== 'undefined') window.triggerFileImport = triggerFileImport;
-            if (typeof handleFileUpload !== 'undefined') window.handleFileUpload = handleFileUpload;
-            if (typeof processAndSaveFileInPlace !== 'undefined') window.processAndSaveFileInPlace = processAndSaveFileInPlace;
-            if (typeof showToast !== 'undefined') window.showToast = showToast;
-            if (typeof initTheme !== 'undefined') window.initTheme = initTheme;
-            if (typeof toggleTheme !== 'undefined') window.toggleTheme = toggleTheme;
-            if (typeof applyTheme !== 'undefined') window.applyTheme = applyTheme;
-        })();
-    }, []);
-
-    return (
-        <div ref={rootRef} className="adminstudio-root-container" style={{ width: '100%', height: '100%' }}>
-            <style dangerouslySetInnerHTML={{ __html: COMPONENT_STYLES }} />
-            <div dangerouslySetInnerHTML={{ __html: COMPONENT_MARKUP }} style={{ width: '100%', height: '100%' }} />
-        </div>
-    );
-}
-
-if (typeof window !== 'undefined' && document.getElementById('root')) {
-    const rootElement = document.getElementById('root');
-    if (window.ReactDOM && window.ReactDOM.createRoot) {
-        window.ReactDOM.createRoot(rootElement).render(<AdminStudio />);
-    }
-}
+</html>
