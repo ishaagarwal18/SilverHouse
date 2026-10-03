@@ -74,6 +74,11 @@
     font-family: var(--font-sans);
     color: var(--color-silver-800);
     scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+  
+  body {
+    overflow-x: hidden;
   }
 
   h1, h2, h3, .font-serif-heading {
