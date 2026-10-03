@@ -241,7 +241,7 @@ export default function Header({
 
               <div className="flex flex-col">
                 <div className="flex items-baseline space-x-1">
-                  <span className="font-serif text-lg sm:text-2xl lg:text-3xl font-extrabold tracking-wider text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] transition-colors drop-shadow-2xs">
+                  <span className="font-serif text-[15px] min-[360px]:text-lg sm:text-2xl lg:text-3xl font-extrabold tracking-wider text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] transition-colors drop-shadow-2xs">
                     SILVER<span className="text-[var(--th-accent)] font-light">HOUSE</span>
                   </span>
                 </div>
@@ -286,12 +286,12 @@ export default function Header({
             {location.pathname !== '/' && (
               <button
                 onClick={() => navigate(-1)}
-                className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-full bg-[var(--th-card)] hover:bg-[var(--th-surface-alt)] border border-[var(--th-border)] hover:border-[var(--th-primary)] text-xs font-bold text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-all cursor-pointer shadow-2xs group shrink-0"
+                className="inline-flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-[var(--th-card)] hover:bg-[var(--th-surface-alt)] border border-[var(--th-border)] hover:border-[var(--th-primary)] text-xs font-bold text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-all cursor-pointer shadow-2xs group shrink-0"
                 title="Go back to previous page"
                 aria-label="Go back"
               >
                 <ArrowLeft className="w-3.5 h-3.5 text-[var(--th-accent)] group-hover:-translate-x-0.5 transition-transform" />
-                <span>Back</span>
+                <span className="hidden min-[380px]:inline">Back</span>
               </button>
             )}
 

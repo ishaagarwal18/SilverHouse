@@ -77,7 +77,7 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
             </span>
           </div>
 
-          <h1 className="font-serif text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold tracking-tight leading-snug text-silver-50">
+          <h1 className="font-serif text-[19px] leading-tight min-[380px]:text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-bold tracking-tight sm:leading-snug text-silver-50">
             {slide.title}
           </h1>
 
