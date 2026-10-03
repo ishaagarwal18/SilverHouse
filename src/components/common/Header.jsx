@@ -627,7 +627,7 @@ export default function Header({
         </div>
 
         {/* Secondary Row: Desktop Category Navigation Links */}
-        <nav className="hidden lg:flex items-center justify-start xl:justify-center space-x-1 xl:space-x-3 border-t border-[var(--th-border)]/80 py-2.5 overflow-x-auto no-scrollbar">
+        <nav className="hidden lg:flex flex-wrap items-center justify-start xl:justify-center gap-x-1 xl:gap-x-3 gap-y-2 border-t border-[var(--th-border)]/80 py-2.5">
 
           {/* SHOP ALL (MegaMenu Trigger) */}
           <div

@@ -11,7 +11,6 @@ import CartDrawer from './components/cart/CartDrawer';
 import CheckoutModal from './components/cart/CheckoutModal';
 import WishlistDrawer from './components/wishlist/WishlistDrawer';
 import InfoModal from './components/common/InfoModal';
-import PdfViewerModal from './components/common/PdfViewerModal';
 import ThemeSwitcher from './components/common/ThemeSwitcher';
 import AppRouter from './router/AppRouter';
 import { useAuth } from './context/AuthContext';
@@ -47,7 +46,11 @@ export default function App() {
   const [categories, setCategories] = useState(CATEGORIES);
   const [storeParams, setStoreParams] = useState(null);
   const [companyDetails, setCompanyDetails] = useState(DEFAULT_COMPANY_DETAILS);
-  const [pdfViewerDoc, setPdfViewerDoc] = useState(null); // 'about' | 'purity' | null
+
+  const handleOpenPdf = (type) => {
+    const docId = type === 'about' ? 'about-us' : 'purity-guide';
+    window.open(`/document/${docId}`, '_blank');
+  };
 
   // Cart & Wishlist State - Strictly Isolated & User-Scoped
   const [cartItems, setCartItems] = useState(() => {
@@ -557,31 +560,37 @@ export default function App() {
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
+  const isDocumentPage = location.pathname.startsWith('/document') || location.pathname.startsWith('/doc');
+
   return (
     <div className="min-h-screen bg-[#F6F1E8] flex flex-col justify-between selection:bg-[#D4AF37] selection:text-white">
       <div>
         {/* Top Announcement Bar */}
-        <AnnouncementBar 
-          onNavigateCategory={handleNavigateCategory} 
-          storeParams={storeParams} 
-          onOpenPdf={(type) => setPdfViewerDoc(type)}
-        />
+        {!isDocumentPage && (
+          <AnnouncementBar 
+            onNavigateCategory={handleNavigateCategory} 
+            storeParams={storeParams} 
+            onOpenPdf={handleOpenPdf}
+          />
+        )}
 
         {/* Sticky Header with MegaMenu */}
-        <Header
-          cartCount={cartCount}
-          wishlistCount={wishlistIds.length}
-          categories={categories}
-          onOpenCart={() => setIsCartOpen(true)}
-          onOpenWishlist={() => setIsWishlistOpen(true)}
-          onOpenSearch={() => setIsSearchOpen(true)}
-          onNavigateHome={handleNavigateHome}
-          onNavigateCategory={handleNavigateCategory}
-          onNavigateSubcategory={handleNavigateSubcategory}
-          onNavigateYatraCustomizer={handleNavigateYatraCustomizer}
-          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
-          onOpenInfoModal={handleOpenInfoModal}
-        />
+        {!isDocumentPage && (
+          <Header
+            cartCount={cartCount}
+            wishlistCount={wishlistIds.length}
+            categories={categories}
+            onOpenCart={() => setIsCartOpen(true)}
+            onOpenWishlist={() => setIsWishlistOpen(true)}
+            onOpenSearch={() => setIsSearchOpen(true)}
+            onNavigateHome={handleNavigateHome}
+            onNavigateCategory={handleNavigateCategory}
+            onNavigateSubcategory={handleNavigateSubcategory}
+            onNavigateYatraCustomizer={handleNavigateYatraCustomizer}
+            onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+            onOpenInfoModal={handleOpenInfoModal}
+          />
+        )}
 
         {/* Main View Router */}
         <main>
@@ -600,13 +609,15 @@ export default function App() {
       </div>
 
       {/* Footer */}
-      <Footer
-        onNavigateCategory={handleNavigateCategory}
-        onNavigateYatraCustomizer={handleNavigateYatraCustomizer}
-        onOpenInfoModal={handleOpenInfoModal}
-        company={companyDetails}
-        onOpenPdf={(type) => setPdfViewerDoc(type)}
-      />
+      {!isDocumentPage && (
+        <Footer
+          onNavigateCategory={handleNavigateCategory}
+          onNavigateYatraCustomizer={handleNavigateYatraCustomizer}
+          onOpenInfoModal={handleOpenInfoModal}
+          company={companyDetails}
+          onOpenPdf={handleOpenPdf}
+        />
+      )}
 
       {/* Overlays & Drawers */}
       <MobileMenu
@@ -618,7 +629,7 @@ export default function App() {
         onNavigateYatraCustomizer={handleNavigateYatraCustomizer}
         onOpenInfoModal={handleOpenInfoModal}
         company={companyDetails}
-        onOpenPdf={(type) => setPdfViewerDoc(type)}
+        onOpenPdf={handleOpenPdf}
       />
 
       <SearchModal
@@ -694,15 +705,7 @@ export default function App() {
         onClose={() => setInfoModalTab(null)}
         onNavigateCategory={handleNavigateCategory}
         company={companyDetails}
-        onOpenPdf={(type) => setPdfViewerDoc(type)}
-      />
-
-      {/* Official In-App React PDF Viewer Modal */}
-      <PdfViewerModal
-        isOpen={!!pdfViewerDoc}
-        docType={pdfViewerDoc || 'purity'}
-        onClose={() => setPdfViewerDoc(null)}
-        company={companyDetails}
+        onOpenPdf={handleOpenPdf}
       />
 
       <ThemeSwitcher variant="floating" />

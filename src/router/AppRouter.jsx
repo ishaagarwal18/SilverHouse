@@ -7,6 +7,7 @@ import AuthPage from '../components/auth/AuthPage';
 import AddressPage from '../components/account/AddressPage';
 import OrdersPage from '../components/account/OrdersPage';
 import CustomArtisanalOrderPage from '../components/customizer/CustomArtisanalOrderPage';
+import DocumentPage from '../pages/DocumentPage';
 import { getAdminUrl } from '../utils/adminUrl';
 
 function AdminRedirect() {
@@ -111,6 +112,10 @@ export default function AppRouter({
       {/* User Orders Route */}
       <Route path="/orders" element={<OrdersPage onTriggerToast={onTriggerToast} />} />
       <Route path="/account/orders" element={<OrdersPage onTriggerToast={onTriggerToast} />} />
+
+      {/* Document Viewer Route */}
+      <Route path="/doc/:docId" element={<DocumentPage />} />
+      <Route path="/document/:docId" element={<DocumentPage />} />
 
       {/* Home Page */}
       <Route
