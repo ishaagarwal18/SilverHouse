@@ -36,6 +36,7 @@ const SLIDES = [
 
 export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomizer }) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isTextExpanded, setIsTextExpanded] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -43,6 +44,10 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
     }, 6000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    setIsTextExpanded(false);
+  }, [currentSlide]);
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
@@ -81,7 +86,11 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
             {slide.title}
           </h1>
 
-          <p className="text-xs sm:text-sm text-silver-300 font-normal max-w-lg leading-relaxed line-clamp-2 sm:line-clamp-none">
+          <p 
+            onClick={() => setIsTextExpanded(!isTextExpanded)}
+            className={`text-xs sm:text-sm text-silver-300 font-normal max-w-lg leading-relaxed cursor-pointer sm:cursor-auto transition-all duration-300 ${isTextExpanded ? 'line-clamp-none' : 'line-clamp-2 sm:line-clamp-none'}`}
+            title="Click to read more"
+          >
             {slide.subtitle}
           </p>
 
