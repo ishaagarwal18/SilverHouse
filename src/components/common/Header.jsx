@@ -211,49 +211,49 @@ export default function Header({
 
   return (
     <header className="sticky top-0 z-40 bg-[var(--th-surface-alt)]/95 backdrop-blur-md border-b border-[var(--th-border)] shadow-xs transition-colors duration-300">
-      <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1480px] mx-auto px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8">
 
         {/* Main Navbar Row */}
-        <div className="flex items-center justify-between h-20 gap-4">
+        <div className="flex items-center justify-between h-14 sm:h-16 lg:h-20 gap-1.5 sm:gap-3 lg:gap-4">
 
           {/* Left: Mobile Menu Trigger + Brand Logo (Stays completely stationary) */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-3 shrink-0">
             <button
               onClick={onOpenMobileMenu}
-              className="p-2 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl lg:hidden focus:outline-hidden cursor-pointer"
+              className="p-1.5 sm:p-2 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl lg:hidden focus:outline-hidden cursor-pointer shrink-0"
               aria-label="Open mobile navigation menu"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
 
             {/* Brand Logo (SILVERHOUSE) */}
             <button
               onClick={onNavigateHome}
-              className="group text-left flex items-center space-x-3 focus:outline-hidden cursor-pointer shrink-0"
+              className="group text-left flex items-center space-x-1.5 sm:space-x-3 focus:outline-hidden cursor-pointer shrink-0"
             >
               {/* Opulent Circular Crest */}
               <div
-                className="w-11 h-11 rounded-full border-2 border-[var(--th-accent)] flex items-center justify-center shadow-md group-hover:scale-105 transition-all duration-300 text-white"
+                className="hidden min-[360px]:flex w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 rounded-full border border-[var(--th-accent)] sm:border-2 items-center justify-center shadow-md group-hover:scale-105 transition-all duration-300 text-white shrink-0"
                 style={{ background: 'var(--th-nav-gradient)' }}
               >
-                <Sparkles className="w-5 h-5 text-[var(--th-accent)] drop-shadow-sm animate-pulse" />
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--th-accent)] drop-shadow-sm animate-pulse" />
               </div>
 
               <div className="flex flex-col">
                 <div className="flex items-baseline space-x-1">
-                  <span className="font-serif text-2xl sm:text-3xl font-extrabold tracking-wider text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] transition-colors drop-shadow-2xs">
+                  <span className="font-serif text-lg sm:text-2xl lg:text-3xl font-extrabold tracking-wider text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] transition-colors drop-shadow-2xs">
                     SILVER<span className="text-[var(--th-accent)] font-light">HOUSE</span>
                   </span>
                 </div>
-                <span className="block text-[8.5px] font-bold tracking-[0.24em] text-[var(--th-text-muted)] uppercase -mt-0.5">
-                  Fine Artisanal Sterling 925 & 999 Pure
+                <span className="hidden sm:block text-[8px] sm:text-[8.5px] font-bold tracking-[0.2em] sm:tracking-[0.24em] text-[var(--th-text-muted)] uppercase -mt-0.5">
+                  Fine Artisanal Sterling 925 &amp; 999 Pure
                 </span>
               </div>
             </button>
           </div>
 
           {/* Center: Integrated Luxury Search Bar */}
-          <div className="hidden md:flex flex-1 min-w-0 max-w-md lg:max-w-lg xl:max-w-xl mx-2">
+          <div className="hidden lg:flex flex-1 min-w-[200px] max-w-md lg:max-w-lg xl:max-w-xl mx-2">
             <div
               onClick={onOpenSearch}
               className="w-full h-11 px-4 rounded-full bg-[var(--th-card)] border-2 border-[var(--th-border)] hover:border-[var(--th-accent)] shadow-xs hover:shadow-md flex items-center justify-between cursor-pointer transition-all duration-300 group"
@@ -280,7 +280,7 @@ export default function Header({
           </div>
 
           {/* Right Action Utilities (Back Button, Theme Switcher, Pincode, Stores, Account, Wishlist, Cart) */}
-          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+          <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-3 shrink-0">
 
             {/* Navbar Back Button (Visible in navbar when navigated away from home without shifting brand logo) */}
             {location.pathname !== '/' && (
@@ -465,21 +465,21 @@ export default function Header({
             {/* Mobile Search Button (Visible on phones) */}
             <button
               onClick={onOpenSearch}
-              className="p-2 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl transition-all md:hidden cursor-pointer"
+              className="p-1.5 sm:p-2 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl transition-all lg:hidden cursor-pointer shrink-0"
               title="Search products"
             >
-              <Search className="w-5 h-5 text-[var(--th-accent)]" />
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--th-accent)]" />
             </button>
 
             {/* User Account & Profile Dropdown */}
-            <div ref={userMenuRef} className="relative">
+            <div ref={userMenuRef} className="relative shrink-0 hidden sm:block">
               {isAuthenticated ? (
                 <button
                   onClick={toggleUserMenu}
                   className="flex items-center space-x-1.5 p-1 rounded-full hover:bg-[var(--th-card)] transition-colors focus:outline-hidden cursor-pointer"
                   title={user.fullName || 'User Profile'}
                 >
-                  <div className="w-8 h-8 rounded-full bg-[var(--th-primary)] text-white font-bold text-xs flex items-center justify-center shadow-xs border border-[var(--th-accent)]/50 shrink-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--th-primary)] text-white font-bold text-xs flex items-center justify-center shadow-xs border border-[var(--th-accent)]/50 shrink-0">
                     {user.fullName ? user.fullName.trim().split(/\s+/).filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'SH'}
                   </div>
                   {isAdmin && (
@@ -494,8 +494,8 @@ export default function Header({
                   className="p-1.5 sm:px-2.5 sm:py-1.5 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer group border border-transparent hover:border-[var(--th-border)] shrink-0"
                   title="Sign In / Register"
                 >
-                  <User className="w-5 h-5 text-[var(--th-accent)] group-hover:scale-110 transition-transform shrink-0" />
-                  <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-wider text-[var(--th-text-main)] whitespace-nowrap">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--th-accent)] group-hover:scale-110 transition-transform shrink-0" />
+                  <span className="hidden lg:inline-block text-xs font-bold uppercase tracking-wider text-[var(--th-text-main)] whitespace-nowrap">
                     Sign In
                   </span>
                 </button>
@@ -595,12 +595,13 @@ export default function Header({
             {/* Wishlist Trigger with Coordinated Badge */}
             <button
               onClick={onOpenWishlist}
-              className="p-2 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl transition-all relative group cursor-pointer"
+              className="p-1.5 sm:p-2 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl transition-all relative group cursor-pointer shrink-0"
               title="Saved Wishlist"
+              aria-label="Saved Wishlist"
             >
-              <Heart className="w-5 h-5 text-[var(--th-accent)] group-hover:scale-110 transition-transform" />
+              <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--th-accent)] group-hover:scale-110 transition-transform" />
               {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--th-primary)] text-white font-bold text-[10px] rounded-full flex items-center justify-center shadow-xs border border-white">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--th-primary)] text-white font-bold text-[9px] sm:text-[10px] rounded-full flex items-center justify-center shadow-xs border border-white">
                   {wishlistCount}
                 </span>
               )}
@@ -609,14 +610,15 @@ export default function Header({
             {/* Shopping Bag / Cart Trigger */}
             <button
               onClick={onOpenCart}
-              className="px-3.5 py-2 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white rounded-full transition-all relative flex items-center space-x-1.5 shadow-md hover:shadow-lg cursor-pointer group"
+              className="px-2 py-1.5 sm:px-2.5 sm:py-1.5 md:px-3.5 md:py-2 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white rounded-full transition-all relative flex items-center space-x-1 sm:space-x-1.5 shadow-md hover:shadow-lg cursor-pointer group shrink-0"
               title="Shopping Cart"
+              aria-label="Shopping Cart"
             >
               <ShoppingBag className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold uppercase tracking-wider text-white">
+              <span className="hidden md:inline text-xs font-bold uppercase tracking-wider text-white">
                 Cart
               </span>
-              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-[var(--th-accent)] text-white font-extrabold text-[10px] leading-tight">
+              <span className="px-1.5 py-0.5 rounded-full bg-[var(--th-accent)] text-white font-extrabold text-[9px] sm:text-[10px] leading-tight">
                 {cartCount}
               </span>
             </button>

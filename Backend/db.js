@@ -6,6 +6,7 @@ const isWindowsLocal = !hasPassword && process.platform === 'win32';
 
 let sql;
 let poolPromise;
+console.log(hasPassword, isWindowsLocal);
 
 if (isWindowsLocal) {
     try {
@@ -48,11 +49,18 @@ if (!poolPromise) {
         }
     }
 
+    let dbPassword = process.env.DB_PASSWORD || '';
+    if (dbPassword.startsWith('"') && dbPassword.endsWith('"')) {
+        dbPassword = dbPassword.slice(1, -1);
+    } else if (dbPassword.startsWith("'") && dbPassword.endsWith("'")) {
+        dbPassword = dbPassword.slice(1, -1);
+    }
+
     const config = {
         server: rawServer,
         database: process.env.DB_NAME || 'SilverHouse',
         user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
+        password: dbPassword,
         port: port,
         options: {
             encrypt: process.env.DB_ENCRYPT === 'false' ? false : true,

@@ -42,7 +42,12 @@ export default function ProductListingPage({
   const [maxWeight, setMaxWeight] = useState(() => (maxWeightQuery !== null && !isNaN(Number(maxWeightQuery)) ? Number(maxWeightQuery) : 10000));
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState('featured');
-  const [gridCols, setGridCols] = useState(4); // 2, 3, 4
+  const [gridCols, setGridCols] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 640 ? 2 : 4;
+    }
+    return 4;
+  }); // 2, 3, 4
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [backendItems, setBackendItems] = useState(null);
 
@@ -787,18 +792,18 @@ export default function ProductListingPage({
         </div>
       </div>
 
-      <div className=" mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <div className="max-w-7xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 pt-4 sm:pt-8">
 
         {/* Top Controls Bar */}
-        <div className="bg-[var(--th-card)] p-4 rounded-xl border border-[var(--th-border)] mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="bg-[var(--th-card)] p-3 sm:p-4 rounded-xl border border-[var(--th-border)] mb-6 sm:mb-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 shadow-xs">
 
           {/* Left: Mobile Filter Button & Active Filter Chips */}
-          <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start flex-wrap gap-y-2">
+          <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto justify-between sm:justify-start flex-wrap gap-y-2">
             <button
               onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
-              className="lg:hidden px-4 py-2 bg-[var(--th-primary-light)] text-[var(--th-text-main)] text-xs font-bold rounded-lg flex items-center space-x-2 border border-[var(--th-border)] transition-colors hover:bg-[var(--th-primary)] hover:text-white"
+              className="lg:hidden px-3 py-1.5 sm:px-4 sm:py-2 bg-[var(--th-primary-light)] text-[var(--th-text-main)] text-xs font-bold rounded-lg flex items-center space-x-2 border border-[var(--th-border)] transition-colors hover:bg-[var(--th-primary)] hover:text-white cursor-pointer"
             >
-              <SlidersHorizontal className="w-4 h-4 text-[var(--th-primary)]" />
+              <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--th-primary)]" />
               <span>Filter Catalog ({filteredProducts.length})</span>
             </button>
 
@@ -864,27 +869,33 @@ export default function ProductListingPage({
           </div>
 
           {/* Right: Grid Switcher */}
-          <div className="flex items-center space-x-4 w-full sm:w-auto justify-end">
-            <span className="text-xs text-[var(--th-text-muted)] font-medium hidden md:inline">Layout:</span>
+          <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4 w-full sm:w-auto">
+            <span className="text-xs text-[var(--th-text-muted)] font-medium hidden sm:inline">Layout:</span>
             <div className="flex items-center space-x-1 bg-[var(--th-primary-light)] p-1 rounded-lg border border-[var(--th-border)]">
+              {/* 2 Columns — always visible */}
               <button
                 onClick={() => setGridCols(2)}
-                className={`p-1.5 rounded transition-colors ${gridCols === 2 ? 'bg-[var(--th-primary)] text-white shadow-xs' : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'}`}
+                className={`p-1.5 rounded transition-colors cursor-pointer ${gridCols === 2 ? 'bg-[var(--th-primary)] text-white shadow-xs' : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'}`}
                 title="2 Columns View"
+                aria-label="2 columns view"
               >
                 <Grid2X2 className="w-4 h-4" />
               </button>
+              {/* 3 Columns — tablet & desktop only */}
               <button
                 onClick={() => setGridCols(3)}
-                className={`p-1.5 rounded transition-colors ${gridCols === 3 ? 'bg-[var(--th-primary)] text-white shadow-xs' : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'}`}
+                className={`hidden sm:inline-flex p-1.5 rounded transition-colors cursor-pointer ${gridCols === 3 ? 'bg-[var(--th-primary)] text-white shadow-xs' : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'}`}
                 title="3 Columns View"
+                aria-label="3 columns view"
               >
                 <Grid3X3 className="w-4 h-4" />
               </button>
+              {/* 4 Columns — desktop only */}
               <button
                 onClick={() => setGridCols(4)}
-                className={`p-1.5 rounded transition-colors ${gridCols === 4 ? 'bg-[var(--th-primary)] text-white shadow-xs' : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'}`}
+                className={`hidden sm:inline-flex p-1.5 rounded transition-colors cursor-pointer ${gridCols === 4 ? 'bg-[var(--th-primary)] text-white shadow-xs' : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'}`}
                 title="4 Columns View"
+                aria-label="4 columns view"
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>
@@ -1357,10 +1368,10 @@ export default function ProductListingPage({
                 </div>
               </div>
             ) : (
-              <div className={`grid gap-3 sm:gap-6 ${gridCols === 2 ? 'grid-cols-2' :
+              <div className={`grid gap-2.5 sm:gap-6 ${gridCols === 2 ? 'grid-cols-2' :
                 gridCols === 3 ? 'grid-cols-2 md:grid-cols-3' :
-                  'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4'
-                }`}>
+                'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4'
+              }`}>
                 {filteredProducts.map((product) => {
                   const isWishlisted = wishlistIds.some(id => String(id) === String(product.id));
                   const discountPct = product.discount !== undefined && product.discount !== null && Number(product.discount) > 0
