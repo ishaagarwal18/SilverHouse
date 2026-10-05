@@ -76,12 +76,12 @@ export default function CartDrawer({
     <div className="fixed inset-0 z-50 flex justify-end font-sans">
       {/* High-end backdrop with smooth blur */}
       <div 
-        className="fixed inset-0 bg-black/65 backdrop-blur-sm transition-opacity duration-300"
+        className="fixed inset-0 bg-black/65 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
         onClick={onClose}
       />
 
       {/* Luxury Drawer Container */}
-      <div className="relative w-full max-w-lg bg-[var(--th-card)] text-[var(--th-text-main)] h-full shadow-2xl flex flex-col justify-between z-10 animate-in slide-in-from-right duration-300 border-l border-[var(--th-border)] transition-colors">
+      <div className="relative w-full max-w-lg bg-[var(--th-card)] text-[var(--th-text-main)] h-full shadow-2xl flex flex-col justify-between z-10 animate-slide-in-right border-l border-[var(--th-border)] transition-colors">
         
         {/* 1. Atelier Header */}
         <div className="p-4 sm:p-5 border-b border-[var(--th-border)] bg-[var(--th-surface-alt)] shrink-0">

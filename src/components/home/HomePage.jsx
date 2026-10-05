@@ -14,6 +14,7 @@ import YatraLocketSpotlight from './YatraLocketSpotlight';
 import ExploreCatalogGrid from './ExploreCatalogGrid';
 import Testimonials from './Testimonials';
 import RecentlyViewedSection from '../common/RecentlyViewedSection';
+import ScrollReveal from '../common/ScrollReveal';
 
 export default function HomePage({
   products = [],
@@ -35,97 +36,125 @@ export default function HomePage({
       />
 
       {/* 2. Visual Category Showcase Strip */}
-      <CategoryShowcaseStrip
-        categories={categories}
-        products={products}
-        onNavigateCategory={onNavigateCategory}
-      />
+      <ScrollReveal animation="fade-up">
+        <CategoryShowcaseStrip
+          categories={categories}
+          products={products}
+          onNavigateCategory={onNavigateCategory}
+        />
+      </ScrollReveal>
 
       {/* 3. Policy & Trust Badges Section */}
-      <PolicyBadges />
+      <ScrollReveal animation="fade-up" delay={100}>
+        <PolicyBadges />
+      </ScrollReveal>
 
       {/* 3. Top Seller Section */}
-      <TopSellerSection
-        products={products}
-        onAddToCart={onAddToCart}
-        onToggleWishlist={onToggleWishlist}
-        wishlistIds={wishlistIds}
-        onQuickView={onQuickView}
-        onSelectProduct={onSelectProduct}
-        onNavigateCategory={onNavigateCategory}
-      />
+      <ScrollReveal animation="fade-up">
+        <TopSellerSection
+          products={products}
+          onAddToCart={onAddToCart}
+          onToggleWishlist={onToggleWishlist}
+          wishlistIds={wishlistIds}
+          onQuickView={onQuickView}
+          onSelectProduct={onSelectProduct}
+          onNavigateCategory={onNavigateCategory}
+        />
+      </ScrollReveal>
 
       {/* 4. Shop by Color / Finish Section */}
-      <ShopByColor
-        onNavigateCategory={onNavigateCategory}
-      />
+      <ScrollReveal animation="fade-up">
+        <ShopByColor
+          onNavigateCategory={onNavigateCategory}
+        />
+      </ScrollReveal>
 
       {/* 5. Shop on Budget Section */}
-      <ShopOnBudget
-        onNavigateCategory={onNavigateCategory}
-      />
+      <ScrollReveal animation="fade-up">
+        <ShopOnBudget
+          onNavigateCategory={onNavigateCategory}
+        />
+      </ScrollReveal>
 
       {/* 6. Shop by Weight (Grams) Section */}
-      <ShopByWeight
-        products={products}
-        onNavigateCategory={onNavigateCategory}
-      />
+      <ScrollReveal animation="fade-up">
+        <ShopByWeight
+          products={products}
+          onNavigateCategory={onNavigateCategory}
+        />
+      </ScrollReveal>
 
       {/* 7. Curated Collections for Your Loved Ones */}
-      <CuratedCollections
-        onNavigateCategory={onNavigateCategory}
-      />
+      <ScrollReveal animation="zoom-in">
+        <CuratedCollections
+          onNavigateCategory={onNavigateCategory}
+        />
+      </ScrollReveal>
 
       {/* 7. Silver Treasure (Category Highlights) */}
-      <SilverTreasureSection
-        onNavigateCategory={onNavigateCategory}
-        onNavigateYatraCustomizer={onNavigateYatraCustomizer}
-      />
+      <ScrollReveal animation="fade-up">
+        <SilverTreasureSection
+          onNavigateCategory={onNavigateCategory}
+          onNavigateYatraCustomizer={onNavigateYatraCustomizer}
+        />
+      </ScrollReveal>
 
       {/* 8. Segmented Product Showcase (Tabs: Men, Women, Kids) */}
-      <SegmentedTabsShowcase
-        products={products}
-        onAddToCart={onAddToCart}
-        onToggleWishlist={onToggleWishlist}
-        wishlistIds={wishlistIds}
-        onQuickView={onQuickView}
-        onSelectProduct={onSelectProduct}
-        onNavigateCategory={onNavigateCategory}
-      />
+      <ScrollReveal animation="fade-up">
+        <SegmentedTabsShowcase
+          products={products}
+          onAddToCart={onAddToCart}
+          onToggleWishlist={onToggleWishlist}
+          wishlistIds={wishlistIds}
+          onQuickView={onQuickView}
+          onSelectProduct={onSelectProduct}
+          onNavigateCategory={onNavigateCategory}
+        />
+      </ScrollReveal>
 
       {/* 9. Personalized Sacred Yatra Locket Spotlight */}
-      <YatraLocketSpotlight
-        onNavigateCustomizer={onNavigateYatraCustomizer}
-      />
+      <ScrollReveal animation="fade-up">
+        <YatraLocketSpotlight
+          onNavigateCustomizer={onNavigateYatraCustomizer}
+        />
+      </ScrollReveal>
 
       {/* 10. Silver Coins & Bars Section */}
-      <SilverCoinsSection
-        onNavigateCategory={onNavigateCategory}
-        onNavigateYatraCustomizer={onNavigateYatraCustomizer}
-      />
+      <ScrollReveal animation="fade-up">
+        <SilverCoinsSection
+          onNavigateCategory={onNavigateCategory}
+          onNavigateYatraCustomizer={onNavigateYatraCustomizer}
+        />
+      </ScrollReveal>
 
       {/* 10. Explore Now (Product Catalog Grid with 16 products) */}
-      <ExploreCatalogGrid
-        products={products}
-        onAddToCart={onAddToCart}
-        onToggleWishlist={onToggleWishlist}
-        wishlistIds={wishlistIds}
-        onQuickView={onQuickView}
-        onSelectProduct={onSelectProduct}
-        onNavigateCategory={onNavigateCategory}
-      />
+      <ScrollReveal animation="fade-up">
+        <ExploreCatalogGrid
+          products={products}
+          onAddToCart={onAddToCart}
+          onToggleWishlist={onToggleWishlist}
+          wishlistIds={wishlistIds}
+          onQuickView={onQuickView}
+          onSelectProduct={onSelectProduct}
+          onNavigateCategory={onNavigateCategory}
+        />
+      </ScrollReveal>
 
       {/* 11. Recently Viewed Products Section */}
-      <RecentlyViewedSection
-        onAddToCart={onAddToCart}
-        onToggleWishlist={onToggleWishlist}
-        wishlistIds={wishlistIds}
-        onQuickView={onQuickView}
-        onSelectProduct={onSelectProduct}
-      />
+      <ScrollReveal animation="fade-up">
+        <RecentlyViewedSection
+          onAddToCart={onAddToCart}
+          onToggleWishlist={onToggleWishlist}
+          wishlistIds={wishlistIds}
+          onQuickView={onQuickView}
+          onSelectProduct={onSelectProduct}
+        />
+      </ScrollReveal>
 
       {/* Customer Testimonials & Reviews */}
-      <Testimonials />
+      <ScrollReveal animation="fade-up">
+        <Testimonials />
+      </ScrollReveal>
     </div>
   );
 }

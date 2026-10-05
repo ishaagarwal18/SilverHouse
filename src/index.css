@@ -15,21 +15,21 @@
   --th-pedestal: #D4DFE0;
   --th-border: #B5C8CA;
   --th-border-subtle: #C9D8DA;
-  
+
   --th-primary: #1F4E5B;
   --th-primary-hover: #286677;
   --th-primary-light: rgba(31, 78, 91, 0.12);
   --th-accent: #B89340;
   --th-accent-light: rgba(184, 147, 64, 0.15);
-  
+
   --th-text-main: #142F37;
   --th-text-muted: #4F6B72;
-  
+
   --th-nav: #13343D;
   --th-nav-gradient: linear-gradient(135deg, #0E272E 0%, #13343D 50%, #1F4E5B 100%);
   --th-footer-gradient: linear-gradient(180deg, #13343D 0%, #0E272E 100%);
   --th-budget-card: linear-gradient(180deg, #1F4E5B 0%, #173D47 50%, #0F2A31 100%);
-  
+
   --th-badge-bg: #1F4E5B;
   --th-badge-text: #F4F8F8;
   --th-btn-text: #FFFFFF;
@@ -43,22 +43,27 @@
 
   --color-silver-50: #F8F9FA;
   --color-silver-100: #E9ECEF;
-  --color-silver-200: #E5E4E2; /* Platinum */
+  --color-silver-200: #E5E4E2;
+  /* Platinum */
   --color-silver-300: #CED4DA;
-  --color-silver-400: #C0C0C0; /* Royal Silver */
+  --color-silver-400: #C0C0C0;
+  /* Royal Silver */
   --color-silver-500: #999999;
   --color-silver-600: #666666;
   --color-silver-700: #333333;
-  --color-silver-800: #1A1A1A; /* Obsidian */
+  --color-silver-800: #1A1A1A;
+  /* Obsidian */
 
   --color-gold-300: #F3E5AB;
   --color-gold-400: #E6CA65;
-  --color-gold-500: #D4AF37; /* Sacred Gold */
+  --color-gold-500: #D4AF37;
+  /* Sacred Gold */
   --color-gold-600: #AA820A;
 
   --color-burgundy-900: #2D0207;
   --color-burgundy-800: #3B030A;
-  --color-burgundy-700: #4A0711; /* Royal Heritage Maroon */
+  --color-burgundy-700: #4A0711;
+  /* Royal Heritage Maroon */
   --color-burgundy-600: #600814;
   --color-burgundy-500: #7D0C1D;
 
@@ -76,12 +81,15 @@
     scroll-behavior: smooth;
     overflow-x: hidden;
   }
-  
+
   body {
     overflow-x: hidden;
   }
 
-  h1, h2, h3, .font-serif-heading {
+  h1,
+  h2,
+  h3,
+  .font-serif-heading {
     font-family: var(--font-serif);
   }
 }
@@ -124,15 +132,24 @@
 .silver-card-hover {
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .silver-card-hover:hover {
   transform: translateY(-5px);
   box-shadow: 0 20px 40px -15px rgba(26, 26, 26, 0.12), 0 0 2px rgba(212, 175, 55, 0.3);
 }
 
 @keyframes silverShimmer {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* Custom Scrollbar */
@@ -164,4 +181,54 @@
   font-feature-settings: "tnum" 1;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
+}
+
+/* Infinite Marquee */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 35s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Drawer & Modal Animations */
+@keyframes slideInRight {
+  0% {
+    transform: translateX(100%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
 }

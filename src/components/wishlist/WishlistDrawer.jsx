@@ -20,12 +20,12 @@ export default function WishlistDrawer({
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in"
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between z-10 animate-in slide-in-from-right duration-300">
+      <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between z-10 animate-slide-in-right">
         
         {/* Header */}
         <div className="p-4 border-b border-silver-200 flex items-center justify-between bg-silver-50">

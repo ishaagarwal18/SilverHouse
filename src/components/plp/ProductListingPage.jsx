@@ -6,6 +6,7 @@ import {
   Filter, Grid3X3, Grid2X2, LayoutGrid, ChevronRight, SlidersHorizontal,
   Heart, Eye, ShoppingBag, Star, Sparkles, X, Check, Search, RotateCcw, Flame, ArrowLeft, Scale
 } from 'lucide-react';
+import ScrollReveal from '../common/ScrollReveal';
 
 export default function ProductListingPage({
   products,
@@ -710,7 +711,7 @@ export default function ProductListingPage({
         <div className="absolute -right-16 -top-16 w-96 h-96 rounded-full bg-[var(--th-accent)]/15 blur-3xl pointer-events-none" />
         <div className="absolute -left-16 -bottom-16 w-96 h-96 rounded-full bg-[var(--th-primary)]/30 blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto relative z-10">
+        <div className="w-full mx-auto relative z-10">
 
           {/* Back Button & Breadcrumbs */}
           <div className="flex items-center space-x-3 mb-4">
@@ -792,7 +793,7 @@ export default function ProductListingPage({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 pt-4 sm:pt-8">
+      <div className="w-full mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 pt-4 sm:pt-8">
 
         {/* Top Controls Bar */}
         <div className="bg-[var(--th-card)] p-3 sm:p-4 rounded-xl border border-[var(--th-border)] mb-6 sm:mb-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 shadow-xs">
@@ -1370,9 +1371,9 @@ export default function ProductListingPage({
             ) : (
               <div className={`grid gap-2.5 sm:gap-6 ${gridCols === 2 ? 'grid-cols-2' :
                 gridCols === 3 ? 'grid-cols-2 md:grid-cols-3' :
-                'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4'
-              }`}>
-                {filteredProducts.map((product) => {
+                  'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4'
+                }`}>
+                {filteredProducts.map((product, index) => {
                   const isWishlisted = wishlistIds.some(id => String(id) === String(product.id));
                   const discountPct = product.discount !== undefined && product.discount !== null && Number(product.discount) > 0
                     ? Number(product.discount)
@@ -1381,10 +1382,10 @@ export default function ProductListingPage({
                       : null);
 
                   return (
-                    <div
-                      key={product.id}
-                      className="group bg-[var(--th-card)] rounded-xl sm:rounded-2xl border border-[var(--th-border)] hover:border-[var(--th-primary)] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative"
-                    >
+                    <ScrollReveal key={product.id} delay={(index % 4) * 200} animation="fade-up">
+                      <div
+                        className="h-full group bg-[var(--th-card)] rounded-xl sm:rounded-2xl border border-[var(--th-border)] hover:border-[var(--th-primary)] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative"
+                      >
                       {/* Image Preview */}
                       <div
                         className="relative aspect-square bg-[var(--th-pedestal)] overflow-hidden cursor-pointer"
@@ -1529,6 +1530,7 @@ export default function ProductListingPage({
                         </div>
                       </div>
                     </div>
+                  </ScrollReveal>
                   );
                 })}
               </div>
