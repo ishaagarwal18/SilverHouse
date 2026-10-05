@@ -37,7 +37,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      '/uploads': {
+      '/product_image': {
         target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,

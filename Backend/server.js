@@ -11,8 +11,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Ensure public/uploads directory exists
-const uploadsDir = path.join(__dirname, 'public', 'uploads');
+// Ensure product_image directory exists
+const uploadsDir = path.join(__dirname, 'product_image');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -39,7 +39,7 @@ app.post('/api/upload', upload.single('imageFile'), (req, res) => {
         if (!req.file) {
             return res.status(400).json({ success: false, error: 'No image file uploaded.' });
         }
-        const imageUrl = `/uploads/${req.file.filename}`;
+        const imageUrl = `/product_image/${req.file.filename}`;
         return res.status(200).json({
             success: true,
             imageUrl: imageUrl
@@ -55,7 +55,7 @@ app.post('/api/upload-multiple', upload.array('images', 10), (req, res) => {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ success: false, error: 'No image files uploaded.' });
         }
-        const urls = req.files.map(f => `/uploads/${f.filename}`);
+        const urls = req.files.map(f => `/product_image/${f.filename}`);
         return res.status(200).json({
             success: true,
             imageUrls: urls
@@ -117,7 +117,7 @@ app.post('/api/custom-orders', upload.array('images', 10), async (req, res) => {
         // Collect uploaded files and any existing URLs passed
         let imageUrls = [];
         if (req.files && req.files.length > 0) {
-            imageUrls = req.files.map(f => `/uploads/${f.filename}`);
+            imageUrls = req.files.map(f => `/product_image/${f.filename}`);
         }
         if (req.body.imageUrls) {
             try {
@@ -2050,8 +2050,8 @@ app.post('/api/admin/parameters', async (req, res) => {
 });
 
 // 2. Static assets & HTML views
-// Serve Backend/public (uploads, images, html, scripts)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve Backend/product_image, images, html, scripts
+app.use('/product_image', express.static(path.join(__dirname, 'product_image')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 

@@ -29,5 +29,5 @@ build
 *.zip
 
 # Uploads
-Backend/public/uploads/*
-!Backend/public/uploads/.gitkeep
+Backend/product_image/*
+!Backend/product_image/.gitkeep

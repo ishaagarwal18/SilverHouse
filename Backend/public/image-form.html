@@ -367,6 +367,7 @@
                 opacity: 0;
                 transform: translateY(6px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -431,7 +432,8 @@
                 </div>
             </div>
             <div>
-                <button class="btn btn-secondary" onclick="toggleTheme()" id="themeToggleBtn" title="Toggle Light / Dark Mode">
+                <button class="btn btn-secondary" onclick="toggleTheme()" id="themeToggleBtn"
+                    title="Toggle Light / Dark Mode">
                     <i class="ph-bold ph-moon" id="themeIcon"></i>
                     <span id="themeToggleText">Dark Mode</span>
                 </button>
@@ -443,13 +445,18 @@
                 <form id="imageForm" onsubmit="submitForm(event)">
                     <div class="form-grid">
                         <div class="form-group" style="margin-bottom: 20px;">
-                            <label><i class="ph-bold ph-upload-simple"></i> Upload Image File from Chrome / Device</label>
-                            <input type="file" id="imageFileInput" accept="image/*" onchange="handleFileUpload(event)" style="padding: 10px; background: var(--input-bg); border: 1px dashed var(--border); border-radius: 8px; width: 100%; cursor: pointer;" />
-                            <small style="color: var(--text-muted); display: block; margin-top: 4px;">Selecting a file will upload it to your server's <code>/public/uploads</code> directory.</small>
+                            <label><i class="ph-bold ph-upload-simple"></i> Upload Image File from Chrome /
+                                Device</label>
+                            <input type="file" id="imageFileInput" accept="image/*" onchange="handleFileUpload(event)"
+                                style="padding: 10px; background: var(--input-bg); border: 1px dashed var(--border); border-radius: 8px; width: 100%; cursor: pointer;" />
+                            <small style="color: var(--text-muted); display: block; margin-top: 4px;">Selecting a file
+                                will upload it to your server's <code>/product_image</code> directory.</small>
                         </div>
                         <div class="form-group">
                             <label>Image URL / Path *</label>
-                            <input type="text" name="image_url" id="imageUrlInput" required placeholder="https://cdn.silverhouse.com/products/item.jpg or /uploads/img-123.jpg" oninput="previewImage(this.value)" />
+                            <input type="text" name="image_url" id="imageUrlInput" required
+                                placeholder="https://cdn.silverhouse.com/products/item.jpg or /product_image/img-123.jpg"
+                                oninput="previewImage(this.value)" />
                             <img id="imgPreview" class="preview-box" onerror="this.style.display='none'" />
                         </div>
                     </div>

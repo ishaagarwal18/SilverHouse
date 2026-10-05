@@ -46,11 +46,11 @@ export function resolveImageUrl(img) {
   if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
     return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   }
-  // Uploaded images from the deployed admin panel (/uploads/... or img-...)
-  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/') || trimmed.startsWith('img-')) {
-    const filename = trimmed.replace(/^\/?uploads\//, '');
+  // Uploaded images from the deployed admin panel (/product_image/... or img-...)
+  if (trimmed.startsWith('/product_image/') || trimmed.startsWith('product_image/') || trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/') || trimmed.startsWith('img-')) {
+    let filename = trimmed.replace(/^\/?(product_image|uploads)\//, '');
     const backendBase = API_BASE_URL.replace(/\/api\/?$/, '');
-    return `${backendBase}/uploads/${filename}`;
+    return `${backendBase}/product_image/${filename}`;
   }
   return trimmed;
 }
