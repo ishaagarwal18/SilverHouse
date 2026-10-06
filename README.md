@@ -125,7 +125,7 @@ SilverHouse/
    ```bash
    node server.js
    ```
-   The backend API will run on `http://localhost:5000`.
+   The backend API will run on `http://localhost:5001`.
 
 ---
 
