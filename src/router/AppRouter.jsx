@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import HomePage from '../components/home/HomePage';
 import ProductListingPage from '../components/plp/ProductListingPage';
 import ProductDetailPage from '../components/pdp/ProductDetailPage';
@@ -34,6 +34,7 @@ export default function AppRouter({
   onOpenCart
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleNavigateCategory = (catId) => {
     if (!catId || catId === 'all') {
@@ -62,8 +63,9 @@ export default function AppRouter({
   };
 
   return (
-    <Routes>
-      {/* Unified Bespoke & Sacred Yatra Customizer Studio Routes */}
+    <div key={location.pathname} className="animate-page-enter">
+      <Routes location={location}>
+        {/* Unified Bespoke & Sacred Yatra Customizer Studio Routes */}
       <Route
         path="/customize"
         element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
@@ -208,6 +210,7 @@ export default function AppRouter({
 
       {/* Fallback Route */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </div>
   );
 }
