@@ -254,37 +254,14 @@ export default function CatalogPage() {
         }
       />
 
-      {/* KPI strip */}
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-        <Kpi icon={Package} label="Active Products" value={products.length} />
-        <Kpi icon={Layers} label="Total Stock Units" value={`${kpis.units.toLocaleString('en-IN')} pcs`} />
-        <Kpi icon={IndianRupee} label="Inventory Retail Value" value={formatINR(Math.round(kpis.retail))} tone="text-ad-accent" />
-        <Kpi icon={ChartLine} label="Inventory Cost Value" value={formatINR(Math.round(kpis.cost))} tone="text-ad-success" />
-        <Kpi icon={OctagonAlert} label="Stock Alerts" value={`${kpis.alerts} items`} tone="text-ad-danger" valueTone="text-ad-danger" />
-      </div>
-
-      {selected.size > 0 && (
-        <div className="sticky top-18 z-20 mb-4 flex flex-col gap-3 rounded-xl border border-ad-primary/30 bg-ad-surface p-3 shadow-lg md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2 text-xs text-ad-muted">
-            <span className="rounded-full bg-ad-primary px-3 py-1 font-bold text-white">{selected.size} Selected</span>
-            <span className="hidden sm:inline">Select items to run bulk operations</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={toggleAllInView}><SquareCheck className="w-4 h-4" /> {allInView ? 'Deselect All In View' : 'Select All In View'}</Button>
-            <Button size="sm" variant="danger" onClick={() => setDeleteIds(Array.from(selected))}><Trash2 className="w-4 h-4" /> Delete Selected</Button>
-            <Button size="sm" onClick={() => setSelected(new Set())}><X className="w-4 h-4" /> Clear</Button>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[272px_minmax(0,1fr)]">
+      <div className="flex flex-col gap-5">
         {/* Filters: docked panel on desktop, slide-in drawer on mobile */}
         <div className={`fixed inset-0 z-60 bg-black/50 lg:hidden ${filtersOpen ? '' : 'hidden'}`} onClick={() => setFiltersOpen(false)} aria-hidden="true" />
         <aside
-          className={`fixed inset-y-0 right-0 z-70 w-80 max-w-[88vw] transition-transform duration-300 lg:static lg:z-auto lg:w-auto lg:max-w-none lg:translate-x-0 ${filtersOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`fixed inset-y-0 right-0 z-70 w-80 max-w-[88vw] transition-transform duration-300 lg:static lg:z-auto lg:w-full lg:max-w-none lg:translate-x-0 ${filtersOpen ? 'translate-x-0' : 'translate-x-full'}`}
           aria-label="Catalog filters"
         >
-          <Card className="ad-scroll flex h-full flex-col overflow-y-auto rounded-none lg:sticky lg:top-22 lg:h-auto lg:max-h-[calc(100vh-7rem)] lg:rounded-xl">
+          <Card className="ad-scroll flex h-full flex-col overflow-y-auto rounded-none lg:h-auto lg:overflow-visible lg:rounded-xl">
             <CatalogFilters
               filters={filters}
               setFilters={setFilters}
@@ -296,7 +273,30 @@ export default function CatalogPage() {
           </Card>
         </aside>
 
-        <section className="min-w-0">
+        <section className="min-w-0 flex flex-col gap-5">
+          {/* KPI strip */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+            <Kpi icon={Package} label="Active Products" value={products.length} />
+            <Kpi icon={Layers} label="Total Stock Units" value={`${kpis.units.toLocaleString('en-IN')} pcs`} />
+            <Kpi icon={IndianRupee} label="Inventory Retail Value" value={formatINR(Math.round(kpis.retail))} tone="text-ad-accent" />
+            <Kpi icon={ChartLine} label="Inventory Cost Value" value={formatINR(Math.round(kpis.cost))} tone="text-ad-success" />
+            <Kpi icon={OctagonAlert} label="Stock Alerts" value={`${kpis.alerts} items`} tone="text-ad-danger" valueTone="text-ad-danger" />
+          </div>
+
+          {selected.size > 0 && (
+            <div className="sticky top-18 z-20 flex flex-col gap-3 rounded-xl border border-ad-primary/30 bg-ad-surface p-3 shadow-lg md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-2 text-xs text-ad-muted">
+                <span className="rounded-full bg-ad-primary px-3 py-1 font-bold text-white">{selected.size} Selected</span>
+                <span className="hidden sm:inline">Select items to run bulk operations</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={toggleAllInView}><SquareCheck className="w-4 h-4" /> {allInView ? 'Deselect All In View' : 'Select All In View'}</Button>
+                <Button size="sm" variant="danger" onClick={() => setDeleteIds(Array.from(selected))}><Trash2 className="w-4 h-4" /> Delete Selected</Button>
+                <Button size="sm" onClick={() => setSelected(new Set())}><X className="w-4 h-4" /> Clear</Button>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <Card><LoadingBlock label="Loading inventory…" /></Card>
           ) : loadError ? (
@@ -542,20 +542,13 @@ function DeleteProductPreview({ product: p }) {
 
 function RadioList({ name, options, value, onChange }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      {options.map(opt => {
-        const active = value === opt.value;
-        return (
-          <label key={opt.value || 'all'} className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-[13px] cursor-pointer ${active ? 'bg-ad-primary/10 font-semibold text-ad-primary' : 'text-ad-text hover:bg-ad-card'}`}>
-            <span className="flex min-w-0 items-center gap-2">
-              <input type="radio" name={name} checked={active} onChange={() => onChange(opt.value)} className="accent-(--ad-primary)" />
-              <span className="truncate">{opt.label}</span>
-            </span>
-            {opt.count !== undefined && <span className="shrink-0 rounded-full bg-ad-card px-2 text-[11px] font-bold text-ad-muted">{opt.count}</span>}
-          </label>
-        );
-      })}
-    </div>
+    <select className="ad-input" name={name} value={value} onChange={e => onChange(e.target.value)}>
+      {options.map(opt => (
+        <option key={opt.value || 'all'} value={opt.value}>
+          {opt.label} {opt.count !== undefined ? `(${opt.count})` : ''}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -605,8 +598,8 @@ function CatalogFilters({ filters, setFilters, products, categories, makes, onCl
   const maxPct = (filters.maxPrice / PRICE_MAX) * 100;
 
   return (
-    <div className="flex flex-col gap-5 p-4">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-4 p-4 lg:grid lg:grid-cols-4 xl:grid-cols-5 lg:items-end lg:gap-5">
+      <div className="flex items-center justify-between lg:hidden lg:col-span-full">
         <span className="flex items-center gap-2 text-sm font-bold text-ad-text"><Filter className="w-4 h-4 text-ad-primary" /> Search & Filters</span>
         <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-ad-muted hover:bg-ad-card hover:text-ad-text lg:hidden cursor-pointer" aria-label="Close filters"><X className="w-5 h-5" /></button>
       </div>
@@ -651,7 +644,7 @@ function CatalogFilters({ filters, setFilters, products, categories, makes, onCl
         </select>
       </FilterSection>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 lg:col-span-full xl:col-span-1 lg:mt-2">
         <Button className="flex-1" onClick={() => setFilters(DEFAULT_FILTERS)}><RotateCcw className="w-4 h-4" /> Reset</Button>
         <Button variant="primary" className="flex-1 lg:hidden" onClick={onClose}>Show results</Button>
       </div>
