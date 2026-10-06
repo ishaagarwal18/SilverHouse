@@ -5,8 +5,12 @@
       "destination": "https://api.silverhouseindia.com/api/:match*"
     },
     {
-      "source": "/uploads/:match*",
-      "destination": "https://api.silverhouseindia.com/uploads/:match*"
+      "source": "/product_image/:match*",
+      "destination": "https://api.silverhouseindia.com/product_image/:match*"
+    },
+    {
+      "source": "/docs/:match*",
+      "destination": "https://api.silverhouseindia.com/docs/:match*"
     },
     {
       "source": "/(.*)",

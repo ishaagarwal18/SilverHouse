@@ -10,15 +10,18 @@ A full-stack e-commerce application specializing in premium silver artifacts, co
 - **Home Page**: Dynamic hero banners, curated category cards, promotional banners, and featured product showcases.
 - **Product Listing Page (PLP)**: Responsive product grid with category/subcategory filtering, sorting, and live status badges.
 - **Product Detail Page (PDP)**: Interactive product view featuring image galleries, quantity selection, detailed specifications, and review highlights.
-- **Cart & Wishlist**: Slide-out drawers for instant cart adjustments, promo code application, wishlist saving, and interactive checkout modal.
+- **Cart & Wishlist**: Slide-out drawers with luxury CSS keyframe animations (`slideInRight`), promo code application, and interactive checkout modal.
 - **Search & Quick View**: Modal search for fast discovery and quick view preview for rapid product evaluation.
+- **Cinematic UI**: Global scroll-reveal effects, staggered component loading, shimmer gradients, and modern marquee components.
 - **Toast Notification System**: Real-time feedback for adding items to cart, wishlist updates, and form submissions.
 - **Responsive Design**: Designed with Tailwind CSS v4 and Lucide React Icons for a seamless mobile and desktop experience.
 
 ### ⚙️ Backend (Node.js & Express API)
 - **RESTful Endpoints**: Unified API route structure (`/api/data`, `/catalog`) interacting with Microsoft SQL Server stored procedures.
 - **Stored Procedure Integration**: Handles data queries, status verification, JSON payload parsing, and parameter binding (`dbo.SP_GETDATA` & `dbo.SP_Fetchdata`).
+- **Persistent Image Storage**: Media uploads correctly migrate to the dedicated `Backend/product_image` directory to persist safely and prevent ephemeral hosting data loss.
 - **Admin & Management Views**: Serves static HTML utilities (`public/index.html`, `public/catalog.html`, `public/product-form.html`) for product catalog management.
+- **Proxy Configuration**: Supports dynamic rewrite mappings via `vercel.json` and `vite.config.js` for serving local backend assets (e.g., `/docs` and `/product_image`) through the frontend securely.
 
 ---
 
@@ -56,10 +59,12 @@ SilverHouse/
 │   └── index.css               # Global CSS & Tailwind imports
 ├── Backend/                    # Node.js & Express Server
 │   ├── public/                 # Static HTML views & admin management tools
+│   ├── product_image/          # Persistent local storage for product image uploads
 │   ├── .env                    # Environment variables configuration
 │   ├── db.js                   # MS SQL Server database connection pool
 │   └── server.js               # Express API endpoints & server setup
 ├── package.json                # Frontend dependencies & scripts
+├── vercel.json                 # Production API routing & URL rewrites
 └── README.md                   # Project documentation
 ```
 
