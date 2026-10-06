@@ -312,6 +312,10 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('checkout') === 'true') {
+      if (!isAuthenticated) {
+        navigate('/login', { replace: true, state: { from: '/checkout' } });
+        return;
+      }
       if (cartItems.length > 0) {
         const subtotal = cartItems.reduce((acc, it) => acc + (Number(it.product.price) || 0) * it.quantity, 0);
         setCheckoutData(prev => ({
@@ -325,7 +329,7 @@ export default function App() {
       const newSearch = params.toString() ? `?${params.toString()}` : '';
       navigate(`${location.pathname}${newSearch}`, { replace: true });
     }
-  }, [location.search, cartItems, navigate, location.pathname]);
+  }, [location.search, cartItems, navigate, location.pathname, isAuthenticated]);
 
   // Toast Notifications State
   const [toasts, setToasts] = useState([]);
@@ -552,10 +556,36 @@ export default function App() {
     }
   };
 
-  // Checkout Handler
+  // Checkout Handler - Restricted strictly to authenticated customers
   const handleProceedCheckout = (totalAmount, discountAmount, appliedCoupon) => {
+    if (!isAuthenticated) {
+      triggerToast('info', 'Sign In Required', 'Please sign in or register to access checkout and payment.');
+      navigate('/login', { state: { from: '/checkout' } });
+      return;
+    }
     setCheckoutData({ totalAmount, discountAmount, appliedCoupon });
     setIsCheckoutOpen(true);
+  };
+
+  // Handler for direct visits to /checkout, /payment, /cart/checkout
+  const handleOpenCheckoutRoute = () => {
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true, state: { from: '/checkout' } });
+      return;
+    }
+    if (!cartItems || cartItems.length === 0) {
+      triggerToast('info', 'Cart is Empty', 'Your shopping cart is currently empty. Please add sacred silver items first.');
+      navigate('/catalog', { replace: true });
+      return;
+    }
+    const subtotal = cartItems.reduce((acc, it) => acc + (Number(it.product.price) || 0) * it.quantity, 0);
+    setCheckoutData(prev => ({
+      totalAmount: prev.totalAmount || subtotal,
+      discountAmount: prev.discountAmount || 0,
+      appliedCoupon: prev.appliedCoupon || null
+    }));
+    setIsCheckoutOpen(true);
+    navigate('/', { replace: true });
   };
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -604,6 +634,7 @@ export default function App() {
             onSelectProduct={handleSelectProduct}
             onTriggerToast={triggerToast}
             onOpenCart={() => setIsCartOpen(true)}
+            onOpenCheckout={handleOpenCheckoutRoute}
           />
         </main>
       </div>

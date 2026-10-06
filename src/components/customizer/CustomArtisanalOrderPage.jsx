@@ -77,7 +77,16 @@ const CUSTOM_CATEGORIES = [
 export default function CustomArtisanalOrderPage({ onTriggerToast }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      if (onTriggerToast) {
+        onTriggerToast('info', 'Sign In Required', 'Please sign in or register to access Bespoke & Custom Orders.');
+      }
+      navigate('/login', { replace: true, state: { from: location } });
+    }
+  }, [authLoading, isAuthenticated, navigate, location, onTriggerToast]);
 
   // Selected Category
   const [selectedCategory, setSelectedCategory] = useState(CUSTOM_CATEGORIES[0].id);
@@ -286,6 +295,14 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
     setCopiedOrderNumber(true);
     setTimeout(() => setCopiedOrderNumber(false), 2500);
   };
+
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--th-bg)] text-[var(--th-text-main)]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--th-primary)]" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--th-bg)] text-[var(--th-text-main)] py-8 px-4 sm:px-6 lg:px-8">

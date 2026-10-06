@@ -31,6 +31,17 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }
     initAuth();
+
+    const handleLogoutSync = () => {
+      setUser(null);
+      setToken(null);
+    };
+    window.addEventListener('silverhouse_unauthorized', handleLogoutSync);
+    window.addEventListener('silverhouse_admin_logout', handleLogoutSync);
+    return () => {
+      window.removeEventListener('silverhouse_unauthorized', handleLogoutSync);
+      window.removeEventListener('silverhouse_admin_logout', handleLogoutSync);
+    };
   }, []);
 
   const login = async (email, password) => {
@@ -88,6 +99,8 @@ export function AuthProvider({ children }) {
     setToken(null);
     localStorage.removeItem('silverhouse_token');
     localStorage.removeItem('silverhouse_user');
+    localStorage.removeItem('silverhouse_admin_token');
+    localStorage.removeItem('silverhouse_admin_user');
     localStorage.removeItem('silverhouse_cart');
     localStorage.removeItem('silverhouse_guest_cart');
     localStorage.removeItem('silverhouse_guest_wishlist');

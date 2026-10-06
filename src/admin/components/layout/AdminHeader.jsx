@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, Crown, LogOut, Menu, Moon, Sun } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useAdminUI } from '../../context/AdminUIContext';
@@ -23,6 +23,7 @@ function sectionLabel(pathname) {
 /** Sticky top bar shared by every admin page: menu toggle, breadcrumb, theme toggle and account menu. */
 export default function AdminHeader({ onOpenSidebar }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAdminAuth();
   const { theme, toggleTheme } = useAdminUI();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -84,7 +85,10 @@ export default function AdminHeader({ onOpenSidebar }) {
             <button
               type="button"
               role="menuitem"
-              onClick={logout}
+              onClick={() => {
+                logout();
+                navigate('/admin/login', { replace: true });
+              }}
               className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] font-semibold text-ad-danger hover:bg-ad-danger/10 cursor-pointer"
             >
               <LogOut className="w-4 h-4" /> Sign out

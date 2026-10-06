@@ -1,0 +1,2624 @@
+{
+  "info": {
+    "_postman_id": "8c3b7f14-9e32-475a-bc81-a67b5e40e210",
+    "name": "SilverHouse API Collection",
+    "description": "Complete and official Postman collection for the SilverHouse e-commerce application and artisanal studio backend.\n\n### Overview\nSilverHouse is a luxury 925 & 999 artisanal pure silver e-commerce store with an administrative studio. This collection covers:\n- **Customer Authentication**: WhatsApp OTP verification, session management, customer profile.\n- **Admin Authentication & Studio**: Admin credentials login, password change, session checking.\n- **Custom Artisanal Orders (Bespoke)**: Customer custom requests with inspiration photos, quotes, customer approval & payment, admin decision workflow.\n- **Admin Analytics & P&L**: Catalog gross margins, custom order conversion rates, category profitability.\n- **Commerce Features**: Cart management, checkout, order tracking, address book, wishlist, recently viewed products, customer reviews with photos.\n- **Media Uploads**: Single and multi-image uploads.\n- **Data API Gateway (`/api/data`)**: Direct access to stored procedures for full database CRUD operations.\n\n### Environments\nSwitch between **SilverHouse Local** (http://localhost:5001), **SilverHouse Production** (https://api.silverhouseindia.com), and **SilverHouse Render**.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001",
+      "type": "string",
+      "description": "Base URL of the backend server"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string",
+      "description": "Customer JWT/base64 authentication token (auto-populated after verifying OTP)"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string",
+      "description": "Admin authentication token (auto-populated after admin login)"
+    },
+    {
+      "key": "testPhone",
+      "value": "9999999999",
+      "type": "string",
+      "description": "Test mobile phone number (permanent test account with static OTP 123456)"
+    },
+    {
+      "key": "testOtp",
+      "value": "123456",
+      "type": "string",
+      "description": "Static test OTP for test phone 9999999999"
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string",
+      "description": "Active customer User ID"
+    },
+    {
+      "key": "adminUsername",
+      "value": "admin",
+      "type": "string",
+      "description": "Admin username or phone number"
+    },
+    {
+      "key": "adminPassword",
+      "value": "admin123",
+      "type": "string",
+      "description": "Admin password"
+    },
+    {
+      "key": "productId",
+      "value": "1",
+      "type": "string",
+      "description": "Sample product ID for tests"
+    },
+    {
+      "key": "orderId",
+      "value": "1",
+      "type": "string",
+      "description": "Sample order ID for tests"
+    },
+    {
+      "key": "customOrderId",
+      "value": "1",
+      "type": "string",
+      "description": "Sample custom bespoke order ID for tests"
+    },
+    {
+      "key": "addressId",
+      "value": "1",
+      "type": "string",
+      "description": "Sample customer address ID for tests"
+    },
+    {
+      "key": "guestToken",
+      "value": "guest_sample_token_12345",
+      "type": "string",
+      "description": "Guest shopping token for unauthenticated cart sessions"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Customer Authentication (WhatsApp OTP)",
+      "description": "Customer registration and login via automated WhatsApp OTP verification. Includes session verification and profile updates.",
+      "item": [
+        {
+          "name": "1.1 Send WhatsApp OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{testPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/send-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "send-otp"
+              ]
+            },
+            "description": "Sends a 6-digit verification code to the customer's WhatsApp number. Test account `9999999999` uses static OTP `123456` with 10 days validity."
+          }
+        },
+        {
+          "name": "1.2 Verify WhatsApp OTP & Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.token) {",
+                  "        pm.collectionVariables.set('authToken', json.token);",
+                  "        if (pm.environment) pm.environment.set('authToken', json.token);",
+                  "        console.log('Customer Auth Token saved successfully:', json.token);",
+                  "    }",
+                  "    if (json.user && json.user.userId) {",
+                  "        pm.collectionVariables.set('userId', String(json.user.userId));",
+                  "        if (pm.environment) pm.environment.set('userId', String(json.user.userId));",
+                  "        console.log('Active User ID saved:', json.user.userId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{testPhone}}\",\n  \"otp\": \"{{testOtp}}\",\n  \"fullName\": \"Isha Agarwal\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "description": "Verifies the 6-digit WhatsApp OTP. If the user doesn't exist, an account is automatically created. Returns a base64 session token and saves it to `{{authToken}}` and `{{userId}}`."
+          }
+        },
+        {
+          "name": "1.3 Get Current Active User Session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Verifies active customer session against database using the Bearer token."
+          }
+        },
+        {
+          "name": "1.4 Update Customer Profile (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"fullName\": \"Isha Agarwal\",\n  \"phone\": \"{{testPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Updates customer full name or mobile number."
+          }
+        },
+        {
+          "name": "1.5 Update Customer Profile (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"fullName\": \"Isha Agarwal\",\n  \"phone\": \"{{testPhone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Alternative PUT endpoint for updating customer profile."
+          }
+        },
+        {
+          "name": "1.6 Legacy Customer Login Redirect",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Notice informing legacy callers that customer authentication has transitioned to instant WhatsApp OTP."
+          }
+        },
+        {
+          "name": "1.7 Legacy Customer Registration Redirect",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"New User\",\n  \"email\": \"new@example.com\",\n  \"phone\": \"9876543210\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Notice informing callers that customer registration is instant via WhatsApp OTP."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Admin Portal & Authentication",
+      "description": "Secure administrator credentials login (username/phone + password), token verification, and password management.",
+      "item": [
+        {
+          "name": "2.1 Admin Credentials Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.token) {",
+                  "        pm.collectionVariables.set('adminToken', json.token);",
+                  "        if (pm.environment) pm.environment.set('adminToken', json.token);",
+                  "        console.log('Admin Token saved successfully:', json.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "login"
+              ]
+            },
+            "description": "Authenticates an administrator with username/phone and password (supports plaintext or SHA-256 hashed passwords). Automatically sets `{{adminToken}}`."
+          }
+        },
+        {
+          "name": "2.2 Verify Admin Active Session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "me"
+              ]
+            },
+            "description": "Validates active admin session token against `dbo.[user]` where `role = 'ADMIN'`."
+          }
+        },
+        {
+          "name": "2.3 Change Admin Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{adminPassword}}\",\n  \"newPassword\": \"AdminNewSecret123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "change-password"
+              ]
+            },
+            "description": "Allows an authenticated administrator to change their login password."
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Custom Artisanal Orders (Bespoke)",
+      "description": "End-to-end bespoke commissioning workflow: customer submits requirements & reference photos, admin silversmith reviews & sets quotation price, customer accepts & pays online with automated WhatsApp notifications.",
+      "item": [
+        {
+          "name": "3.1 Submit Custom Order Request (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "custom_category",
+                  "value": "Mukhut",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Handcrafted 925 sterling silver Mukut with floral filigree for Radha Krishna deity (height: 6 inches, weight ~150g).",
+                  "type": "text"
+                },
+                {
+                  "key": "customer_name",
+                  "value": "Isha Agarwal",
+                  "type": "text"
+                },
+                {
+                  "key": "customer_phone",
+                  "value": "{{testPhone}}",
+                  "type": "text"
+                },
+                {
+                  "key": "customer_email",
+                  "value": "patron@silverhouse.com",
+                  "type": "text"
+                },
+                {
+                  "key": "user_id",
+                  "value": "{{userId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "images",
+                  "value": "",
+                  "type": "file",
+                  "description": "Select reference images or photos from local filesystem"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/custom-orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "custom-orders"
+              ]
+            },
+            "description": "Customer places a custom order request with specifications and multi-file reference photos. Customer must be logged in (`user_id` required)."
+          }
+        },
+        {
+          "name": "3.2 Customer Fetch My Custom Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/custom-orders/my-orders?userId={{userId}}&phone={{testPhone}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "custom-orders",
+                "my-orders"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "description": "Filter by customer user ID",
+                  "disabled": false
+                },
+                {
+                  "key": "phone",
+                  "value": "{{testPhone}}",
+                  "description": "Filter by customer phone number",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Customer retrieves their own submitted custom orders with current quotation and confirmation status."
+          }
+        },
+        {
+          "name": "3.3 Customer Confirm & Pay Quotation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/custom-orders/{{customOrderId}}/pay",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "custom-orders",
+                "{{customOrderId}}",
+                "pay"
+              ]
+            },
+            "description": "Customer accepts the quotation and marks the approved custom order as PAID. Order must be in 'accepted' status."
+          }
+        },
+        {
+          "name": "3.4 Admin Fetch All Custom Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/custom-orders?status=processing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "custom-orders"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "processing",
+                  "description": "Filter by confirm status: processing | accepted | rejected",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Admin fetches all custom bespoke orders with customer contact information, reference images, and quotations."
+          }
+        },
+        {
+          "name": "3.5 Admin Update Quotation & Decision Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": \"accepted\",\n  \"final_payable\": 14500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/custom-orders/{{customOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "custom-orders",
+                "{{customOrderId}}"
+              ]
+            },
+            "description": "Admin updates artisan decision ('processing' | 'accepted' | 'rejected') and sets the final quotation price. Triggers an automated WhatsApp notification to the customer."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Admin Analytics & P&L",
+      "description": "Executive studio analytics calculating catalog gross margins, material vs labor costs, custom order conversion rates, and category profitability.",
+      "item": [
+        {
+          "name": "4.1 Get Full Analytics & P&L Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/analytics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "analytics"
+              ]
+            },
+            "description": "Returns aggregated financial metrics:\n- Catalog potential & realized revenue, actual costs, labour costs, gross margins\n- Custom order KPIs: total, processing, accepted, rejected, acceptance & rejection rates, quoted revenue\n- Category breakdowns & recent order activity"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Recently Viewed Products",
+      "description": "Tracks and retrieves products viewed by patrons (saved in `dbo.viewed` for members, and via query parameters for guests).",
+      "item": [
+        {
+          "name": "5.1 Record Product View",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"userId\": \"{{userId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/viewed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "viewed"
+              ]
+            },
+            "description": "Records a viewed product into `dbo.viewed` via `dbo.SP_viewed`."
+          }
+        },
+        {
+          "name": "5.2 Fetch Recently Viewed (Logged-in Patron)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/viewed?userId={{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "viewed"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "description": "Customer user ID",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Fetches recent products viewed by the logged-in customer."
+          }
+        },
+        {
+          "name": "5.3 Fetch Recently Viewed (Guest Patron)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/viewed?productIds=1,2,3,4",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "viewed"
+              ],
+              "query": [
+                {
+                  "key": "productIds",
+                  "value": "1,2,3,4",
+                  "description": "Comma-separated product IDs stored in guest's local storage",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Fetches full product cards and image URLs for a list of comma-separated IDs viewed by a guest."
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Customer Reviews & Ratings",
+      "description": "Customer testimonials, star ratings (1-5), comments, and customer upload photos stored in `dbo.review`.",
+      "item": [
+        {
+          "name": "6.1 Submit Customer Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"userId\": \"{{userId}}\",\n  \"star\": 5,\n  \"description\": \"Exceptional purity and mirror finish! Hallmarking is clearly visible. Will definitely purchase again.\",\n  \"photos\": [\n    \"/product_image/review-photo-1.jpg\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews"
+              ]
+            },
+            "description": "Submits a review with rating and up to 5 photos."
+          }
+        },
+        {
+          "name": "6.2 Get Reviews for Product",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews?productId={{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "productId",
+                  "value": "{{productId}}",
+                  "description": "Filter reviews by Product ID",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Fetches all verified reviews and computes aggregate rating for a product."
+          }
+        },
+        {
+          "name": "6.3 Get Reviews for Specific Review ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews?reviewId=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "reviewId",
+                  "value": "1",
+                  "description": "Review ID",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Fetches a specific review by reviewId."
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Store Parameters & Company Profile",
+      "description": "Store-wide configuration including theme presets, WhatsApp API endpoint, festival banners, and verified company details.",
+      "item": [
+        {
+          "name": "7.1 Get Store Parameters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/parameters",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "parameters"
+              ]
+            },
+            "description": "Fetches current store configuration from `dbo.store_parameter` (default theme, active festival, WhatsApp API)."
+          }
+        },
+        {
+          "name": "7.2 Update Store Parameters (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"default_theme\": \"royal-gold\",\n  \"wp_api\": \"https://wtsapp.aronertech.com/send?token=SECRET_TOKEN\",\n  \"current_festival\": \"Akshaya Tritiya Pure Silver Mahotsav\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/parameters",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "parameters"
+              ]
+            },
+            "description": "Admin updates store parameters in `dbo.store_parameter`."
+          }
+        },
+        {
+          "name": "7.3 Get Official Company Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "company"
+              ]
+            },
+            "description": "Fetches official business information (Sunil K Agarwal, 217 Kanak Chamber, Ahmedabad, GST, PAN, contact numbers) from `dbo.company`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. File & Media Uploads",
+      "description": "Multer file upload endpoints for product catalog images, custom order inspirations, and customer review photos.",
+      "item": [
+        {
+          "name": "8.1 Upload Single Image",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "imageFile",
+                  "value": "",
+                  "type": "file",
+                  "description": "Select single image file to upload"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "upload"
+              ]
+            },
+            "description": "Uploads a single image to `/product_image/` on the server and returns its relative URL path."
+          }
+        },
+        {
+          "name": "8.2 Upload Multiple Images",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "images",
+                  "value": "",
+                  "type": "file",
+                  "description": "Select multiple image files (up to 10 files)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload-multiple",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "upload-multiple"
+              ]
+            },
+            "description": "Uploads up to 10 images at once and returns an array of relative image URLs."
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Data Gateway - Products (/api/data)",
+      "description": "Stored procedure operations for products (`proc_name: 'product'`) via `dbo.SP_Fetchdata` and `dbo.SP_GETDATA`.",
+      "item": [
+        {
+          "name": "9.1 List All Products",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"product\",\n  \"opr\": \"SELECT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches all products with aggregated image arrays and category details, ordered by priority."
+          }
+        },
+        {
+          "name": "9.2 Filter Products by Category, Price & Purity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"product\",\n  \"opr\": \"SELECT\",\n  \"table_values\": {\n    \"filters\": {\n      \"category_name\": \"Idols\",\n      \"purity\": \"925\",\n      \"min_price\": 500,\n      \"max_price\": 25000,\n      \"ideal_for\": \"Puja\",\n      \"color\": \"Silver\",\n      \"search\": \"Ganesha\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Queries products with dynamic SQL Server JSON filtering."
+          }
+        },
+        {
+          "name": "9.3 Get Product by ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"product\",\n  \"opr\": \"SELECT\",\n  \"condition\": \"{{productId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches detailed record for a specific product ID."
+          }
+        },
+        {
+          "name": "9.4 Add New Product (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"product\",\n  \"opr\": \"ADD\",\n  \"table_values\": {\n    \"category_id\": 1,\n    \"m_id\": 1,\n    \"title\": \"Sacred 925 Silver Laxmi Ganesha Idol Set\",\n    \"description\": \"Artisan-crafted pure 925 hallmarked silver idols with detailed ornamentation.\",\n    \"price\": 4999,\n    \"discount\": 10,\n    \"quantity\": 20,\n    \"purity\": \"92.5 Sterling\",\n    \"weight\": \"65g\",\n    \"ideal_for\": \"Puja\",\n    \"packaging\": \"Velvet Royal Box\",\n    \"labour_cost\": 650,\n    \"actual_cost\": 3200,\n    \"priority\": 10,\n    \"color\": \"Silver\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Creates a new product record in `dbo.product`."
+          }
+        },
+        {
+          "name": "9.5 Update Product (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"product\",\n  \"opr\": \"EDIT\",\n  \"condition\": \"{{productId}}\",\n  \"table_values\": {\n    \"price\": 5299,\n    \"discount\": 5,\n    \"quantity\": 25,\n    \"priority\": 12\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Updates an existing product in `dbo.product`."
+          }
+        },
+        {
+          "name": "9.6 Update Product Stock Quantity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"product\",\n  \"opr\": \"UPDATE_QTY\",\n  \"condition\": \"{{productId}}\",\n  \"table_values\": {\n    \"quantity\": 30\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Directly sets the inventory stock quantity for a product."
+          }
+        },
+        {
+          "name": "9.7 Restock Product (Increment Quantity)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"product\",\n  \"opr\": \"RESTOCK\",\n  \"condition\": \"{{productId}}\",\n  \"table_values\": {\n    \"quantity\": 10\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Adds additional units to the existing inventory quantity of a product."
+          }
+        },
+        {
+          "name": "9.8 Delete Product (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"product\",\n  \"opr\": \"DELETE\",\n  \"condition\": \"{{productId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Deletes a product from `dbo.product`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Data Gateway - Categories (/api/data)",
+      "description": "Stored procedure operations for categories (`proc_name: 'category'`).",
+      "item": [
+        {
+          "name": "10.1 List All Categories",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"category\",\n  \"opr\": \"SELECT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches all categories with their associated banner image URLs."
+          }
+        },
+        {
+          "name": "10.2 Get Category by Slug or ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"category\",\n  \"opr\": \"SELECT\",\n  \"condition\": \"silver-coins\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches category details by numerical ID or slug string."
+          }
+        },
+        {
+          "name": "10.3 Add Category (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"category\",\n  \"opr\": \"ADD\",\n  \"table_values\": {\n    \"name\": \"Silver Utensils\",\n    \"description\": \"Sacred silver puja thalis, kalash, and spoons\",\n    \"slug\": \"silver-utensils\",\n    \"ideal_for\": \"Puja\",\n    \"image_id\": 1\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Creates a new category in `dbo.category`."
+          }
+        },
+        {
+          "name": "10.4 Edit Category (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"category\",\n  \"opr\": \"EDIT\",\n  \"condition\": \"1\",\n  \"table_values\": {\n    \"name\": \"Sacred Silver Idols\",\n    \"description\": \"Handcrafted 925 and 999 pure silver deities\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Updates an existing category."
+          }
+        },
+        {
+          "name": "10.5 Delete Category (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"category\",\n  \"opr\": \"DELETE\",\n  \"condition\": \"99\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Deletes a category from `dbo.category`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Data Gateway - Shopping Cart (/api/data)",
+      "description": "Shopping cart persistence in `dbo.cart` and `dbo.cart_item` supporting both logged-in customers and guest patron tokens.",
+      "item": [
+        {
+          "name": "11.1 Fetch User Cart Items",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"cart_item\",\n  \"opr\": \"SELECT\",\n  \"table_values\": {\n    \"user_id\": \"{{userId}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches cart line items with product details and subtotal for a logged-in user."
+          }
+        },
+        {
+          "name": "11.2 Fetch Guest Cart Items",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"cart_item\",\n  \"opr\": \"SELECT\",\n  \"table_values\": {\n    \"guest_token\": \"{{guestToken}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches cart items using the anonymous guest token."
+          }
+        },
+        {
+          "name": "11.3 Add Item to Cart (User or Guest)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"cart_item\",\n  \"opr\": \"ADD\",\n  \"table_values\": {\n    \"user_id\": \"{{userId}}\",\n    \"guest_token\": \"{{guestToken}}\",\n    \"product_id\": \"{{productId}}\",\n    \"quantity\": 1\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Adds or increments product quantity in cart."
+          }
+        },
+        {
+          "name": "11.4 Update Cart Item Quantity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"cart_item\",\n  \"opr\": \"UPDATE_QTY\",\n  \"table_values\": {\n    \"user_id\": \"{{userId}}\",\n    \"guest_token\": \"{{guestToken}}\",\n    \"product_id\": \"{{productId}}\",\n    \"quantity\": 3\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Updates line item quantity directly in the database."
+          }
+        },
+        {
+          "name": "11.5 Remove Single Item from Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"cart_item\",\n  \"opr\": \"DELETE\",\n  \"table_values\": {\n    \"user_id\": \"{{userId}}\",\n    \"guest_token\": \"{{guestToken}}\",\n    \"product_id\": \"{{productId}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Removes a specific product from cart."
+          }
+        },
+        {
+          "name": "11.6 Clear Whole Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"cart_item\",\n  \"opr\": \"DELETE\",\n  \"table_values\": {\n    \"user_id\": \"{{userId}}\",\n    \"guest_token\": \"{{guestToken}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Clears all items from the customer's cart."
+          }
+        },
+        {
+          "name": "11.7 List Cart Headers (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"cart\",\n  \"opr\": \"SELECT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Admin inspects active carts, item counts, and timestamps."
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Data Gateway - Wishlist (/api/data)",
+      "description": "Customer wishlist management in `dbo.wishlist`.",
+      "item": [
+        {
+          "name": "12.1 Fetch User Wishlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"wishlist\",\n  \"opr\": \"SELECT\",\n  \"condition\": \"{{userId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches all saved wishlist items for the specified user."
+          }
+        },
+        {
+          "name": "12.2 Add Product to Wishlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"wishlist\",\n  \"opr\": \"ADD\",\n  \"table_values\": {\n    \"user_id\": \"{{userId}}\",\n    \"product_id\": \"{{productId}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Adds a product to user's saved wishlist."
+          }
+        },
+        {
+          "name": "12.3 Remove Product from Wishlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"wishlist\",\n  \"opr\": \"DELETE\",\n  \"table_values\": {\n    \"user_id\": \"{{userId}}\",\n    \"product_id\": \"{{productId}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Removes a product from user's wishlist."
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Data Gateway - Customer Addresses (/api/data)",
+      "description": "Saved delivery addresses in `dbo.address`.",
+      "item": [
+        {
+          "name": "13.1 List Saved Addresses for User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"address\",\n  \"opr\": \"SELECT\",\n  \"table_values\": {\n    \"user_id\": \"{{userId}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches delivery addresses belonging to the customer."
+          }
+        },
+        {
+          "name": "13.2 Add Delivery Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"address\",\n  \"opr\": \"ADD\",\n  \"table_values\": {\n    \"user_id\": \"{{userId}}\",\n    \"address_name\": \"Home\",\n    \"recipient_name\": \"Isha Agarwal\",\n    \"Block\": \"A-205\",\n    \"street\": \"Akash Metro City\",\n    \"area\": \"Isanpur\",\n    \"city\": \"Ahmedabad\",\n    \"state\": \"Gujarat\",\n    \"pincode\": \"382443\",\n    \"country\": \"India\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Saves a new shipping address to `dbo.address`."
+          }
+        },
+        {
+          "name": "13.3 Update Delivery Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"address\",\n  \"opr\": \"UPDATE\",\n  \"condition\": \"{{addressId}}\",\n  \"table_values\": {\n    \"recipient_name\": \"Isha S. Agarwal\",\n    \"street\": \"Akash Metro City Phase 2\",\n    \"city\": \"Ahmedabad\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Updates an existing shipping address."
+          }
+        },
+        {
+          "name": "13.4 Delete Delivery Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"address\",\n  \"opr\": \"DELETE\",\n  \"condition\": \"{{addressId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Deletes a shipping address."
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Data Gateway - Orders & Checkout (/api/data)",
+      "description": "Standard catalog checkout and order management (`dbo.orders` and `dbo.order_item`).",
+      "item": [
+        {
+          "name": "14.1 Place Ready-Made Order (Customer Checkout)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"orders\",\n  \"opr\": \"ADD\",\n  \"table_values\": {\n    \"user_id\": \"{{userId}}\",\n    \"order_number\": \"SH-MUWWAFLE\",\n    \"customer_name\": \"Isha Agarwal\",\n    \"customer_phone\": \"{{testPhone}}\",\n    \"customer_email\": \"isha@silverhouse.com\",\n    \"total_amount\": 3499,\n    \"discount_amount\": 0,\n    \"final_payable\": 3499,\n    \"payment_status\": \"PENDING\",\n    \"payment_method\": \"prepaid\",\n    \"address_id\": \"{{addressId}}\",\n    \"items\": [\n      {\n        \"product_id\": \"{{productId}}\",\n        \"unit_price\": 3499,\n        \"discount_percent\": 0,\n        \"quantity\": 1,\n        \"subtotal\": 3499\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Places a ready-to-ship order. Automatically checks and enforces guest COD policy and creates order items."
+          }
+        },
+        {
+          "name": "14.2 List All Ready-Made Orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"orders\",\n  \"opr\": \"SELECT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches orders list with customer, delivery address, and embedded JSON items array."
+          }
+        },
+        {
+          "name": "14.3 Get Order by Order ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"orders\",\n  \"opr\": \"SELECT\",\n  \"condition\": \"{{orderId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches specific order header details and ordered line items."
+          }
+        },
+        {
+          "name": "14.4 Get Order Line Items",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"order_item\",\n  \"opr\": \"SELECT\",\n  \"condition\": \"{{orderId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches items in `dbo.order_item` for a given order ID."
+          }
+        },
+        {
+          "name": "14.5 Update Order Status (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"orders\",\n  \"opr\": \"EDIT\",\n  \"condition\": \"{{orderId}}\",\n  \"table_values\": {\n    \"payment_status\": \"PAID\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Updates order payment or fulfillment status."
+          }
+        },
+        {
+          "name": "14.6 Delete Order (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"orders\",\n  \"opr\": \"DELETE\",\n  \"condition\": \"{{orderId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Deletes an order record."
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Data Gateway - Users & OTP Logs (/api/data)",
+      "description": "User account management (`dbo.[user]`) and audit of WhatsApp OTP codes (`dbo.phone_otp`).",
+      "item": [
+        {
+          "name": "15.1 List All Users (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"user\",\n  \"opr\": \"SELECT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches user directory (user_id, full_name, phone, role, created_at)."
+          }
+        },
+        {
+          "name": "15.2 Get User by ID or Phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"user\",\n  \"opr\": \"SELECT\",\n  \"condition\": \"{{userId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches single user details."
+          }
+        },
+        {
+          "name": "15.3 Update User / Assign Admin Role (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"user\",\n  \"opr\": \"EDIT\",\n  \"condition\": \"{{userId}}\",\n  \"table_values\": {\n    \"role\": \"ADMIN\",\n    \"password\": \"SecureAdminPassword123\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Assigns ADMIN role or updates user profile. Passwords are only permitted for users with role ADMIN."
+          }
+        },
+        {
+          "name": "15.4 Delete User (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"user\",\n  \"opr\": \"DELETE\",\n  \"condition\": \"{{userId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Deletes a user account."
+          }
+        },
+        {
+          "name": "15.5 Inspect Phone OTP Verification Logs (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"phone_otp\",\n  \"opr\": \"SELECT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Inspects live OTP verification records, attempt counts, and expiration dates."
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Data Gateway - Master Data & Images (/api/data)",
+      "description": "Making types (`make_master`), image library (`image`), and product-image mappings (`product_image`).",
+      "item": [
+        {
+          "name": "16.1 List Making Methods (make_master)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"make_master\",\n  \"opr\": \"SELECT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Lists craftsmanship types (Handmade, Machine Made, Casting, Laser Cut, etc.)."
+          }
+        },
+        {
+          "name": "16.2 Add Making Method (make_master)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"make_master\",\n  \"opr\": \"ADD\",\n  \"table_values\": {\n    \"type\": \"Antique Nakshi Hand-Engraving\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Adds a craftsmanship type to `dbo.make_master`."
+          }
+        },
+        {
+          "name": "16.3 List All Images in Library",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"image\",\n  \"opr\": \"SELECT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Fetches all stored image records in `dbo.image`."
+          }
+        },
+        {
+          "name": "16.4 Add Image Record to Library",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"image\",\n  \"opr\": \"ADD\",\n  \"table_values\": {\n    \"image_url\": \"/product_image/img-sample-1234.jpg\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Registers an image URL into `dbo.image`."
+          }
+        },
+        {
+          "name": "16.5 List Product-Image Mappings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"product_image\",\n  \"opr\": \"SELECT\",\n  \"condition\": \"{{productId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Lists images linked to a specific product."
+          }
+        },
+        {
+          "name": "16.6 Link Image to Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proc_name\": \"product_image\",\n  \"opr\": \"ADD\",\n  \"table_values\": {\n    \"product_id\": \"{{productId}}\",\n    \"image_id\": 1\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Associates an image with a product in `dbo.product_image`."
+          }
+        }
+      ]
+    }
+  ]
+}

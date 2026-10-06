@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   Sparkles, Phone, ShieldCheck, ArrowRight, AlertCircle, Building2,
@@ -10,7 +10,9 @@ import { getAdminUrl } from '../../utils/adminUrl';
 
 export default function AuthPage({ onTriggerToast }) {
   const [searchParams] = useSearchParams();
-  const redirectTarget = searchParams.get('redirect') || '/';
+  const location = useLocation();
+  const fromState = location.state?.from?.pathname || (typeof location.state?.from === 'string' ? location.state.from : null);
+  const redirectTarget = searchParams.get('redirect') || fromState || '/';
 
   // Step state: 'PHONE' or 'OTP'
   const [step, setStep] = useState('PHONE');
@@ -259,7 +261,7 @@ export default function AuthPage({ onTriggerToast }) {
               ? result.redirectUrl
               : getAdminUrl();
             window.location.href = targetUrl;
-          } else if (redirectTarget === 'checkout' || redirectTarget === '/checkout') {
+          } else if (redirectTarget === 'checkout' || redirectTarget === '/checkout' || redirectTarget === '/payment' || redirectTarget === '/cart/checkout') {
             navigate('/?checkout=true');
           } else {
             navigate(redirectTarget);

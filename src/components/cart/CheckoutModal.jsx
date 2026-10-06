@@ -29,15 +29,15 @@ export default function CheckoutModal({
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [isGuestCheckout, setIsGuestCheckout] = useState(!isAuthenticated);
+  const [isGuestCheckout, setIsGuestCheckout] = useState(false);
 
+  // If checkout modal is triggered while not authenticated, close and route to login
   useEffect(() => {
-    if (isAuthenticated) {
-      setIsGuestCheckout(false);
-    } else {
-      setIsGuestCheckout(true);
+    if (isOpen && !isAuthenticated) {
+      if (onClose) onClose();
+      navigate('/login', { replace: true, state: { from: '/checkout' } });
     }
-  }, [isAuthenticated, isOpen]);
+  }, [isOpen, isAuthenticated, onClose, navigate]);
 
   // Card Simulator state for Step 2
   const [cardDetails, setCardDetails] = useState({
@@ -121,7 +121,7 @@ export default function CheckoutModal({
     }
   }, [isOpen, isAuthenticated, user]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !isAuthenticated) return null;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

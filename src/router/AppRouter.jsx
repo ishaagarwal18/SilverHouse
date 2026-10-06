@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import HomePage from '../components/home/HomePage';
 import ProductListingPage from '../components/plp/ProductListingPage';
 import ProductDetailPage from '../components/pdp/ProductDetailPage';
@@ -8,6 +9,41 @@ import AddressPage from '../components/account/AddressPage';
 import OrdersPage from '../components/account/OrdersPage';
 import CustomArtisanalOrderPage from '../components/customizer/CustomArtisanalOrderPage';
 import DocumentPage from '../pages/DocumentPage';
+
+/** Protects customer account components: unauthenticated users are routed to /login */
+function CustomerProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--th-bg)] text-[var(--th-text-main)]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--th-primary)]" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return children;
+}
+
+/** Route handler for /checkout, /payment, /cart/checkout when accessed directly */
+function CheckoutRoutePage({ onOpenCheckout }) {
+  useEffect(() => {
+    if (onOpenCheckout) {
+      onOpenCheckout();
+    }
+  }, [onOpenCheckout]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--th-bg)] text-[var(--th-text-main)]">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--th-primary)]" />
+    </div>
+  );
+}
 
 export default function AppRouter({
   products,
@@ -18,7 +54,8 @@ export default function AppRouter({
   onQuickView,
   onSelectProduct,
   onTriggerToast,
-  onOpenCart
+  onOpenCart,
+  onOpenCheckout
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,51 +89,163 @@ export default function AppRouter({
   return (
     <div key={location.pathname} className="animate-page-enter">
       <Routes location={location}>
-        {/* Unified Bespoke & Sacred Yatra Customizer Studio Routes */}
-      <Route
-        path="/customize"
-        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
-      />
-      <Route
-        path="/customize-yatra"
-        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
-      />
-      <Route
-        path="/custom-orders"
-        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
-      />
-      <Route
-        path="/custom-artisanal"
-        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
-      />
-      <Route
-        path="/customize-artisanal"
-        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
-      />
-      <Route
-        path="/category/custom-gifting/custom-yatra-lockets"
-        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
-      />
-      <Route
-        path="/category/custom-yatra-lockets/customize"
-        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
-      />
-      <Route
-        path="/category/custom-artisanal"
-        element={<CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />}
-      />
+        {/* Unified Bespoke & Sacred Yatra Customizer Studio Routes (Restricted) */}
+        <Route
+          path="/customize"
+          element={
+            <CustomerProtectedRoute>
+              <CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/customize-yatra"
+          element={
+            <CustomerProtectedRoute>
+              <CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/custom-orders"
+          element={
+            <CustomerProtectedRoute>
+              <CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/custom-artisanal"
+          element={
+            <CustomerProtectedRoute>
+              <CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/customize-artisanal"
+          element={
+            <CustomerProtectedRoute>
+              <CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/category/custom-gifting/custom-yatra-lockets"
+          element={
+            <CustomerProtectedRoute>
+              <CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/category/custom-yatra-lockets/customize"
+          element={
+            <CustomerProtectedRoute>
+              <CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/category/custom-artisanal"
+          element={
+            <CustomerProtectedRoute>
+              <CustomArtisanalOrderPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
 
-      {/* Login & Register Auth Route */}
-      <Route path="/login" element={<AuthPage onTriggerToast={onTriggerToast} />} />
-      <Route path="/register" element={<AuthPage onTriggerToast={onTriggerToast} />} />
+        {/* Public Login & Register Auth Routes */}
+        <Route path="/login" element={<AuthPage onTriggerToast={onTriggerToast} />} />
+        <Route path="/register" element={<AuthPage onTriggerToast={onTriggerToast} />} />
 
-      {/* Saved Addresses Route */}
-      <Route path="/addresses" element={<AddressPage onTriggerToast={onTriggerToast} />} />
-      <Route path="/account/addresses" element={<AddressPage onTriggerToast={onTriggerToast} />} />
+        {/* User Profile & Account Routes (Restricted to authenticated user) */}
+        <Route
+          path="/profile"
+          element={
+            <CustomerProtectedRoute>
+              <AuthPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/account"
+          element={
+            <CustomerProtectedRoute>
+              <AuthPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/account/profile"
+          element={
+            <CustomerProtectedRoute>
+              <AuthPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
 
-      {/* User Orders Route */}
-      <Route path="/orders" element={<OrdersPage onTriggerToast={onTriggerToast} />} />
-      <Route path="/account/orders" element={<OrdersPage onTriggerToast={onTriggerToast} />} />
+        {/* Saved Addresses Routes (Restricted to authenticated user) */}
+        <Route
+          path="/addresses"
+          element={
+            <CustomerProtectedRoute>
+              <AddressPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/account/addresses"
+          element={
+            <CustomerProtectedRoute>
+              <AddressPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+
+        {/* User Orders Routes (Restricted to authenticated user) */}
+        <Route
+          path="/orders"
+          element={
+            <CustomerProtectedRoute>
+              <OrdersPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/account/orders"
+          element={
+            <CustomerProtectedRoute>
+              <OrdersPage onTriggerToast={onTriggerToast} />
+            </CustomerProtectedRoute>
+          }
+        />
+
+        {/* Checkout & Payment Routes (Restricted to authenticated user) */}
+        <Route
+          path="/checkout"
+          element={
+            <CustomerProtectedRoute>
+              <CheckoutRoutePage onOpenCheckout={onOpenCheckout} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/payment"
+          element={
+            <CustomerProtectedRoute>
+              <CheckoutRoutePage onOpenCheckout={onOpenCheckout} />
+            </CustomerProtectedRoute>
+          }
+        />
+        <Route
+          path="/cart/checkout"
+          element={
+            <CustomerProtectedRoute>
+              <CheckoutRoutePage onOpenCheckout={onOpenCheckout} />
+            </CustomerProtectedRoute>
+          }
+        />
 
       {/* Document Viewer Route */}
       <Route path="/doc/:docId" element={<DocumentPage />} />

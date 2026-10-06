@@ -58,6 +58,10 @@ export default function AddressPage({ onTriggerToast }) {
   };
 
   useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login', { replace: true, state: { from: '/addresses' } });
+      return;
+    }
     if (isAuthenticated && user) {
       loadAddresses();
       // Pre-fill recipient name from user profile
@@ -67,7 +71,7 @@ export default function AddressPage({ onTriggerToast }) {
     } else {
       setLoading(false);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, authLoading, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

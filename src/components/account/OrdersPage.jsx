@@ -11,7 +11,7 @@ import {
 export default function OrdersPage({ onTriggerToast }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'custom' ? 'CUSTOM' : 'ALL');
   const [readyOrders, setReadyOrders] = useState([]);
@@ -116,11 +116,17 @@ export default function OrdersPage({ onTriggerToast }) {
   };
 
   useEffect(() => {
-    loadAllOrders();
-    const handleUpdate = () => loadAllOrders();
-    window.addEventListener('orders_updated', handleUpdate);
-    return () => window.removeEventListener('orders_updated', handleUpdate);
-  }, [user]);
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login', { replace: true, state: { from: '/orders' } });
+      return;
+    }
+    if (isAuthenticated) {
+      loadAllOrders();
+      const handleUpdate = () => loadAllOrders();
+      window.addEventListener('orders_updated', handleUpdate);
+      return () => window.removeEventListener('orders_updated', handleUpdate);
+    }
+  }, [user, isAuthenticated, authLoading, navigate]);
 
   // Handle Customer Paying / Accepting Quotation for Approved Custom Order
   const handlePayCustomOrder = async (order) => {

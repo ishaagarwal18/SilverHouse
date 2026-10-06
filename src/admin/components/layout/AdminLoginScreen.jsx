@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, Lock, ShieldCheck } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { Spinner } from '../ui';
@@ -6,6 +7,8 @@ import { Spinner } from '../ui';
 /** Username/password gate shown whenever there is no valid admin session. */
 export default function AdminLoginScreen() {
   const { login, notice } = useAdminAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,6 +21,8 @@ export default function AdminLoginScreen() {
     setBusy(true);
     try {
       await login(username.trim(), password.trim());
+      const dest = location.state?.from?.pathname || '/admin/data/product';
+      navigate(dest, { replace: true });
     } catch (err) {
       setError(err.message || 'Authentication failed. Please verify credentials.');
       setBusy(false);

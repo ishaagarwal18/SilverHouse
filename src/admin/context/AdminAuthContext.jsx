@@ -68,9 +68,31 @@ export function AdminAuthProvider({ children }) {
   const clearSession = useCallback((message = '') => {
     safeRemove(ADMIN_TOKEN_KEY);
     safeRemove(ADMIN_USER_KEY);
+    safeRemove('silverhouse_admin_token');
+    safeRemove('silverhouse_admin_user');
+
+    // Also clear storefront admin tokens if belonging to an administrator
+    try {
+      const storeUser = JSON.parse(safeGet('silverhouse_user') || 'null');
+      if (storeUser && String(storeUser.role).toUpperCase() === 'ADMIN') {
+        safeRemove('silverhouse_token');
+        safeRemove('silverhouse_user');
+      }
+    } catch { }
+
+    // Strip sensitive token parameters from current URL if present
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('auth_token') || url.searchParams.has('token') || url.searchParams.has('password')) {
+        ['auth_token', 'token', 'username', 'password'].forEach(k => url.searchParams.delete(k));
+        window.history.replaceState({}, document.title, url.pathname + url.search);
+      }
+    } catch { }
+
     setUser(null);
     setNotice(message);
     setStatus('unauthenticated');
+    try { window.dispatchEvent(new Event('silverhouse_admin_logout')); } catch { }
   }, []);
 
   const acceptSession = useCallback((token, userObj) => {

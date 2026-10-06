@@ -25,6 +25,14 @@ if (rawApiUrl.startsWith('http') && !rawApiUrl.endsWith('/api')) {
 
 export const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
 
+/**
+ * Returns active user or admin token stored in browser localStorage
+ */
+export function getAuthToken() {
+  if (typeof localStorage === 'undefined') return null;
+  return localStorage.getItem('silverhouse_token') || localStorage.getItem('silverhouse_admin_token') || null;
+}
+
 // Helpful console info indicating active environment
 if (typeof window !== 'undefined') {
   console.log(`%c[SilverHouse API] Active Environment: ${import.meta.env.VITE_ENV_NAME || 'default'} | Endpoint: ${API_BASE_URL}`, 'color: #0284c7; font-weight: bold;');
@@ -231,14 +239,24 @@ export async function fetchProductById(productId) {
  */
 export async function postApiData(payload) {
   try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+    const token = getAuthToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/data`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
+      headers,
       body: JSON.stringify(payload),
     });
+
+    if (response.status === 401 && token && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('silverhouse_unauthorized'));
+    }
 
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
@@ -549,8 +567,13 @@ export async function fetchUserCartApi({ userId, guestToken }) {
 export async function submitCustomOrderApi(formData) {
   try {
     const url = `${API_BASE_URL}/custom-orders`;
+    const headers = {};
+    const token = getAuthToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const response = await fetch(url, {
       method: 'POST',
+      headers,
       body: formData
     });
     const json = await response.json();
@@ -573,7 +596,11 @@ export async function fetchCustomerCustomOrdersApi({ userId, phone } = {}) {
     if (phone) params.append('phone', phone);
 
     const url = `${API_BASE_URL}/custom-orders/my-orders?${params.toString()}`;
-    const res = await fetch(url);
+    const headers = {};
+    const token = getAuthToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(url, { headers });
     const data = await res.json();
     if (data.success && Array.isArray(data.orders)) {
       return data;
@@ -593,9 +620,13 @@ export async function fetchCustomerCustomOrdersApi({ userId, phone } = {}) {
 export async function payCustomOrderApi(orderId) {
   try {
     const url = `${API_BASE_URL}/custom-orders/${orderId}/pay`;
+    const headers = { 'Content-Type': 'application/json' };
+    const token = getAuthToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers
     });
     const data = await res.json();
     return data;
@@ -636,9 +667,13 @@ export async function fetchStoreParameters() {
 export async function updateStoreParameters(params) {
   try {
     const url = `${API_BASE_URL}/admin/parameters`;
+    const headers = { 'Content-Type': 'application/json' };
+    const token = getAuthToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(params)
     });
     const data = await res.json();
@@ -816,8 +851,13 @@ export async function uploadReviewPhotos(files) {
     const slice = Array.from(files).slice(0, 5);
     slice.forEach(f => formData.append('images', f));
 
+    const headers = {};
+    const token = getAuthToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(`${API_BASE_URL}/upload-multiple`, {
       method: 'POST',
+      headers,
       body: formData
     });
     if (res.ok) {

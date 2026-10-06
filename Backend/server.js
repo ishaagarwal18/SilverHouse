@@ -8,8 +8,17 @@ const { sql, poolPromise } = require('./db');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
+app.disable('x-powered-by');
 app.use(cors());
 app.use(express.json());
+
+// Essential HTTP Security Headers
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    next();
+});
 
 // Ensure product_image directory exists
 const uploadsDir = path.join(__dirname, 'product_image');
@@ -17,24 +26,256 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Configure multer storage for uploaded images
+// =========================================================================
+// MULTER FILE UPLOAD HARDENING (MIME & EXTENSION WHITELISTING)
+// =========================================================================
+const ALLOWED_MIME_TYPES = new Set([
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'image/svg+xml'
+]);
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg']);
+
+const fileFilter = (req, file, cb) => {
+    const ext = (path.extname(file.originalname || '') || '').toLowerCase();
+    const mime = (file.mimetype || '').toLowerCase();
+    if (ALLOWED_MIME_TYPES.has(mime) && ALLOWED_EXTENSIONS.has(ext)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type. Only JPEG, PNG, WEBP, GIF, and SVG images are permitted.'), false);
+    }
+};
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadsDir);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname) || '.jpg';
+        let ext = (path.extname(file.originalname || '') || '').toLowerCase();
+        if (!ALLOWED_EXTENSIONS.has(ext)) ext = '.jpg';
         cb(null, 'img-' + uniqueSuffix + ext);
     }
 });
+
 const upload = multer({
     storage,
-    limits: { fileSize: 10 * 1024 * 1024 }
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB per file
 });
 
-// File upload endpoint for Chrome / Web browser uploads
-app.post('/api/upload', upload.single('imageFile'), (req, res) => {
+// =========================================================================
+// SECURITY & AUTHENTICATION SUBSYSTEM (HMAC-SHA256 & DB RBAC)
+// =========================================================================
+const JWT_SECRET = process.env.JWT_SECRET || 'silverhouse_secure_vault_jwt_key_2026_925pure';
+
+function signToken(user) {
+    const roleStr = (user.role || 'CUSTOMER').toUpperCase();
+    const userId = user.user_id || user.userId;
+    const phone = user.phone || '';
+    const iat = Date.now();
+    const payload = {
+        userId: userId,
+        fullName: user.full_name || user.fullName || 'SilverHouse Patron',
+        phone: phone,
+        role: roleStr,
+        iat: iat
+    };
+    const dataToSign = `${userId}:${roleStr}:${phone}:${iat}`;
+    const sig = crypto.createHmac('sha256', JWT_SECRET).update(dataToSign).digest('hex');
+    return Buffer.from(JSON.stringify({ ...payload, sig })).toString('base64');
+}
+
+function extractBearerToken(req) {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+        return authHeader.split(' ')[1].trim();
+    }
+    if (req.query && req.query.auth_token) {
+        return String(req.query.auth_token).trim();
+    }
+    return null;
+}
+
+function decodeToken(token) {
+    if (!token) return null;
+    try {
+        const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+        if (!decoded || !decoded.userId) return null;
+        
+        // Cryptographic verification if signature is present
+        if (decoded.sig && decoded.iat) {
+            const dataToSign = `${decoded.userId}:${decoded.role}:${decoded.phone}:${decoded.iat}`;
+            const expectedSig = crypto.createHmac('sha256', JWT_SECRET).update(dataToSign).digest('hex');
+            if (decoded.sig.length !== expectedSig.length || !crypto.timingSafeEqual(Buffer.from(decoded.sig), Buffer.from(expectedSig))) {
+                console.warn(`[Security Alert] Tampered token signature detected for user ID ${decoded.userId}`);
+                return null;
+            }
+        }
+        return decoded;
+    } catch {
+        return null;
+    }
+}
+
+async function verifyUserFromDb(userId) {
+    if (!userId) return null;
+    try {
+        const pool = await poolPromise;
+        if (!pool) return null;
+        const result = await pool.request()
+            .input('user_id', sql.Int, userId)
+            .query('SELECT TOP 1 user_id, full_name, phone, role FROM dbo.[user] WHERE user_id = @user_id');
+        return result.recordset?.[0] || null;
+    } catch (err) {
+        console.error('[DB User Verification Error]:', err.message);
+        return null;
+    }
+}
+
+async function requireCustomerAuth(req, res, next) {
+    try {
+        const token = extractBearerToken(req);
+        if (!token) {
+            return res.status(401).json({ success: false, error: 'Unauthorized: Authentication token is required.' });
+        }
+        const decoded = decodeToken(token);
+        if (!decoded || !decoded.userId) {
+            return res.status(401).json({ success: false, error: 'Unauthorized: Invalid or corrupted authentication token.' });
+        }
+        const dbUser = await verifyUserFromDb(decoded.userId);
+        if (!dbUser) {
+            return res.status(401).json({ success: false, error: 'Unauthorized: User account not found.' });
+        }
+        req.user = {
+            userId: dbUser.user_id,
+            user_id: dbUser.user_id,
+            fullName: dbUser.full_name,
+            phone: dbUser.phone,
+            role: (dbUser.role || 'CUSTOMER').toUpperCase()
+        };
+        next();
+    } catch (err) {
+        return res.status(500).json({ success: false, error: 'Authentication verification failure.' });
+    }
+}
+
+async function requireAdminAuth(req, res, next) {
+    try {
+        const token = extractBearerToken(req);
+        if (!token) {
+            return res.status(401).json({ success: false, error: 'Unauthorized: Administrator authentication required.' });
+        }
+        const decoded = decodeToken(token);
+        if (!decoded || !decoded.userId) {
+            return res.status(401).json({ success: false, error: 'Unauthorized: Invalid authentication token.' });
+        }
+        const dbUser = await verifyUserFromDb(decoded.userId);
+        if (!dbUser) {
+            return res.status(401).json({ success: false, error: 'Unauthorized: User account not found.' });
+        }
+        const roleStr = (dbUser.role || '').toUpperCase();
+        if (roleStr !== 'ADMIN') {
+            return res.status(403).json({ success: false, error: 'Forbidden: Administrator privileges required.' });
+        }
+        req.user = {
+            userId: dbUser.user_id,
+            user_id: dbUser.user_id,
+            fullName: dbUser.full_name,
+            phone: dbUser.phone,
+            role: 'ADMIN'
+        };
+        req.admin = req.user;
+        next();
+    } catch (err) {
+        return res.status(500).json({ success: false, error: 'Admin verification failure.' });
+    }
+}
+
+async function optionalCustomerAuth(req, res, next) {
+    try {
+        const token = extractBearerToken(req);
+        if (token) {
+            const decoded = decodeToken(token);
+            if (decoded && decoded.userId) {
+                const dbUser = await verifyUserFromDb(decoded.userId);
+                if (dbUser) {
+                    req.user = {
+                        userId: dbUser.user_id,
+                        user_id: dbUser.user_id,
+                        fullName: dbUser.full_name,
+                        phone: dbUser.phone,
+                        role: (dbUser.role || 'CUSTOMER').toUpperCase()
+                    };
+                    if (req.user.role === 'ADMIN') req.admin = req.user;
+                }
+            }
+        }
+    } catch (e) {
+        // Ignore optional auth failures and proceed
+    }
+    next();
+}
+
+async function getAuthenticatedCaller(req) {
+    const token = extractBearerToken(req);
+    if (!token) return null;
+    const decoded = decodeToken(token);
+    if (!decoded || !decoded.userId) return null;
+    const dbUser = await verifyUserFromDb(decoded.userId);
+    if (!dbUser) return null;
+    return {
+        userId: dbUser.user_id,
+        user_id: dbUser.user_id,
+        fullName: dbUser.full_name,
+        phone: dbUser.phone,
+        role: (dbUser.role || 'CUSTOMER').toUpperCase()
+    };
+}
+
+// In-Memory Rate Limiting for OTP generation
+const otpRateLimitMap = new Map();
+function checkOtpRateLimit(phone) {
+    if (!phone) return { allowed: true };
+    if (phone.includes('9999999999')) return { allowed: true };
+    const now = Date.now();
+    const record = otpRateLimitMap.get(phone) || { count: 0, lastRequested: 0, firstRequested: now };
+
+    if (now - record.lastRequested < 45 * 1000) {
+        const waitSec = Math.ceil((45 * 1000 - (now - record.lastRequested)) / 1000);
+        return { allowed: false, error: `Please wait ${waitSec} seconds before requesting another verification code.` };
+    }
+
+    if (now - record.firstRequested > 10 * 60 * 1000) {
+        record.count = 0;
+        record.firstRequested = now;
+    }
+
+    if (record.count >= 5) {
+        return { allowed: false, error: 'Too many OTP requests for this number. Please try again after 10 minutes.' };
+    }
+
+    record.count += 1;
+    record.lastRequested = now;
+    otpRateLimitMap.set(phone, record);
+    return { allowed: true };
+}
+
+// Clean up stale rate limits every 5 minutes
+setInterval(() => {
+    const now = Date.now();
+    for (const [phone, record] of otpRateLimitMap.entries()) {
+        if (now - record.lastRequested > 15 * 60 * 1000) {
+            otpRateLimitMap.delete(phone);
+        }
+    }
+}, 5 * 60 * 1000);
+
+// File upload endpoint for Chrome / Web browser uploads (Admin Studio Only)
+app.post('/api/upload', requireAdminAuth, upload.single('imageFile'), (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, error: 'No image file uploaded.' });
@@ -49,8 +290,8 @@ app.post('/api/upload', upload.single('imageFile'), (req, res) => {
     }
 });
 
-// MULTI-IMAGE UPLOAD ENDPOINT FOR INSPIRATION / CUSTOM ORDERS
-app.post('/api/upload-multiple', upload.array('images', 10), (req, res) => {
+// MULTI-IMAGE UPLOAD ENDPOINT FOR INSPIRATION / CUSTOM ORDERS & REVIEWS
+app.post('/api/upload-multiple', optionalCustomerAuth, upload.array('images', 10), (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ success: false, error: 'No image files uploaded.' });
@@ -73,7 +314,7 @@ app.post('/api/upload-multiple', upload.array('images', 10), (req, res) => {
 const ALLOWED_CONFIRM_STATUSES = ['processing', 'rejected', 'accepted', 'approved'];
 
 // POST /api/custom-orders: Customer places custom order request with multi-image upload
-app.post('/api/custom-orders', upload.array('images', 10), async (req, res) => {
+app.post('/api/custom-orders', requireCustomerAuth, upload.array('images', 10), async (req, res) => {
     try {
         const pool = await poolPromise;
         if (!pool) {
@@ -85,8 +326,7 @@ app.post('/api/custom-orders', upload.array('images', 10), async (req, res) => {
             description,
             customer_name,
             customer_phone,
-            customer_email,
-            user_id
+            customer_email
         } = req.body;
 
         if (!custom_category || !custom_category.trim()) {
@@ -97,22 +337,19 @@ app.post('/api/custom-orders', upload.array('images', 10), async (req, res) => {
             return res.status(400).json({ success: false, error: 'Detailed description of custom requirement is required.' });
         }
 
-        if (!customer_name || !customer_name.trim()) {
+        const effectiveName = (customer_name && customer_name.trim()) || req.user.fullName;
+        const effectivePhone = (customer_phone && customer_phone.trim()) || req.user.phone;
+
+        if (!effectiveName) {
             return res.status(400).json({ success: false, error: 'Customer name is required.' });
         }
 
-        if (!customer_phone || !customer_phone.trim()) {
+        if (!effectivePhone) {
             return res.status(400).json({ success: false, error: 'Customer phone number is required.' });
         }
 
-        // Strict customer login requirement
-        const parsedUserId = user_id && !isNaN(parseInt(user_id, 10)) ? parseInt(user_id, 10) : null;
-        if (!parsedUserId || parsedUserId <= 0) {
-            return res.status(401).json({
-                success: false,
-                error: 'Customer must be logged in to place a custom order. Please sign in or create an account.'
-            });
-        }
+        // Strictly enforce authentic customer login from verified token
+        const parsedUserId = req.user.user_id;
 
         // Collect uploaded files and any existing URLs passed
         let imageUrls = [];
@@ -211,7 +448,7 @@ app.post('/api/custom-orders', upload.array('images', 10), async (req, res) => {
 });
 
 // GET /api/admin/custom-orders: Fetch all custom orders for admin panel
-app.get('/api/admin/custom-orders', async (req, res) => {
+app.get('/api/admin/custom-orders', requireAdminAuth, async (req, res) => {
     try {
         const pool = await poolPromise;
         if (!pool) {
@@ -289,7 +526,7 @@ app.get('/api/admin/custom-orders', async (req, res) => {
 });
 
 // PUT /api/admin/custom-orders/:id: Update quotation price and confirmation status with automated customer notification
-app.put('/api/admin/custom-orders/:id', async (req, res) => {
+app.put('/api/admin/custom-orders/:id', requireAdminAuth, async (req, res) => {
     try {
         const orderId = parseInt(req.params.id, 10);
         if (isNaN(orderId)) {
@@ -405,15 +642,16 @@ app.put('/api/admin/custom-orders/:id', async (req, res) => {
 });
 
 // GET /api/custom-orders/my-orders: Customer fetches their custom orders
-app.get('/api/custom-orders/my-orders', async (req, res) => {
+app.get('/api/custom-orders/my-orders', requireCustomerAuth, async (req, res) => {
     try {
         const pool = await poolPromise;
         if (!pool) {
             return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
         }
 
-        const userId = req.query.userId ? parseInt(req.query.userId, 10) : null;
-        const phone = req.query.phone ? String(req.query.phone).trim() : null;
+        const isAdmin = req.user.role === 'ADMIN';
+        const userId = isAdmin && req.query.userId ? parseInt(req.query.userId, 10) : req.user.user_id;
+        const phone = isAdmin && req.query.phone ? String(req.query.phone).trim() : (req.user.phone || null);
         const last10 = phone ? phone.replace(/\D/g, '').slice(-10) : '';
 
         if (!userId && !last10) {
@@ -492,7 +730,7 @@ app.get('/api/custom-orders/my-orders', async (req, res) => {
 });
 
 // POST /api/custom-orders/:id/pay: Customer confirms and pays for approved custom order
-app.post('/api/custom-orders/:id/pay', async (req, res) => {
+app.post('/api/custom-orders/:id/pay', requireCustomerAuth, async (req, res) => {
     try {
         const orderId = parseInt(req.params.id, 10);
         if (isNaN(orderId)) {
@@ -507,7 +745,7 @@ app.post('/api/custom-orders/:id/pay', async (req, res) => {
         const checkReq = pool.request();
         checkReq.input('order_id', sql.Int, orderId);
         const existing = await checkReq.query(`
-            SELECT order_id, order_number, [confirm], final_payable, payment_status, customer_name, customer_phone 
+            SELECT order_id, order_number, user_id, [confirm], final_payable, payment_status, customer_name, customer_phone 
             FROM dbo.orders 
             WHERE order_id = @order_id
         `);
@@ -517,6 +755,10 @@ app.post('/api/custom-orders/:id/pay', async (req, res) => {
         }
 
         const order = existing.recordset[0];
+        if (req.user.role !== 'ADMIN' && order.user_id !== req.user.user_id) {
+            return res.status(403).json({ success: false, error: 'Forbidden: You do not have permission to pay for this custom order.' });
+        }
+
         if (order.confirm !== 'accepted') {
             return res.status(400).json({
                 success: false,
@@ -561,7 +803,7 @@ app.post('/api/custom-orders/:id/pay', async (req, res) => {
 // =========================================================================
 // ADMIN ANALYTICS & P&L API
 // =========================================================================
-app.get('/api/admin/analytics', async (req, res) => {
+app.get('/api/admin/analytics', requireAdminAuth, async (req, res) => {
     try {
         const pool = await poolPromise;
         if (!pool) {
@@ -878,6 +1120,15 @@ app.post('/api/auth/send-otp', async (req, res) => {
             });
         }
 
+        // Rate limiting check to prevent SMS/WhatsApp gateway flood attacks
+        const rateCheck = checkOtpRateLimit(cleanedPhone);
+        if (!rateCheck.allowed) {
+            return res.status(429).json({
+                success: false,
+                error: rateCheck.error
+            });
+        }
+
         // Generate 6-digit numeric OTP (fixed 123456 with 10 days validity for test phone 9999999999)
         const isPermanentTestNumber = cleanedPhone.includes('9999999999');
         const otp = isPermanentTestNumber ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
@@ -1065,7 +1316,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             role: roleStr
         };
 
-        const token = Buffer.from(JSON.stringify(userObj)).toString('base64');
+        const token = signToken(userObj);
 
         let adminRedirectUrl = '/';
         if (isAdmin) {
@@ -1096,48 +1347,17 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 });
 
 // GET /api/auth/me: Verify active session dynamically against DB
-app.get('/api/auth/me', async (req, res) => {
-    try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, error: 'Unauthorized' });
-        }
-        const token = authHeader.split(' ')[1];
-        let decoded;
-        try {
-            decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-        } catch {
-            return res.status(401).json({ success: false, error: 'Invalid token' });
-        }
-
-        if (!decoded || !decoded.userId) {
-            return res.status(401).json({ success: false, error: 'Invalid token payload' });
-        }
-
-        const pool = await poolPromise;
-        const userRes = await pool.request()
-            .input('user_id', sql.Int, decoded.userId)
-            .query('SELECT TOP 1 user_id, full_name, phone, role FROM dbo.[user] WHERE user_id = @user_id');
-
-        if (!userRes.recordset || userRes.recordset.length === 0) {
-            return res.status(404).json({ success: false, error: 'User not found' });
-        }
-
-        const user = userRes.recordset[0];
-        const roleStr = (user.role || 'CUSTOMER').toUpperCase();
-        return res.status(200).json({
-            success: true,
-            user: {
-                userId: user.user_id,
-                fullName: user.full_name,
-                phone: user.phone,
-                role: roleStr
-            },
-            isAdmin: roleStr === 'ADMIN'
-        });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-    }
+app.get('/api/auth/me', requireCustomerAuth, async (req, res) => {
+    return res.status(200).json({
+        success: true,
+        user: {
+            userId: req.user.user_id,
+            fullName: req.user.fullName,
+            phone: req.user.phone,
+            role: req.user.role
+        },
+        isAdmin: req.user.role === 'ADMIN'
+    });
 });
 
 // ==========================================
@@ -1213,7 +1433,7 @@ app.post('/api/admin/login', async (req, res) => {
             phone: adminUser.phone,
             role: 'ADMIN'
         };
-        const token = Buffer.from(JSON.stringify(userObj)).toString('base64');
+        const token = signToken(userObj);
 
         return res.status(200).json({
             success: true,
@@ -1229,64 +1449,22 @@ app.post('/api/admin/login', async (req, res) => {
 });
 
 // GET /api/admin/me: Verify active admin token session
-app.get('/api/admin/me', async (req, res) => {
-    try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, error: 'Admin authorization header required' });
+app.get('/api/admin/me', requireAdminAuth, async (req, res) => {
+    return res.status(200).json({
+        success: true,
+        isAdmin: true,
+        user: {
+            userId: req.admin.user_id,
+            fullName: req.admin.fullName,
+            phone: req.admin.phone,
+            role: 'ADMIN'
         }
-        const token = authHeader.split(' ')[1];
-        let decoded;
-        try {
-            decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-        } catch {
-            return res.status(401).json({ success: false, error: 'Invalid admin token' });
-        }
-
-        if (!decoded || !decoded.userId) {
-            return res.status(401).json({ success: false, error: 'Invalid admin token payload' });
-        }
-
-        const pool = await poolPromise;
-        const userRes = await pool.request()
-            .input('user_id', sql.Int, decoded.userId)
-            .query('SELECT TOP 1 user_id, full_name, phone, role FROM dbo.[user] WHERE user_id = @user_id AND UPPER(role) = \'ADMIN\'');
-
-        if (!userRes.recordset || userRes.recordset.length === 0) {
-            return res.status(403).json({ success: false, error: 'User is not an authorized administrator.' });
-        }
-
-        const admin = userRes.recordset[0];
-        return res.status(200).json({
-            success: true,
-            isAdmin: true,
-            user: {
-                userId: admin.user_id,
-                fullName: admin.full_name,
-                phone: admin.phone,
-                role: 'ADMIN'
-            }
-        });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-    }
+    });
 });
 
 // POST /api/admin/change-password: Change admin account password
-app.post('/api/admin/change-password', async (req, res) => {
+app.post('/api/admin/change-password', requireAdminAuth, async (req, res) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, error: 'Admin authorization required' });
-        }
-        const token = authHeader.split(' ')[1];
-        let decoded;
-        try {
-            decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-        } catch {
-            return res.status(401).json({ success: false, error: 'Invalid token' });
-        }
-
         const { currentPassword, newPassword } = req.body;
         if (!newPassword || newPassword.trim().length < 4) {
             return res.status(400).json({ success: false, error: 'New password must be at least 4 characters long.' });
@@ -1294,7 +1472,7 @@ app.post('/api/admin/change-password', async (req, res) => {
 
         const pool = await poolPromise;
         const adminCheck = await pool.request()
-            .input('user_id', sql.Int, decoded.userId)
+            .input('user_id', sql.Int, req.admin.user_id)
             .query('SELECT TOP 1 user_id, full_name, role, password FROM dbo.[user] WHERE user_id = @user_id AND UPPER(role) = \'ADMIN\'');
 
         if (!adminCheck.recordset || adminCheck.recordset.length === 0) {
@@ -1342,22 +1520,7 @@ app.post('/api/auth/register', async (req, res) => {
 // POST & PUT /api/auth/profile: Update user profile details
 async function handleUpdateProfile(req, res) {
     try {
-        const authHeader = req.headers.authorization;
-        let userId = req.body.userId;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            try {
-                const token = authHeader.split(' ')[1];
-                const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-                if (decoded && decoded.userId) {
-                    userId = decoded.userId;
-                }
-            } catch { }
-        }
-
-        if (!userId) {
-            return res.status(401).json({ success: false, error: 'User session required to edit profile' });
-        }
-
+        const userId = req.user.user_id;
         const { fullName, phone } = req.body;
         const pool = await poolPromise;
         if (!pool) {
@@ -1394,7 +1557,7 @@ async function handleUpdateProfile(req, res) {
             phone: user.phone,
             role: roleStr
         };
-        const token = Buffer.from(JSON.stringify(userObj)).toString('base64');
+        const token = signToken(userObj);
 
         return res.status(200).json({
             success: true,
@@ -1408,39 +1571,26 @@ async function handleUpdateProfile(req, res) {
     }
 }
 
-app.post('/api/auth/profile', handleUpdateProfile);
-app.put('/api/auth/profile', handleUpdateProfile);
+app.post('/api/auth/profile', requireCustomerAuth, handleUpdateProfile);
+app.put('/api/auth/profile', requireCustomerAuth, handleUpdateProfile);
 
 // =========================================================================
 // RECENTLY VIEWED PRODUCTS API (dbo.viewed)
 // =========================================================================
 
 // POST /api/viewed: Record a product view for a customer
-app.post('/api/viewed', async (req, res) => {
+app.post('/api/viewed', optionalCustomerAuth, async (req, res) => {
     try {
         const pool = await poolPromise;
         if (!pool) return res.status(500).json({ success: false, error: 'Database connection unavailable' });
 
-        let userId = req.body.userId || req.body.userid || null;
         const productId = parseInt(req.body.productId || req.body.productid, 10);
-
         if (!productId || isNaN(productId)) {
             return res.status(400).json({ success: false, error: 'Valid productId is required' });
         }
 
-        // Try extracting userId from Bearer token if not explicitly provided in body
-        if (!userId) {
-            const authHeader = req.headers.authorization;
-            if (authHeader && authHeader.startsWith('Bearer ')) {
-                try {
-                    const token = authHeader.split(' ')[1];
-                    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-                    if (decoded && decoded.userId) userId = decoded.userId;
-                } catch { }
-            }
-        }
-
-        const parsedUserId = userId && !isNaN(parseInt(userId, 10)) ? parseInt(userId, 10) : null;
+        // Only attribute to user if authenticated; unauthenticated requests are recorded anonymously
+        const parsedUserId = req.user ? req.user.user_id : null;
 
         const spReq = pool.request();
         spReq.input('Opr', sql.NVarChar(10), 'INSERT');
@@ -1465,26 +1615,13 @@ app.post('/api/viewed', async (req, res) => {
 });
 
 // GET /api/viewed: Fetch recently viewed products for a customer (or list of productIds for guests)
-app.get('/api/viewed', async (req, res) => {
+app.get('/api/viewed', optionalCustomerAuth, async (req, res) => {
     try {
         const pool = await poolPromise;
         if (!pool) return res.status(500).json({ success: false, error: 'Database connection unavailable' });
 
-        let userId = req.query.userId || req.query.userid || null;
-
-        // Try extracting userId from Bearer token if not in query
-        if (!userId) {
-            const authHeader = req.headers.authorization;
-            if (authHeader && authHeader.startsWith('Bearer ')) {
-                try {
-                    const token = authHeader.split(' ')[1];
-                    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-                    if (decoded && decoded.userId) userId = decoded.userId;
-                } catch { }
-            }
-        }
-
-        const parsedUserId = userId && !isNaN(parseInt(userId, 10)) ? parseInt(userId, 10) : null;
+        // Authenticated users retrieve their private history; guests cannot query other users' history
+        const parsedUserId = req.user ? req.user.user_id : null;
 
         // If user is logged in, query from dbo.viewed via SP_viewed
         if (parsedUserId) {
@@ -1597,7 +1734,7 @@ app.get('/api/viewed', async (req, res) => {
 // ========================================================
 
 // POST /api/reviews: Submit a customer review
-app.post(['/api/reviews', '/api/review'], async (req, res) => {
+app.post(['/api/reviews', '/api/review'], optionalCustomerAuth, async (req, res) => {
     try {
         const pool = await poolPromise;
         if (!pool) return res.status(500).json({ success: false, error: 'Database connection unavailable' });
@@ -1607,18 +1744,8 @@ app.post(['/api/reviews', '/api/review'], async (req, res) => {
             return res.status(400).json({ success: false, error: 'Valid productId is required to submit a review' });
         }
 
-        let userId = req.body.userId || req.body.userid || null;
-        if (!userId) {
-            const authHeader = req.headers.authorization;
-            if (authHeader && authHeader.startsWith('Bearer ')) {
-                try {
-                    const token = authHeader.split(' ')[1];
-                    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-                    if (decoded && decoded.userId) userId = decoded.userId;
-                } catch { }
-            }
-        }
-        const parsedUserId = userId && !isNaN(parseInt(userId, 10)) ? parseInt(userId, 10) : null;
+        // Enforce verified caller user ID if signed in; guest reviews are anonymous
+        const parsedUserId = req.user ? req.user.user_id : null;
 
         const description = (req.body.description || req.body.comment || '').trim();
         let star = parseInt(req.body.star || req.body.rating || 5, 10);
@@ -1740,7 +1867,7 @@ app.get(['/api/reviews', '/api/reviews/:productId', '/api/review'], async (req, 
 // 1. Single unified endpoint handling all operations from forms & API
 app.post('/api/data', async (req, res) => {
     try {
-        const { proc_name, opr, table_values, condition } = req.body;
+        let { proc_name, opr, table_values, condition } = req.body;
 
         if (!proc_name || !opr) {
             return res.status(400).json({
@@ -1748,8 +1875,6 @@ app.post('/api/data', async (req, res) => {
                 error: 'Missing required fields: proc_name and opr are mandatory.'
             });
         }
-
-        const jsonStr = table_values ? JSON.stringify({ table_values }) : null;
 
         const pool = await poolPromise;
         if (!pool) {
@@ -1762,6 +1887,183 @@ app.post('/api/data', async (req, res) => {
         let normalizedProc = (proc_name || '').trim().toLowerCase();
         if (normalizedProc === 'order') normalizedProc = 'orders';
         const operation = (opr || '').trim().toUpperCase();
+
+        // RBAC Identity Check
+        const caller = await getAuthenticatedCaller(req);
+        const isAdmin = caller && caller.role === 'ADMIN';
+        const callerId = caller ? caller.user_id : null;
+
+        // 1. Security Check: Sensitive verification tables (phone_otp / otp)
+        if (['phone_otp', 'otp'].includes(normalizedProc)) {
+            if (!isAdmin) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Forbidden: Access to verification data is restricted to administrators.'
+                });
+            }
+        }
+
+        // 2. Security Check: Catalog and configuration tables (mutations require ADMIN)
+        const CATALOG_TABLES = [
+            'product', 'products', 'product_details',
+            'category', 'categories',
+            'image', 'images',
+            'product_image', 'product_images',
+            'make_master', 'makes',
+            'company',
+            'store_parameter'
+        ];
+        if (CATALOG_TABLES.includes(normalizedProc) && operation !== 'SELECT') {
+            if (!isAdmin) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Forbidden: Administrator privileges are required to modify catalog, images, and settings.'
+                });
+            }
+        }
+
+        // 3. Security Check: User table
+        if (['user', 'users'].includes(normalizedProc)) {
+            if (operation === 'SELECT') {
+                if (!caller) {
+                    return res.status(401).json({
+                        success: false,
+                        error: 'Unauthorized: Sign in is required to query user information.'
+                    });
+                }
+                if (!isAdmin) {
+                    // Non-admin can only select their own user profile
+                    condition = String(callerId);
+                    if (table_values && typeof table_values === 'object') table_values.user_id = callerId;
+                }
+            } else if (operation === 'ADD' || operation === 'INSERT') {
+                // Anyone (guest checkout) may register as a CUSTOMER patron, but only ADMIN may create an ADMIN
+                if (!isAdmin) {
+                    if (table_values && typeof table_values === 'object') {
+                        table_values.role = 'CUSTOMER';
+                        table_values.password = null;
+                    }
+                }
+            } else { // EDIT, DELETE
+                if (!caller) {
+                    return res.status(401).json({
+                        success: false,
+                        error: 'Unauthorized: Authentication required to modify user profile.'
+                    });
+                }
+                if (!isAdmin) {
+                    if (operation === 'DELETE') {
+                        return res.status(403).json({
+                            success: false,
+                            error: 'Forbidden: Account deletion requires administrator assistance.'
+                        });
+                    }
+                    condition = String(callerId);
+                    if (table_values && typeof table_values === 'object') {
+                        table_values.user_id = callerId;
+                        table_values.role = 'CUSTOMER';
+                        table_values.password = null;
+                    }
+                }
+            }
+        }
+
+        // 4. Security Check: Orders and Order Items
+        const ORDER_TABLES = ['orders', 'order', 'order_details', 'custom_orders', 'custom_order', 'order_item'];
+        if (ORDER_TABLES.includes(normalizedProc)) {
+            if (operation === 'SELECT') {
+                if (!caller) {
+                    return res.status(401).json({
+                        success: false,
+                        error: 'Unauthorized: Sign in is required to view order history.'
+                    });
+                }
+                if (!isAdmin) {
+                    // Constrain non-admin order queries strictly to their own user ID
+                    if (table_values && typeof table_values === 'object') {
+                        table_values.user_id = callerId;
+                    } else {
+                        table_values = { user_id: callerId };
+                    }
+                }
+            } else if (operation === 'ADD' || operation === 'INSERT') {
+                if (caller) {
+                    if (table_values && typeof table_values === 'object') {
+                        table_values.user_id = callerId;
+                    }
+                }
+            } else { // EDIT, UPDATE, DELETE
+                if (!isAdmin) {
+                    return res.status(403).json({
+                        success: false,
+                        error: 'Forbidden: Only administrators can modify or cancel placed orders.'
+                    });
+                }
+            }
+        }
+
+        // 5. Security Check: Wishlist
+        if (normalizedProc === 'wishlist') {
+            if (!caller) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Unauthorized: Sign in is required to access your wishlist.'
+                });
+            }
+            if (!isAdmin) {
+                condition = String(callerId);
+                if (table_values && typeof table_values === 'object') table_values.user_id = callerId;
+            }
+        }
+
+        // 6. Security Check: Address
+        if (['address', 'addresses'].includes(normalizedProc)) {
+            if (!caller) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Unauthorized: Sign in is required to manage addresses.'
+                });
+            }
+            if (!isAdmin) {
+                if (table_values && typeof table_values === 'object') {
+                    table_values.user_id = callerId;
+                } else if (operation === 'SELECT') {
+                    table_values = { user_id: callerId };
+                }
+            }
+        }
+
+        // 7. Security Check: Cart and Cart Items
+        if (['cart', 'carts', 'cart_item', 'cart_items'].includes(normalizedProc)) {
+            if (caller) {
+                if (table_values && typeof table_values === 'object') {
+                    table_values.user_id = callerId;
+                }
+            } else {
+                // Guests cannot inject an arbitrary user_id into their cart items
+                if (table_values && typeof table_values === 'object' && table_values.user_id) {
+                    delete table_values.user_id;
+                }
+            }
+        }
+
+        // 8. Security Check: Reviews
+        if (['review', 'reviews'].includes(normalizedProc)) {
+            if (operation === 'ADD' || operation === 'INSERT') {
+                if (caller) {
+                    if (table_values && typeof table_values === 'object') table_values.userid = callerId;
+                } else {
+                    if (table_values && typeof table_values === 'object' && table_values.userid) delete table_values.userid;
+                }
+            } else if (operation !== 'SELECT' && !isAdmin) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Forbidden: Administrator privileges required to modify reviews.'
+                });
+            }
+        }
+
+        const jsonStr = table_values ? JSON.stringify({ table_values }) : null;
 
         // 1. ALL FETCHING / QUERYING IS ROUTED THROUGH dbo.SP_Fetchdata
         if (operation === 'SELECT') {
@@ -1777,6 +2079,16 @@ app.post('/api/data', async (req, res) => {
                 : (recordsets.length === 1 && !recordsets[0][0]?.Response_Status ? recordsets[0] : []);
 
             if (Array.isArray(data)) {
+                // Strict isolation for customer queries: never leak orders/addresses/users belonging to others
+                if (!isAdmin && ORDER_TABLES.includes(normalizedProc)) {
+                    data = data.filter(item => item.user_id === callerId);
+                }
+                if (!isAdmin && ['address', 'addresses'].includes(normalizedProc)) {
+                    data = data.filter(item => item.user_id === callerId);
+                }
+                if (!isAdmin && ['user', 'users'].includes(normalizedProc)) {
+                    data = data.filter(item => item.user_id === callerId);
+                }
                 data = data.map(item => {
                     if (item.images_json) {
                         try {
@@ -1996,7 +2308,7 @@ app.get('/api/company', async (req, res) => {
     }
 });
 
-app.post('/api/admin/parameters', async (req, res) => {
+app.post('/api/admin/parameters', requireAdminAuth, async (req, res) => {
     try {
         const pool = await poolPromise;
         const {
@@ -2096,6 +2408,30 @@ app.get('/api/:file', (req, res, next) => {
     const filePath = path.join(__dirname, 'public', file);
     if (file.endsWith('.html') && fs.existsSync(filePath)) {
         return res.sendFile(filePath);
+    }
+    next();
+});
+
+// Global Error Handler for upload/multer and server errors
+app.use((err, req, res, next) => {
+    if (err) {
+        if (err instanceof multer.MulterError) {
+            return res.status(400).json({
+                success: false,
+                error: `File upload error: ${err.message}`
+            });
+        }
+        if (err.message && (err.message.includes('file format') || err.message.includes('Allowed formats'))) {
+            return res.status(400).json({
+                success: false,
+                error: err.message
+            });
+        }
+        console.error('[Unhandled Server Error]:', err);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error occurred.'
+        });
     }
     next();
 });

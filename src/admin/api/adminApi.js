@@ -13,7 +13,14 @@ export function setUnauthorizedHandler(fn) {
 
 export function getAdminToken() {
   try {
-    return localStorage.getItem(ADMIN_TOKEN_KEY);
+    const adminToken = localStorage.getItem(ADMIN_TOKEN_KEY) || localStorage.getItem('silverhouse_admin_token');
+    if (adminToken) return adminToken;
+    const storeToken = localStorage.getItem('silverhouse_token');
+    const storeUser = JSON.parse(localStorage.getItem('silverhouse_user') || 'null');
+    if (storeToken && String(storeUser?.role).toUpperCase() === 'ADMIN') {
+      return storeToken;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -39,7 +46,7 @@ export async function adminFetch(path, { method = 'GET', body, headers = {}, ski
 
   const res = await fetch(`${API_BASE_URL}${path}`, { method, headers: finalHeaders, body: payload });
 
-  if ((res.status === 401 || res.status === 403) && path.startsWith('/admin/') && !skipAuth) {
+  if ((res.status === 401 || res.status === 403) && !skipAuth) {
     unauthorizedHandler?.('Your session has expired. Please sign in again.');
   }
 
