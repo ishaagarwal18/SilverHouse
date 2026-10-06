@@ -1,0 +1,135 @@
+/*
+ * SilverHouse Admin Studio design tokens.
+ * Scoped to .admin-root so they never leak into the storefront themes.
+ * Mapped to Tailwind colours (bg-ad-*, text-ad-*, border-ad-*) in src/index.css.
+ */
+.admin-root {
+  --ad-bg: #f8fafc;
+  --ad-surface: #ffffff;
+  --ad-card: #f1f5f9;
+  --ad-hover: #e2e8f0;
+  --ad-border: #e2e8f0;
+  --ad-primary: #4f46e5;
+  --ad-primary-hover: #4338ca;
+  --ad-accent: #0284c7;
+  --ad-success: #10b981;
+  --ad-danger: #ef4444;
+  --ad-warning: #f59e0b;
+  --ad-violet: #8b5cf6;
+  --ad-text: #0f172a;
+  --ad-muted: #64748b;
+  --ad-input: #ffffff;
+
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+
+.admin-root[data-theme='dark'] {
+  --ad-bg: #0b0f19;
+  --ad-surface: #111827;
+  --ad-card: #1f2937;
+  --ad-hover: #374151;
+  --ad-border: #374151;
+  --ad-primary: #6366f1;
+  --ad-primary-hover: #4f46e5;
+  --ad-accent: #38bdf8;
+  --ad-violet: #a78bfa;
+  --ad-text: #f3f4f6;
+  --ad-muted: #9ca3af;
+  --ad-input: #1f2937;
+
+  color-scheme: dark;
+}
+
+/* The storefront base layer gives headings a serif face; the admin console stays sans-serif */
+.admin-root h1,
+.admin-root h2,
+.admin-root h3,
+.admin-root h4 {
+  font-family: inherit;
+}
+
+/* Shared form control look (inputs, selects, textareas) */
+.admin-root .ad-input {
+  width: 100%;
+  min-width: 0;
+  background: var(--ad-input);
+  color: var(--ad-text);
+  border: 1px solid var(--ad-border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-root .ad-input:focus {
+  border-color: var(--ad-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ad-primary) 20%, transparent);
+}
+
+.admin-root .ad-input[readonly],
+.admin-root .ad-input:disabled {
+  background: var(--ad-card);
+  cursor: not-allowed;
+}
+
+.admin-root input[type='file'].ad-input {
+  padding: 7px 10px;
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.admin-root input[type='checkbox'] {
+  accent-color: var(--ad-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Thin scrollbars for side panels and wide tables */
+.admin-root .ad-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ad-hover) transparent;
+}
+
+/* Dual-handle price range slider (catalog filters) */
+.admin-root .ad-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.admin-root .ad-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--ad-surface);
+  border: 3px solid var(--ad-primary);
+  cursor: pointer;
+}
+
+.admin-root .ad-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--ad-surface);
+  border: 3px solid var(--ad-primary);
+  cursor: pointer;
+}
+
+@keyframes ad-row-flash {
+  from { background: color-mix(in srgb, var(--ad-flash) 22%, transparent); }
+  to { background: color-mix(in srgb, var(--ad-flash) 8%, transparent); }
+}
+
+.admin-root .ad-row-flash {
+  animation: ad-row-flash 2.4s ease-out forwards;
+}

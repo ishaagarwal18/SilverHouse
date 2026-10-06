@@ -74,6 +74,24 @@
   --color-ivory-400: #E2D5BE;
 }
 
+/* Admin Studio palette — values live in src/admin/admin.css (scoped to .admin-root, light + dark) */
+@theme inline {
+  --color-ad-bg: var(--ad-bg);
+  --color-ad-surface: var(--ad-surface);
+  --color-ad-card: var(--ad-card);
+  --color-ad-hover: var(--ad-hover);
+  --color-ad-border: var(--ad-border);
+  --color-ad-primary: var(--ad-primary);
+  --color-ad-primary-hover: var(--ad-primary-hover);
+  --color-ad-accent: var(--ad-accent);
+  --color-ad-success: var(--ad-success);
+  --color-ad-danger: var(--ad-danger);
+  --color-ad-warning: var(--ad-warning);
+  --color-ad-violet: var(--ad-violet);
+  --color-ad-text: var(--ad-text);
+  --color-ad-muted: var(--ad-muted);
+}
+
 @layer base {
   html {
     font-family: var(--font-sans);
