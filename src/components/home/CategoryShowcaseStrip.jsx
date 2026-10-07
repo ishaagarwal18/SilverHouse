@@ -68,8 +68,7 @@ export default function CategoryShowcaseStrip({ categories = [], products = [], 
         {item.label}
       </span>
 
-      {/* Dynamic Theme Accent Underline Glow */}
-      <span className="h-0.5 w-0 group-hover:w-5 bg-[var(--th-accent)] rounded-full transition-all duration-300 mt-1 opacity-0 group-hover:opacity-100" />
+
     </button>
   );
 
