@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Building2,
+  Calendar,
   Eye,
   Heart,
   Image,
@@ -15,6 +16,7 @@ import {
   ShoppingBag,
   ShoppingCart,
   SlidersHorizontal,
+  Sparkles,
   Star,
   Users,
   Wrench
@@ -27,6 +29,8 @@ export const PK_MAP = {
   image: 'image_id',
   make_master: 'm_id',
   product_image: 'product_id',
+  festival: 'id',
+  festival_category: 'id',
   orders: 'order_id',
   custom_orders: 'order_id',
   order_item: 'order_item_id',
@@ -48,6 +52,8 @@ export const ENTITY_CONFIG = {
   image: { singular: 'Image', plural: 'Images', icon: Image, hasFormPage: true },
   make_master: { singular: 'Make Master', plural: 'Make Master', icon: Wrench, hasFormPage: true },
   product_image: { singular: 'Product Image', plural: 'Product Images', icon: Link, hasFormPage: true },
+  festival: { singular: 'Festival', plural: 'Festivals', icon: Calendar },
+  festival_category: { singular: 'Festival Category Mapping', plural: 'Festival Categories', icon: Sparkles },
   custom_orders: { singular: 'Custom Order', plural: 'Custom Orders', icon: Paintbrush },
   orders: { singular: 'Order', plural: 'Orders', icon: Package },
   order_item: { singular: 'Order Item', plural: 'Order Items', icon: Receipt },
@@ -171,6 +177,30 @@ export const ENTITY_FORM_SCHEMAS = {
     { name: 'phone', label: 'Mobile Number', type: 'text', required: true, placeholder: 'e.g. +919876543210' },
     { name: 'otp_code', label: 'OTP Code', type: 'text', required: true, placeholder: 'e.g. 123456' },
     { name: 'attempts', label: 'Attempts', type: 'number', default: 0 }
+  ],
+  festival: [
+    { name: 'id', label: 'Festival ID', type: 'text', required: true, placeholder: 'e.g. FEST-1' },
+    { name: 'name', label: 'Festival Name', type: 'text', required: true, placeholder: 'e.g. Makar Sankranti' },
+    { name: 'shortName', label: 'Short Name', type: 'text', placeholder: 'e.g. Uttarayan' },
+    { name: 'category_id', label: 'Category Name', type: 'select' },
+    { name: 'description', label: 'Description', type: 'textarea', fullWidth: true },
+    { name: 'image', label: 'Image Path / URL', type: 'text', placeholder: '/images/festivals/...' },
+    { name: 'heroBanner', label: 'Hero Banner Path', type: 'text' },
+    { name: 'start_date', label: 'Festival Start Date', type: 'date' },
+    { name: 'end_date', label: 'Festival End Date', type: 'date' },
+    { name: 'typical_month', label: 'Typical Month', type: 'text', placeholder: 'e.g. January' },
+    { name: 'timing_2026', label: 'Timing (2026)', type: 'text', placeholder: 'e.g. Jan 14' },
+    { name: 'market_scope', label: 'Market Scope', type: 'text', placeholder: 'e.g. Pan-India' },
+    { name: 'priority_geography', label: 'Priority Geography', type: 'text', placeholder: 'e.g. Gujarat' },
+    { name: 'occasion_category', label: 'Occasion Category', type: 'text' },
+    { name: 'recommended_silver_products', label: 'Recommended Silver Products', type: 'text' },
+    { name: 'primary_website_category', label: 'Primary Website Category', type: 'text' },
+    { name: 'suggested_page_collection', label: 'Suggested Page Collection', type: 'text' },
+    { name: 'commercial_use', label: 'Commercial Use', type: 'text' }
+  ],
+  festival_category: [
+    { name: 'category_id', label: 'Category Name', type: 'select', required: true },
+    { name: 'festival_id', label: 'Festival Name', type: 'select', required: true }
   ]
 };
 
@@ -187,6 +217,10 @@ export const ADMIN_NAV = [
   {
     label: 'Database Schemas',
     items: ['product', 'category', 'image', 'make_master', 'product_image'].map(entityNavItem)
+  },
+  {
+    label: 'Festivals & Collections',
+    items: ['festival', 'festival_category'].map(entityNavItem)
   },
   {
     label: 'Commerce & Users',

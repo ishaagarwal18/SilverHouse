@@ -48,6 +48,8 @@ function CheckoutRoutePage({ onOpenCheckout }) {
 export default function AppRouter({
   products,
   categories,
+  festivals = [],
+  festivalCategories = [],
   onAddToCart,
   onToggleWishlist,
   wishlistIds,
@@ -258,6 +260,8 @@ export default function AppRouter({
           <HomePage
             products={products}
             categories={categories}
+            festivals={festivals}
+            festivalCategories={festivalCategories}
             onNavigateCategory={handleNavigateCategory}
             onNavigateYatraCustomizer={handleNavigateYatraCustomizer}
             onAddToCart={onAddToCart}

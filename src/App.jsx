@@ -29,9 +29,12 @@ import {
   getGuestToken,
   fetchStoreParameters,
   fetchCompanyDetails,
+  fetchFestivals,
+  fetchFestivalCategories,
   DEFAULT_COMPANY_DETAILS,
   recordProductView
 } from './services/api';
+import { prioritizeProductsByActiveFestivals } from './utils/festivalUtils';
 import { PRODUCTS, CATEGORIES } from './data/products';
 
 export default function App() {
@@ -44,6 +47,8 @@ export default function App() {
   // Datasets loaded live from Backend API
   const [products, setProducts] = useState(PRODUCTS);
   const [categories, setCategories] = useState(CATEGORIES);
+  const [festivals, setFestivals] = useState([]);
+  const [festivalCategories, setFestivalCategories] = useState([]);
   const [storeParams, setStoreParams] = useState(null);
   const [companyDetails, setCompanyDetails] = useState(DEFAULT_COMPANY_DETAILS);
 
@@ -241,14 +246,23 @@ export default function App() {
   useEffect(() => {
     async function loadDataFromBackend() {
       try {
-        const [backendProducts, backendCategories, paramsRes, companyRes] = await Promise.all([
+        const [backendProducts, backendCategories, backendFestivals, backendFestCats, paramsRes, companyRes] = await Promise.all([
           fetchProducts(),
           fetchCategories(),
+          fetchFestivals(),
+          fetchFestivalCategories(),
           fetchStoreParameters(),
           fetchCompanyDetails()
         ]);
+
+        const festList = Array.isArray(backendFestivals) ? backendFestivals : [];
+        const festCatList = Array.isArray(backendFestCats) ? backendFestCats : [];
+        setFestivals(festList);
+        setFestivalCategories(festCatList);
+
         if (Array.isArray(backendProducts) && backendProducts.length > 0) {
-          setProducts(backendProducts);
+          const prioritized = prioritizeProductsByActiveFestivals(backendProducts, festList, festCatList);
+          setProducts(prioritized);
         }
         if (Array.isArray(backendCategories) && backendCategories.length > 0) {
           setCategories(backendCategories);
@@ -627,6 +641,8 @@ export default function App() {
           <AppRouter
             products={products}
             categories={categories}
+            festivals={festivals}
+            festivalCategories={festivalCategories}
             onAddToCart={handleAddToCart}
             onToggleWishlist={handleToggleWishlist}
             wishlistIds={wishlistIds}

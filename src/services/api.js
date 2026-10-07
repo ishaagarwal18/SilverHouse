@@ -216,6 +216,43 @@ export async function fetchCategories() {
 }
 
 /**
+ * Fetches festivals directly from Backend API (/api/data with proc_name: 'festival').
+ */
+export async function fetchFestivals() {
+  try {
+    const json = await postApiData({
+      proc_name: 'festival',
+      opr: 'SELECT'
+    });
+    if (json && json.success && Array.isArray(json.data)) {
+      return json.data;
+    }
+  } catch (err) {
+    console.warn('[API Service] Festivals fetch warning:', err);
+  }
+  return [];
+}
+
+/**
+ * Fetches festival-category mappings from Backend API (/api/data with proc_name: 'festival_category').
+ */
+export async function fetchFestivalCategories() {
+  try {
+    const json = await postApiData({
+      proc_name: 'festival_category',
+      opr: 'SELECT'
+    });
+    if (json && json.success && Array.isArray(json.data)) {
+      return json.data;
+    }
+  } catch (err) {
+    console.warn('[API Service] Festival Categories fetch warning:', err);
+  }
+  return [];
+}
+
+
+/**
  * Fetches a single product by ID from Backend API.
  */
 export async function fetchProductById(productId) {

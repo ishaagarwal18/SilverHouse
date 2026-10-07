@@ -1,7 +1,7 @@
 --=============================================================================--
 --                        SP_FetchData                                         --
 --=============================================================================--
-CREATE PROCEDURE dbo.SP_Fetchdata
+CREATE OR ALTER PROCEDURE dbo.SP_Fetchdata
     @proc_name   NVARCHAR(50),
     @JSONstr     NVARCHAR(MAX) = NULL,
     @Condition   NVARCHAR(255) = NULL
@@ -506,6 +506,28 @@ BEGIN
             ORDER BY r.reviewid DESC;
         END
 
+        -- 18. Festival Entity Fetcher
+        ELSE IF @proc_name IN ('festival', 'festivals')
+        BEGIN
+            SELECT * FROM dbo.festival
+            WHERE (@Condition IS NULL OR @Condition = '' OR id = @Condition);
+        END
+
+        -- 19. Festival Category Entity Fetcher
+        ELSE IF @proc_name IN ('festival_category', 'festival_categories')
+        BEGIN
+            SELECT 
+                fc.id,
+                fc.category_id,
+                c.name AS category_name,
+                fc.festival_id,
+                f.name AS festival_name,
+                fc.created_at
+            FROM dbo.festival_category fc
+            LEFT JOIN dbo.category c ON fc.category_id = c.category_id
+            LEFT JOIN dbo.festival f ON fc.festival_id = f.id;
+        END
+
         ELSE
         BEGIN
             SET @Response = 'ERROR: Unsupported proc_name "' + @proc_name + '".';
@@ -521,3 +543,135 @@ BEGIN
         SELECT @Response AS [Response_Status];
     END CATCH
 END;
+GO
+
+--=============================================================================--
+--                        SP_festival                                          --
+--=============================================================================--
+CREATE OR ALTER PROCEDURE dbo.SP_festival
+    @Opr       NVARCHAR(10),
+    @JSONstr   NVARCHAR(MAX) = NULL,
+    @Condition NVARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET @Opr = UPPER(LTRIM(RTRIM(@Opr)));
+
+    IF @Opr = 'SELECT'
+    BEGIN
+        SELECT * FROM dbo.festival
+        WHERE (@Condition IS NULL OR @Condition = '' OR id = @Condition);
+    END
+    ELSE IF @Opr IN ('ADD', 'INSERT')
+    BEGIN
+        INSERT INTO dbo.festival (
+            id, category_id, name, shortName, description, image, image_url, heroBanner, idealFor,
+            priority_val, typical_month, timing_2026, market_scope, priority_geography, occasion_category,
+            recommended_silver_products, primary_website_category, suggested_page_collection, commercial_use,
+            start_date, end_date
+        )
+        VALUES (
+            COALESCE(JSON_VALUE(@JSONstr, '$.table_values.id'), @Condition, 'FEST-' + CAST(ABS(CHECKSUM(NEWID())) % 10000 AS NVARCHAR(10))),
+            TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.category_id') AS INT),
+            JSON_VALUE(@JSONstr, '$.table_values.name'),
+            JSON_VALUE(@JSONstr, '$.table_values.shortName'),
+            JSON_VALUE(@JSONstr, '$.table_values.description'),
+            JSON_VALUE(@JSONstr, '$.table_values.image'),
+            JSON_VALUE(@JSONstr, '$.table_values.image_url'),
+            JSON_VALUE(@JSONstr, '$.table_values.heroBanner'),
+            JSON_VALUE(@JSONstr, '$.table_values.idealFor'),
+            TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.priority_val') AS INT),
+            JSON_VALUE(@JSONstr, '$.table_values.typical_month'),
+            JSON_VALUE(@JSONstr, '$.table_values.timing_2026'),
+            JSON_VALUE(@JSONstr, '$.table_values.market_scope'),
+            JSON_VALUE(@JSONstr, '$.table_values.priority_geography'),
+            JSON_VALUE(@JSONstr, '$.table_values.occasion_category'),
+            JSON_VALUE(@JSONstr, '$.table_values.recommended_silver_products'),
+            JSON_VALUE(@JSONstr, '$.table_values.primary_website_category'),
+            JSON_VALUE(@JSONstr, '$.table_values.suggested_page_collection'),
+            JSON_VALUE(@JSONstr, '$.table_values.commercial_use'),
+            TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.start_date') AS DATE),
+            TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.end_date') AS DATE)
+        );
+    END
+    ELSE IF @Opr = 'EDIT'
+    BEGIN
+        DECLARE @TargetId NVARCHAR(50) = COALESCE(@Condition, JSON_VALUE(@JSONstr, '$.table_values.id'));
+        UPDATE dbo.festival
+        SET 
+            name = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.name'), name),
+            shortName = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.shortName'), shortName),
+            description = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.description'), description),
+            image = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.image'), image),
+            image_url = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.image_url'), image_url),
+            heroBanner = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.heroBanner'), heroBanner),
+            idealFor = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.idealFor'), idealFor),
+            priority_val = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.priority_val') AS INT), priority_val),
+            typical_month = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.typical_month'), typical_month),
+            timing_2026 = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.timing_2026'), timing_2026),
+            market_scope = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.market_scope'), market_scope),
+            priority_geography = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.priority_geography'), priority_geography),
+            occasion_category = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.occasion_category'), occasion_category),
+            recommended_silver_products = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.recommended_silver_products'), recommended_silver_products),
+            primary_website_category = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.primary_website_category'), primary_website_category),
+            suggested_page_collection = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.suggested_page_collection'), suggested_page_collection),
+            commercial_use = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.commercial_use'), commercial_use),
+            start_date = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.start_date') AS DATE), start_date),
+            end_date = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.end_date') AS DATE), end_date)
+        WHERE id = @TargetId;
+    END
+    ELSE IF @Opr = 'DELETE'
+    BEGIN
+        DELETE FROM dbo.festival WHERE id = COALESCE(@Condition, JSON_VALUE(@JSONstr, '$.table_values.id'));
+    END
+END;
+GO
+
+--=============================================================================--
+--                        SP_festival_category                                 --
+--=============================================================================--
+CREATE OR ALTER PROCEDURE dbo.SP_festival_category
+    @Opr       NVARCHAR(10),
+    @JSONstr   NVARCHAR(MAX) = NULL,
+    @Condition NVARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET @Opr = UPPER(LTRIM(RTRIM(@Opr)));
+
+    IF @Opr = 'SELECT'
+    BEGIN
+        SELECT 
+            fc.id,
+            fc.category_id,
+            c.name AS category_name,
+            fc.festival_id,
+            f.name AS festival_name,
+            fc.created_at
+        FROM dbo.festival_category fc
+        LEFT JOIN dbo.category c ON fc.category_id = c.category_id
+        LEFT JOIN dbo.festival f ON fc.festival_id = f.id;
+    END
+    ELSE IF @Opr IN ('ADD', 'INSERT')
+    BEGIN
+        INSERT INTO dbo.festival_category (category_id, festival_id)
+        VALUES (
+            TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.category_id') AS INT),
+            JSON_VALUE(@JSONstr, '$.table_values.festival_id')
+        );
+    END
+    ELSE IF @Opr = 'EDIT'
+    BEGIN
+        DECLARE @FcId INT = TRY_CAST(COALESCE(@Condition, JSON_VALUE(@JSONstr, '$.table_values.id')) AS INT);
+        UPDATE dbo.festival_category
+        SET 
+            category_id = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.category_id') AS INT), category_id),
+            festival_id = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.festival_id'), festival_id)
+        WHERE id = @FcId;
+    END
+    ELSE IF @Opr = 'DELETE'
+    BEGIN
+        DELETE FROM dbo.festival_category WHERE id = TRY_CAST(COALESCE(@Condition, JSON_VALUE(@JSONstr, '$.table_values.id')) AS INT);
+    END
+END;
+GO

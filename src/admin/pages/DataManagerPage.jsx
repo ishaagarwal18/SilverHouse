@@ -107,15 +107,19 @@ function DataManager({ entity }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [data, cats, makes] = await Promise.all([
+      const [data, cats, makes, festList] = await Promise.all([
         fetchRows(entity),
         fetchRows('category'),
-        fetchRows('make_master')
+        fetchRows('make_master'),
+        fetchRows('festival')
       ]);
       setRows(data);
       setLookups({
         categories: Object.fromEntries(cats.map(c => [c.category_id, c.name])),
-        makes: Object.fromEntries(makes.map(m => [m.m_id, m.type]))
+        makes: Object.fromEntries(makes.map(m => [m.m_id, m.type])),
+        festivals: Object.fromEntries((festList || []).map(f => [f.id, f.name || f.shortName || f.id])),
+        categoryList: cats || [],
+        festivalList: festList || []
       });
     } catch (err) {
       showToast('Failed to load table: ' + err.message, true);
@@ -325,8 +329,11 @@ function DataManager({ entity }) {
     if (h === 'items' && Array.isArray(raw)) {
       return <span className="font-semibold cursor-help" title={raw.map(i => `${i.product_name || i.name} (${i.quantity}x)`).join(', ')}>{raw.length} item(s)</span>;
     }
-    if (entity === 'product' && h === 'category_id' && rows[0]?.category_name === undefined && val !== '-') {
-      return lookups.categories[val] || val;
+    if (h === 'category_id' && val !== '-') {
+      return lookups.categories[val] ? `${lookups.categories[val]} (#${val})` : (row.category_name || val);
+    }
+    if (h === 'festival_id' && val !== '-') {
+      return lookups.festivals[val] ? `${lookups.festivals[val]} (${val})` : (row.festival_name || val);
     }
     if (entity === 'product' && h === 'm_id' && val !== '-') return lookups.makes[val] || val;
     if (typeof val === 'object') return JSON.stringify(val);
@@ -334,8 +341,9 @@ function DataManager({ entity }) {
   };
 
   const columnTitle = h => {
+    if (h === 'category_id') return 'Category Name';
+    if (h === 'festival_id') return 'Festival Name';
     if (entity === 'product') {
-      if (h === 'category_id') return rows[0]?.category_name !== undefined ? 'Category ID' : 'Category Name';
       if (h === 'm_id') return 'Make Master';
       if (h === 'title') return 'Product Name';
     }
@@ -497,6 +505,7 @@ function DataManager({ entity }) {
           mode={recordModal.mode}
           id={recordModal.id}
           rows={rows}
+          lookups={lookups}
           onClose={() => setRecordModal(null)}
           onSaved={() => { setRecordModal(null); loadData(); if (entity === 'custom_orders') refreshPendingCustomOrders(); }}
           onOpenImages={images => setLightbox({ images, index: 0 })}
@@ -573,7 +582,7 @@ function DeletePreview({ ids, rows, pkField, lookups }) {
 }
 
 /** Schema-driven add/edit dialog for tables without a dedicated form page. */
-function RecordModal({ entity, mode, id, rows, onClose, onSaved, onOpenImages }) {
+function RecordModal({ entity, mode, id, rows, lookups = {}, onClose, onSaved, onOpenImages }) {
   const { showToast } = useAdminUI();
   const [saving, setSaving] = useState(false);
   const cfg = getEntityConfig(entity);
@@ -645,9 +654,27 @@ function RecordModal({ entity, mode, id, rows, onClose, onSaved, onOpenImages })
               const fieldId = `rec-${field.name}`;
               return (
                 <Field key={field.name} label={field.label} required={field.required} fullWidth={field.fullWidth} htmlFor={fieldId}>
-                  {field.type === 'select' ? (
-                    <select id={fieldId} name={field.name} className="ad-input" defaultValue={String(value)} required={field.required}>
-                      {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  {field.name === 'category_id' ? (
+                    <select id={fieldId} name={field.name} className="ad-input cursor-pointer" defaultValue={String(value)} required={field.required}>
+                      <option value="">-- Select Category --</option>
+                      {(lookups.categoryList || []).map(cat => (
+                        <option key={cat.category_id} value={cat.category_id}>
+                          {cat.name} (ID: {cat.category_id})
+                        </option>
+                      ))}
+                    </select>
+                  ) : field.name === 'festival_id' ? (
+                    <select id={fieldId} name={field.name} className="ad-input cursor-pointer" defaultValue={String(value)} required={field.required}>
+                      <option value="">-- Select Festival --</option>
+                      {(lookups.festivalList || []).map(fest => (
+                        <option key={fest.id} value={fest.id}>
+                          {fest.name || fest.shortName} ({fest.id})
+                        </option>
+                      ))}
+                    </select>
+                  ) : field.type === 'select' ? (
+                    <select id={fieldId} name={field.name} className="ad-input cursor-pointer" defaultValue={String(value)} required={field.required}>
+                      {(field.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </select>
                   ) : field.type === 'textarea' ? (
                     <textarea id={fieldId} name={field.name} rows={3} className="ad-input" defaultValue={typeof value === 'object' ? JSON.stringify(value) : value} required={field.required} placeholder={field.placeholder} />

@@ -13,12 +13,15 @@ import SilverCoinsSection from './SilverCoinsSection';
 import YatraLocketSpotlight from './YatraLocketSpotlight';
 import ExploreCatalogGrid from './ExploreCatalogGrid';
 import Testimonials from './Testimonials';
+import FestivalSection from './FestivalSection';
 import RecentlyViewedSection from '../common/RecentlyViewedSection';
 import ScrollReveal from '../common/ScrollReveal';
 
 export default function HomePage({
   products = [],
   categories = [],
+  festivals = [],
+  festivalCategories = [],
   onNavigateCategory,
   onNavigateYatraCustomizer,
   onAddToCart,
@@ -44,7 +47,23 @@ export default function HomePage({
         />
       </ScrollReveal>
 
-      {/* 3. Policy & Trust Badges Section */}
+      {/* 3. Live Festival Showcase Section */}
+      <ScrollReveal animation="fade-up">
+        <FestivalSection
+          festivals={festivals}
+          festivalCategories={festivalCategories}
+          categories={categories}
+          products={products}
+          onNavigateCategory={onNavigateCategory}
+          onAddToCart={onAddToCart}
+          onToggleWishlist={onToggleWishlist}
+          wishlistIds={wishlistIds}
+          onQuickView={onQuickView}
+          onSelectProduct={onSelectProduct}
+        />
+      </ScrollReveal>
+
+      {/* 4. Policy & Trust Badges Section */}
       <ScrollReveal animation="fade-up" delay={100}>
         <PolicyBadges />
       </ScrollReveal>
