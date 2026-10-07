@@ -88,18 +88,6 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
                   Email: {compEmail}
                 </a>
               </div>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#F3E5AB]">
-                <ShieldCheck className="w-3.5 h-3.5 text-[var(--th-accent)] shrink-0" />
-                {compPan && <span className="font-mono tracking-wider">PAN: {compPan}</span>}
-                {compGst && (
-                  <>
-                    <span className="text-white/40">•</span>
-                    <span className="font-mono tracking-wider">GSTIN: {compGst}</span>
-                  </>
-                )}
-                <span className="text-white/40">•</span>
-                <span>Sunil K Agarwal</span>
-              </div>
             </div>
           </div>
 
