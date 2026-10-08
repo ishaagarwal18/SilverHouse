@@ -14,8 +14,8 @@ export default function AuthPage({ onTriggerToast }) {
   const fromState = location.state?.from?.pathname || (typeof location.state?.from === 'string' ? location.state.from : null);
   const redirectTarget = searchParams.get('redirect') || fromState || '/';
 
-  // Mode: 'LOGIN' or 'SIGNUP'
-  const [authMode, setAuthMode] = useState('LOGIN');
+  // Mode: 'SIGNUP' (default for 1st time users) or 'LOGIN'
+  const [authMode, setAuthMode] = useState('SIGNUP');
 
   // Step state: 'PHONE' or 'OTP'
   const [step, setStep] = useState('PHONE');
@@ -140,7 +140,7 @@ export default function AuthPage({ onTriggerToast }) {
     if (e) e.preventDefault();
     setError('');
 
-    if (authMode === 'LOGIN' && !userName.trim()) {
+    if (authMode === 'SIGNUP' && !userName.trim()) {
       setError('Please enter your name / username.');
       return;
     }
@@ -259,15 +259,15 @@ export default function AuthPage({ onTriggerToast }) {
 
     setLoading(true);
     try {
-      const extraMeta = {
+      const extraMeta = authMode === 'SIGNUP' ? {
         birthdayDate,
         anniversaryDate,
         gstNumber
-      };
+      } : {};
       const result = await verifyOtp(
         formattedPhone || phone,
         fullOtp,
-        authMode === 'LOGIN' ? userName.trim() : '',
+        authMode === 'SIGNUP' ? userName.trim() : '',
         extraMeta
       );
       if (result.success) {
@@ -709,45 +709,19 @@ export default function AuthPage({ onTriggerToast }) {
             {/* STEP 1: PHONE NUMBER & USER DETAILS INPUT */}
             {step === 'PHONE' && (
               <form onSubmit={handleSendOtp} className="space-y-3.5">
-                {/* Mode Selector Tabs */}
-                <div className="flex border-b border-[var(--th-border)] mb-3">
-                  <button
-                    type="button"
-                    onClick={() => { setAuthMode('LOGIN'); setError(''); }}
-                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-                      authMode === 'LOGIN'
-                        ? 'border-[var(--th-accent)] text-[var(--th-primary)]'
-                        : 'border-transparent text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
-                    }`}
-                  >
-                    Log In
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setAuthMode('SIGNUP'); setError(''); }}
-                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-                      authMode === 'SIGNUP'
-                        ? 'border-[var(--th-accent)] text-[var(--th-primary)]'
-                        : 'border-transparent text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
-                    }`}
-                  >
-                    Sign Up
-                  </button>
-                </div>
-
-                <div className="text-center mb-2">
-                  <h1 className="text-lg font-bold text-[var(--th-text-main)] font-serif">
-                    {authMode === 'LOGIN' ? 'Log In to SilverHouse' : 'Create Your Account'}
+                <div className="text-center mb-3">
+                  <h1 className="text-xl font-bold text-[var(--th-text-main)] font-serif">
+                    {authMode === 'SIGNUP' ? 'Create Your Account' : 'Log In to SilverHouse'}
                   </h1>
                   <p className="text-xs text-[var(--th-text-muted)] mt-1">
-                    {authMode === 'LOGIN'
-                      ? 'Enter your details to receive a 6-digit WhatsApp OTP.'
-                      : 'Enter your mobile number to receive a 6-digit WhatsApp OTP.'}
+                    {authMode === 'SIGNUP'
+                      ? 'Please enter your details to register with SilverHouse.'
+                      : 'Enter your registered mobile number to receive a 6-digit WhatsApp OTP.'}
                   </p>
                 </div>
 
-                {/* LOGIN MODE FIELDS */}
-                {authMode === 'LOGIN' && (
+                {/* SIGNUP MODE: Asks for ALL Details */}
+                {authMode === 'SIGNUP' && (
                   <>
                     {/* Name Field (Required) */}
                     <div>
@@ -850,8 +824,8 @@ export default function AuthPage({ onTriggerToast }) {
                   </>
                 )}
 
-                {/* SIGNUP MODE FIELDS (ONLY Phone Number requested!) */}
-                {authMode === 'SIGNUP' && (
+                {/* LOGIN MODE: ONLY Phone Number requested */}
+                {authMode === 'LOGIN' && (
                   <div>
                     <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1.5">
                       Mobile Number *
@@ -873,7 +847,7 @@ export default function AuthPage({ onTriggerToast }) {
                       </div>
                     </div>
                     <p className="text-[10px] text-[var(--th-text-muted)] mt-1">
-                      Instant WhatsApp signup. Only your phone number is required.
+                      Enter your mobile number to receive a 6-digit WhatsApp OTP.
                     </p>
                   </div>
                 )}
@@ -881,7 +855,7 @@ export default function AuthPage({ onTriggerToast }) {
                 {/* Send OTP Button */}
                 <button
                   type="submit"
-                  disabled={loading || !phone.trim() || (authMode === 'LOGIN' && !userName.trim())}
+                  disabled={loading || !phone.trim() || (authMode === 'SIGNUP' && !userName.trim())}
                   className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 transform active:scale-98 disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? (
@@ -894,6 +868,33 @@ export default function AuthPage({ onTriggerToast }) {
                     </>
                   )}
                 </button>
+
+                {/* Bottom Switch Link */}
+                <div className="text-center pt-2 border-t border-[var(--th-border)]/50 text-xs">
+                  {authMode === 'SIGNUP' ? (
+                    <p className="text-[var(--th-text-muted)]">
+                      Already have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => { setAuthMode('LOGIN'); setError(''); }}
+                        className="font-bold text-[var(--th-primary)] hover:text-[var(--th-accent)] hover:underline cursor-pointer transition-colors"
+                      >
+                        Log In
+                      </button>
+                    </p>
+                  ) : (
+                    <p className="text-[var(--th-text-muted)]">
+                      Don't have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => { setAuthMode('SIGNUP'); setError(''); }}
+                        className="font-bold text-[var(--th-primary)] hover:text-[var(--th-accent)] hover:underline cursor-pointer transition-colors"
+                      >
+                        Sign Up
+                      </button>
+                    </p>
+                  )}
+                </div>
               </form>
             )}
 
