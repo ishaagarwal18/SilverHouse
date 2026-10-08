@@ -58,12 +58,31 @@ export default function ProductDetailPage({
   }, []);
 
   const handleWhatsAppInquiry = () => {
-    let rawWpApi = storeParams?.wp_api || '9537178477';
-    let phoneDigits = String(rawWpApi).replace(/\D/g, '');
-    if (phoneDigits.length === 10) {
-      phoneDigits = '91' + phoneDigits;
+    let phoneDigits = '919537178477'; // Fallback to official SilverHouse support number
+    const rawWpApi = storeParams?.wp_api;
+
+    if (rawWpApi) {
+      if (typeof rawWpApi === 'string' && (rawWpApi.startsWith('http://') || rawWpApi.startsWith('https://'))) {
+        try {
+          const urlObj = new URL(rawWpApi);
+          const phoneParam = urlObj.searchParams.get('phone') || urlObj.searchParams.get('number') || urlObj.searchParams.get('mobile');
+          if (phoneParam) {
+            const extracted = phoneParam.replace(/\D/g, '');
+            if (extracted.length === 10) phoneDigits = '91' + extracted;
+            else if (extracted.length >= 11 && extracted.length <= 13) phoneDigits = extracted;
+          }
+        } catch (e) {
+          // ignore URL parse errors
+        }
+      } else {
+        const extracted = String(rawWpApi).replace(/\D/g, '');
+        if (extracted.length === 10) {
+          phoneDigits = '91' + extracted;
+        } else if (extracted.length >= 11 && extracted.length <= 13) {
+          phoneDigits = extracted;
+        }
+      }
     }
-    if (!phoneDigits) phoneDigits = '919537178477';
 
     const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
     const formattedPrice = `₹${Number(currentProduct.price || 0).toLocaleString('en-IN')}`;
