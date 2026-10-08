@@ -1,11 +1,28 @@
 import React, { useEffect } from 'react';
-import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShieldCheck, FileText, RefreshCw, Truck, Info, PhoneCall } from 'lucide-react';
+import { useParams, useLocation, Link } from 'react-router-dom';
+import {
+  ArrowLeft,
+  ShieldCheck,
+  FileText,
+  RefreshCw,
+  Truck,
+  Info,
+  PhoneCall,
+  Sparkles,
+  Clock,
+  CreditCard,
+  PackageCheck,
+  CheckCircle2,
+  Lock,
+  Mail,
+  MapPin,
+  HelpCircle,
+  Award
+} from 'lucide-react';
 
 export default function PolicyPage({ company }) {
   const { policyType } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const comp = company || {};
   const compName = comp.name || 'Silver House';
@@ -30,35 +47,34 @@ export default function PolicyPage({ company }) {
 
   const activeKey = getNormalizedKey(policyType);
 
-
   const POLICY_METADATA = {
     terms: {
       title: 'Terms & Conditions',
-      subtitle: 'Official Terms of Service governing purchases, use of site & legal agreements',
+      subtitle: 'Official Terms of Service governing purchases, website usage & legal framework',
       badge: 'Mandatory Policy Document',
       icon: FileText
     },
     privacy: {
       title: 'Privacy Policy',
-      subtitle: 'How we collect, protect, and handle your personal data & payment security',
+      subtitle: 'How we protect your personal information, handle cookies & secure online transactions',
       badge: 'Data Protection & Security',
       icon: ShieldCheck
     },
     refund: {
       title: 'Refund & Cancellation Policy',
-      subtitle: '30-day return policy, cancellation guidelines, inspection & refund timeline',
+      subtitle: '30-day customer guarantee, return procedures, inspection & refund timeline',
       badge: 'Customer Guarantee Policy',
       icon: RefreshCw
     },
     shipping: {
       title: 'Shipping & Delivery Policy',
-      subtitle: '100% Transit Insured delivery, dispatch timelines & courier partner details',
+      subtitle: '100% Transit Insured delivery across India, dispatch timelines & courier partners',
       badge: 'Logistics Assurance',
       icon: Truck
     },
     about: {
       title: 'About Silver House',
-      subtitle: 'Established in 2010 in Ahmedabad • Heritage of wholesale, purity & trust',
+      subtitle: 'Established in 2010 in Ahmedabad • Decades of wholesale purity, trust & craftsmanship',
       badge: 'Company Profile & Heritage',
       icon: Info
     }
@@ -72,9 +88,10 @@ export default function PolicyPage({ company }) {
   }, [activeKey, currentMeta, compName]);
 
   return (
-    <div className="w-full min-h-screen bg-[var(--th-bg)] text-[var(--th-text-main)] selection:bg-[var(--th-accent)] selection:text-white">
-      {/* Top Navigation Header */}
-      <header className="w-full border-b border-[var(--th-border)] bg-[var(--th-card)]/80 backdrop-blur-md sticky top-0 z-50">
+    <div className="w-full min-h-screen bg-[var(--th-bg)] text-[var(--th-text-main)] selection:bg-[var(--th-accent)] selection:text-white font-sans">
+      
+      {/* Classy Sticky Header */}
+      <header className="w-full border-b border-[var(--th-border)] bg-[var(--th-card)]/85 backdrop-blur-md sticky top-0 z-50 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--th-text-muted)] hover:text-[var(--th-primary)] transition-colors">
             <ArrowLeft className="w-4 h-4" />
@@ -85,308 +102,307 @@ export default function PolicyPage({ company }) {
           </div>
           <Link to="/contact-us" className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--th-primary)] hover:underline">
             <PhoneCall className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Contact Us</span>
+            <span className="hidden sm:inline">Support</span>
           </Link>
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Main Luxury Container */}
       <main className="max-w-4xl mx-auto px-4 sm:px-8 py-12 md:py-16">
         
-        {/* Navigation Tabs Bar */}
-        <div className="flex overflow-x-auto gap-2 p-1.5 bg-[var(--th-card)] border border-[var(--th-border)] rounded-2xl mb-12 scrollbar-none shadow-sm">
-          <button
-            onClick={() => navigate('/terms-and-conditions')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              activeKey === 'terms'
-                ? 'bg-[var(--th-primary)] text-white shadow-sm'
-                : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-bg)]'
-            }`}
-          >
-            Terms & Conditions
-          </button>
-
-          <button
-            onClick={() => navigate('/privacy-policy')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              activeKey === 'privacy'
-                ? 'bg-[var(--th-primary)] text-white shadow-sm'
-                : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-bg)]'
-            }`}
-          >
-            Privacy Policy
-          </button>
-
-          <button
-            onClick={() => navigate('/refund-and-cancellation')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              activeKey === 'refund'
-                ? 'bg-[var(--th-primary)] text-white shadow-sm'
-                : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-bg)]'
-            }`}
-          >
-            Refund & Cancellation
-          </button>
-
-          <button
-            onClick={() => navigate('/shipping-policy')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              activeKey === 'shipping'
-                ? 'bg-[var(--th-primary)] text-white shadow-sm'
-                : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-bg)]'
-            }`}
-          >
-            Shipping Policy
-          </button>
-
-          <button
-            onClick={() => navigate('/about-us')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              activeKey === 'about'
-                ? 'bg-[var(--th-primary)] text-white shadow-sm'
-                : 'text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-bg)]'
-            }`}
-          >
-            About Us
-          </button>
-        </div>
-
-        {/* Hero Header */}
-        <div className="text-center space-y-4 mb-12 pb-8 border-b border-[var(--th-border)]">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--th-accent)]/15 border border-[var(--th-accent)]/30 text-[var(--th-primary)] text-xs font-bold uppercase tracking-wider">
+        {/* Classy Hero Header (No Tabs) */}
+        <div className="text-center space-y-4 mb-12 pb-10 border-b border-[var(--th-border)] relative">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--th-accent)]/15 border border-[var(--th-accent)]/30 text-[var(--th-primary)] text-xs font-bold uppercase tracking-wider shadow-2xs">
             <currentMeta.icon className="w-3.5 h-3.5 text-[var(--th-accent)]" />
-            {currentMeta.badge}
+            <span>{currentMeta.badge}</span>
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-extrabold text-[var(--th-text-main)] tracking-tight">
+
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-extrabold text-[var(--th-text-main)] tracking-tight leading-tight">
             {currentMeta.title}
           </h1>
-          <p className="text-sm sm:text-base text-[var(--th-text-sub)] max-w-2xl mx-auto">
+
+          <p className="text-sm sm:text-base text-[var(--th-text-sub)] max-w-2xl mx-auto font-medium">
             {currentMeta.subtitle}
           </p>
+
+          <div className="w-20 h-0.5 bg-[var(--th-accent)] mx-auto opacity-50 rounded-full pt-1" />
         </div>
 
-        {/* Policy Content Sections */}
-        <article className="prose prose-lg dark:prose-invert max-w-none text-[var(--th-text-sub)] leading-relaxed space-y-8">
-          
-          {/* ================= TERMS & CONDITIONS ================= */}
-          {activeKey === 'terms' && (
-            <div className="space-y-8">
-              <div className="p-5 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-xs space-y-1 font-sans">
-                <p className="font-bold text-[var(--th-text-main)] uppercase tracking-wider">Legal Entity & Website Operator</p>
-                <p>This website is operated by <strong>{compName}</strong> ("we", "us", "our"). Throughout the site, {compName} offers this website, including all information, tools and services available from this site to you, the user, conditioned upon your acceptance of all terms, conditions, policies and notices stated here.</p>
+        {/* ================= REFUND & CANCELLATION POLICY ================= */}
+        {activeKey === 'refund' && (
+          <div className="space-y-10">
+            
+            {/* Quick Visual Highlights Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-center space-y-2 shadow-2xs">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 text-[var(--th-accent)] flex items-center justify-center mx-auto">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">30-Day Return Window</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Hassle-free returns within 30 days of receipt</span>
               </div>
 
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">SECTION 1 - ONLINE STORE TERMS</h3>
-                <p className="text-sm">By agreeing to these Terms of Service, you represent that you are at least the age of majority in your state or province of residence. You may not use our products for any illegal or unauthorized purpose nor may you, in the use of the Service, violate any laws in your jurisdiction (including but not limited to copyright laws).</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">SECTION 2 - GENERAL CONDITIONS</h3>
-                <p className="text-sm">We reserve the right to refuse service to anyone for any reason at any time. You understand that your content (not including credit card information), may be transferred unencrypted over various networks. Credit card & payment transaction information is always encrypted during transfer over networks via PCI-DSS compliant payment gateways (Razorpay).</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">SECTION 3 - ACCURACY, COMPLETENESS AND TIMELINESS OF INFORMATION</h3>
-                <p className="text-sm">We are not responsible if information made available on this site is not accurate, complete or current. The material on this site is provided for general information only and should not be relied upon or used as the sole basis for making decisions without consulting primary, more accurate sources.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">SECTION 4 - MODIFICATIONS TO THE SERVICE AND PRICES</h3>
-                <p className="text-sm">Prices for our products (including live silver rate adjustments) are subject to change without notice. We reserve the right at any time to modify or discontinue the Service (or any part or content thereof) without notice at any time.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">SECTION 5 - PRODUCTS OR SERVICES</h3>
-                <p className="text-sm">Certain products or services (such as custom Yatra lockets, 999 fine silver coins, or murti idols) may be available exclusively online through the website. These products are subject to return or exchange only according to our Return Policy. Every piece is hallmarked under BIS standards.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">SECTION 6 - ACCURACY OF BILLING AND ACCOUNT INFORMATION</h3>
-                <p className="text-sm">We reserve the right to refuse any order you place with us. We may, in our sole discretion, limit or cancel quantities purchased per person, per household or per order. You agree to provide current, complete and accurate purchase and account information for all purchases made at our store.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">SECTION 7 - OPTIONAL TOOLS & THIRD-PARTY LINKS</h3>
-                <p className="text-sm">We may provide access to third-party tools or links over which we neither monitor nor have any control. We shall have no liability whatsoever arising from or relating to your use of optional third-party tools or websites.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">SECTION 8 - PROHIBITED USES</h3>
-                <p className="text-sm">In addition to other prohibitions, you are prohibited from using the site or its content: (a) for any unlawful purpose; (b) to solicit others to perform unlawful acts; (c) to violate regulations or laws; (d) to infringe upon intellectual property; (e) to submit false information; (f) to upload viruses or malicious code.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">SECTION 9 - GOVERNING LAW & JURISDICTION</h3>
-                <p className="text-sm">These Terms of Service and any separate agreements whereby we provide you Services shall be governed by and construed in accordance with the laws of India and subject to the jurisdiction of courts in <strong>Ahmedabad, Gujarat, India</strong>.</p>
-              </section>
-
-              <section className="space-y-3 pt-4 border-t border-[var(--th-border)]">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">SECTION 10 - CONTACT INFORMATION</h3>
-                <p className="text-sm">Questions about the Terms of Service should be sent to us at:</p>
-                <div className="p-4 rounded-xl bg-[var(--th-card)] border border-[var(--th-border)] text-xs space-y-1">
-                  <p className="font-bold text-[var(--th-text-main)]">{compName}</p>
-                  <p>{fullAddress}</p>
-                  <p>Email: <a href={`mailto:${compEmail}`} className="text-[var(--th-primary)] underline">{compEmail}</a> | Phone: +91 {compPhone}</p>
+              <div className="p-4 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-center space-y-2 shadow-2xs">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 text-[var(--th-accent)] flex items-center justify-center mx-auto">
+                  <CreditCard className="w-5 h-5" />
                 </div>
-              </section>
-            </div>
-          )}
-
-          {/* ================= PRIVACY POLICY ================= */}
-          {activeKey === 'privacy' && (
-            <div className="space-y-8">
-              <div className="p-5 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-xs space-y-1 font-sans">
-                <p className="font-bold text-[var(--th-text-main)] uppercase tracking-wider">Privacy & Data Security Standard</p>
-                <p>At <strong>{compName}</strong>, we respect your privacy. This Privacy Policy details how your personal information is collected, used, and safeguarded when you visit or make a purchase from our website.</p>
+                <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">5-7 Day Settlement</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Refund credited to original payment source</span>
               </div>
 
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">1. WHAT INFORMATION DO WE COLLECT?</h3>
-                <p className="text-sm">When you purchase something from our store, we collect the personal information you give us such as your name, delivery address, phone number, and email address. When you browse our store, we also automatically receive your computer’s internet protocol (IP) address to provide us with information that helps us optimize your browsing experience.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">2. CONSENT & WITHDRAWAL</h3>
-                <p className="text-sm">When you provide us with personal information to complete a transaction, verify your payment method, place an order, or arrange for a delivery, we imply that you consent to our collecting it and using it for that specific reason only. If you wish to withdraw your consent at any time, you may contact us at <strong>{compEmail}</strong>.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">3. PAYMENT PROCESSING (RAZORPAY & PCI-DSS)</h3>
-                <p className="text-sm">We use <strong>Razorpay</strong> for processing online payments. Neither {compName} nor Razorpay stores your card or bank credentials on our servers. All transactional data is encrypted through the Payment Card Industry Data Security Standard (PCI-DSS) while processing payment. PCI-DSS requirements ensure the secure handling of payment data by our store and its payment gateway providers.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">4. THIRD-PARTY SERVICES</h3>
-                <p className="text-sm">In general, the third-party providers used by us (such as logistics partners BlueDart, Delhivery, Speed Post) will only collect, use and disclose your information to the extent necessary to allow them to perform the delivery services they provide to us.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">5. SECURITY & COOKIES</h3>
-                <p className="text-sm">To protect your personal information, we take industry-standard precautions and follow best practices to make sure it is not inappropriately lost, misused, accessed, disclosed, altered or destroyed. We use cookies to maintain your active shopping cart session.</p>
-              </section>
-
-              <section className="space-y-3 pt-4 border-t border-[var(--th-border)]">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">6. PRIVACY COMPLIANCE OFFICER CONTACT</h3>
-                <p className="text-sm">If you would like to access, correct, amend or delete any personal information we have about you, please contact our Privacy Compliance Officer at:</p>
-                <div className="p-4 rounded-xl bg-[var(--th-card)] border border-[var(--th-border)] text-xs space-y-1">
-                  <p className="font-bold text-[var(--th-text-main)]">{compName} - Privacy Compliance</p>
-                  <p>{fullAddress}</p>
-                  <p>Email: <a href={`mailto:${compEmail}`} className="text-[var(--th-primary)] underline">{compEmail}</a> | Phone: +91 {compPhone}</p>
+              <div className="p-4 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-center space-y-2 shadow-2xs">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 text-[var(--th-accent)] flex items-center justify-center mx-auto">
+                  <PackageCheck className="w-5 h-5" />
                 </div>
-              </section>
-            </div>
-          )}
-
-          {/* ================= REFUND & CANCELLATION ================= */}
-          {activeKey === 'refund' && (
-            <div className="space-y-8">
-              <div className="p-5 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-xs space-y-1 font-sans">
-                <p className="font-bold text-[var(--th-text-main)] uppercase tracking-wider">30-Day Customer Satisfaction Guarantee</p>
-                <p>Our return policy lasts <strong>30 days</strong>. If 30 days have gone by since your purchase, unfortunately we cannot offer you a full refund or exchange. Custom bespoke orders are evaluated under assay guidelines.</p>
+                <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">Original Packaging</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Item must be unused with original BIS tags</span>
               </div>
 
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">1. ELIGIBILITY FOR RETURNS</h3>
-                <p className="text-sm">To be eligible for a return, your item must be unused, in the same condition that you received it, and must be in its original tamper-proof packaging along with the original BIS Assay Certificate and invoice bill.</p>
-                <ul className="list-disc pl-5 text-sm space-y-1">
-                  <li>Custom engraved Yatra lockets or personalized coins cannot be returned unless damaged in transit.</li>
-                  <li>Proof of purchase (invoice bill or order ID) is required for all returns.</li>
-                </ul>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">2. REFUND PROCESS & TIMELINE</h3>
-                <p className="text-sm">Once your return is received and inspected by our assay verification team, we will send you an email/SMS notification regarding the approval or rejection of your refund.</p>
-                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs space-y-1">
-                  <p className="font-bold text-[var(--th-text-main)]">Approved Refund Settlement:</p>
-                  <p className="text-[var(--th-text-sub)]">If approved, your refund will be processed and a credit will automatically be applied to your original method of payment (via Razorpay PG) within <strong>5–7 working days</strong>.</p>
+              <div className="p-4 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-center space-y-2 shadow-2xs">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 text-[var(--th-accent)] flex items-center justify-center mx-auto">
+                  <Truck className="w-5 h-5" />
                 </div>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">3. EXCHANGES & DAMAGE CLAIMS</h3>
-                <p className="text-sm">We only replace items if they are defective or damaged during transit. If you need to exchange a damaged item for the same product, please email us at <strong>{compEmail}</strong> with unboxing photo/video proof within 48 hours of delivery.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">4. ORDER CANCELLATION</h3>
-                <p className="text-sm">Orders for ready-stock items can be cancelled before dispatch (usually within 12 hours of placing the order) for a 100% full refund. Once shipped, cancellations follow standard return procedures.</p>
-              </section>
-
-              <section className="space-y-3 pt-4 border-t border-[var(--th-border)]">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">5. RETURN SHIPMENT ADDRESS</h3>
-                <p className="text-sm">To return your product, please ship your package to our central office:</p>
-                <div className="p-4 rounded-xl bg-[var(--th-card)] border border-[var(--th-border)] text-xs space-y-1">
-                  <p className="font-bold text-[var(--th-text-main)]">{compName} - Returns Dept.</p>
-                  <p>{fullAddress}</p>
-                  <p>Helpline: +91 {compPhone} | Email: {compEmail}</p>
-                </div>
-              </section>
+                <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">Insured Transit</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Damaged items replaced with 100% coverage</span>
+              </div>
             </div>
-          )}
 
-          {/* ================= SHIPPING POLICY ================= */}
-          {activeKey === 'shipping' && (
-            <div className="space-y-8">
-              <div className="p-5 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-xs space-y-1 font-sans">
-                <p className="font-bold text-[var(--th-text-main)] uppercase tracking-wider">100% Transit Insured Delivery</p>
-                <p>All shipments from <strong>{compName}</strong> are fully insured against theft, loss, or damage until delivered into your hands.</p>
+            {/* Detailed Content Cards */}
+            <div className="space-y-6">
+              
+              {/* Section 1 */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-4 shadow-sm relative overflow-hidden">
+                <div className="flex items-center gap-3">
+                  <span className="font-serif text-2xl font-bold text-[var(--th-accent)]">01.</span>
+                  <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Return Eligibility & Guidelines</h3>
+                </div>
+                <p className="text-sm text-[var(--th-text-sub)] leading-relaxed">
+                  Our customer satisfaction policy lasts <strong>30 days</strong> from the date of package delivery. If 30 days have passed since delivery, we regret that we cannot offer a full refund or exchange.
+                </p>
+                <div className="p-4 rounded-xl bg-[var(--th-bg)] border border-[var(--th-border-subtle)] space-y-2 text-xs">
+                  <span className="font-bold text-[var(--th-primary)] uppercase tracking-wider block">Requirements for Return Approval:</span>
+                  <ul className="space-y-1.5 text-[var(--th-text-sub)]">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>Item must be unused, unpolished, and in the exact condition received.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>Item must be in original tamper-proof box with intact BIS Assay Hallmark certificate.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>Valid tax invoice bill or digital order confirmation must accompany the return package.</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
 
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">1. PROCESSING & DISPATCH TIMELINE</h3>
-                <p className="text-sm">Orders for ready-stock items (coins, bars, murtis, silver utensils) are dispatched within 24–48 hours. Custom artisanal Yatra lockets require 3–5 working days for hand crafting and laser engraving.</p>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">2. DELIVERY ESTIMATES ACROSS INDIA</h3>
-                <ul className="list-disc pl-5 text-sm space-y-2">
-                  <li><strong>Gujarat Metro (Ahmedabad, Surat, Vadodara, Rajkot)</strong>: 1–2 business days.</li>
-                  <li><strong>Rest of India (Metro Cities)</strong>: 3–4 business days.</li>
-                  <li><strong>Tier 2 & Rural Regions</strong>: 5–7 business days via insured Speed Post / Express Courier.</li>
-                </ul>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">3. TRACKING YOUR SHIPMENT</h3>
-                <p className="text-sm">Once dispatched, an automated SMS, WhatsApp, and Email with your tracking ID and courier link (BlueDart / Delhivery / SpeedPost) will be sent to your registered contact details.</p>
-              </section>
-            </div>
-          )}
-
-          {/* ================= ABOUT US ================= */}
-          {activeKey === 'about' && (
-            <div className="space-y-8">
-              <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-sm italic font-serif text-[var(--th-text-main)]">
-                "Silver House began in 2010 with a simple belief: silver is not just a metal. It is part of our sacred traditions, celebrations, family relationships, and lifelong memories."
+              {/* Section 2 */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="font-serif text-2xl font-bold text-[var(--th-accent)]">02.</span>
+                  <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Refund Process & Settlement Timeline</h3>
+                </div>
+                <p className="text-sm text-[var(--th-text-sub)] leading-relaxed">
+                  Once your returned article is received at our central office in Ahmedabad, our assay team will inspect the item for weight and silver fineness verification. We will immediately notify you by email/SMS regarding approval.
+                </p>
+                <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-emerald-700">
+                    <CreditCard className="w-4 h-4" />
+                    <span>Razorpay Direct Gateway Settlement</span>
+                  </div>
+                  <p className="text-[var(--th-text-sub)] leading-relaxed">
+                    Upon return approval, your refund will be initiated instantly and automatically credited back to your original payment method (Credit/Debit Card, UPI, Netbanking) via Razorpay PG within <strong>5–7 working days</strong>.
+                  </p>
+                </div>
               </div>
 
-              <section className="space-y-3">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Our Heritage & Story</h3>
-                <p className="text-sm">Established in 2010 in <strong>Ahmedabad, Gujarat</strong>, {compName} grew through decades of wholesale trust with jewellery retailers across Gujarat. Today, we bring our 100% BIS Hallmarked 999 fine silver coins, 925 sterling jewellery, baby silver items, and artisanal Yatra lockets directly to customers across India.</p>
-              </section>
-
-              <section className="space-y-3 border-t border-[var(--th-border)] pt-6">
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Registered Trade Details</h3>
-                <div className="p-4 rounded-xl bg-[var(--th-card)] border border-[var(--th-border)] text-xs space-y-1">
-                  <p className="font-bold text-[var(--th-text-main)]">{compName}</p>
-                  <p>{fullAddress}</p>
-                  <p>Customer Support: +91 {compPhone} | Email: {compEmail}</p>
+              {/* Section 3 */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="font-serif text-2xl font-bold text-[var(--th-accent)]">03.</span>
+                  <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Order Cancellations & Transit Damages</h3>
                 </div>
-              </section>
-            </div>
-          )}
+                <div className="space-y-3 text-sm text-[var(--th-text-sub)]">
+                  <p>
+                    <strong>Cancellations:</strong> You can cancel any ready-stock order before it is dispatched (usually within 12 hours of placing the order) for a 100% full refund with zero cancellation charges.
+                  </p>
+                  <p>
+                    <strong>Transit Damage / Exchanges:</strong> We only replace items if they arrive defective or damaged. If your box appears tampered with or damaged upon arrival, please record an unboxing video and notify us at <strong>{compEmail}</strong> within 48 hours for immediate replacement.
+                  </p>
+                </div>
+              </div>
 
-        </article>
+              {/* Section 4 */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="font-serif text-2xl font-bold text-[var(--th-accent)]">04.</span>
+                  <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Return Dispatch Address</h3>
+                </div>
+                <p className="text-xs text-[var(--th-text-muted)]">Please send all authorized return shipments to our registered office address:</p>
+                <div className="p-4 rounded-xl bg-[var(--th-bg)] border border-[var(--th-border)] text-xs space-y-1">
+                  <p className="font-bold text-[var(--th-text-main)]">{compName} - Returns & Assay Department</p>
+                  <p className="text-[var(--th-text-sub)]">{fullAddress}</p>
+                  <p className="text-[var(--th-text-muted)] pt-1">Helpline: +91 {compPhone} | Email: {compEmail}</p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* ================= TERMS & CONDITIONS ================= */}
+        {activeKey === 'terms' && (
+          <div className="space-y-8">
+            
+            <div className="p-6 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--th-accent)] block">Legal Agreement Summary</span>
+              <p className="text-sm text-[var(--th-text-sub)] leading-relaxed">
+                This website is operated by <strong>{compName}</strong> ("we", "us", "our"). Throughout the site, {compName} offers all information, tools, products, and services conditioned upon your acceptance of all terms, conditions, policies and notices stated herein.
+              </p>
+            </div>
+
+            <div className="space-y-6 text-sm text-[var(--th-text-sub)]">
+              
+              <div className="p-6 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-2">
+                <h3 className="font-serif text-lg font-bold text-[var(--th-text-main)]">1. Online Store & Product Terms</h3>
+                <p className="leading-relaxed">
+                  By agreeing to these Terms of Service, you represent that you are at least the age of majority in your jurisdiction. All products (including 999 fine silver coins, murti idols, utensils, and jewellery) are certified under Indian Standard IS 2112:2025.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-2">
+                <h3 className="font-serif text-lg font-bold text-[var(--th-text-main)]">2. Live Rates & Price Modifications</h3>
+                <p className="leading-relaxed">
+                  Prices for precious silver items are linked to prevailing bullion market rates and are subject to change without prior notice. We reserve the right at any time to modify or discontinue any product line.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-2">
+                <h3 className="font-serif text-lg font-bold text-[var(--th-text-main)]">3. Billing & Account Accuracy</h3>
+                <p className="leading-relaxed">
+                  We reserve the right to refuse any order placed with us. In the event that we make a change to or cancel an order, we will attempt to notify you via the email or phone number provided at the time of purchase.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-2">
+                <h3 className="font-serif text-lg font-bold text-[var(--th-text-main)]">4. Governing Law & Jurisdiction</h3>
+                <p className="leading-relaxed">
+                  These Terms of Service and any separate agreements shall be governed by and construed in accordance with the laws of India and subject to the exclusive jurisdiction of competent courts in <strong>Ahmedabad, Gujarat, India</strong>.
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* ================= PRIVACY POLICY ================= */}
+        {activeKey === 'privacy' && (
+          <div className="space-y-8">
+            
+            <div className="p-6 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--th-accent)] block">Privacy Commitment</span>
+              <p className="text-sm text-[var(--th-text-sub)] leading-relaxed">
+                At <strong>{compName}</strong>, we strictly protect customer confidentiality. We collect personal data exclusively to process orders, deliver hallmarked silver goods, and provide customer support.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-6 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-2">
+                <Lock className="w-6 h-6 text-[var(--th-accent)] mb-1" />
+                <h3 className="font-serif text-base font-bold text-[var(--th-text-main)]">Razorpay PCI-DSS Security</h3>
+                <p className="text-xs text-[var(--th-text-sub)] leading-relaxed">
+                  Payment card data is processed directly via PCI-DSS compliant payment gateway (Razorpay). Neither {compName} nor any third party stores your card details.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-2">
+                <ShieldCheck className="w-6 h-6 text-[var(--th-accent)] mb-1" />
+                <h3 className="font-serif text-base font-bold text-[var(--th-text-main)]">Logistics Privacy</h3>
+                <p className="text-xs text-[var(--th-text-sub)] leading-relaxed">
+                  Delivery details (address, phone) are shared securely with verified transit partners (BlueDart, Delhivery, SpeedPost) solely for package delivery.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ================= SHIPPING POLICY ================= */}
+        {activeKey === 'shipping' && (
+          <div className="space-y-8">
+            
+            <div className="p-6 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--th-accent)] block">Transit Protection Guarantee</span>
+              <p className="text-sm text-[var(--th-text-sub)] leading-relaxed">
+                Every order dispatched from <strong>{compName}</strong> is 100% insured against loss, theft, or damage during transit until delivered directly to you.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-center space-y-2">
+                <Clock className="w-6 h-6 text-[var(--th-accent)] mx-auto" />
+                <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">24-48 Hr Dispatch</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Ready stock items shipped within 1-2 business days</span>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-center space-y-2">
+                <Truck className="w-6 h-6 text-[var(--th-accent)] mx-auto" />
+                <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">Express Couriers</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Partnered with BlueDart, Delhivery & SpeedPost</span>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-center space-y-2">
+                <ShieldCheck className="w-6 h-6 text-[var(--th-accent)] mx-auto" />
+                <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">100% Insurance</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Complete financial cover against shipping transit risks</span>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* Classy Footer Contact Banner */}
+        <div className="mt-16 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[var(--th-card)] via-[var(--th-bg)] to-[var(--th-card)] border border-[var(--th-border)] flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
+          <div className="space-y-1 text-center sm:text-left">
+            <div className="flex items-center justify-center sm:justify-start gap-2 text-[var(--th-accent)] text-xs font-bold uppercase tracking-wider">
+              <HelpCircle className="w-4 h-4" />
+              <span>Need Assistance With This Policy?</span>
+            </div>
+            <h4 className="font-serif text-lg font-bold text-[var(--th-text-main)]">Our Customer Care Team is Ready to Help</h4>
+            <p className="text-xs text-[var(--th-text-muted)]">Call or message us for order inquiries, returns, or assay certificates.</p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <a
+              href={`tel:+91${compPhone}`}
+              className="px-5 py-2.5 rounded-full bg-[var(--th-primary)] hover:brightness-110 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+            >
+              <PhoneCall className="w-3.5 h-3.5" />
+              <span>Call +91 {compPhone}</span>
+            </a>
+
+            <Link
+              to="/contact-us"
+              className="px-5 py-2.5 rounded-full border border-[var(--th-primary)] text-[var(--th-primary)] hover:bg-[var(--th-primary)] hover:text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer text-center"
+            >
+              <span>Contact Us Form</span>
+            </Link>
+          </div>
+        </div>
+
       </main>
 
-      {/* Footer */}
+      {/* Page Footer */}
       <footer className="w-full border-t border-[var(--th-border)] py-8 bg-[var(--th-card)]/50">
         <div className="max-w-4xl mx-auto px-4 text-center text-xs text-[var(--th-text-muted)]">
-          <p>© {new Date().getFullYear()} {compName}. All Rights Reserved. • {fullAddress}</p>
+          <p>© {new Date().getFullYear()} {compName}. All Rights Reserved. • Registered Office: {fullAddress}</p>
         </div>
       </footer>
+
     </div>
   );
 }
