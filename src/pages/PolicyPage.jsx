@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, FileText, RefreshCw, Truck, Info, PhoneCall } from 'lucide-react';
 
 export default function PolicyPage({ company }) {
   const { policyType } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
 
   const comp = company || {};
@@ -16,18 +17,19 @@ export default function PolicyPage({ company }) {
   const compEmail = comp.email || 'sunilag28017@gmail.com';
   const fullAddress = `${compAddress}, ${compCity} - ${compPincode}, ${compState}, India`;
 
-  // Normalize policy key from URL params or location
+  // Normalize policy key from URL params or location path
   const getNormalizedKey = (raw) => {
-    const p = (raw || '').toLowerCase();
+    const p = (raw || location.pathname || '').toLowerCase();
     if (p.includes('term')) return 'terms';
     if (p.includes('privac')) return 'privacy';
     if (p.includes('refund') || p.includes('cancel') || p.includes('return')) return 'refund';
-    if (p.includes('ship')) return 'shipping';
+    if (p.includes('ship') || p.includes('deliver')) return 'shipping';
     if (p.includes('about')) return 'about';
     return 'terms';
   };
 
   const activeKey = getNormalizedKey(policyType);
+
 
   const POLICY_METADATA = {
     terms: {

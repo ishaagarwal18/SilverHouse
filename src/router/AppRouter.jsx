@@ -281,10 +281,16 @@ export default function AppRouter({
       <Route path="/refund-and-cancellation" element={<PolicyPage />} />
       <Route path="/refund-policy" element={<PolicyPage />} />
       <Route path="/cancellation-policy" element={<PolicyPage />} />
+      <Route path="/refunds" element={<PolicyPage />} />
+      <Route path="/refunds/cancellations" element={<PolicyPage />} />
+      <Route path="/refunds-cancellations" element={<PolicyPage />} />
       <Route path="/returns" element={<PolicyPage />} />
 
       <Route path="/shipping-policy" element={<PolicyPage />} />
+      <Route path="/shipping-delivery" element={<PolicyPage />} />
+      <Route path="/shipping-and-delivery" element={<PolicyPage />} />
       <Route path="/shipping" element={<PolicyPage />} />
+
 
       {/* Home Page */}
       <Route
