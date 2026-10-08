@@ -1164,7 +1164,7 @@ async function sendWhatsAppMessage(phone, message, pool = null) {
 // 1. POST /api/auth/send-otp: Send OTP on WhatsApp
 app.post('/api/auth/send-otp', async (req, res) => {
     try {
-        const { phone } = req.body;
+        const { phone, mode } = req.body;
         const cleanedPhone = cleanPhoneNumber(phone);
 
         if (!cleanedPhone || cleanedPhone.replace(/\D/g, '').length < 10) {
@@ -1183,15 +1183,47 @@ app.post('/api/auth/send-otp', async (req, res) => {
             });
         }
 
-        // Generate 6-digit numeric OTP (fixed 123456 with 10 days validity for test phone 9999999999)
-        const isPermanentTestNumber = cleanedPhone.includes('9999999999');
-        const otp = isPermanentTestNumber ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
-        const expiryMinutes = isPermanentTestNumber ? (10 * 24 * 60) : 5;
-
         const pool = await poolPromise;
         if (!pool) {
             return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
         }
+
+        // Check whether user already has an account with this phone number
+        const digitsOnly = cleanedPhone.replace(/\D/g, '');
+        const last10Digits = digitsOnly.slice(-10);
+        let userExists = false;
+
+        try {
+            const existingUserCheck = await pool.request()
+                .input('phone', sql.NVarChar(20), cleanedPhone)
+                .input('last10', sql.NVarChar(20), last10Digits)
+                .query("SELECT TOP 1 user_id FROM dbo.[user] WHERE phone = @phone OR RIGHT(REPLACE(REPLACE(REPLACE(phone, '+', ''), ' ', ''), '-', ''), 10) = @last10");
+            
+            if (existingUserCheck.recordset && existingUserCheck.recordset.length > 0) {
+                userExists = true;
+            }
+        } catch (dbErr) {
+            console.warn('[Send OTP Account Check Warning]:', dbErr.message);
+        }
+
+        if (mode === 'SIGNUP' && userExists) {
+            return res.status(400).json({
+                success: false,
+                error: 'Already have an account. Please click "Log In" below.'
+            });
+        }
+
+        if (mode === 'LOGIN' && !userExists) {
+            return res.status(404).json({
+                success: false,
+                error: 'No account found with this phone number. Please click "Sign Up" below to create an account.'
+            });
+        }
+
+        // Generate 6-digit numeric OTP (fixed 123456 with 10 days validity for test phone 9999999999)
+        const isPermanentTestNumber = cleanedPhone.includes('9999999999');
+        const otp = isPermanentTestNumber ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
+        const expiryMinutes = isPermanentTestNumber ? (10 * 24 * 60) : 5;
 
         // Clean up any previously expired OTPs from dbo.phone_otp before upserting
         try {
@@ -1337,8 +1369,16 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 
         const userResult = await pool.request()
             .input('phone', sql.NVarChar(20), cleanedPhone)
-            .input('last10', sql.NVarChar(20), '%' + last10Digits)
-            .query('SELECT TOP 1 user_id, full_name, phone, role, birthday_date, anniversary_date, gst_number FROM dbo.[user] WHERE phone = @phone OR phone LIKE @last10');
+            .input('last10', sql.NVarChar(20), last10Digits)
+            .query("SELECT TOP 1 user_id, full_name, phone, role, birthday_date, anniversary_date, gst_number FROM dbo.[user] WHERE phone = @phone OR RIGHT(REPLACE(REPLACE(REPLACE(phone, '+', ''), ' ', ''), '-', ''), 10) = @last10");
+
+        const requestMode = (req.body.mode || '').toUpperCase();
+        if (requestMode === 'SIGNUP' && userResult.recordset && userResult.recordset.length > 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Already have an account. Please click "Log In" below.'
+            });
+        }
 
         let user;
         if (userResult.recordset && userResult.recordset.length > 0) {
@@ -1392,14 +1432,14 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 
         const token = signToken(userObj);
 
-        let adminRedirectUrl = '/';
+        let adminRedirectUrl = 'https://silverhouseindia.com/admin';
         if (isAdmin) {
-            let baseAdmin = (process.env.ADMIN_URL || 'https://api.silverhouseindia.com/').trim();
+            let baseAdmin = (process.env.ADMIN_URL || 'https://silverhouseindia.com/admin').trim();
             if (!baseAdmin || baseAdmin.includes('onrender.com') || baseAdmin.includes('localhost')) {
-                baseAdmin = 'https://api.silverhouseindia.com/';
+                baseAdmin = 'https://silverhouseindia.com/admin';
             }
-            if (!baseAdmin.endsWith('/')) {
-                baseAdmin += '/';
+            if (baseAdmin.endsWith('/')) {
+                baseAdmin = baseAdmin.slice(0, -1);
             }
             const delim = baseAdmin.includes('?') ? '&' : '?';
             adminRedirectUrl = `${baseAdmin}${delim}auth_token=${encodeURIComponent(token)}`;

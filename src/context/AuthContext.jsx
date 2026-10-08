@@ -66,8 +66,8 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const requestOtp = async (phone) => {
-    return await sendPhoneOtp(phone);
+  const requestOtp = async (phone, mode) => {
+    return await sendPhoneOtp(phone, mode);
   };
 
   const verifyOtp = async (phone, otp, fullName, extraData) => {

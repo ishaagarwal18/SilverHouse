@@ -2,12 +2,14 @@
 export const ADMIN_ROUTE = '/admin';
 
 /**
- * Resolves the admin portal URL. Defaults to the in-app React Admin Studio;
- * set VITE_ADMIN_URL to point at an externally hosted admin instead.
+ * Resolves the admin portal URL. Defaults to /admin or VITE_ADMIN_URL.
  */
 export function getAdminUrl() {
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_ADMIN_URL) {
     return import.meta.env.VITE_ADMIN_URL;
   }
-  return ADMIN_ROUTE;
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    return `${window.location.origin}/admin`;
+  }
+  return 'https://silverhouseindia.com/admin';
 }

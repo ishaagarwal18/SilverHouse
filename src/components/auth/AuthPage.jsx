@@ -153,7 +153,7 @@ export default function AuthPage({ onTriggerToast }) {
 
     setLoading(true);
     try {
-      const res = await requestOtp(clean);
+      const res = await requestOtp(clean, authMode);
       if (res.success) {
         setFormattedPhone(res.formattedPhone || clean);
         setStep('OTP');
@@ -185,7 +185,7 @@ export default function AuthPage({ onTriggerToast }) {
     setLoading(true);
     try {
       const clean = phone.replace(/[^0-9]/g, '');
-      const res = await requestOtp(clean);
+      const res = await requestOtp(clean, authMode);
       if (res.success) {
         setTimer(60);
         setCanResend(false);
