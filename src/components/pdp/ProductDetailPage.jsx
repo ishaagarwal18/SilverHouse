@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PRODUCTS, PINCODES } from '../../data/products';
-import { recordProductView } from '../../services/api';
+import { recordProductView, fetchStoreParameters } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import RecentlyViewedSection from '../common/RecentlyViewedSection';
 import ProductReviewsSection from './ProductReviewsSection';
 import {
   Star, ShieldCheck, Award, Truck, Heart, ShoppingBag,
-  Sparkles, Upload, CheckCircle2, ChevronDown, ChevronRight, RefreshCw, FileText, ArrowLeft
+  Sparkles, Upload, CheckCircle2, ChevronDown, ChevronRight, RefreshCw, FileText, ArrowLeft, MessageCircle
 } from 'lucide-react';
+
 
 export default function ProductDetailPage({
   product,
@@ -38,7 +39,44 @@ export default function ProductDetailPage({
   const [pincodeInput, setPincodeInput] = useState('');
   const [pincodeResult, setPincodeResult] = useState(null);
 
+  // Store Parameters State (WhatsApp API configuration from dbo.store_parameter)
+  const [storeParams, setStoreParams] = useState(null);
+
+  // Load WhatsApp API config from store_parameter stored procedure
+  useEffect(() => {
+    async function loadStoreParams() {
+      try {
+        const params = await fetchStoreParameters();
+        if (params) {
+          setStoreParams(params.parameters || params);
+        }
+      } catch (err) {
+        console.warn('Could not load store parameters:', err);
+      }
+    }
+    loadStoreParams();
+  }, []);
+
+  const handleWhatsAppInquiry = () => {
+    let rawWpApi = storeParams?.wp_api || '9537178477';
+    let phoneDigits = String(rawWpApi).replace(/\D/g, '');
+    if (phoneDigits.length === 10) {
+      phoneDigits = '91' + phoneDigits;
+    }
+    if (!phoneDigits) phoneDigits = '919537178477';
+
+    const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const formattedPrice = `₹${Number(currentProduct.price || 0).toLocaleString('en-IN')}`;
+    const msrpPrice = currentProduct.originalPrice ? ` (MSRP: ₹${Number(currentProduct.originalPrice).toLocaleString('en-IN')})` : '';
+
+    const msg = `Hello Silver House! 👋\n\nI have inquired about:\n📌 *Product Name:* ${currentProduct.name}\n💰 *Price:* ${formattedPrice}${msrpPrice}\n💎 *Purity:* ${currentProduct.purity || '925 Sterling / 999 Fine Silver'}\n⚖️ *Net Weight:* ${currentProduct.weightGrams ? currentProduct.weightGrams + 'g Pure Silver' : 'BIS Hallmarked'}\n🆔 *SKU / Product ID:* #${currentProduct.id || currentProduct.product_id}\n🔗 *Product Link:* ${pageUrl}\n\nCould you please share more details and confirm availability?`;
+
+    const waLink = `https://api.whatsapp.com/send?phone=${phoneDigits}&text=${encodeURIComponent(msg)}`;
+    window.open(waLink, '_blank');
+  };
+
   const productList = (allProducts && allProducts.length > 0) ? allProducts : PRODUCTS;
+
   const currentProduct = product || productList.find(p => String(p.id) === String(productId)) || productList[0];
 
   if (!currentProduct) return null;
@@ -405,7 +443,19 @@ export default function ProductDetailPage({
                   <span>{currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0 ? 'Out of Stock' : 'Buy Now • Express Checkout'}</span>
                 </button>
               </div>
+
+              {/* WhatsApp Instant Inquiry Button */}
+              <button
+                type="button"
+                onClick={handleWhatsAppInquiry}
+                className="w-full py-3.5 bg-[#25D366] hover:bg-[#128C7E] text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer border border-[#25D366]/30 uppercase tracking-wider group"
+                title="Inquire directly on WhatsApp with product details & live stock availability"
+              >
+                <MessageCircle className="w-4 h-4 text-white fill-current group-hover:scale-110 transition-transform" />
+                <span>Inquire on WhatsApp</span>
+              </button>
             </div>
+
 
             {/* Indian Pincode Estimator Box */}
             <div className="p-4 bg-silver-50 rounded-xl border border-silver-200 space-y-2">
