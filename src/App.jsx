@@ -53,8 +53,8 @@ export default function App() {
   const [companyDetails, setCompanyDetails] = useState(DEFAULT_COMPANY_DETAILS);
 
   const handleOpenPdf = (type) => {
-    const docId = type === 'about' ? 'about-us' : 'purity-guide';
-    window.open(`/document/${docId}`, '_blank');
+    const route = type === 'about' ? '/about-us' : '/purity-guide';
+    window.open(route, '_blank');
   };
 
   // Cart & Wishlist State - Strictly Isolated & User-Scoped

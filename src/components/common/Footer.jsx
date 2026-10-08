@@ -185,13 +185,14 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
               </p>
               <button
                 type="button"
-                onClick={() => onOpenPdf ? onOpenPdf('purity') : window.open('/docs/Silver_House_Silver_Purity_Guide.pdf', '_blank')}
+                onClick={() => onOpenPdf ? onOpenPdf('purity') : window.open('/purity-guide', '_blank')}
                 className="inline-flex items-center space-x-2 w-full justify-center px-3 py-2 rounded-lg bg-[var(--th-accent)]/20 hover:bg-[var(--th-accent)]/30 border border-[var(--th-accent)]/50 text-[11px] font-bold text-[#F3E5AB] transition-colors cursor-pointer"
-                title="Open Silver Purity & Hallmarking Consumer Guide (PDF Viewer)"
+                title="Open Silver Purity & Hallmarking Consumer Guide"
               >
                 <FileText className="w-3.5 h-3.5 text-[var(--th-accent)]" />
-                <span>Open Silver Purity Guide (PDF) ↗</span>
+                <span>Open Silver Purity Guide ↗</span>
               </button>
+
             </div>
           </div>
         </div>

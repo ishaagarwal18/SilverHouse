@@ -1,9 +1,23 @@
 import React, { useEffect } from 'react';
-import { useParams, Navigate, Link } from 'react-router-dom';
+import { useParams, useLocation, Navigate, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const DOCUMENTS = {
   'about-us': {
+    id: 'about',
+    title: 'About Silver House',
+    subtitle: 'From a small beginning in Ahmedabad to a trusted name in silver (Est. 2010)',
+    badge: 'Official Company Profile',
+    fileName: 'Silver_House_About_Us.pdf'
+  },
+  'about': {
+    id: 'about',
+    title: 'About Silver House',
+    subtitle: 'From a small beginning in Ahmedabad to a trusted name in silver (Est. 2010)',
+    badge: 'Official Company Profile',
+    fileName: 'Silver_House_About_Us.pdf'
+  },
+  'aboutus': {
     id: 'about',
     title: 'About Silver House',
     subtitle: 'From a small beginning in Ahmedabad to a trusted name in silver (Est. 2010)',
@@ -16,23 +30,49 @@ const DOCUMENTS = {
     subtitle: 'Understanding 999 Fine Silver, 925 Sterling Silver & BIS Hallmarking Standards',
     badge: 'Consumer Knowledge Guide',
     fileName: 'Silver_House_Silver_Purity_Guide.pdf'
+  },
+  'silver-purity-guide': {
+    id: 'purity',
+    title: 'The Simple Guide to Silver Purity',
+    subtitle: 'Understanding 999 Fine Silver, 925 Sterling Silver & BIS Hallmarking Standards',
+    badge: 'Consumer Knowledge Guide',
+    fileName: 'Silver_House_Silver_Purity_Guide.pdf'
+  },
+  'purity': {
+    id: 'purity',
+    title: 'The Simple Guide to Silver Purity',
+    subtitle: 'Understanding 999 Fine Silver, 925 Sterling Silver & BIS Hallmarking Standards',
+    badge: 'Consumer Knowledge Guide',
+    fileName: 'Silver_House_Silver_Purity_Guide.pdf'
   }
 };
 
 export default function DocumentPage({ company }) {
-  const { docId } = useParams();
+  const { docId: paramDocId } = useParams();
+  const location = useLocation();
+
+  const getEffectiveDocKey = () => {
+    if (paramDocId && DOCUMENTS[paramDocId]) return paramDocId;
+    const path = location.pathname.toLowerCase();
+    if (path.includes('purity')) return 'purity-guide';
+    if (path.includes('about')) return 'about-us';
+    return 'about-us';
+  };
+
+  const effectiveDocId = getEffectiveDocKey();
   
   useEffect(() => {
-    document.title = DOCUMENTS[docId]?.title || 'Document - Silver House';
+    document.title = DOCUMENTS[effectiveDocId]?.title || 'Document - Silver House';
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-  }, [docId]);
+  }, [effectiveDocId]);
 
-  if (!DOCUMENTS[docId]) {
+  if (!DOCUMENTS[effectiveDocId]) {
     return <Navigate to="/" replace />;
   }
 
-  const currentDoc = DOCUMENTS[docId];
+  const currentDoc = DOCUMENTS[effectiveDocId];
   const activeDocKey = currentDoc.id;
+
 
   const comp = company || {};
   const compPhone = comp.contact_number || '9537178477';

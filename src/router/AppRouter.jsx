@@ -251,7 +251,16 @@ export default function AppRouter({
           }
         />
 
-      {/* Document Viewer Route */}
+      {/* Document Viewer & Guide Direct Routes */}
+      <Route path="/about-us" element={<DocumentPage />} />
+      <Route path="/aboutus" element={<DocumentPage />} />
+      <Route path="/about" element={<DocumentPage />} />
+
+      <Route path="/purity-guide" element={<DocumentPage />} />
+      <Route path="/silver-purity-guide" element={<DocumentPage />} />
+      <Route path="/purity" element={<DocumentPage />} />
+
+      {/* Legacy Document Route Fallbacks */}
       <Route path="/doc/:docId" element={<DocumentPage />} />
       <Route path="/document/:docId" element={<DocumentPage />} />
 
@@ -276,10 +285,6 @@ export default function AppRouter({
 
       <Route path="/shipping-policy" element={<PolicyPage />} />
       <Route path="/shipping" element={<PolicyPage />} />
-
-      <Route path="/aboutus" element={<PolicyPage />} />
-      <Route path="/about-us" element={<PolicyPage />} />
-      <Route path="/about" element={<PolicyPage />} />
 
       {/* Home Page */}
       <Route
