@@ -4,8 +4,19 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const multer = require('multer');
+const Razorpay = require('razorpay');
 const { sql, poolPromise } = require('./db');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+/**
+ * Returns an initialized Razorpay instance if keys are configured in environment
+ */
+function getRazorpayInstance() {
+    const keyId = (process.env.RAZORPAY_KEY_ID || '').trim();
+    const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
+    if (!keyId || !keySecret) return null;
+    return new Razorpay({ key_id: keyId, key_secret: keySecret });
+}
 
 const app = express();
 app.disable('x-powered-by');
@@ -796,18 +807,43 @@ app.post('/api/custom-orders/:id/pay', requireCustomerAuth, async (req, res) => 
             });
         }
 
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body || {};
+
+        // If Razorpay details were supplied, verify the HMAC signature
+        if (razorpay_order_id && razorpay_payment_id && razorpay_signature) {
+            const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
+            if (keySecret) {
+                const expectedSig = crypto
+                    .createHmac('sha256', keySecret)
+                    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+                    .digest('hex');
+                if (expectedSig !== razorpay_signature) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Invalid Razorpay payment signature. Payment cannot be verified.'
+                    });
+                }
+            }
+        }
+
         const updateReq = pool.request();
         updateReq.input('order_id', sql.Int, orderId);
+        updateReq.input('rz_info', sql.NVarChar(255), razorpay_payment_id ? `Razorpay Payment ID: ${razorpay_payment_id} (Order: ${razorpay_order_id})` : null);
         await updateReq.query(`
             UPDATE dbo.orders
-            SET payment_status = 'PAID'
+            SET payment_status = 'PAID',
+                description = CASE 
+                    WHEN @rz_info IS NOT NULL 
+                    THEN ISNULL(description + ' | ', '') + @rz_info 
+                    ELSE description 
+                END
             WHERE order_id = @order_id;
         `);
 
         // Send payment confirmation message
         if (order.customer_phone) {
             try {
-                const message = `✨ *SilverHouse Artisanal Studio*\n\nNamaste ${order.customer_name || 'Patron'},\n\nPayment confirmed for your custom order (*${order.order_number}*)! 🎉\n\n• *Amount:* ₹${Number(order.final_payable).toLocaleString('en-IN')}\n• *Status:* Confirmed & In Production\n\nOur master silversmiths have scheduled hand-crafting and hallmarking. You will receive tracking details upon completion.\n\n_Pure 925 & 999 Artisanal Silver_`;
+                const message = `✨ *SilverHouse Artisanal Studio*\n\nNamaste ${order.customer_name || 'Patron'},\n\nPayment confirmed for your custom order (*${order.order_number}*)! 🎉\n\n• *Amount:* ₹${Number(order.final_payable).toLocaleString('en-IN')}\n• *Payment ID:* ${razorpay_payment_id || 'Direct Confirmation'}\n• *Status:* Confirmed & In Production\n\nOur master silversmiths have scheduled hand-crafting and hallmarking. You will receive tracking details upon completion.\n\n_Pure 925 & 999 Artisanal Silver_`;
                 await sendWhatsAppMessage(order.customer_phone, message);
             } catch (payNotifyErr) {
                 console.warn('[WhatsApp Payment Confirmation Warning]:', payNotifyErr.message);
@@ -821,11 +857,278 @@ app.post('/api/custom-orders/:id/pay', requireCustomerAuth, async (req, res) => 
                 order_id: orderId,
                 payment_status: 'PAID',
                 confirm: 'accepted',
-                final_payable: order.final_payable
+                final_payable: order.final_payable,
+                payment_id: razorpay_payment_id || null
             }
         });
     } catch (err) {
         console.error('[Pay Custom Order Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// POST /api/custom-orders/:id/create-payment: Create Razorpay order for an approved custom order
+app.post('/api/custom-orders/:id/create-payment', requireCustomerAuth, async (req, res) => {
+    try {
+        const orderId = parseInt(req.params.id, 10);
+        if (isNaN(orderId)) {
+            return res.status(400).json({ success: false, error: 'Invalid order ID.' });
+        }
+
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        const checkReq = pool.request();
+        checkReq.input('order_id', sql.Int, orderId);
+        const existing = await checkReq.query(`
+            SELECT order_id, order_number, user_id, [confirm], final_payable, payment_status, customer_name, customer_phone, customer_email 
+            FROM dbo.orders 
+            WHERE order_id = @order_id
+        `);
+
+        if (!existing.recordset || existing.recordset.length === 0) {
+            return res.status(404).json({ success: false, error: 'Custom order not found.' });
+        }
+
+        const order = existing.recordset[0];
+        if (req.user.role !== 'ADMIN' && order.user_id !== req.user.user_id) {
+            return res.status(403).json({ success: false, error: 'Forbidden: You do not have permission to pay for this custom order.' });
+        }
+
+        if (order.confirm !== 'accepted') {
+            return res.status(400).json({
+                success: false,
+                error: 'Cannot initiate payment for an order that has not been approved by the workshop yet.'
+            });
+        }
+
+        const payableAmount = Number(order.final_payable || 0);
+        if (payableAmount <= 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'The quoted amount for this custom order is zero or invalid.'
+            });
+        }
+
+        const rz = getRazorpayInstance();
+        if (!rz) {
+            return res.status(400).json({
+                success: false,
+                error: 'Razorpay payment gateway is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Backend/.env',
+                notConfigured: true
+            });
+        }
+
+        const amountInPaise = Math.round(payableAmount * 100);
+        const receipt = `rcpt_${(order.order_number || `CUST_${order.order_id}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(-40)}`;
+
+        const rzOrder = await rz.orders.create({
+            amount: amountInPaise,
+            currency: 'INR',
+            receipt: receipt,
+            notes: {
+                order_id: String(order.order_id),
+                order_number: String(order.order_number || ''),
+                type: 'custom_order',
+                user_id: String(order.user_id || req.user.user_id)
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            order: rzOrder,
+            keyId: (process.env.RAZORPAY_KEY_ID || '').trim(),
+            amount: payableAmount,
+            currency: 'INR'
+        });
+    } catch (err) {
+        console.error('[Create Custom Order Payment Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// =========================================================================
+// RAZORPAY PAYMENT GATEWAY APIS
+// =========================================================================
+
+// GET /api/payment/razorpay/config: Returns public key and gateway availability
+app.get('/api/payment/razorpay/config', async (req, res) => {
+    const keyId = (process.env.RAZORPAY_KEY_ID || '').trim();
+    const isConfigured = Boolean(keyId && (process.env.RAZORPAY_KEY_SECRET || '').trim());
+    return res.status(200).json({
+        success: true,
+        keyId: keyId,
+        isConfigured: isConfigured,
+        currency: 'INR',
+        companyName: 'SilverHouse Artisanal Silver',
+        themeColor: '#D4AF37'
+    });
+});
+
+// POST /api/payment/razorpay/create-order: Creates a Razorpay order for cart checkout
+app.post('/api/payment/razorpay/create-order', requireCustomerAuth, async (req, res) => {
+    try {
+        const { amount, currency = 'INR', receipt, notes = {} } = req.body || {};
+        const numericAmount = Number(amount);
+
+        if (isNaN(numericAmount) || numericAmount <= 0) {
+            return res.status(400).json({ success: false, error: 'A valid order amount greater than 0 is required.' });
+        }
+
+        const rz = getRazorpayInstance();
+        if (!rz) {
+            return res.status(400).json({
+                success: false,
+                error: 'Razorpay payment gateway is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Backend/.env',
+                notConfigured: true
+            });
+        }
+
+        const amountInPaise = Math.round(numericAmount * 100);
+        const cleanReceipt = String(receipt || `rcpt_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(-40);
+
+        const rzOrder = await rz.orders.create({
+            amount: amountInPaise,
+            currency: currency || 'INR',
+            receipt: cleanReceipt,
+            notes: {
+                ...notes,
+                user_id: String(req.user.user_id || '')
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            order: rzOrder,
+            keyId: (process.env.RAZORPAY_KEY_ID || '').trim(),
+            amount: numericAmount,
+            currency: currency || 'INR'
+        });
+    } catch (err) {
+        console.error('[Razorpay Create Order Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// POST /api/payment/razorpay/verify: Cryptographically verifies Razorpay signature and creates order
+app.post('/api/payment/razorpay/verify', requireCustomerAuth, async (req, res) => {
+    try {
+        const {
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            orderPayload
+        } = req.body || {};
+
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing Razorpay verification parameters (razorpay_order_id, razorpay_payment_id, razorpay_signature).'
+            });
+        }
+
+        const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
+        if (!keySecret) {
+            return res.status(500).json({
+                success: false,
+                error: 'Razorpay secret key is not configured on the server.'
+            });
+        }
+
+        // Verify cryptographic signature with HMAC-SHA256
+        const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+        const expectedSignature = crypto
+            .createHmac('sha256', keySecret)
+            .update(body)
+            .digest('hex');
+
+        if (expectedSignature !== razorpay_signature) {
+            return res.status(400).json({
+                success: false,
+                error: 'Payment verification failed: Invalid cryptographic signature.'
+            });
+        }
+
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        // Construct verified order payload
+        const orderValues = (orderPayload && orderPayload.table_values) ? { ...orderPayload.table_values } : { ...(orderPayload || {}) };
+        orderValues.payment_status = 'PAID';
+        orderValues.payment_method = 'razorpay';
+        orderValues.user_id = req.user.user_id || orderValues.user_id;
+
+        const effectiveJson = JSON.stringify({ table_values: orderValues });
+
+        const request = pool.request();
+        request.input('proc_name', sql.NVarChar(50), 'orders');
+        request.input('Opr', sql.NVarChar(20), 'INSERT');
+        request.input('JSONstr', sql.NVarChar(sql.MAX), effectiveJson);
+        request.input('Condition', sql.NVarChar(255), null);
+
+        const result = await request.execute('dbo.SP_GETDATA');
+        const recordsets = result.recordsets;
+        const statusRecord = recordsets.length > 0 ? recordsets[recordsets.length - 1] : null;
+        const status = statusRecord && statusRecord[0] ? statusRecord[0].Response_Status : 'OK';
+
+        if (typeof status === 'string' && (
+            status.startsWith('ERROR') ||
+            status.startsWith('VALIDATION') ||
+            status.startsWith('SECURITY') ||
+            status.startsWith('DATABASE')
+        )) {
+            return res.status(400).json({ success: false, error: status });
+        }
+
+        let orderData = recordsets.length > 1 ? recordsets[0] : (recordsets.length === 1 && !recordsets[0][0]?.Response_Status ? recordsets[0] : null);
+        const createdOrderId = orderData?.[0]?.order_id;
+        const createdOrderNumber = orderData?.[0]?.order_number || orderValues.order_number;
+
+        // Record Razorpay transaction identifier into order description
+        if (createdOrderId) {
+            try {
+                const descReq = pool.request();
+                descReq.input('order_id', sql.Int, createdOrderId);
+                descReq.input('rz_info', sql.NVarChar(255), `Razorpay Payment ID: ${razorpay_payment_id} (Order: ${razorpay_order_id})`);
+                await descReq.query(`
+                    UPDATE dbo.orders
+                    SET description = ISNULL(description + ' | ', '') + @rz_info
+                    WHERE order_id = @order_id;
+                `);
+            } catch (descErr) {
+                console.warn('[Razorpay Verify Description Update Warning]:', descErr.message);
+            }
+        }
+
+        // Send WhatsApp confirmation notification
+        const customerPhone = orderValues.customer_phone || orderValues.phone;
+        const customerName = orderValues.customer_name || orderValues.name || 'Valued Patron';
+        const finalAmount = orderValues.final_payable || orderValues.total_amount || 0;
+
+        if (customerPhone) {
+            try {
+                const waMessage = `✨ *SilverHouse Artisanal Silver*\n\nNamaste ${customerName},\n\nYour order (*${createdOrderNumber}*) has been confirmed & paid via Razorpay! 🎉\n\n• *Amount Paid:* ₹${Number(finalAmount).toLocaleString('en-IN')}\n• *Payment ID:* ${razorpay_payment_id}\n• *Status:* Confirmed (In Preparation)\n\nThank you for choosing pure 925 & 999 artisanal silver. You will receive delivery updates shortly.\n\n_SilverHouse India_`;
+                await sendWhatsAppMessage(customerPhone, waMessage);
+            } catch (notifyErr) {
+                console.warn('[WhatsApp Notification Warning]:', notifyErr.message);
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            verified: true,
+            order_id: createdOrderId,
+            order_number: createdOrderNumber,
+            payment_id: razorpay_payment_id,
+            razorpay_order_id: razorpay_order_id,
+            message: 'Payment verified and order confirmed successfully!'
+        });
+    } catch (err) {
+        console.error('[Razorpay Verify Error]:', err);
         return res.status(500).json({ success: false, error: err.message });
     }
 });

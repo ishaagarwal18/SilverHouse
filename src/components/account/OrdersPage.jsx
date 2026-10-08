@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { postApiData, fetchCustomerCustomOrdersApi, payCustomOrderApi } from '../../services/api';
+import { createCustomOrderRazorpayOrder, launchRazorpayCheckout } from '../../services/razorpay';
 import { 
   Package, ArrowLeft, ArrowRight, Clock, MapPin, CheckCircle2, 
   AlertCircle, ShieldCheck, Sparkles, ExternalLink, RefreshCw, ShoppingBag,
@@ -128,23 +129,69 @@ export default function OrdersPage({ onTriggerToast }) {
     }
   }, [user, isAuthenticated, authLoading, navigate]);
 
-  // Handle Customer Paying / Accepting Quotation for Approved Custom Order
+  // Handle Customer Paying / Accepting Quotation for Approved Custom Order via Razorpay
   const handlePayCustomOrder = async (order) => {
     setPayingOrderId(order.order_id);
     try {
-      const res = await payCustomOrderApi(order.order_id);
-      if (res && res.success) {
+      // 1. Request Razorpay Order from backend
+      const rzOrderRes = await createCustomOrderRazorpayOrder(order.order_id);
+      
+      if (!rzOrderRes || !rzOrderRes.success) {
+        if (rzOrderRes?.notConfigured) {
+          if (onTriggerToast) {
+            onTriggerToast(
+              'error',
+              'Razorpay Setup Required',
+              'Online payment credentials (RAZORPAY_KEY_ID & RAZORPAY_KEY_SECRET) need to be configured in Backend/.env.'
+            );
+          }
+          setPayingOrderId(null);
+          return;
+        }
+        throw new Error(rzOrderRes?.error || 'Unable to initiate payment session.');
+      }
+
+      // 2. Launch Razorpay standard checkout modal
+      const checkoutRes = await launchRazorpayCheckout({
+        keyId: rzOrderRes.keyId,
+        order: rzOrderRes.order,
+        name: 'SilverHouse Artisanal Silver',
+        description: `Bespoke Order ${order.order_number} Quotation Payment`,
+        prefill: {
+          name: user?.fullName || order.customer_name || '',
+          contact: user?.phone || order.customer_phone || '',
+          email: user?.email || order.customer_email || ''
+        },
+        themeColor: '#D4AF37'
+      });
+
+      if (!checkoutRes.success) {
+        if (!checkoutRes.dismissed && onTriggerToast) {
+          onTriggerToast('error', 'Payment Incomplete', checkoutRes.error || 'Payment was not completed.');
+        }
+        setPayingOrderId(null);
+        return;
+      }
+
+      // 3. Cryptographically verify signature and update custom order status
+      const verifyRes = await payCustomOrderApi(order.order_id, {
+        razorpay_order_id: checkoutRes.response.razorpay_order_id,
+        razorpay_payment_id: checkoutRes.response.razorpay_payment_id,
+        razorpay_signature: checkoutRes.response.razorpay_signature
+      });
+
+      if (verifyRes && verifyRes.success) {
         if (onTriggerToast) {
           onTriggerToast(
             'success',
             'Order Confirmed & Paid!',
-            `👑 Quotation for ${order.order_number} confirmed. Our master silversmiths have initiated handcrafting.`
+            `👑 Quotation for ${order.order_number} paid via Razorpay (${checkoutRes.response.razorpay_payment_id}). Master silversmiths have initiated handcrafting.`
           );
         }
         await loadAllOrders();
       } else {
         if (onTriggerToast) {
-          onTriggerToast('error', 'Payment Failed', res.error || 'Failed to confirm payment.');
+          onTriggerToast('error', 'Payment Verification Failed', verifyRes?.error || 'Failed to confirm payment on server.');
         }
       }
     } catch (err) {
@@ -497,12 +544,12 @@ export default function OrdersPage({ onTriggerToast }) {
                                     {payingOrderId === ord.order_id ? (
                                       <>
                                         <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        <span>Confirming...</span>
+                                        <span>Opening Razorpay...</span>
                                       </>
                                     ) : (
                                       <>
-                                        <Check className="w-4 h-4" />
-                                        <span>Accept Quotation & Confirm</span>
+                                        <ShieldCheck className="w-4 h-4" />
+                                        <span>Pay via Razorpay & Confirm</span>
                                       </>
                                     )}
                                   </button>
