@@ -8,16 +8,15 @@ import {
   Truck,
   Info,
   PhoneCall,
-  Sparkles,
   Clock,
   CreditCard,
   PackageCheck,
   CheckCircle2,
   Lock,
-  Mail,
-  MapPin,
   HelpCircle,
-  Award
+  XCircle,
+  AlertTriangle,
+  Send
 } from 'lucide-react';
 
 export default function PolicyPage({ company }) {
@@ -39,7 +38,8 @@ export default function PolicyPage({ company }) {
     const p = (raw || location.pathname || '').toLowerCase();
     if (p.includes('term')) return 'terms';
     if (p.includes('privac')) return 'privacy';
-    if (p.includes('refund') || p.includes('cancel') || p.includes('return')) return 'refund';
+    if (p.includes('cancel')) return 'cancellation';
+    if (p.includes('refund') || p.includes('return')) return 'refund';
     if (p.includes('ship') || p.includes('deliver')) return 'shipping';
     if (p.includes('about')) return 'about';
     return 'terms';
@@ -61,10 +61,16 @@ export default function PolicyPage({ company }) {
       icon: ShieldCheck
     },
     refund: {
-      title: 'Refund & Cancellation Policy',
-      subtitle: '30-day customer guarantee, return procedures, inspection & refund timeline',
-      badge: 'Customer Guarantee Policy',
+      title: 'Refund Policy',
+      subtitle: '30-day customer satisfaction guarantee, assay inspection & 5-7 day direct refund settlement',
+      badge: 'Refund Guarantee Policy',
       icon: RefreshCw
+    },
+    cancellation: {
+      title: 'Cancellation Policy',
+      subtitle: 'Order cancellation guidelines before dispatch, 100% full refund policy & modification rules',
+      badge: 'Order Cancellation Policy',
+      icon: XCircle
     },
     shipping: {
       title: 'Shipping & Delivery Policy',
@@ -128,7 +134,7 @@ export default function PolicyPage({ company }) {
           <div className="w-20 h-0.5 bg-[var(--th-accent)] mx-auto opacity-50 rounded-full pt-1" />
         </div>
 
-        {/* ================= REFUND & CANCELLATION POLICY ================= */}
+        {/* ================= REFUND POLICY ================= */}
         {activeKey === 'refund' && (
           <div className="space-y-10">
             
@@ -222,16 +228,11 @@ export default function PolicyPage({ company }) {
               <div className="p-6 sm:p-8 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-4 shadow-sm">
                 <div className="flex items-center gap-3">
                   <span className="font-serif text-2xl font-bold text-[var(--th-accent)]">03.</span>
-                  <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Order Cancellations & Transit Damages</h3>
+                  <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Damaged Items & Replacement Exchange</h3>
                 </div>
-                <div className="space-y-3 text-sm text-[var(--th-text-sub)]">
-                  <p>
-                    <strong>Cancellations:</strong> You can cancel any ready-stock order before it is dispatched (usually within 12 hours of placing the order) for a 100% full refund with zero cancellation charges.
-                  </p>
-                  <p>
-                    <strong>Transit Damage / Exchanges:</strong> We only replace items if they arrive defective or damaged. If your box appears tampered with or damaged upon arrival, please record an unboxing video and notify us at <strong>{compEmail}</strong> within 48 hours for immediate replacement.
-                  </p>
-                </div>
+                <p className="text-sm text-[var(--th-text-sub)] leading-relaxed">
+                  We only replace items if they arrive defective or damaged during transit. If your parcel arrives tampered or damaged, please record an unboxing video and notify us at <strong>{compEmail}</strong> within 48 hours of delivery for an immediate free replacement.
+                </p>
               </div>
 
               {/* Section 4 */}
@@ -245,6 +246,110 @@ export default function PolicyPage({ company }) {
                   <p className="font-bold text-[var(--th-text-main)]">{compName} - Returns & Assay Department</p>
                   <p className="text-[var(--th-text-sub)]">{fullAddress}</p>
                   <p className="text-[var(--th-text-muted)] pt-1">Helpline: +91 {compPhone} | Email: {compEmail}</p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* ================= CANCELLATION POLICY ================= */}
+        {activeKey === 'cancellation' && (
+          <div className="space-y-10">
+            
+            {/* Quick Visual Highlights Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-center space-y-2 shadow-2xs">
+                <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center mx-auto">
+                  <XCircle className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">Pre-Dispatch Window</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Cancel anytime before courier pickup</span>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-center space-y-2 shadow-2xs">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">100% Full Refund</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Zero cancellation fees for pre-shipment</span>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-center space-y-2 shadow-2xs">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 text-[var(--th-accent)] flex items-center justify-center mx-auto">
+                  <Send className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">Instant Request</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Submit via WhatsApp, Call, or Email</span>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[var(--th-card)] border border-[var(--th-border)] text-center space-y-2 shadow-2xs">
+                <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center mx-auto">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">Custom Orders</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Cancel custom lockets within 6 hrs</span>
+              </div>
+            </div>
+
+            {/* Detailed Content Cards */}
+            <div className="space-y-6">
+              
+              {/* Section 1 */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-4 shadow-sm relative overflow-hidden">
+                <div className="flex items-center gap-3">
+                  <span className="font-serif text-2xl font-bold text-[var(--th-accent)]">01.</span>
+                  <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Ready-Stock Order Cancellations</h3>
+                </div>
+                <p className="text-sm text-[var(--th-text-sub)] leading-relaxed">
+                  Orders for ready-stock silver items (coins, bars, murtis, silver utensils, jewellery) can be cancelled at any time <strong>before dispatch</strong> (usually within 12 hours of placing the order).
+                </p>
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1 text-xs text-emerald-800">
+                  <span className="font-bold uppercase tracking-wider block">Zero Cancellation Charges:</span>
+                  <p>Upon cancellation before dispatch, 100% of your order value will be refunded directly back to your payment account via Razorpay within 24–48 hours.</p>
+                </div>
+              </div>
+
+              {/* Section 2 */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="font-serif text-2xl font-bold text-[var(--th-accent)]">02.</span>
+                  <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Custom & Artisanal Order Cancellations</h3>
+                </div>
+                <p className="text-sm text-[var(--th-text-sub)] leading-relaxed">
+                  Custom Artisanal orders (such as custom Yatra lockets or personalized engraved coins) involve bespoke silver casting and laser engraving. These orders can be cancelled within <strong>6 hours</strong> of order placement.
+                </p>
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-1">
+                  <span className="font-bold text-[var(--th-text-main)] uppercase tracking-wider block">Important Note on Crafting:</span>
+                  <p className="text-[var(--th-text-sub)]">Once silver casting or laser engraving has commenced after 6 hours, custom bespoke orders cannot be cancelled or altered.</p>
+                </div>
+              </div>
+
+              {/* Section 3 */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="font-serif text-2xl font-bold text-[var(--th-accent)]">03.</span>
+                  <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Post-Dispatch Orders & In-Transit Packages</h3>
+                </div>
+                <p className="text-sm text-[var(--th-text-sub)] leading-relaxed">
+                  Once an order has been picked up by our logistics courier partner (BlueDart / Delhivery / SpeedPost) and a tracking number has been generated, the order cannot be cancelled in transit. If you no longer require the item, you may return the unopened parcel upon delivery under our <Link to="/refund-policy" className="text-[var(--th-primary)] underline font-bold">30-Day Refund Policy</Link>.
+                </p>
+              </div>
+
+              {/* Section 4 */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-[var(--th-card)] border border-[var(--th-border)] space-y-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="font-serif text-2xl font-bold text-[var(--th-accent)]">04.</span>
+                  <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">How to Request an Immediate Cancellation</h3>
+                </div>
+                <p className="text-xs text-[var(--th-text-muted)]">To cancel your order instantly, please contact our support team with your Order ID:</p>
+                <div className="p-4 rounded-xl bg-[var(--th-bg)] border border-[var(--th-border)] text-xs space-y-2">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <span>📞 <strong>Call / WhatsApp:</strong> +91 {compPhone}</span>
+                    <span>✉️ <strong>Email:</strong> {compEmail}</span>
+                  </div>
+                  <p className="text-[var(--th-text-muted)] pt-1">Working Hours: Monday – Saturday (10:00 AM – 8:00 PM IST)</p>
                 </div>
               </div>
 

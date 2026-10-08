@@ -153,8 +153,13 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
                 </Link>
               </li>
               <li>
-                <Link to="/refund-and-cancellation" className="hover:text-white transition-colors cursor-pointer block">
-                  Refund & Cancellation Policy
+                <Link to="/refund-policy" className="hover:text-white transition-colors cursor-pointer block">
+                  Refund Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/cancellation-policy" className="hover:text-white transition-colors cursor-pointer block">
+                  Cancellation Policy
                 </Link>
               </li>
               <li>
@@ -204,10 +209,12 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
             <Link to="/contact-us" className="hover:text-white">Contact Us</Link>
             <Link to="/privacy-policy" className="hover:text-white">Privacy Policy</Link>
             <Link to="/terms-and-conditions" className="hover:text-white">Terms of Service</Link>
-            <Link to="/refund-and-cancellation" className="hover:text-white">Refunds & Returns</Link>
+            <Link to="/refund-policy" className="hover:text-white">Refund Policy</Link>
+            <Link to="/cancellation-policy" className="hover:text-white">Cancellation Policy</Link>
             <Link to="/shipping-policy" className="hover:text-white">Shipping</Link>
           </div>
         </div>
+
 
 
       </div>
