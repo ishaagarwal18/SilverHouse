@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Sparkles, ShieldCheck, Mail, Phone, MapPin, Award, Heart, ArrowRight, FileText, ExternalLink } from 'lucide-react';
 
 export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, onOpenInfoModal, company, onOpenPdf }) {
@@ -130,32 +131,41 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
             </ul>
           </div>
 
-          {/* Col 3: Customer Care */}
+          {/* Col 3: Customer Care & Mandatory Policies */}
           <div>
             <h4 className="font-serif font-bold text-sm text-[var(--th-accent)] mb-4 uppercase tracking-wider">
-              Assurance & Care
+              Customer Care & Legal
             </h4>
             <ul className="space-y-2.5 text-white/70">
               <li>
-                <button onClick={() => onOpenInfoModal && onOpenInfoModal('hallmark')} className="hover:text-white transition-colors text-left cursor-pointer">
-                  BIS Hallmarking Verification
-                </button>
+                <Link to="/contact-us" className="hover:text-white transition-colors cursor-pointer block">
+                  Contact Us & Support
+                </Link>
               </li>
               <li>
-                <button onClick={() => onOpenInfoModal && onOpenInfoModal('shipping')} className="hover:text-white transition-colors text-left cursor-pointer">
-                  Transit Insurance Policy
-                </button>
+                <Link to="/terms-and-conditions" className="hover:text-white transition-colors cursor-pointer block">
+                  Terms & Conditions
+                </Link>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => onOpenPdf ? onOpenPdf('about') : window.open('/docs/Silver_House_About_Us.pdf', '_blank')}
-                  className="hover:text-white transition-colors text-left flex items-center space-x-1.5 cursor-pointer text-white/80 group"
-                  title="Open Silver House Story & Heritage Document (PDF Viewer)"
-                >
-                  <span>About SilverHouse Story (PDF)</span>
-                  <ExternalLink className="w-3 h-3 text-[var(--th-accent)] opacity-70 group-hover:opacity-100" />
-                </button>
+                <Link to="/privacy-policy" className="hover:text-white transition-colors cursor-pointer block">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/refund-and-cancellation" className="hover:text-white transition-colors cursor-pointer block">
+                  Refund & Cancellation Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/shipping-policy" className="hover:text-white transition-colors cursor-pointer block">
+                  Shipping & Transit Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/about-us" className="hover:text-white transition-colors cursor-pointer block">
+                  About Silver House
+                </Link>
               </li>
             </ul>
           </div>
@@ -184,18 +194,20 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
               </button>
             </div>
           </div>
-
         </div>
 
         {/* Bottom Copyright */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-white/60 gap-4">
           <p>© {new Date().getFullYear()} {compName} • Manufacturer & Trader of Silver Products • {compCity}, {compState}. All Rights Reserved.</p>
-          <div className="flex items-center space-x-6">
-            <a href="#privacy" className="hover:text-white">Privacy Policy</a>
-            <a href="#terms" className="hover:text-white">Terms of Service</a>
-            <a href="#sitemap" className="hover:text-white">Sitemap</a>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Link to="/contact-us" className="hover:text-white">Contact Us</Link>
+            <Link to="/privacy-policy" className="hover:text-white">Privacy Policy</Link>
+            <Link to="/terms-and-conditions" className="hover:text-white">Terms of Service</Link>
+            <Link to="/refund-and-cancellation" className="hover:text-white">Refunds & Returns</Link>
+            <Link to="/shipping-policy" className="hover:text-white">Shipping</Link>
           </div>
         </div>
+
 
       </div>
     </footer>

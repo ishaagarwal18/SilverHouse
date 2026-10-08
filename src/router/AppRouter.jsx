@@ -9,6 +9,8 @@ import AddressPage from '../components/account/AddressPage';
 import OrdersPage from '../components/account/OrdersPage';
 import CustomArtisanalOrderPage from '../components/customizer/CustomArtisanalOrderPage';
 import DocumentPage from '../pages/DocumentPage';
+import ContactUsPage from '../pages/ContactUsPage';
+import PolicyPage from '../pages/PolicyPage';
 
 /** Protects customer account components: unauthenticated users are routed to /login */
 function CustomerProtectedRoute({ children }) {
@@ -252,6 +254,32 @@ export default function AppRouter({
       {/* Document Viewer Route */}
       <Route path="/doc/:docId" element={<DocumentPage />} />
       <Route path="/document/:docId" element={<DocumentPage />} />
+
+      {/* Mandatory Payment Gateway Compliance Pages */}
+      <Route path="/contactus" element={<ContactUsPage onTriggerToast={onTriggerToast} />} />
+      <Route path="/contact-us" element={<ContactUsPage onTriggerToast={onTriggerToast} />} />
+      <Route path="/contact" element={<ContactUsPage onTriggerToast={onTriggerToast} />} />
+
+      <Route path="/terms&conditions" element={<PolicyPage />} />
+      <Route path="/terms-and-conditions" element={<PolicyPage />} />
+      <Route path="/terms" element={<PolicyPage />} />
+      <Route path="/termsofservice" element={<PolicyPage />} />
+
+      <Route path="/privacypolicy" element={<PolicyPage />} />
+      <Route path="/privacy-policy" element={<PolicyPage />} />
+      <Route path="/privacy" element={<PolicyPage />} />
+
+      <Route path="/refund-and-cancellation" element={<PolicyPage />} />
+      <Route path="/refund-policy" element={<PolicyPage />} />
+      <Route path="/cancellation-policy" element={<PolicyPage />} />
+      <Route path="/returns" element={<PolicyPage />} />
+
+      <Route path="/shipping-policy" element={<PolicyPage />} />
+      <Route path="/shipping" element={<PolicyPage />} />
+
+      <Route path="/aboutus" element={<PolicyPage />} />
+      <Route path="/about-us" element={<PolicyPage />} />
+      <Route path="/about" element={<PolicyPage />} />
 
       {/* Home Page */}
       <Route
