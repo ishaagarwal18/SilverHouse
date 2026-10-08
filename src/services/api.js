@@ -654,7 +654,7 @@ export async function fetchCustomerCustomOrdersApi({ userId, phone } = {}) {
  * @param {number|string} orderId
  * @returns {Promise<{success: boolean, message?: string, order?: object, error?: string}>}
  */
-export async function payCustomOrderApi(orderId) {
+export async function payCustomOrderApi(orderId, paymentDetails = {}) {
   try {
     const url = `${API_BASE_URL}/custom-orders/${orderId}/pay`;
     const headers = { 'Content-Type': 'application/json' };
@@ -663,7 +663,8 @@ export async function payCustomOrderApi(orderId) {
 
     const res = await fetch(url, {
       method: 'POST',
-      headers
+      headers,
+      body: JSON.stringify(paymentDetails)
     });
     const data = await res.json();
     return data;
