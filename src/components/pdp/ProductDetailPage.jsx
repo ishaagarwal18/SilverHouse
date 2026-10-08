@@ -50,7 +50,11 @@ export default function ProductDetailPage({
       const uId = user ? (user.userId || user.user_id || user.id) : null;
       recordProductView(pId, uId);
     }
-  }, [currentProduct?.id, currentProduct?.product_id, user?.userId, user?.user_id, user?.id]);
+    if (currentProduct && currentProduct.name) {
+      document.title = `${currentProduct.name} | SilverHouse`;
+    }
+  }, [currentProduct?.id, currentProduct?.product_id, currentProduct?.name, user?.userId, user?.user_id, user?.id]);
+
 
   const discountPct = currentProduct.discount !== undefined && currentProduct.discount !== null && Number(currentProduct.discount) > 0
     ? Number(currentProduct.discount)

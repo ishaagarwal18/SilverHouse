@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import HeroSlider from './HeroSlider';
 import CategoryShowcaseStrip from './CategoryShowcaseStrip';
 import PolicyBadges from './PolicyBadges';
@@ -30,6 +30,10 @@ export default function HomePage({
   onQuickView,
   onSelectProduct
 }) {
+  useEffect(() => {
+    document.title = 'SilverHouse | Pure 925 Sterling & 999 Fine Silver Jewellery & Coins';
+  }, []);
+
   return (
     <div className="space-y-0 bg-[var(--th-bg)] transition-colors duration-300">
       {/* 1. Hero Showcase Slider */}

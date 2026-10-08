@@ -59,6 +59,17 @@ export default function ProductListingPage({
     }
   }, [searchQueryParam]);
 
+  // Update document title for PLP
+  useEffect(() => {
+    let title = 'Silver Catalog & Collection - SilverHouse';
+    if (selectedCategory && selectedCategory !== 'all') {
+      const cat = categoryList.find(c => String(c.id) === String(selectedCategory));
+      if (cat && cat.name) title = `${cat.name} Collection | SilverHouse`;
+    }
+    document.title = title;
+  }, [selectedCategory, categoryList]);
+
+
   // Sync state if categoryId / subcategoryId route params change
   useEffect(() => {
     setSelectedCategory(categoryId || 'all');
