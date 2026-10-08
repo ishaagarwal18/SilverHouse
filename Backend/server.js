@@ -128,7 +128,7 @@ async function verifyUserFromDb(userId) {
         if (!pool) return null;
         const result = await pool.request()
             .input('user_id', sql.Int, userId)
-            .query('SELECT TOP 1 user_id, full_name, phone, role FROM dbo.[user] WHERE user_id = @user_id');
+            .query('SELECT TOP 1 user_id, full_name, phone, role, birthday_date, anniversary_date, gst_number FROM dbo.[user] WHERE user_id = @user_id');
         return result.recordset?.[0] || null;
     } catch (err) {
         console.error('[DB User Verification Error]:', err.message);
@@ -155,7 +155,10 @@ async function requireCustomerAuth(req, res, next) {
             user_id: dbUser.user_id,
             fullName: dbUser.full_name,
             phone: dbUser.phone,
-            role: (dbUser.role || 'CUSTOMER').toUpperCase()
+            role: (dbUser.role || 'CUSTOMER').toUpperCase(),
+            birthdayDate: dbUser.birthday_date ? new Date(dbUser.birthday_date).toISOString().split('T')[0] : null,
+            anniversaryDate: dbUser.anniversary_date ? new Date(dbUser.anniversary_date).toISOString().split('T')[0] : null,
+            gstNumber: dbUser.gst_number || null
         };
         next();
     } catch (err) {
@@ -1107,6 +1110,57 @@ async function sendWhatsAppOtp(phone, otp, pool = null) {
     }
 }
 
+async function sendWhatsAppMessage(phone, message, pool = null) {
+    const waPhone = formatWhatsAppPhone(phone);
+    const cleaned = cleanPhoneNumber(phone) || phone;
+    const apiUrl = await getWhatsAppApiUrl(pool);
+
+    if (!apiUrl) {
+        console.warn(`[WhatsApp Gateway] No wp_api found in store_parameter or environment.`);
+        return { success: false, error: 'No WhatsApp API gateway configured in store_parameter.' };
+    }
+
+    try {
+        const urlObj = new URL(apiUrl);
+        const token = urlObj.searchParams.get('token') || '';
+
+        const queryParams = new URLSearchParams();
+        if (token) queryParams.set('token', token);
+        queryParams.set('phone', waPhone);
+        queryParams.set('message', message);
+
+        const targetUrl = `${urlObj.origin}${urlObj.pathname}?${queryParams.toString().replace(/\+/g, '%20')}`;
+
+        console.log(`[WhatsApp Gateway] Dispatching message to ${waPhone}...`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const response = await fetch(targetUrl, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json, text/plain, */*' },
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        const data = await response.json().catch(() => ({}));
+        console.log(`[WhatsApp Gateway] Dispatch response (${response.status}):`, JSON.stringify(data));
+
+        if (!response.ok || (data.status && data.status !== 'success')) {
+            const errDetail = data.message || `Provider returned HTTP ${response.status}`;
+            return { success: false, error: errDetail, data };
+        }
+
+        return { success: true, data };
+    } catch (apiErr) {
+        console.warn(`[WhatsApp Gateway Warning] Message dispatch failed:`, apiErr.message);
+        return { 
+            success: false, 
+            error: apiErr.name === 'AbortError' ? 'WhatsApp gateway timed out after 15s' : apiErr.message 
+        };
+    }
+}
+
 // 1. POST /api/auth/send-otp: Send OTP on WhatsApp
 app.post('/api/auth/send-otp', async (req, res) => {
     try {
@@ -1199,10 +1253,14 @@ app.post('/api/auth/send-otp', async (req, res) => {
 // 2. POST /api/auth/verify-otp: Verify WhatsApp OTP & Login/Register Customer
 app.post('/api/auth/verify-otp', async (req, res) => {
     try {
-        const { phone, otp, fullName, userName, name } = req.body;
+        const { phone, otp, fullName, userName, name, birthday, birthdayDate, anniversary, anniversaryDate, gstNumber, gst_number } = req.body;
         const cleanedPhone = cleanPhoneNumber(phone);
         const rawPhone = (phone || '').toString().trim();
         const providedName = (fullName || userName || name || '').trim();
+
+        const bdayVal = (birthdayDate || birthday || '').toString().trim() || null;
+        const anniVal = (anniversaryDate || anniversary || '').toString().trim() || null;
+        const gstVal = (gstNumber || gst_number || '').toString().trim() || null;
 
         if (!cleanedPhone || !otp) {
             return res.status(400).json({ success: false, error: 'Phone number and 6-digit OTP are required.' });
@@ -1280,27 +1338,40 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         const userResult = await pool.request()
             .input('phone', sql.NVarChar(20), cleanedPhone)
             .input('last10', sql.NVarChar(20), '%' + last10Digits)
-            .query('SELECT TOP 1 user_id, full_name, phone, role FROM dbo.[user] WHERE phone = @phone OR phone LIKE @last10');
+            .query('SELECT TOP 1 user_id, full_name, phone, role, birthday_date, anniversary_date, gst_number FROM dbo.[user] WHERE phone = @phone OR phone LIKE @last10');
 
         let user;
         if (userResult.recordset && userResult.recordset.length > 0) {
             user = userResult.recordset[0];
-            // If user provided a name, update full_name if changed or previously default
-            if (providedName && (providedName !== user.full_name || !user.full_name || user.full_name.startsWith('Patron '))) {
-                await pool.request()
-                    .input('user_id', sql.Int, user.user_id)
-                    .input('full_name', sql.NVarChar(100), providedName)
-                    .query('UPDATE dbo.[user] SET full_name = @full_name WHERE user_id = @user_id');
-                user.full_name = providedName;
-            }
+            // Update fields if provided
+            const newName = providedName || user.full_name;
+            const newBday = bdayVal ? bdayVal : user.birthday_date;
+            const newAnni = anniVal ? anniVal : user.anniversary_date;
+            const newGst = gstVal ? gstVal : user.gst_number;
+
+            await pool.request()
+                .input('user_id', sql.Int, user.user_id)
+                .input('full_name', sql.NVarChar(100), newName)
+                .input('birthday_date', sql.Date, newBday ? new Date(newBday) : null)
+                .input('anniversary_date', sql.Date, newAnni ? new Date(newAnni) : null)
+                .input('gst_number', sql.NVarChar(30), newGst || null)
+                .query('UPDATE dbo.[user] SET full_name = @full_name, birthday_date = @birthday_date, anniversary_date = @anniversary_date, gst_number = @gst_number WHERE user_id = @user_id');
+
+            user.full_name = newName;
+            user.birthday_date = newBday;
+            user.anniversary_date = newAnni;
+            user.gst_number = newGst;
         } else {
-            // Dynamically register new user with provided name or default CUSTOMER role
+            // Dynamically register new user with provided details or default CUSTOMER role
             const displayName = providedName || `Patron ${last10Digits.slice(-4)}`;
             const insertResult = await pool.request()
                 .input('full_name', sql.NVarChar(100), displayName)
                 .input('phone', sql.NVarChar(20), cleanedPhone)
                 .input('role', sql.NVarChar(20), 'CUSTOMER')
-                .query('INSERT INTO dbo.[user] (full_name, phone, role) OUTPUT INSERTED.user_id, INSERTED.full_name, INSERTED.phone, INSERTED.role VALUES (@full_name, @phone, @role)');
+                .input('birthday_date', sql.Date, bdayVal ? new Date(bdayVal) : null)
+                .input('anniversary_date', sql.Date, anniVal ? new Date(anniVal) : null)
+                .input('gst_number', sql.NVarChar(30), gstVal || null)
+                .query('INSERT INTO dbo.[user] (full_name, phone, role, birthday_date, anniversary_date, gst_number) OUTPUT INSERTED.user_id, INSERTED.full_name, INSERTED.phone, INSERTED.role, INSERTED.birthday_date, INSERTED.anniversary_date, INSERTED.gst_number VALUES (@full_name, @phone, @role, @birthday_date, @anniversary_date, @gst_number)');
             user = insertResult.recordset[0];
         }
 
@@ -1313,7 +1384,10 @@ app.post('/api/auth/verify-otp', async (req, res) => {
             fullName: user.full_name,
             email: '',
             phone: user.phone || cleanedPhone,
-            role: roleStr
+            role: roleStr,
+            birthdayDate: user.birthday_date ? new Date(user.birthday_date).toISOString().split('T')[0] : null,
+            anniversaryDate: user.anniversary_date ? new Date(user.anniversary_date).toISOString().split('T')[0] : null,
+            gstNumber: user.gst_number || null
         };
 
         const token = signToken(userObj);
@@ -1354,7 +1428,10 @@ app.get('/api/auth/me', requireCustomerAuth, async (req, res) => {
             userId: req.user.user_id,
             fullName: req.user.fullName,
             phone: req.user.phone,
-            role: req.user.role
+            role: req.user.role,
+            birthdayDate: req.user.birthdayDate,
+            anniversaryDate: req.user.anniversaryDate,
+            gstNumber: req.user.gstNumber
         },
         isAdmin: req.user.role === 'ADMIN'
     });
@@ -1521,7 +1598,7 @@ app.post('/api/auth/register', async (req, res) => {
 async function handleUpdateProfile(req, res) {
     try {
         const userId = req.user.user_id;
-        const { fullName, phone } = req.body;
+        const { fullName, phone, birthdayDate, birthday, anniversaryDate, anniversary, gstNumber, gst_number } = req.body;
         const pool = await poolPromise;
         if (!pool) {
             return res.status(500).json({ success: false, error: 'Database connection unavailable' });
@@ -1529,21 +1606,30 @@ async function handleUpdateProfile(req, res) {
 
         const trimmedName = fullName ? fullName.trim() : null;
         const cleanedPhone = phone ? cleanPhoneNumber(phone) : null;
+        const bdayVal = (birthdayDate || birthday || '').toString().trim() || null;
+        const anniVal = (anniversaryDate || anniversary || '').toString().trim() || null;
+        const gstVal = (gstNumber || gst_number || '').toString().trim() || null;
 
         await pool.request()
             .input('userId', sql.Int, userId)
             .input('fullName', sql.NVarChar(100), trimmedName)
             .input('phone', sql.NVarChar(20), cleanedPhone)
+            .input('birthday_date', sql.Date, bdayVal ? new Date(bdayVal) : null)
+            .input('anniversary_date', sql.Date, anniVal ? new Date(anniVal) : null)
+            .input('gst_number', sql.NVarChar(30), gstVal || null)
             .query(`
                 UPDATE dbo.[user]
                 SET full_name = COALESCE(@fullName, full_name),
-                    phone = COALESCE(@phone, phone)
+                    phone = COALESCE(@phone, phone),
+                    birthday_date = CASE WHEN @birthday_date IS NOT NULL THEN @birthday_date ELSE birthday_date END,
+                    anniversary_date = CASE WHEN @anniversary_date IS NOT NULL THEN @anniversary_date ELSE anniversary_date END,
+                    gst_number = CASE WHEN @gst_number IS NOT NULL THEN @gst_number ELSE gst_number END
                 WHERE user_id = @userId
             `);
 
         const updatedResult = await pool.request()
             .input('userId', sql.Int, userId)
-            .query('SELECT TOP 1 user_id, full_name, phone, role FROM dbo.[user] WHERE user_id = @userId');
+            .query('SELECT TOP 1 user_id, full_name, phone, role, birthday_date, anniversary_date, gst_number FROM dbo.[user] WHERE user_id = @userId');
 
         if (!updatedResult.recordset || updatedResult.recordset.length === 0) {
             return res.status(404).json({ success: false, error: 'User not found' });
@@ -1555,7 +1641,10 @@ async function handleUpdateProfile(req, res) {
             userId: user.user_id,
             fullName: user.full_name,
             phone: user.phone,
-            role: roleStr
+            role: roleStr,
+            birthdayDate: user.birthday_date ? new Date(user.birthday_date).toISOString().split('T')[0] : null,
+            anniversaryDate: user.anniversary_date ? new Date(user.anniversary_date).toISOString().split('T')[0] : null,
+            gstNumber: user.gst_number || null
         };
         const token = signToken(userObj);
 
@@ -2463,4 +2552,103 @@ async function cleanupExpiredOtps() {
 
 // Initial purge after startup and recurring every 30 seconds
 setTimeout(cleanupExpiredOtps, 3000);
-setInterval(cleanupExpiredOtps, 30 * 1000);
+setInterval(cleanupExpiredOtps, 30 * 1000);
+
+// =========================================================================
+// AUTOMATED BIRTHDAY & ANNIVERSARY WHATSAPP WISHES SERVICE
+// =========================================================================
+async function checkAndSendBirthdayAnniversaryWishes() {
+    try {
+        const pool = await poolPromise;
+        if (!pool) return;
+
+        // Current IST date details (UTC + 5:30)
+        const nowIST = new Date(Date.now() + (330 * 60 * 1000));
+        const currentMonth = nowIST.getUTCMonth() + 1; // 1 to 12
+        const currentDay = nowIST.getUTCDate();        // 1 to 31
+        const currentYear = nowIST.getUTCFullYear();    // e.g. 2026
+
+        console.log(`[Wish Automation] 🎂 Checking for today's Birthdays & Anniversaries (${currentYear}-${currentMonth}-${currentDay})...`);
+
+        // 1. Check Birthdays
+        const bdayResult = await pool.request()
+            .input('month', sql.Int, currentMonth)
+            .input('day', sql.Int, currentDay)
+            .input('year', sql.Int, currentYear)
+            .query(`
+                SELECT user_id, full_name, phone, birthday_date 
+                FROM dbo.[user] 
+                WHERE birthday_date IS NOT NULL 
+                  AND MONTH(birthday_date) = @month 
+                  AND DAY(birthday_date) = @day
+                  AND (last_birthday_wish_year IS NULL OR last_birthday_wish_year < @year)
+            `);
+
+        const bdayUsers = bdayResult.recordset || [];
+        for (const u of bdayUsers) {
+            const rawName = u.full_name || '';
+            const userName = (rawName.startsWith('Patron ') || !rawName.trim()) ? 'Valued Patron' : rawName.trim();
+            const msg = `Namaste ${userName}! 🎉🎂 Happy Birthday from all of us at SilverHouse! May Lord Ganesha & Goddess Lakshmi bless you with health, happiness, and prosperity. Celebrate your special day with our sacred 925 Sterling Silver collections at https://silverhouseindia.com 💎✨`;
+            
+            console.log(`[Wish Automation] Dispatching Birthday Wish to ${u.phone} (${userName})...`);
+            const res = await sendWhatsAppMessage(u.phone, msg, pool);
+            if (res && res.success) {
+                await pool.request()
+                    .input('user_id', sql.Int, u.user_id)
+                    .input('year', sql.Int, currentYear)
+                    .query('UPDATE dbo.[user] SET last_birthday_wish_year = @year WHERE user_id = @user_id');
+                console.log(`[Wish Automation] ✅ Birthday wish sent successfully to ${userName} (${u.phone}).`);
+            }
+        }
+
+        // 2. Check Anniversaries
+        const anniResult = await pool.request()
+            .input('month', sql.Int, currentMonth)
+            .input('day', sql.Int, currentDay)
+            .input('year', sql.Int, currentYear)
+            .query(`
+                SELECT user_id, full_name, phone, anniversary_date 
+                FROM dbo.[user] 
+                WHERE anniversary_date IS NOT NULL 
+                  AND MONTH(anniversary_date) = @month 
+                  AND DAY(anniversary_date) = @day
+                  AND (last_anniversary_wish_year IS NULL OR last_anniversary_wish_year < @year)
+            `);
+
+        const anniUsers = anniResult.recordset || [];
+        for (const u of anniUsers) {
+            const rawName = u.full_name || '';
+            const userName = (rawName.startsWith('Patron ') || !rawName.trim()) ? 'Valued Patron' : rawName.trim();
+            const msg = `Namaste ${userName}! 💕🥂 Happy Anniversary from SilverHouse! May your bond grow stronger and brighter like pure 925 Sterling Silver. Wishing you timeless love, joy, and togetherness! Explore special anniversary gifts at https://silverhouseindia.com 💎✨`;
+
+            console.log(`[Wish Automation] Dispatching Anniversary Wish to ${u.phone} (${userName})...`);
+            const res = await sendWhatsAppMessage(u.phone, msg, pool);
+            if (res && res.success) {
+                await pool.request()
+                    .input('user_id', sql.Int, u.user_id)
+                    .input('year', sql.Int, currentYear)
+                    .query('UPDATE dbo.[user] SET last_anniversary_wish_year = @year WHERE user_id = @user_id');
+                console.log(`[Wish Automation] ✅ Anniversary wish sent successfully to ${userName} (${u.phone}).`);
+            }
+        }
+    } catch (err) {
+        console.warn('[Wish Automation Warning]:', err.message);
+    }
+}
+
+// POST /api/admin/trigger-wishes: Manually trigger birthday/anniversary wish dispatch
+app.post('/api/admin/trigger-wishes', requireAdminAuth, async (req, res) => {
+    try {
+        await checkAndSendBirthdayAnniversaryWishes();
+        return res.status(200).json({
+            success: true,
+            message: 'Birthday & Anniversary WhatsApp wish dispatch executed.'
+        });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Schedule Birthday & Anniversary wishes check on startup and recurring every 6 hours
+setTimeout(checkAndSendBirthdayAnniversaryWishes, 10000);
+setInterval(checkAndSendBirthdayAnniversaryWishes, 6 * 60 * 60 * 1000);

@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   Sparkles, Phone, ShieldCheck, ArrowRight, AlertCircle, Building2,
   LogOut, MapPin, ShoppingBag, ChevronRight, ArrowLeft, Package,
-  MessageCircle, RotateCcw, CheckCircle2, Edit2, User
+  MessageCircle, RotateCcw, CheckCircle2, Edit2, User, Calendar, Gift, FileText
 } from 'lucide-react';
 import { getAdminUrl } from '../../utils/adminUrl';
 
@@ -13,6 +13,9 @@ export default function AuthPage({ onTriggerToast }) {
   const location = useLocation();
   const fromState = location.state?.from?.pathname || (typeof location.state?.from === 'string' ? location.state.from : null);
   const redirectTarget = searchParams.get('redirect') || fromState || '/';
+
+  // Mode: 'LOGIN' or 'SIGNUP'
+  const [authMode, setAuthMode] = useState('LOGIN');
 
   // Step state: 'PHONE' or 'OTP'
   const [step, setStep] = useState('PHONE');
@@ -27,6 +30,10 @@ export default function AuthPage({ onTriggerToast }) {
     return '';
   });
   const [phone, setPhone] = useState('');
+  const [birthdayDate, setBirthdayDate] = useState('');
+  const [anniversaryDate, setAnniversaryDate] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
+
   const [formattedPhone, setFormattedPhone] = useState('');
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(60);
@@ -39,6 +46,9 @@ export default function AuthPage({ onTriggerToast }) {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editFullName, setEditFullName] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [editBirthday, setEditBirthday] = useState('');
+  const [editAnniversary, setEditAnniversary] = useState('');
+  const [editGstNumber, setEditGstNumber] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
 
   const inputRefs = useRef([]);
@@ -49,6 +59,9 @@ export default function AuthPage({ onTriggerToast }) {
   const handleStartEdit = () => {
     setEditFullName(user?.fullName || '');
     setEditPhone(user?.phone || '');
+    setEditBirthday(user?.birthdayDate || '');
+    setEditAnniversary(user?.anniversaryDate || '');
+    setEditGstNumber(user?.gstNumber || '');
     setIsEditingProfile(true);
     setError('');
   };
@@ -71,7 +84,10 @@ export default function AuthPage({ onTriggerToast }) {
       const res = await updateProfile({
         userId: user?.userId,
         fullName: editFullName.trim(),
-        phone: editPhone.trim()
+        phone: editPhone.trim(),
+        birthdayDate: editBirthday,
+        anniversaryDate: editAnniversary,
+        gstNumber: editGstNumber.trim()
       });
       if (res && res.success) {
         setIsEditingProfile(false);
@@ -124,7 +140,7 @@ export default function AuthPage({ onTriggerToast }) {
     if (e) e.preventDefault();
     setError('');
 
-    if (!userName.trim()) {
+    if (authMode === 'LOGIN' && !userName.trim()) {
       setError('Please enter your name / username.');
       return;
     }
@@ -243,7 +259,17 @@ export default function AuthPage({ onTriggerToast }) {
 
     setLoading(true);
     try {
-      const result = await verifyOtp(formattedPhone || phone, fullOtp, userName.trim());
+      const extraMeta = {
+        birthdayDate,
+        anniversaryDate,
+        gstNumber
+      };
+      const result = await verifyOtp(
+        formattedPhone || phone,
+        fullOtp,
+        authMode === 'LOGIN' ? userName.trim() : '',
+        extraMeta
+      );
       if (result.success) {
         if (onTriggerToast) {
           onTriggerToast(
@@ -251,7 +277,7 @@ export default function AuthPage({ onTriggerToast }) {
             result.isAdmin ? 'Admin Authenticated' : `Welcome, ${result.user?.fullName || userName.trim() || 'Patron'}`,
             result.isAdmin
               ? '👑 Admin Privileges Verified! Opening Admin Studio...'
-              : `✨ Successfully signed in as ${result.user?.fullName || userName.trim()}.`
+              : `✨ Successfully signed in as ${result.user?.fullName || userName.trim() || 'Patron'}.`
           );
         }
 
@@ -370,6 +396,61 @@ export default function AuthPage({ onTriggerToast }) {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1 flex items-center justify-between">
+                    <span>Birthday Date</span>
+                    <span className="text-[10px] text-[var(--th-text-muted)] font-normal">(Optional)</span>
+                  </label>
+                  <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                    <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="date"
+                      value={editBirthday}
+                      onChange={(e) => setEditBirthday(e.target.value)}
+                      className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1 flex items-center justify-between">
+                    <span>Anniversary Date</span>
+                    <span className="text-[10px] text-[var(--th-text-muted)] font-normal">(Optional)</span>
+                  </label>
+                  <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                    <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
+                      <Gift className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="date"
+                      value={editAnniversary}
+                      onChange={(e) => setEditAnniversary(e.target.value)}
+                      className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1 flex items-center justify-between">
+                    <span>GST Number</span>
+                    <span className="text-[10px] text-[var(--th-text-muted)] font-normal">(Optional)</span>
+                  </label>
+                  <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                    <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="text"
+                      value={editGstNumber}
+                      onChange={(e) => setEditGstNumber(e.target.value.toUpperCase())}
+                      placeholder="e.g. 24AAAAA0000A1Z5"
+                      className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium font-mono uppercase outline-none"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-2 pt-1">
                   <button
                     type="button"
@@ -396,43 +477,69 @@ export default function AuthPage({ onTriggerToast }) {
                 </div>
               </form>
             ) : (
-              <div className="flex items-center justify-between pb-4 border-b border-[var(--th-border)]/70">
-                <div className="flex items-center space-x-3 min-w-0">
-                  <div className="w-12 h-12 rounded-xl bg-[var(--th-primary)]/15 border border-[var(--th-accent)] text-[var(--th-primary)] flex items-center justify-center font-serif text-xl font-bold shadow-sm shrink-0">
-                    {(user.fullName || user.phone || 'P').trim().charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <h2 className="text-base font-bold text-[var(--th-text-main)] truncate">
-                        {user.fullName || 'Valued Patron'}
-                      </h2>
-                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${isAdmin
-                        ? 'bg-[var(--th-accent)] text-white'
-                        : 'bg-[var(--th-surface-alt)] text-[var(--th-primary)] border border-[var(--th-border)]'
-                        }`}>
-                        {user.role || 'CUSTOMER'}
-                      </span>
+              <div className="pb-4 border-b border-[var(--th-border)]/70 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="w-12 h-12 rounded-xl bg-[var(--th-primary)]/15 border border-[var(--th-accent)] text-[var(--th-primary)] flex items-center justify-center font-serif text-xl font-bold shadow-sm shrink-0">
+                      {(user.fullName || user.phone || 'P').trim().charAt(0).toUpperCase()}
                     </div>
-                    {user.phone ? (
-                      <p className="text-[11px] font-mono text-[var(--th-text-muted)] truncate flex items-center gap-1 mt-0.5">
-                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                        {user.phone}
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-[var(--th-text-muted)] truncate">{user.email}</p>
-                    )}
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <h2 className="text-base font-bold text-[var(--th-text-main)] truncate">
+                          {user.fullName || 'Valued Patron'}
+                        </h2>
+                        <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${isAdmin
+                          ? 'bg-[var(--th-accent)] text-white'
+                          : 'bg-[var(--th-surface-alt)] text-[var(--th-primary)] border border-[var(--th-border)]'
+                          }`}>
+                          {user.role || 'CUSTOMER'}
+                        </span>
+                      </div>
+                      {user.phone ? (
+                        <p className="text-[11px] font-mono text-[var(--th-text-muted)] truncate flex items-center gap-1 mt-0.5">
+                          <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                          {user.phone}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-[var(--th-text-muted)] truncate">{user.email}</p>
+                      )}
+                    </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={handleStartEdit}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-[var(--th-border)] hover:border-[var(--th-accent)] bg-[var(--th-surface-alt)] hover:bg-[var(--th-card)] text-[var(--th-text-main)] text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0 ml-2"
+                    title="Edit your account details"
+                  >
+                    <Edit2 className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                    <span>Edit</span>
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleStartEdit}
-                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-[var(--th-border)] hover:border-[var(--th-accent)] bg-[var(--th-surface-alt)] hover:bg-[var(--th-card)] text-[var(--th-text-main)] text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0 ml-2"
-                  title="Edit your account details"
-                >
-                  <Edit2 className="w-3.5 h-3.5 text-[var(--th-accent)]" />
-                  <span>Edit</span>
-                </button>
+                {/* Optional User Details Badge Row */}
+                {(user.birthdayDate || user.anniversaryDate || user.gstNumber) && (
+                  <div className="pt-2 flex flex-wrap gap-2 text-[10px]">
+                    {user.birthdayDate && (
+                      <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-[var(--th-text-main)]">
+                        <Calendar className="w-3 h-3 text-[var(--th-accent)]" />
+                        <span>DOB: {user.birthdayDate}</span>
+                      </span>
+                    )}
+                    {user.anniversaryDate && (
+                      <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-[var(--th-text-main)]">
+                        <Gift className="w-3 h-3 text-[var(--th-accent)]" />
+                        <span>Anni: {user.anniversaryDate}</span>
+                      </span>
+                    )}
+                    {user.gstNumber && (
+                      <span className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-[var(--th-text-main)] font-mono">
+                        <FileText className="w-3 h-3 text-[var(--th-accent)]" />
+                        <span>GST: {user.gstNumber}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -599,71 +706,182 @@ export default function AuthPage({ onTriggerToast }) {
               </div>
             )}
 
-            {/* STEP 1: PHONE NUMBER & USERNAME INPUT */}
+            {/* STEP 1: PHONE NUMBER & USER DETAILS INPUT */}
             {step === 'PHONE' && (
               <form onSubmit={handleSendOtp} className="space-y-3.5">
+                {/* Mode Selector Tabs */}
+                <div className="flex border-b border-[var(--th-border)] mb-3">
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('LOGIN'); setError(''); }}
+                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                      authMode === 'LOGIN'
+                        ? 'border-[var(--th-accent)] text-[var(--th-primary)]'
+                        : 'border-transparent text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
+                    }`}
+                  >
+                    Log In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('SIGNUP'); setError(''); }}
+                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                      authMode === 'SIGNUP'
+                        ? 'border-[var(--th-accent)] text-[var(--th-primary)]'
+                        : 'border-transparent text-[var(--th-text-muted)] hover:text-[var(--th-text-main)]'
+                    }`}
+                  >
+                    Sign Up
+                  </button>
+                </div>
+
                 <div className="text-center mb-2">
                   <h1 className="text-lg font-bold text-[var(--th-text-main)] font-serif">
-                    Sign In with Phone
+                    {authMode === 'LOGIN' ? 'Log In to SilverHouse' : 'Create Your Account'}
                   </h1>
                   <p className="text-xs text-[var(--th-text-muted)] mt-1">
-                    Enter your name and mobile number to receive a 6-digit WhatsApp code.
+                    {authMode === 'LOGIN'
+                      ? 'Enter your details to receive a 6-digit WhatsApp OTP.'
+                      : 'Enter your mobile number to receive a 6-digit WhatsApp OTP.'}
                   </p>
                 </div>
 
-                {/* Name / Username Field */}
-                <div>
-                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1.5 flex items-center justify-between">
-                    <span>Your Name / Username *</span>
-                  </label>
-                  <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
-                    <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
-                      <User className="w-4 h-4" />
+                {/* LOGIN MODE FIELDS */}
+                {authMode === 'LOGIN' && (
+                  <>
+                    {/* Name Field (Required) */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1">
+                        Your Name *
+                      </label>
+                      <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                        <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
+                          <User className="w-4 h-4" />
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          value={userName}
+                          onChange={(e) => setUserName(e.target.value)}
+                          placeholder="Your Name"
+                          className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-sm font-medium outline-none placeholder:text-[var(--th-text-muted)]/50"
+                        />
+                      </div>
                     </div>
-                    <div className="relative flex-1">
-                      <input
-                        type="text"
-                        autoFocus
-                        required
-                        value={userName}
-                        onChange={(e) => setUserName(e.target.value)}
-                        placeholder="Your Name"
-                        className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2.5 text-sm font-medium tracking-wide outline-none placeholder:text-[var(--th-text-muted)]/50"
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Phone Number Field */}
-                <div>
-                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1.5">
-                    Mobile Number *
-                  </label>
-                  <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
-                    <div className="flex items-center gap-1 px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-text-main)] select-none">
-                      <span className="text-sm">🇮🇳</span>
-                      <span>+91</span>
+                    {/* Phone Field (Required) */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1">
+                        Mobile Number *
+                      </label>
+                      <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                        <div className="flex items-center gap-1 px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-text-main)] select-none">
+                          <span className="text-sm">🇮🇳</span>
+                          <span>+91</span>
+                        </div>
+                        <input
+                          type="tel"
+                          required
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="98765 43210"
+                          className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-sm font-medium font-mono outline-none placeholder:text-[var(--th-text-muted)]/50"
+                        />
+                      </div>
                     </div>
-                    <div className="relative flex-1">
-                      <input
-                        type="tel"
-                        required
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="98765 43210"
-                        className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2.5 text-sm font-medium tracking-wide outline-none placeholder:text-[var(--th-text-muted)]/50"
-                      />
+
+                    {/* Birthday Field (Optional) */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1 flex items-center justify-between">
+                        <span>Birthday Date</span>
+                        <span className="text-[10px] text-[var(--th-text-muted)] font-normal">(Optional)</span>
+                      </label>
+                      <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                        <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
+                          <Calendar className="w-4 h-4" />
+                        </div>
+                        <input
+                          type="date"
+                          value={birthdayDate}
+                          onChange={(e) => setBirthdayDate(e.target.value)}
+                          className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium outline-none"
+                        />
+                      </div>
                     </div>
+
+                    {/* Anniversary Field (Optional) */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1 flex items-center justify-between">
+                        <span>Anniversary Date</span>
+                        <span className="text-[10px] text-[var(--th-text-muted)] font-normal">(Optional)</span>
+                      </label>
+                      <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                        <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
+                          <Gift className="w-4 h-4" />
+                        </div>
+                        <input
+                          type="date"
+                          value={anniversaryDate}
+                          onChange={(e) => setAnniversaryDate(e.target.value)}
+                          className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* GST Number Field (Optional) */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1 flex items-center justify-between">
+                        <span>GST Number</span>
+                        <span className="text-[10px] text-[var(--th-text-muted)] font-normal">(Optional)</span>
+                      </label>
+                      <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                        <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <input
+                          type="text"
+                          value={gstNumber}
+                          onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                          placeholder="e.g. 24AAAAA0000A1Z5"
+                          className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium font-mono uppercase outline-none placeholder:text-[var(--th-text-muted)]/50"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* SIGNUP MODE FIELDS (ONLY Phone Number requested!) */}
+                {authMode === 'SIGNUP' && (
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1.5">
+                      Mobile Number *
+                    </label>
+                    <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
+                      <div className="flex items-center gap-1 px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-text-main)] select-none">
+                        <span className="text-sm">🇮🇳</span>
+                        <span>+91</span>
+                      </div>
+                      <div className="relative flex-1">
+                        <input
+                          type="tel"
+                          required
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="98765 43210"
+                          className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2.5 text-sm font-medium tracking-wide outline-none placeholder:text-[var(--th-text-muted)]/50"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-[var(--th-text-muted)] mt-1">
+                      Instant WhatsApp signup. Only your phone number is required.
+                    </p>
                   </div>
-                  <p className="text-[10px] text-[var(--th-text-muted)] mt-1">
-                    Enter mobile number to receive OTP on WhatsApp.
-                  </p>
-                </div>
+                )}
 
                 {/* Send OTP Button */}
                 <button
                   type="submit"
-                  disabled={loading || !phone.trim() || !userName.trim()}
+                  disabled={loading || !phone.trim() || (authMode === 'LOGIN' && !userName.trim())}
                   className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 transform active:scale-98 disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? (

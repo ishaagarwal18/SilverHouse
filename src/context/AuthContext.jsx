@@ -70,8 +70,8 @@ export function AuthProvider({ children }) {
     return await sendPhoneOtp(phone);
   };
 
-  const verifyOtp = async (phone, otp, fullName) => {
-    const data = await verifyPhoneOtp(phone, otp, fullName);
+  const verifyOtp = async (phone, otp, fullName, extraData) => {
+    const data = await verifyPhoneOtp(phone, otp, fullName, extraData);
     if (data.success) {
       setUser(data.user);
       setToken(data.token);

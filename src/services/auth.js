@@ -87,12 +87,16 @@ export async function sendPhoneOtp(phone) {
 /**
  * Verify WhatsApp OTP and sign in / register
  */
-export async function verifyPhoneOtp(phone, otp, fullName) {
+export async function verifyPhoneOtp(phone, otp, fullName, extraData = {}) {
   try {
+    const payload = typeof fullName === 'object' && fullName !== null
+      ? { phone, otp, ...fullName }
+      : { phone, otp, fullName, ...extraData };
+
     const res = await fetch(`${API_BASE}/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, otp, fullName })
+      body: JSON.stringify(payload)
     });
 
     let data;

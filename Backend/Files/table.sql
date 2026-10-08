@@ -101,6 +101,11 @@ BEGIN
         full_name NVARCHAR(100) NOT NULL DEFAULT 'SilverHouse Patron',
         phone NVARCHAR(20) NOT NULL,
         [role] NVARCHAR(20) NOT NULL DEFAULT 'CUSTOMER',
+        birthday_date DATE NULL,
+        anniversary_date DATE NULL,
+        gst_number NVARCHAR(30) NULL,
+        last_birthday_wish_year INT NULL,
+        last_anniversary_wish_year INT NULL,
         created_at DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME())
     );
 END;
