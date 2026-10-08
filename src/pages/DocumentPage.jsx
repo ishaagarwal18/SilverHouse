@@ -44,17 +44,26 @@ const DOCUMENTS = {
     subtitle: 'Understanding 999 Fine Silver, 925 Sterling Silver & BIS Hallmarking Standards',
     badge: 'Consumer Knowledge Guide',
     fileName: 'Silver_House_Silver_Purity_Guide.pdf'
+  },
+  'terms-conditions': {
+    id: 'terms',
+    title: 'Terms & Conditions',
+    subtitle: 'Please read our terms and conditions carefully',
+    badge: 'Legal Policy',
+    fileName: 'Silver_House_Terms.pdf'
   }
 };
 
-export default function DocumentPage({ company }) {
+export default function DocumentPage({ company, docId: propDocId }) {
   const { docId: paramDocId } = useParams();
   const location = useLocation();
 
   const getEffectiveDocKey = () => {
-    if (paramDocId && DOCUMENTS[paramDocId]) return paramDocId;
+    const target = propDocId || paramDocId;
+    if (target && DOCUMENTS[target]) return target;
     const path = location.pathname.toLowerCase();
     if (path.includes('purity')) return 'purity-guide';
+    if (path.includes('terms')) return 'terms-conditions';
     if (path.includes('about')) return 'about-us';
     return 'about-us';
   };
@@ -259,7 +268,7 @@ export default function DocumentPage({ company }) {
             </div>
 
           </article>
-        ) : (
+        ) : activeDocKey === 'about' ? (
           /* ================= ABOUT US CONTENT ================= */
           <article className="prose prose-lg sm:prose-xl prose-headings:font-serif prose-headings:text-[#1A1A1A] prose-p:text-gray-600 prose-p:leading-relaxed prose-strong:text-[#1A1A1A] max-w-none space-y-10">
             
@@ -328,7 +337,35 @@ export default function DocumentPage({ company }) {
               </div>
             </div>
           </article>
-        )}
+        ) : activeDocKey === 'terms' ? (
+          /* ================= TERMS & CONDITIONS CONTENT ================= */
+          <article className="prose prose-lg sm:prose-xl prose-headings:font-serif prose-headings:text-[#1A1A1A] prose-p:text-gray-600 prose-p:leading-relaxed prose-strong:text-[#1A1A1A] max-w-none space-y-8">
+            <div className="space-y-4">
+              <h3 className="font-serif text-2xl font-bold text-[#1A1A1A]">1. Introduction</h3>
+              <p>Welcome to Silver House. By accessing or using our website and services, you agree to comply with and be bound by the following terms and conditions. Please read them carefully.</p>
+            </div>
+            <div className="space-y-4">
+              <h3 className="font-serif text-2xl font-bold text-[#1A1A1A]">2. Product Information & Pricing</h3>
+              <p>All prices and product availability are subject to change without notice. We strive to accurately display the colours and details of our products, but we cannot guarantee that your device's display will perfectly reflect the actual product.</p>
+            </div>
+            <div className="space-y-4">
+              <h3 className="font-serif text-2xl font-bold text-[#1A1A1A]">3. Shipping & Delivery</h3>
+              <p>We process and ship orders as quickly as possible. Delivery times may vary depending on your location. Silver House is not responsible for any delays caused by shipping carriers or unforeseen circumstances.</p>
+            </div>
+            <div className="space-y-4">
+              <h3 className="font-serif text-2xl font-bold text-[#1A1A1A]">4. Returns & Refunds</h3>
+              <p>We accept returns under specific conditions. Items must be returned in their original condition and packaging. Please review our detailed Return Policy or contact our support team for any issues regarding your purchase.</p>
+            </div>
+            <div className="space-y-4">
+              <h3 className="font-serif text-2xl font-bold text-[#1A1A1A]">5. Privacy Policy</h3>
+              <p>Your privacy is important to us. We will only use your personal information to process orders and improve your experience. We do not sell or share your data with unauthorized third parties.</p>
+            </div>
+            <div className="space-y-4">
+              <h3 className="font-serif text-2xl font-bold text-[#1A1A1A]">6. Governing Law</h3>
+              <p>These terms and conditions are governed by and construed in accordance with the laws of India. Any disputes relating to these terms will be subject to the exclusive jurisdiction of the courts of Ahmedabad, Gujarat.</p>
+            </div>
+          </article>
+        ) : null}
 
       </main>
 

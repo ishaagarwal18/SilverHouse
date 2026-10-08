@@ -86,7 +86,7 @@ export default function HeroSlider({ onNavigateCategory, onNavigateYatraCustomiz
             {slide.title}
           </h1>
 
-          <p 
+          <p
             onClick={() => setIsTextExpanded(!isTextExpanded)}
             className={`text-xs sm:text-sm text-silver-300 font-normal max-w-lg leading-relaxed cursor-pointer sm:cursor-auto transition-all duration-300 ${isTextExpanded ? 'line-clamp-none' : 'line-clamp-2 sm:line-clamp-none'}`}
             title="Click to read more"

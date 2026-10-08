@@ -263,6 +263,9 @@ export default function AppRouter({
       {/* Legacy Document Route Fallbacks */}
       <Route path="/doc/:docId" element={<DocumentPage />} />
       <Route path="/document/:docId" element={<DocumentPage />} />
+      <Route path="/about-us" element={<DocumentPage docId="about-us" />} />
+      <Route path="/terms-conditions" element={<DocumentPage docId="terms-conditions" />} />
+      <Route path="/terms&conditions" element={<DocumentPage docId="terms-conditions" />} />
 
       {/* Mandatory Payment Gateway Compliance Pages */}
       <Route path="/contactus" element={<ContactUsPage onTriggerToast={onTriggerToast} />} />
@@ -319,6 +322,7 @@ export default function AppRouter({
           <ProductListingPage
             products={products}
             categories={categories}
+            festivals={festivals}
             onSelectCategory={handleNavigateCategory}
             onSelectSubcategory={handleNavigateSubcategory}
             onAddToCart={onAddToCart}
@@ -337,6 +341,7 @@ export default function AppRouter({
           <ProductListingPage
             products={products}
             categories={categories}
+            festivals={festivals}
             onSelectCategory={handleNavigateCategory}
             onSelectSubcategory={handleNavigateSubcategory}
             onAddToCart={onAddToCart}
@@ -355,6 +360,7 @@ export default function AppRouter({
           <ProductListingPage
             products={products}
             categories={categories}
+            festivals={festivals}
             onSelectCategory={handleNavigateCategory}
             onSelectSubcategory={handleNavigateSubcategory}
             onAddToCart={onAddToCart}

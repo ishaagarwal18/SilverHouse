@@ -8,6 +8,7 @@ export default function MobileMenu({
   isOpen,
   onClose,
   categories,
+  festivals,
   onSelectCategory,
   onSelectSubcategory,
   onNavigateYatraCustomizer,
@@ -106,6 +107,30 @@ export default function MobileMenu({
 
           {/* Categories Accordions */}
           <div className="p-4">
+            {/* Festive Edits Accordion */}
+            {festivals && festivals.length > 0 && (
+              <div className="mb-6">
+                <p className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider mb-2">
+                  Festive Edits
+                </p>
+                <div className="space-y-1">
+                  {festivals.map((fest) => (
+                    <button
+                      key={fest.id}
+                      onClick={() => {
+                        onSelectCategory(fest.id || fest.slug);
+                        onClose();
+                      }}
+                      className="w-full py-2 text-left font-medium text-sm text-[#1A1A1A] hover:text-[#D4AF37] transition-colors flex items-center justify-between"
+                    >
+                      <span>{fest.name}</span>
+                      <ChevronRight className="w-4 h-4 text-silver-300" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <p className="text-xs font-bold text-silver-400 uppercase tracking-wider mb-2">
               Product Categories
             </p>

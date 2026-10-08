@@ -18,6 +18,7 @@ import { useTheme } from './context/ThemeContext';
 import { 
   fetchProducts, 
   fetchCategories, 
+  fetchFestivals,
   fetchUserWishlist, 
   addToWishlistApi, 
   removeFromWishlistApi,
@@ -29,7 +30,6 @@ import {
   getGuestToken,
   fetchStoreParameters,
   fetchCompanyDetails,
-  fetchFestivals,
   fetchFestivalCategories,
   DEFAULT_COMPANY_DETAILS,
   recordProductView
@@ -53,8 +53,10 @@ export default function App() {
   const [companyDetails, setCompanyDetails] = useState(DEFAULT_COMPANY_DETAILS);
 
   const handleOpenPdf = (type) => {
-    const route = type === 'about' ? '/about-us' : '/purity-guide';
-    window.open(route, '_blank');
+    let path = '/purity-guide';
+    if (type === 'about') path = '/about-us';
+    if (type === 'terms') path = '/terms-conditions';
+    window.open(path, '_blank');
   };
 
   // Cart & Wishlist State - Strictly Isolated & User-Scoped
@@ -266,6 +268,9 @@ export default function App() {
         }
         if (Array.isArray(backendCategories) && backendCategories.length > 0) {
           setCategories(backendCategories);
+        }
+        if (Array.isArray(backendFestivals) && backendFestivals.length > 0) {
+          setFestivals(backendFestivals);
         }
         if (companyRes?.company) {
           setCompanyDetails(companyRes.company);
@@ -624,6 +629,7 @@ export default function App() {
             cartCount={cartCount}
             wishlistCount={wishlistIds.length}
             categories={categories}
+            festivals={festivals}
             onOpenCart={() => setIsCartOpen(true)}
             onOpenWishlist={() => setIsWishlistOpen(true)}
             onOpenSearch={() => setIsSearchOpen(true)}
@@ -670,6 +676,7 @@ export default function App() {
       <MobileMenu
         isOpen={isMobileMenuOpen}
         categories={categories}
+        festivals={festivals}
         onClose={() => setIsMobileMenuOpen(false)}
         onSelectCategory={handleNavigateCategory}
         onSelectSubcategory={handleNavigateSubcategory}

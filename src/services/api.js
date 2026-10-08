@@ -216,9 +216,38 @@ export async function fetchCategories() {
 }
 
 /**
- * Fetches festivals directly from Backend API (/api/data with proc_name: 'festival').
+ * Fetches festivals dynamically from Backend API (/api/festivals) or fallback.
  */
 export async function fetchFestivals() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/festivals`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.success && Array.isArray(data.festivals)) {
+        return data.festivals.map(fest => ({
+          id: fest.id,
+          category_id: fest.category_id,
+          name: fest.name,
+          shortName: fest.shortName,
+          description: fest.description,
+          image: resolveImageUrl(fest.image),
+          image_url: resolveImageUrl(fest.image_url),
+          heroBanner: resolveImageUrl(fest.heroBanner),
+          idealFor: fest.idealFor,
+          priority_val: fest.priority_val
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn('[API Service] Festival fetch warning, trying fallback:', err);
+  }
+
   try {
     const json = await postApiData({
       proc_name: 'festival',
@@ -228,8 +257,9 @@ export async function fetchFestivals() {
       return json.data;
     }
   } catch (err) {
-    console.warn('[API Service] Festivals fetch warning:', err);
+    console.warn('[API Service] Festivals fallback fetch warning:', err);
   }
+
   return [];
 }
 
@@ -250,7 +280,6 @@ export async function fetchFestivalCategories() {
   }
   return [];
 }
-
 
 /**
  * Fetches a single product by ID from Backend API.

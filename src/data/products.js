@@ -154,7 +154,7 @@ export const CATEGORIES = [
     image_url: "/images/categories/cat_yantra.jpg",
     heroBanner: "/images/categories/cat_yantra.jpg",
     idealFor: "ALL"
-  }
+  },
 ];
 
 // Products are loaded dynamically from MS SQL backend database (SP_GETDATA / dbo.product)

@@ -16,6 +16,13 @@ import EntityFormPage from './pages/EntityFormPage';
  * SilverHouse Admin Studio, mounted at /admin/* (see src/main.jsx).
  * Replaces the standalone HTML pages that used to live in Backend/public.
  */
+function AuthGate({ children }) {
+  const { status } = useAdminAuth();
+  if (status === 'checking') return <div className="flex min-h-screen items-center justify-center"><LoadingBlock label="Verifying admin session…" /></div>;
+  if (status !== 'authenticated') return <AdminLoginScreen />;
+  return children;
+}
+
 export default function AdminApp() {
   useEffect(() => {
     const prevTitle = document.title;

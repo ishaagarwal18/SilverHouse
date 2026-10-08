@@ -15,6 +15,7 @@ export default function Header({
   cartCount = 0,
   wishlistCount = 0,
   categories = [],
+  festivals = [],
   onOpenCart,
   onOpenWishlist,
   onOpenSearch,
@@ -126,6 +127,16 @@ export default function Header({
   const hasDbCategories = Array.isArray(categories) && categories.length > 0;
 
   const DROPDOWNS = {
+    festive: [
+      { label: "VIEW ALL FESTIVE EDITS", action: () => onNavigateCategory("festive") },
+      ...(festivals && festivals.length > 0
+        ? festivals.map(f => ({ label: f.name.toUpperCase(), action: () => onNavigateCategory(f.id || f.slug) }))
+        : [
+          { label: "NAVRATRI & GUJARAT", action: () => onNavigateCategory("gujarat-festivals") },
+          { label: "DUSSEHRA & DIWALI", action: () => onNavigateCategory("festive-collection") },
+          { label: "JAIN FESTIVALS", action: () => onNavigateCategory("jain-festivals") }
+        ])
+    ],
     jewellery: [
       { label: "VIEW ALL JEWELLERY", action: () => onNavigateCategory("jewellery") },
       ...(hasDbCategories
@@ -644,6 +655,45 @@ export default function Header({
               <span>SHOP ALL</span>
               <ChevronDown className={`w-3.5 h-3.5 text-[var(--th-accent)] transition-transform duration-200 ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
             </button>
+          </div>
+
+          {/* FESTIVE COLLECTION */}
+          <div
+            className="relative"
+            onMouseEnter={() => {
+              setIsMegaMenuOpen(false);
+              setActiveDropdown('festive');
+            }}
+            onMouseLeave={() => setActiveDropdown(null)}
+          >
+            <button
+              onClick={() => onNavigateCategory("festive")}
+              className="px-3 py-1.5 text-xs xl:text-[13px] font-bold tracking-wider text-amber-600 hover:text-amber-700 transition-colors flex items-center space-x-1 uppercase focus:outline-hidden cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>FESTIVE EDITS</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === 'festive' ? 'rotate-180' : ''}`} />
+            </button>
+
+            {activeDropdown === 'festive' && (
+              <div className="absolute top-full left-0 w-64 bg-[var(--th-card)] shadow-2xl rounded-2xl border border-amber-200 z-50 py-3 px-5 text-left animate-in fade-in slide-in-from-top-1">
+                <ul className="space-y-2">
+                  {DROPDOWNS.festive.map((item, idx) => (
+                    <li key={idx}>
+                      <button
+                        onClick={() => {
+                          item.action();
+                          setActiveDropdown(null);
+                        }}
+                        className={`text-[11px] font-bold tracking-wider uppercase transition-colors text-left block w-full py-1.5 border-b border-[var(--th-border)]/30 last:border-0 cursor-pointer ${idx === 0 ? 'text-amber-600 hover:text-amber-700' : 'text-[var(--th-text-main)] hover:text-[var(--th-primary)]'}`}
+                      >
+                        {item.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* SILVER JEWELLERY */}

@@ -310,6 +310,33 @@ app.post('/api/upload-multiple', optionalCustomerAuth, upload.array('images', 10
 });
 
 // =========================================================================
+// FESTIVALS & CAMPAIGNS API
+// =========================================================================
+
+app.get('/api/festivals', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+        
+        const result = await pool.request().query(`
+            SELECT id, category_id, name, shortName, description, image, image_url, heroBanner, idealFor
+            FROM dbo.festival
+            ORDER BY priority_val ASC
+        `);
+        
+        return res.status(200).json({
+            success: true,
+            festivals: result.recordset
+        });
+    } catch (err) {
+        console.error('[Festivals API Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// =========================================================================
 // CUSTOM ARTISANAL ORDERS APIs
 // =========================================================================
 

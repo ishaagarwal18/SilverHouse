@@ -79,7 +79,7 @@ export default function CategoryShowcaseStrip({ categories = [], products = [], 
         <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[var(--th-bg)] to-transparent pointer-events-none z-10" />
 
         {/* Marquee Container */}
-        <div className="overflow-hidden py-2">
+        <div className="overflow-hidden py-2 group/marquee">
           {displayItems.length === 0 ? (
             /* Elegant Skeleton Loader while database categories load */
             <div className="flex items-center gap-4 sm:gap-6 md:gap-7 w-full px-4 sm:px-12 md:px-14">
@@ -91,7 +91,7 @@ export default function CategoryShowcaseStrip({ categories = [], products = [], 
               ))}
             </div>
           ) : (
-            <div className="flex animate-marquee hover:[animation-play-state:paused] w-max">
+            <div className="flex animate-marquee group-hover/marquee:[animation-play-state:paused] w-max">
               {/* First Set */}
               <div className="flex items-center gap-3 sm:gap-5 md:gap-7 pr-3 sm:pr-5 md:pr-7">
                 {displayItems.map((item) => renderCategoryCard(item, '-1'))}

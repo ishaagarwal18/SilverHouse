@@ -11,6 +11,7 @@ import ScrollReveal from '../common/ScrollReveal';
 export default function ProductListingPage({
   products,
   categories,
+  festivals = [],
   onAddToCart,
   onToggleWishlist,
   wishlistIds,
@@ -315,23 +316,36 @@ export default function ProductListingPage({
     }
   };
 
-  const activeCategoryObj = (selectedCategory === 'all' || !selectedCategory) ? {
-    id: 'all',
-    name: 'Curated Silver Collection',
-    description: 'Explore our complete range of certified 925 sterling silver jewellery, 999 fine silver coins, puja idols, and bespoke artisanal creations.',
-    heroBanner: '/images/hero_silver_coins.png'
-  } : (
-    categoryList.find(c =>
+  const activeCategoryObj = (() => {
+    if (selectedCategory === 'all' || !selectedCategory) {
+      return {
+        id: 'all',
+        name: 'Curated Silver Collection',
+        description: 'Explore our complete range of certified 925 sterling silver jewellery, 999 fine silver coins, puja idols, and bespoke artisanal creations.',
+        heroBanner: '/images/hero_silver_coins.png'
+      };
+    }
+    
+    let resolved = categoryList.find(c =>
       String(c.id).toLowerCase() === String(selectedCategory).toLowerCase() ||
       String(c.slug).toLowerCase() === String(selectedCategory).toLowerCase() ||
       String(c.category_id) === String(selectedCategory)
-    ) || VIRTUAL_CATEGORIES[selectedCategory] || {
+    ) || VIRTUAL_CATEGORIES[selectedCategory];
+    
+    if (!resolved) {
+      const fMatch = festivals?.find(f => String(f.id).toLowerCase() === String(selectedCategory).toLowerCase() || String(f.slug).toLowerCase() === String(selectedCategory).toLowerCase());
+      if (fMatch) {
+        resolved = fMatch;
+      }
+    }
+    
+    return resolved || {
       id: selectedCategory,
       name: selectedCategory.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
       description: 'Explore authentic 925 sterling silver products from our curated collection.',
       heroBanner: '/images/hero_silver_coins.png'
-    }
-  );
+    };
+  })();
 
   // Accurate Matchers to eliminate bugs
   const isMenProduct = (p) => {

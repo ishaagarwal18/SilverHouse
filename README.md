@@ -8,11 +8,13 @@ A full-stack e-commerce application specializing in premium silver artifacts, co
 
 ### 🛍️ Frontend (React Storefront)
 - **Home Page**: Dynamic hero banners, curated category cards, promotional banners, and featured product showcases.
-- **Product Listing Page (PLP)**: Responsive product grid with category/subcategory filtering, sorting, and live status badges.
+- **Product Listing Page (PLP)**: Responsive product grid with category/subcategory filtering, sorting, and live status badges. Features a sleek horizontal filter bar for better UX.
 - **Product Detail Page (PDP)**: Interactive product view featuring image galleries, quantity selection, detailed specifications, and review highlights.
+- **Festive & Occasion Stores**: Dynamic category mapping for festivals like Navratri, Diwali, and Dhanteras driven by master planner data.
 - **Cart & Wishlist**: Slide-out drawers with luxury CSS keyframe animations (`slideInRight`), promo code application, and interactive checkout modal.
 - **Search & Quick View**: Modal search for fast discovery and quick view preview for rapid product evaluation.
-- **Cinematic UI**: Global scroll-reveal effects, staggered component loading, shimmer gradients, and modern marquee components.
+- **Cinematic UI**: Global scroll-reveal effects, staggered component loading, shimmer gradients, modern marquee components, and luxurious page transitions across all routes.
+- **Document Pages**: Dedicated root-level routes for SEO-friendly documents (`/about-us`, `/terms-conditions`).
 - **Toast Notification System**: Real-time feedback for adding items to cart, wishlist updates, and form submissions.
 - **Responsive Design**: Designed with Tailwind CSS v4 and Lucide React Icons for a seamless mobile and desktop experience.
 
