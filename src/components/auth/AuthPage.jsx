@@ -78,6 +78,12 @@ export default function AuthPage({ onTriggerToast }) {
       return;
     }
 
+    const trimmedEditGst = editGstNumber.trim();
+    if (trimmedEditGst && trimmedEditGst.length !== 15) {
+      setError('Validation Error: GST number must be exactly 15 characters.');
+      return;
+    }
+
     setSavingProfile(true);
     setError('');
     try {
@@ -140,9 +146,16 @@ export default function AuthPage({ onTriggerToast }) {
     if (e) e.preventDefault();
     setError('');
 
-    if (authMode === 'SIGNUP' && !userName.trim()) {
-      setError('Please enter your name / username.');
-      return;
+    if (authMode === 'SIGNUP') {
+      if (!userName.trim()) {
+        setError('Please enter your name / username.');
+        return;
+      }
+      const trimmedGst = (gstNumber || '').trim();
+      if (trimmedGst && trimmedGst.length !== 15) {
+        setError('Validation Error: GST number must be exactly 15 characters.');
+        return;
+      }
     }
 
     const clean = phone.replace(/[^0-9]/g, '');
@@ -153,7 +166,7 @@ export default function AuthPage({ onTriggerToast }) {
 
     setLoading(true);
     try {
-      const res = await requestOtp(clean, authMode);
+      const res = await requestOtp(clean, authMode, { gstNumber: (gstNumber || '').trim() });
       if (res.success) {
         setFormattedPhone(res.formattedPhone || clean);
         setStep('OTP');
@@ -444,7 +457,8 @@ export default function AuthPage({ onTriggerToast }) {
                     <input
                       type="text"
                       value={editGstNumber}
-                      onChange={(e) => setEditGstNumber(e.target.value.toUpperCase())}
+                      maxLength={15}
+                      onChange={(e) => setEditGstNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                       placeholder="e.g. 24AAAAA0000A1Z5"
                       className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium font-mono uppercase outline-none"
                     />
@@ -815,7 +829,8 @@ export default function AuthPage({ onTriggerToast }) {
                         <input
                           type="text"
                           value={gstNumber}
-                          onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                          maxLength={15}
+                          onChange={(e) => setGstNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                           placeholder="e.g. 24AAAAA0000A1Z5"
                           className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium font-mono uppercase outline-none placeholder:text-[var(--th-text-muted)]/50"
                         />

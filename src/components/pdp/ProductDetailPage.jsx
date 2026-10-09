@@ -7,9 +7,8 @@ import RecentlyViewedSection from '../common/RecentlyViewedSection';
 import ProductReviewsSection from './ProductReviewsSection';
 import {
   Star, ShieldCheck, Award, Truck, Heart, ShoppingBag,
-  Sparkles, Upload, CheckCircle2, ChevronDown, ChevronRight, RefreshCw, FileText, ArrowLeft, MessageCircle
+  Sparkles, Upload, CheckCircle2, ChevronDown, ChevronRight, RefreshCw, FileText, ArrowLeft, MessageCircle, ZoomIn
 } from 'lucide-react';
-
 
 export default function ProductDetailPage({
   product,
@@ -27,8 +26,17 @@ export default function ProductDetailPage({
   const auth = useAuth();
   const user = auth ? auth.user : null;
   const [selectedImage, setSelectedImage] = useState(0);
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [isImageHovered, setIsImageHovered] = useState(false);
   const [qty, setQty] = useState(1);
   const [activeAccordion, setActiveAccordion] = useState('specs');
+
+  const handleImageMouseMove = (e) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - left) / width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - top) / height) * 100));
+    setZoomPos({ x, y });
+  };
 
   // Customizer State for Yatra Lockets / Engraving
   const [customText, setCustomText] = useState('');
@@ -212,16 +220,26 @@ export default function ProductDetailPage({
           {/* Left Column: Image Gallery (7 Cols) */}
           <div className="lg:col-span-7 space-y-4">
 
-            {/* Main High-Res Viewer */}
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-white border border-silver-200 silver-card-shadow group">
+            {/* Main High-Res In-Place Magnifier Viewer */}
+            <div
+              onMouseEnter={() => setIsImageHovered(true)}
+              onMouseLeave={() => setIsImageHovered(false)}
+              onMouseMove={handleImageMouseMove}
+              className="relative aspect-square rounded-2xl overflow-hidden bg-white border border-silver-200 silver-card-shadow group cursor-crosshair"
+            >
               <img
-                src={Array.isArray(currentProduct.images) && currentProduct.images[selectedImage] ? currentProduct.images[selectedImage] : (currentProduct.images && currentProduct.images[0] ? currentProduct.images[0] : '')}
+                src={Array.isArray(currentProduct.images) && currentProduct.images[selectedImage] ? currentProduct.images[selectedImage] : (currentProduct.images && currentProduct.images[0] ? currentProduct.images[0] : (currentProduct.image_url || currentProduct.image || ''))}
                 alt={currentProduct.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                style={{
+                  transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                  transform: isImageHovered ? 'scale(2.4)' : 'scale(1)',
+                  transition: isImageHovered ? 'transform 0.08s ease-out' : 'transform 0.3s ease-out'
+                }}
+                className="w-full h-full object-cover pointer-events-none"
               />
 
               {/* Purity & Discount Badges */}
-              <div className="absolute top-4 left-4 z-10 flex flex-col space-y-1.5">
+              <div className="absolute top-4 left-4 z-10 flex flex-col space-y-1.5 pointer-events-none">
                 <span className="bg-[#1A1A1A]/90 backdrop-blur-md text-[#D4AF37] text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center space-x-1">
                   <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
                   <span>{currentProduct.purity}</span>
@@ -233,9 +251,20 @@ export default function ProductDetailPage({
                 )}
               </div>
 
+              {/* Hover Hint Overlay Badge */}
+              <div className={`absolute bottom-4 right-4 z-10 transition-opacity duration-300 pointer-events-none ${isImageHovered ? 'opacity-0' : 'opacity-100'}`}>
+                <span className="px-3.5 py-1.5 rounded-full bg-black/75 backdrop-blur-md text-amber-300 text-xs font-bold flex items-center gap-1.5 shadow-lg border border-amber-400/30">
+                  <ZoomIn className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Hover to Magnify 2.4x</span>
+                </span>
+              </div>
+
               {/* Wishlist Button */}
               <button
-                onClick={() => onToggleWishlist(currentProduct)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleWishlist(currentProduct);
+                }}
                 className={`absolute top-4 right-4 z-10 p-3 rounded-full backdrop-blur-md transition-all shadow-md ${isCurrentWishlisted
                   ? 'bg-rose-600 text-white'
                   : 'bg-white/90 text-silver-700 hover:bg-white hover:text-black'
@@ -336,6 +365,7 @@ export default function ProductDetailPage({
                     {currentProduct.originalPrice && currentProduct.originalPrice > currentProduct.price && (
                       <span className="text-sm text-silver-400 line-through font-outfit font-medium">
                         ₹{currentProduct.originalPrice.toLocaleString('en-IN')}
+
                       </span>
                     )}
                   </div>
@@ -447,10 +477,10 @@ export default function ProductDetailPage({
                     const hasCustomization = Boolean(customText && customText.trim()) || Boolean(uploadedImagePreview);
                     const customConfigPayload = hasCustomization
                       ? {
-                          shrineName: currentProduct.isYatraLocket ? (currentProduct.name || 'Sacred Locket') : currentProduct.name,
-                          engravingText: customText ? customText.trim() : '',
-                          allUploadedImages: uploadedImagePreview ? [uploadedImagePreview] : []
-                        }
+                        shrineName: currentProduct.isYatraLocket ? (currentProduct.name || 'Sacred Locket') : currentProduct.name,
+                        engravingText: customText ? customText.trim() : '',
+                        allUploadedImages: uploadedImagePreview ? [uploadedImagePreview] : []
+                      }
                       : null;
                     onAddToCart(currentProduct, qty, customConfigPayload);
                   }}
@@ -636,16 +666,15 @@ export default function ProductDetailPage({
                 const hasCustomization = Boolean(customText && customText.trim()) || Boolean(uploadedImagePreview);
                 const customConfigPayload = hasCustomization
                   ? {
-                      shrineName: currentProduct.isYatraLocket ? (currentProduct.name || 'Sacred Locket') : currentProduct.name,
-                      engravingText: customText ? customText.trim() : '',
-                      allUploadedImages: uploadedImagePreview ? [uploadedImagePreview] : []
-                    }
+                    shrineName: currentProduct.isYatraLocket ? (currentProduct.name || 'Sacred Locket') : currentProduct.name,
+                    engravingText: customText ? customText.trim() : '',
+                    allUploadedImages: uploadedImagePreview ? [uploadedImagePreview] : []
+                  }
                   : null;
                 onAddToCart(currentProduct, qty, customConfigPayload);
               }}
-              className={`py-2.5 px-4 bg-[#1A1A1A] active:bg-[#D4AF37] text-white active:text-black font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
-                currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0 ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`py-2.5 px-4 bg-[#1A1A1A] active:bg-[#D4AF37] text-white active:text-black font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
             >
               <ShoppingBag className="w-4 h-4 shrink-0" />
               <span>{currentProduct.quantity !== undefined && currentProduct.quantity !== null && currentProduct.quantity <= 0 ? 'Out of Stock' : 'Buy Now'}</span>

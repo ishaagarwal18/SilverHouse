@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES, PRODUCTS } from '../../data/products';
 import { fetchProducts } from '../../services/api';
+import { getActiveCategoryIds } from '../../utils/festivalUtils';
 import {
   Filter, Grid3X3, Grid2X2, LayoutGrid, ChevronRight, SlidersHorizontal,
   Heart, Eye, ShoppingBag, Star, Sparkles, X, Check, Search, RotateCcw, Flame, ArrowLeft, Scale
@@ -12,6 +13,7 @@ export default function ProductListingPage({
   products,
   categories,
   festivals = [],
+  festivalCategories = [],
   onAddToCart,
   onToggleWishlist,
   wishlistIds,
@@ -449,7 +451,42 @@ export default function ProductListingPage({
 
     // Category / Collection Filtering
     if (selectedCategory !== 'all') {
-      if (selectedCategory === 'women') {
+      // Check if selectedCategory is a Festival ID, Slug, or Name
+      const matchedFestival = (festivals || []).find(f =>
+        String(f.id || '').toLowerCase() === String(selectedCategory).toLowerCase() ||
+        String(f.slug || '').toLowerCase() === String(selectedCategory).toLowerCase() ||
+        String(f.shortName || '').toLowerCase() === String(selectedCategory).toLowerCase() ||
+        String(f.name || '').toLowerCase() === String(selectedCategory).toLowerCase()
+      );
+
+      if (matchedFestival) {
+        const festivalCategoryIds = getActiveCategoryIds([matchedFestival], festivalCategories, categories);
+        if (festivalCategoryIds.size > 0) {
+          result = result.filter(p => {
+            const pCatId = Number(p.category_id || p.categoryId);
+            if (!isNaN(pCatId) && festivalCategoryIds.has(pCatId)) return true;
+
+            const pCatStr = String(p.category_id || p.categoryId || p.category_name || p.category || '').toLowerCase().trim();
+            for (const catId of festivalCategoryIds) {
+              const matchingCat = (categories || []).find(c => Number(c.category_id || c.id) === catId);
+              if (matchingCat) {
+                if (String(matchingCat.name || '').toLowerCase().trim() === pCatStr) return true;
+                if (String(matchingCat.slug || '').toLowerCase().trim() === pCatStr) return true;
+              }
+            }
+            return false;
+          });
+        }
+      } else if (selectedCategory === 'festive' || selectedCategory === 'festive-edits' || selectedCategory === 'festive-collection') {
+        const festivalCategoryIds = getActiveCategoryIds(festivals, festivalCategories, categories);
+        if (festivalCategoryIds.size > 0) {
+          result = result.filter(p => {
+            const pCatId = Number(p.category_id || p.categoryId);
+            if (!isNaN(pCatId) && festivalCategoryIds.has(pCatId)) return true;
+            return false;
+          });
+        }
+      } else if (selectedCategory === 'women') {
         result = result.filter(isWomenProduct);
       } else if (selectedCategory === 'mens' || selectedCategory === 'men' || selectedCategory === 'men-silver-collection' || selectedCategory === 'men-in-silver') {
         result = result.filter(isMenProduct);

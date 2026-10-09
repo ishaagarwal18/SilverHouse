@@ -758,14 +758,30 @@ BEGIN
     DECLARE @Phone NVARCHAR(20);
     DECLARE @Role NVARCHAR(20);
     DECLARE @Password NVARCHAR(255);
+    DECLARE @BirthdayDate DATE;
+    DECLARE @AnniversaryDate DATE;
+    DECLARE @GstNumber NVARCHAR(30);
 
     IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
     BEGIN
         SELECT
-            @FullName = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.full_name'))),
-            @Phone    = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.phone'))),
-            @Role     = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.role'))),
-            @Password = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.password')));
+            @FullName        = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.full_name'))),
+            @Phone           = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.phone'))),
+            @Role            = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.role'))),
+            @Password        = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.password'))),
+            @BirthdayDate    = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.birthday_date') AS DATE),
+            @AnniversaryDate = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.anniversary_date') AS DATE),
+            @GstNumber       = LTRIM(RTRIM(COALESCE(
+                                   JSON_VALUE(@JSONstr, '$.table_values.gst_number'),
+                                   JSON_VALUE(@JSONstr, '$.table_values.gstNumber')
+                               )));
+    END
+
+    -- GST Number Validation: Must be exactly 15 characters long if provided
+    IF @GstNumber IS NOT NULL AND LEN(@GstNumber) > 0 AND LEN(@GstNumber) <> 15
+    BEGIN
+        RAISERROR('Validation Error: GST number must be exactly 15 characters.', 16, 1);
+        RETURN;
     END
 
     -- Ensure password is ONLY stored for ADMIN role, strictly NULL for customers
@@ -863,19 +879,19 @@ BEGIN
     BEGIN
        IF @TargetUserId IS NOT NULL AND @TargetUserId > 0
         BEGIN
-            SELECT user_id, full_name, phone, [role], created_at
+            SELECT user_id, full_name, phone, [role], birthday_date, anniversary_date, gst_number, created_at
             FROM dbo.[user]
             WHERE user_id = @TargetUserId;
         END
         ELSE IF @Phone IS NOT NULL AND @Phone <> ''
         BEGIN
-            SELECT user_id, full_name, phone, [role], created_at
+            SELECT user_id, full_name, phone, [role], birthday_date, anniversary_date, gst_number, created_at
             FROM dbo.[user]
             WHERE phone = @Phone;
         END
         ELSE
         BEGIN
-            SELECT user_id, full_name, phone, [role], created_at
+            SELECT user_id, full_name, phone, [role], birthday_date, anniversary_date, gst_number, created_at
             FROM dbo.[user]
             ORDER BY user_id DESC;
         END
@@ -902,8 +918,8 @@ BEGIN
         ELSE IF UPPER(@Role) <> 'ADMIN'
             SET @Password = NULL;
 
-        INSERT INTO dbo.[user] (full_name, phone, [role], [password])
-        VALUES (@FullName, @Phone, @Role, @Password);
+        INSERT INTO dbo.[user] (full_name, phone, [role], [password], birthday_date, anniversary_date, gst_number)
+        VALUES (@FullName, @Phone, @Role, @Password, @BirthdayDate, @AnniversaryDate, @GstNumber);
 
         DECLARE @NewUserId INT = SCOPE_IDENTITY();
         SELECT @NewUserId AS user_id, 'User registered successfully' AS [Message];
@@ -921,13 +937,16 @@ BEGIN
         DECLARE @EffectiveRole NVARCHAR(20) = UPPER(ISNULL(@Role, (SELECT [role] FROM dbo.[user] WHERE user_id = @TargetUserId)));
 
         UPDATE dbo.[user]
-        SET full_name  = ISNULL(@FullName, full_name),
-            phone      = ISNULL(@Phone, phone),
-            [role]     = ISNULL(@Role, [role]),
-            [password] = CASE 
-                            WHEN @EffectiveRole = 'ADMIN' THEN ISNULL(@Password, [password])
-                            ELSE NULL -- Clear password if demoted to customer
-                         END
+        SET full_name        = ISNULL(@FullName, full_name),
+            phone            = ISNULL(@Phone, phone),
+            [role]           = ISNULL(@Role, [role]),
+            birthday_date    = CASE WHEN @BirthdayDate IS NOT NULL THEN @BirthdayDate ELSE birthday_date END,
+            anniversary_date = CASE WHEN @AnniversaryDate IS NOT NULL THEN @AnniversaryDate ELSE anniversary_date END,
+            gst_number       = CASE WHEN @GstNumber IS NOT NULL THEN @GstNumber ELSE gst_number END,
+            [password]       = CASE 
+                                WHEN @EffectiveRole = 'ADMIN' THEN ISNULL(@Password, [password])
+                                ELSE NULL -- Clear password if demoted to customer
+                             END
         WHERE user_id = @TargetUserId;
 
         SELECT @TargetUserId AS user_id, 'User profile updated successfully' AS [Message];

@@ -323,6 +323,7 @@ export default function AppRouter({
             products={products}
             categories={categories}
             festivals={festivals}
+            festivalCategories={festivalCategories}
             onSelectCategory={handleNavigateCategory}
             onSelectSubcategory={handleNavigateSubcategory}
             onAddToCart={onAddToCart}
@@ -342,6 +343,7 @@ export default function AppRouter({
             products={products}
             categories={categories}
             festivals={festivals}
+            festivalCategories={festivalCategories}
             onSelectCategory={handleNavigateCategory}
             onSelectSubcategory={handleNavigateSubcategory}
             onAddToCart={onAddToCart}
@@ -361,6 +363,7 @@ export default function AppRouter({
             products={products}
             categories={categories}
             festivals={festivals}
+            festivalCategories={festivalCategories}
             onSelectCategory={handleNavigateCategory}
             onSelectSubcategory={handleNavigateSubcategory}
             onAddToCart={onAddToCart}

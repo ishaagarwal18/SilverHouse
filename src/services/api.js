@@ -232,15 +232,12 @@ export async function fetchFestivals() {
       if (data && data.success && Array.isArray(data.festivals)) {
         return data.festivals.map(fest => ({
           id: fest.id,
-          category_id: fest.category_id,
           name: fest.name,
           shortName: fest.shortName,
           description: fest.description,
-          image: resolveImageUrl(fest.image),
-          image_url: resolveImageUrl(fest.image_url),
-          heroBanner: resolveImageUrl(fest.heroBanner),
-          idealFor: fest.idealFor,
-          priority_val: fest.priority_val
+          primary_website_category: fest.primary_website_category,
+          start_date: fest.start_date,
+          end_date: fest.end_date
         }));
       }
     }

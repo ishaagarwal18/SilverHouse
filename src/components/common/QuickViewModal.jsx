@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Star, ShieldCheck, Truck, Sparkles, Heart, ShoppingBag, ArrowRight } from 'lucide-react';
+import { X, Star, ShieldCheck, Truck, Sparkles, Heart, ShoppingBag, ArrowRight, ZoomIn } from 'lucide-react';
 
 export default function QuickViewModal({
   product,
@@ -11,13 +11,22 @@ export default function QuickViewModal({
   onViewFullPDP
 }) {
   const [selectedImage, setSelectedImage] = useState(0);
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [isHovered, setIsHovered] = useState(false);
   const [qty, setQty] = useState(1);
 
   if (!isOpen || !product) return null;
 
+  const handleMouseMove = (e) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - left) / width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - top) / height) * 100));
+    setZoomPos({ x, y });
+  };
+
   const images = Array.isArray(product.images) && product.images.length > 0
     ? product.images
-    : [product.image || product.thumbnail || 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80&w=800'];
+    : [product.image || product.image_url || product.thumbnail || 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80&w=800'];
 
   const rating = product.rating || 4.9;
   const reviewsCount = product.reviewsCount ?? product.reviews_count ?? 12;
@@ -44,15 +53,31 @@ export default function QuickViewModal({
 
         {/* Left Image Section */}
         <div className="w-full md:w-1/2 bg-silver-50 p-6 flex flex-col justify-between">
-          <div className="relative aspect-square rounded-xl overflow-hidden border border-silver-200 bg-white mb-4">
+          <div 
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onMouseMove={handleMouseMove}
+            className="relative aspect-square rounded-xl overflow-hidden border border-silver-200 bg-white mb-4 group cursor-crosshair"
+          >
             <img 
               src={images[selectedImage] || images[0]} 
               alt={product.name} 
-              className="w-full h-full object-cover"
+              style={{
+                transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                transform: isHovered ? 'scale(2.4)' : 'scale(1)',
+                transition: isHovered ? 'transform 0.08s ease-out' : 'transform 0.3s ease-out'
+              }}
+              className="w-full h-full object-cover pointer-events-none"
             />
-            <span className="absolute top-3 left-3 bg-[#1A1A1A] text-[#D4AF37] text-[11px] font-bold px-3 py-1 rounded-full shadow-md">
+            <span className="absolute top-3 left-3 bg-[#1A1A1A] text-[#D4AF37] text-[11px] font-bold px-3 py-1 rounded-full shadow-md pointer-events-none">
               {purity}
             </span>
+            <div className={`absolute bottom-3 right-3 transition-opacity duration-300 pointer-events-none ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
+              <span className="px-3 py-1 rounded-full bg-black/75 backdrop-blur-md text-amber-300 text-[10px] font-bold flex items-center gap-1 shadow-md border border-amber-400/30">
+                <ZoomIn className="w-3 h-3 text-amber-400" />
+                <span>Hover to Magnify</span>
+              </span>
+            </div>
           </div>
 
           {/* Thumbnails */}

@@ -332,9 +332,8 @@ app.get('/api/festivals', async (req, res) => {
         }
         
         const result = await pool.request().query(`
-            SELECT id, category_id, name, shortName, description, image, image_url, heroBanner, idealFor
+            SELECT id, name, shortName, description, primary_website_category, start_date, end_date
             FROM dbo.festival
-            ORDER BY priority_val ASC
         `);
         
         return res.status(200).json({
@@ -1494,8 +1493,16 @@ async function sendWhatsAppMessage(phone, message, pool = null) {
 // 1. POST /api/auth/send-otp: Send OTP on WhatsApp
 app.post('/api/auth/send-otp', async (req, res) => {
     try {
-        const { phone, mode } = req.body;
+        const { phone, mode, gstNumber, gst_number } = req.body;
         const cleanedPhone = cleanPhoneNumber(phone);
+        const gstVal = (gstNumber || gst_number || '').toString().trim();
+
+        if (gstVal && gstVal.length !== 15) {
+            return res.status(400).json({
+                success: false,
+                error: 'Validation Error: GST number must be exactly 15 characters.'
+            });
+        }
 
         if (!cleanedPhone || cleanedPhone.replace(/\D/g, '').length < 10) {
             return res.status(400).json({
@@ -1623,6 +1630,10 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         const bdayVal = (birthdayDate || birthday || '').toString().trim() || null;
         const anniVal = (anniversaryDate || anniversary || '').toString().trim() || null;
         const gstVal = (gstNumber || gst_number || '').toString().trim() || null;
+
+        if (gstVal && gstVal.length !== 15) {
+            return res.status(400).json({ success: false, error: 'Validation Error: GST number must be exactly 15 characters.' });
+        }
 
         if (!cleanedPhone || !otp) {
             return res.status(400).json({ success: false, error: 'Phone number and 6-digit OTP are required.' });
@@ -1979,6 +1990,10 @@ async function handleUpdateProfile(req, res) {
         const bdayVal = (birthdayDate || birthday || '').toString().trim() || null;
         const anniVal = (anniversaryDate || anniversary || '').toString().trim() || null;
         const gstVal = (gstNumber || gst_number || '').toString().trim() || null;
+
+        if (gstVal && gstVal.length !== 15) {
+            return res.status(400).json({ success: false, error: 'Validation Error: GST number must be exactly 15 characters.' });
+        }
 
         await pool.request()
             .input('userId', sql.Int, userId)

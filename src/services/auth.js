@@ -60,12 +60,12 @@ export async function registerUser({ fullName, email, phone, password }) {
 /**
  * Send WhatsApp OTP to phone number
  */
-export async function sendPhoneOtp(phone, mode) {
+export async function sendPhoneOtp(phone, mode, extraData = {}) {
   try {
     const res = await fetch(`${API_BASE}/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, mode })
+      body: JSON.stringify({ phone, mode, ...extraData })
     });
 
     let data;

@@ -565,10 +565,7 @@ BEGIN
     ELSE IF @Opr IN ('ADD', 'INSERT')
     BEGIN
         INSERT INTO dbo.festival (
-            id, category_id, name, shortName, description, image, image_url, heroBanner, idealFor,
-            priority_val, typical_month, timing_2026, market_scope, priority_geography, occasion_category,
-            recommended_silver_products, primary_website_category, suggested_page_collection, commercial_use,
-            start_date, end_date
+            id, category_id, name, shortName, description, primary_website_category, start_date, end_date
         )
         VALUES (
             COALESCE(JSON_VALUE(@JSONstr, '$.table_values.id'), @Condition, 'FEST-' + CAST(ABS(CHECKSUM(NEWID())) % 10000 AS NVARCHAR(10))),
@@ -576,20 +573,7 @@ BEGIN
             JSON_VALUE(@JSONstr, '$.table_values.name'),
             JSON_VALUE(@JSONstr, '$.table_values.shortName'),
             JSON_VALUE(@JSONstr, '$.table_values.description'),
-            JSON_VALUE(@JSONstr, '$.table_values.image'),
-            JSON_VALUE(@JSONstr, '$.table_values.image_url'),
-            JSON_VALUE(@JSONstr, '$.table_values.heroBanner'),
-            JSON_VALUE(@JSONstr, '$.table_values.idealFor'),
-            TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.priority_val') AS INT),
-            JSON_VALUE(@JSONstr, '$.table_values.typical_month'),
-            JSON_VALUE(@JSONstr, '$.table_values.timing_2026'),
-            JSON_VALUE(@JSONstr, '$.table_values.market_scope'),
-            JSON_VALUE(@JSONstr, '$.table_values.priority_geography'),
-            JSON_VALUE(@JSONstr, '$.table_values.occasion_category'),
-            JSON_VALUE(@JSONstr, '$.table_values.recommended_silver_products'),
             JSON_VALUE(@JSONstr, '$.table_values.primary_website_category'),
-            JSON_VALUE(@JSONstr, '$.table_values.suggested_page_collection'),
-            JSON_VALUE(@JSONstr, '$.table_values.commercial_use'),
             TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.start_date') AS DATE),
             TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.end_date') AS DATE)
         );
@@ -602,20 +586,8 @@ BEGIN
             name = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.name'), name),
             shortName = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.shortName'), shortName),
             description = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.description'), description),
-            image = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.image'), image),
-            image_url = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.image_url'), image_url),
-            heroBanner = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.heroBanner'), heroBanner),
-            idealFor = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.idealFor'), idealFor),
-            priority_val = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.priority_val') AS INT), priority_val),
-            typical_month = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.typical_month'), typical_month),
-            timing_2026 = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.timing_2026'), timing_2026),
-            market_scope = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.market_scope'), market_scope),
-            priority_geography = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.priority_geography'), priority_geography),
-            occasion_category = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.occasion_category'), occasion_category),
-            recommended_silver_products = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.recommended_silver_products'), recommended_silver_products),
+            category_id = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.category_id') AS INT), category_id),
             primary_website_category = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.primary_website_category'), primary_website_category),
-            suggested_page_collection = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.suggested_page_collection'), suggested_page_collection),
-            commercial_use = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.commercial_use'), commercial_use),
             start_date = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.start_date') AS DATE), start_date),
             end_date = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.end_date') AS DATE), end_date)
         WHERE id = @TargetId;

@@ -184,19 +184,9 @@ export const ENTITY_FORM_SCHEMAS = {
     { name: 'shortName', label: 'Short Name', type: 'text', placeholder: 'e.g. Uttarayan' },
     { name: 'category_id', label: 'Category Name', type: 'select' },
     { name: 'description', label: 'Description', type: 'textarea', fullWidth: true },
-    { name: 'image', label: 'Image Path / URL', type: 'text', placeholder: '/images/festivals/...' },
-    { name: 'heroBanner', label: 'Hero Banner Path', type: 'text' },
-    { name: 'start_date', label: 'Festival Start Date', type: 'date' },
-    { name: 'end_date', label: 'Festival End Date', type: 'date' },
-    { name: 'typical_month', label: 'Typical Month', type: 'text', placeholder: 'e.g. January' },
-    { name: 'timing_2026', label: 'Timing (2026)', type: 'text', placeholder: 'e.g. Jan 14' },
-    { name: 'market_scope', label: 'Market Scope', type: 'text', placeholder: 'e.g. Pan-India' },
-    { name: 'priority_geography', label: 'Priority Geography', type: 'text', placeholder: 'e.g. Gujarat' },
-    { name: 'occasion_category', label: 'Occasion Category', type: 'text' },
-    { name: 'recommended_silver_products', label: 'Recommended Silver Products', type: 'text' },
     { name: 'primary_website_category', label: 'Primary Website Category', type: 'text' },
-    { name: 'suggested_page_collection', label: 'Suggested Page Collection', type: 'text' },
-    { name: 'commercial_use', label: 'Commercial Use', type: 'text' }
+    { name: 'start_date', label: 'Festival Start Date', type: 'date' },
+    { name: 'end_date', label: 'Festival End Date', type: 'date' }
   ],
   festival_category: [
     { name: 'category_id', label: 'Category Name', type: 'select', required: true },
