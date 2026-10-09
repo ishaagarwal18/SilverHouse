@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import ClassyDatePicker from '../common/ClassyDatePicker';
 import {
   Sparkles, Phone, ShieldCheck, ArrowRight, AlertCircle, Building2,
   LogOut, MapPin, ShoppingBag, ChevronRight, ArrowLeft, Package,
@@ -409,41 +410,23 @@ export default function AuthPage({ onTriggerToast }) {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1 flex items-center justify-between">
-                    <span>Birthday Date</span>
-                    <span className="text-[10px] text-[var(--th-text-muted)] font-normal">(Optional)</span>
-                  </label>
-                  <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
-                    <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
-                      <Calendar className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="date"
-                      value={editBirthday}
-                      onChange={(e) => setEditBirthday(e.target.value)}
-                      className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium outline-none"
-                    />
-                  </div>
-                </div>
+                <ClassyDatePicker
+                  label="Birthday Date"
+                  optional
+                  value={editBirthday}
+                  onChange={setEditBirthday}
+                  icon={Calendar}
+                  placeholder="dd - mm - yyyy"
+                />
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1 flex items-center justify-between">
-                    <span>Anniversary Date</span>
-                    <span className="text-[10px] text-[var(--th-text-muted)] font-normal">(Optional)</span>
-                  </label>
-                  <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
-                    <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
-                      <Gift className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="date"
-                      value={editAnniversary}
-                      onChange={(e) => setEditAnniversary(e.target.value)}
-                      className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium outline-none"
-                    />
-                  </div>
-                </div>
+                <ClassyDatePicker
+                  label="Anniversary Date"
+                  optional
+                  value={editAnniversary}
+                  onChange={setEditAnniversary}
+                  icon={Gift}
+                  placeholder="dd - mm - yyyy"
+                />
 
                 <div>
                   <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1 flex items-center justify-between">
@@ -779,42 +762,24 @@ export default function AuthPage({ onTriggerToast }) {
                     </div>
 
                     {/* Birthday Field (Optional) */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1 flex items-center justify-between">
-                        <span>Birthday Date</span>
-                        <span className="text-[10px] text-[var(--th-text-muted)] font-normal">(Optional)</span>
-                      </label>
-                      <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
-                        <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
-                          <Calendar className="w-4 h-4" />
-                        </div>
-                        <input
-                          type="date"
-                          value={birthdayDate}
-                          onChange={(e) => setBirthdayDate(e.target.value)}
-                          className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium outline-none"
-                        />
-                      </div>
-                    </div>
+                    <ClassyDatePicker
+                      label="Birthday Date"
+                      optional
+                      value={birthdayDate}
+                      onChange={setBirthdayDate}
+                      icon={Calendar}
+                      placeholder="dd - mm - yyyy"
+                    />
 
                     {/* Anniversary Field (Optional) */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-[var(--th-text-main)] mb-1 flex items-center justify-between">
-                        <span>Anniversary Date</span>
-                        <span className="text-[10px] text-[var(--th-text-muted)] font-normal">(Optional)</span>
-                      </label>
-                      <div className="flex rounded-xl border border-[var(--th-border)] bg-[var(--th-surface-alt)] focus-within:border-[var(--th-primary)] focus-within:ring-1 focus-within:ring-[var(--th-primary)]/20 transition-all overflow-hidden">
-                        <div className="flex items-center px-3 bg-[var(--th-surface-alt)] border-r border-[var(--th-border)] text-xs font-bold text-[var(--th-accent)] select-none">
-                          <Gift className="w-4 h-4" />
-                        </div>
-                        <input
-                          type="date"
-                          value={anniversaryDate}
-                          onChange={(e) => setAnniversaryDate(e.target.value)}
-                          className="w-full bg-transparent text-[var(--th-text-main)] px-3 py-2 text-xs font-medium outline-none"
-                        />
-                      </div>
-                    </div>
+                    <ClassyDatePicker
+                      label="Anniversary Date"
+                      optional
+                      value={anniversaryDate}
+                      onChange={setAnniversaryDate}
+                      icon={Gift}
+                      placeholder="dd - mm - yyyy"
+                    />
 
                     {/* GST Number Field (Optional) */}
                     <div>
