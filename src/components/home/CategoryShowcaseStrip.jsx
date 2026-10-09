@@ -63,12 +63,14 @@ export default function CategoryShowcaseStrip({ categories = [], products = [], 
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--th-primary)]/20 via-transparent to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
 
-      {/* Dynamic Category Label */}
-      <span className="mt-2 sm:mt-2.5 text-xs sm:text-sm font-semibold tracking-tight text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] text-center transition-colors duration-200 line-clamp-2 max-w-[95px] sm:max-w-[125px] leading-tight">
-        {item.label}
-      </span>
-
-
+      {/* Dynamic Category Label with Animated Hover Line */}
+      <div className="relative flex flex-col items-center mt-2 sm:mt-2.5">
+        <span className="text-xs sm:text-sm font-semibold tracking-tight text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] text-center transition-colors duration-200 line-clamp-2 max-w-[95px] sm:max-w-[125px] leading-tight">
+          {item.label}
+        </span>
+        {/* Animated Gold Accent Line Coming Down on Hover */}
+        <span className="h-0.5 w-0 group-hover:w-10 bg-[var(--th-accent)] mt-1.5 transition-all duration-300 rounded-full shadow-xs" />
+      </div>
     </button>
   );
 

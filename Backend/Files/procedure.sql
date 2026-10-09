@@ -623,7 +623,7 @@ GO
 -- =========================================================================
 -- PROCEDURE 5: SP_product_image
 -- =========================================================================
-CREATE PROCEDURE dbo.SP_product_image
+CREATE OR ALTER PROCEDURE dbo.SP_product_image
     @Opr       NVARCHAR(10),
     @JSONstr   NVARCHAR(MAX) = NULL,
     @Condition NVARCHAR(255) = NULL
@@ -701,6 +701,15 @@ BEGIN
         IF EXISTS (SELECT 1 FROM dbo.product_image WHERE product_id = @ProductId AND image_id = @ImageId)
         BEGIN
             RAISERROR('Validation Error: This image is already mapped to the specified product.', 16, 1);
+            RETURN;
+        END
+
+        DECLARE @ImageCount INT;
+        SELECT @ImageCount = COUNT(*) FROM dbo.product_image WHERE product_id = @ProductId;
+
+        IF @ImageCount >= 5
+        BEGIN
+            RAISERROR('Validation Error: Maximum photo limit reached. A product can have at most 5 images mapped.', 16, 1);
             RETURN;
         END
 
