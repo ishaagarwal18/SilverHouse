@@ -6,11 +6,13 @@ import KarwaChauthFestivalDecor from './KarwaChauthFestivalDecor';
 import GaneshChaturthiDecor from './GaneshChaturthiDecor';
 import NewYearFestivalDecor from './NewYearFestivalDecor';
 import ValentineFestivalDecor from './ValentineFestivalDecor';
+import UttarayanFestivalDecor from './UttarayanFestivalDecor';
 
 /**
  * Available Festival Themes
  */
 export const FESTIVAL_THEMES = [
+  { id: 'uttarayan', name: 'Uttarayan & Makar Sankranti', icon: '🪁', description: 'Colorful Kites, Firki Spool, Radiant Surya Dev, Til-Gud & Silver Keepsakes' },
   { id: 'valentines', name: "Valentine's Day Romance", icon: '💖', description: "Love Teddy Bear, Velvet Ring Box, Blooming Roses, Floating Hearts & Love Gifts" },
   { id: 'newyear', name: 'Happy New Year 2027', icon: '✨', description: 'Midnight Clock, Clinking Flutes, Party Poppers, Confetti & Silver Keepsakes' },
   { id: 'ganeshchaturthi', name: 'Ganesh Chaturthi Mahotsav', icon: '🐘', description: 'Ganpati Bappa, Golden Modak & Mushak, Red Hibiscus Toran & Silver Murtis' },
@@ -24,16 +26,16 @@ export const FESTIVAL_THEMES = [
 export const getActiveFestivalTheme = (activeFestivalName) => {
   try {
     const saved = localStorage.getItem('silverhouse_active_festival_theme');
-    if (saved && (saved === 'valentines' || saved === 'newyear' || saved === 'ganeshchaturthi' || saved === 'karwachauth' || saved === 'christmas' || saved === 'diwali' || saved === 'navratri' || saved === 'none')) {
+    if (saved && (saved === 'uttarayan' || saved === 'valentines' || saved === 'newyear' || saved === 'ganeshchaturthi' || saved === 'karwachauth' || saved === 'christmas' || saved === 'diwali' || saved === 'navratri' || saved === 'none')) {
       return saved;
     }
-    // Default to active Valentine's Day Romance mode
-    localStorage.setItem('silverhouse_active_festival_theme', 'valentines');
-    return 'valentines';
+    // Default to active Uttarayan & Makar Sankranti mode
+    localStorage.setItem('silverhouse_active_festival_theme', 'uttarayan');
+    return 'uttarayan';
   } catch {
     // Fallback
   }
-  return 'valentines';
+  return 'uttarayan';
 };
 
 export const setFestivalTheme = (themeId) => {
@@ -63,6 +65,10 @@ export default function FestivalDecorOverlay({ activeFestivalName, onNavigateToF
   return (
     <>
       {/* RENDER ACTIVE FESTIVAL COMPONENT SUITE */}
+      {activeTheme === 'uttarayan' && (
+        <UttarayanFestivalDecor onNavigateToFestival={onNavigateToFestival} />
+      )}
+
       {activeTheme === 'valentines' && (
         <ValentineFestivalDecor onNavigateToFestival={onNavigateToFestival} />
       )}
