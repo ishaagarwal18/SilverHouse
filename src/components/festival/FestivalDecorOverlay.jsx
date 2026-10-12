@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import NavratriFestivalDecor from './NavratriFestivalDecor';
 import DiwaliFestivalDecor from './DiwaliFestivalDecor';
+import ChristmasFestivalDecor from './ChristmasFestivalDecor';
 
 /**
  * Available Festival Themes
  */
 export const FESTIVAL_THEMES = [
+  { id: 'christmas', name: 'Merry Christmas & New Year', icon: '🎄', description: 'Winter Pine Garland, Ambient Snowfall, Santa & Silver Holiday Magic' },
   { id: 'diwali', name: 'Shubh Deepavali Mahotsav', icon: '🪔', description: 'Kamakshi Deepam, Lakshmi Charan, Golden Fuljadi & Toran Lights' },
   { id: 'navratri', name: 'Navratri Garba Mahotsav', icon: '🥁', description: 'Dandiya Sticks, Marigold Toran Garland & Garba Dancers' },
   { id: 'none', name: 'Standard Store Theme', icon: '✨', description: 'Classic Silver House Elegance' }
@@ -14,15 +16,16 @@ export const FESTIVAL_THEMES = [
 export const getActiveFestivalTheme = (activeFestivalName) => {
   try {
     const saved = localStorage.getItem('silverhouse_active_festival_theme');
-    if (saved && saved !== 'navratri') return saved;
-    if (!saved || saved === 'navratri') {
-      localStorage.setItem('silverhouse_active_festival_theme', 'diwali');
-      return 'diwali';
+    if (saved && (saved === 'christmas' || saved === 'diwali' || saved === 'none')) {
+      return saved;
     }
+    // Default to active Christmas festival mode
+    localStorage.setItem('silverhouse_active_festival_theme', 'christmas');
+    return 'christmas';
   } catch {
     // Fallback
   }
-  return 'diwali';
+  return 'christmas';
 };
 
 export const setFestivalTheme = (themeId) => {
@@ -52,6 +55,10 @@ export default function FestivalDecorOverlay({ activeFestivalName, onNavigateToF
   return (
     <>
       {/* RENDER ACTIVE FESTIVAL COMPONENT SUITE */}
+      {activeTheme === 'christmas' && (
+        <ChristmasFestivalDecor onNavigateToFestival={onNavigateToFestival} />
+      )}
+
       {activeTheme === 'diwali' && (
         <DiwaliFestivalDecor onNavigateToFestival={onNavigateToFestival} />
       )}
