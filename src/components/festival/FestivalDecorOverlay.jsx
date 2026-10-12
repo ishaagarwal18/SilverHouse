@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import NavratriFestivalDecor from './NavratriFestivalDecor';
 import DiwaliFestivalDecor from './DiwaliFestivalDecor';
 import ChristmasFestivalDecor from './ChristmasFestivalDecor';
+import KarwaChauthFestivalDecor from './KarwaChauthFestivalDecor';
 
 /**
  * Available Festival Themes
  */
 export const FESTIVAL_THEMES = [
-  { id: 'christmas', name: 'Merry Christmas & New Year', icon: '🎄', description: 'Winter Pine Garland, Ambient Snowfall, Santa & Silver Holiday Magic' },
+  { id: 'karwachauth', name: 'Shubh Karwa Chauth', icon: '🌙', description: 'Chhalni & Moon, Sacred Silver Karwa, Red Rose Toran & Saubhagya Keepsakes' },
   { id: 'diwali', name: 'Shubh Deepavali Mahotsav', icon: '🪔', description: 'Kamakshi Deepam, Lakshmi Charan, Golden Fuljadi & Toran Lights' },
+  { id: 'christmas', name: 'Merry Christmas & New Year', icon: '🎄', description: 'Winter Pine Garland, Ambient Snowfall, Santa & Silver Holiday Magic' },
   { id: 'navratri', name: 'Navratri Garba Mahotsav', icon: '🥁', description: 'Dandiya Sticks, Marigold Toran Garland & Garba Dancers' },
   { id: 'none', name: 'Standard Store Theme', icon: '✨', description: 'Classic Silver House Elegance' }
 ];
@@ -16,16 +18,16 @@ export const FESTIVAL_THEMES = [
 export const getActiveFestivalTheme = (activeFestivalName) => {
   try {
     const saved = localStorage.getItem('silverhouse_active_festival_theme');
-    if (saved && (saved === 'christmas' || saved === 'diwali' || saved === 'none')) {
+    if (saved && (saved === 'karwachauth' || saved === 'christmas' || saved === 'diwali' || saved === 'none')) {
       return saved;
     }
-    // Default to active Christmas festival mode
-    localStorage.setItem('silverhouse_active_festival_theme', 'christmas');
-    return 'christmas';
+    // Default to active Karwa Chauth festival mode
+    localStorage.setItem('silverhouse_active_festival_theme', 'karwachauth');
+    return 'karwachauth';
   } catch {
     // Fallback
   }
-  return 'christmas';
+  return 'karwachauth';
 };
 
 export const setFestivalTheme = (themeId) => {
@@ -55,6 +57,10 @@ export default function FestivalDecorOverlay({ activeFestivalName, onNavigateToF
   return (
     <>
       {/* RENDER ACTIVE FESTIVAL COMPONENT SUITE */}
+      {activeTheme === 'karwachauth' && (
+        <KarwaChauthFestivalDecor onNavigateToFestival={onNavigateToFestival} />
+      )}
+
       {activeTheme === 'christmas' && (
         <ChristmasFestivalDecor onNavigateToFestival={onNavigateToFestival} />
       )}
