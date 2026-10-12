@@ -137,7 +137,7 @@ export default function MobileMenu({
                       <div className="truncate">
                         <p className="text-xs font-semibold leading-tight truncate">{f.name}</p>
                         <p className="text-[9px] text-silver-500 font-normal truncate">
-                          {f.id === 'navratri' ? 'Garba Dancers & Garland' : f.description}
+                          {f.description}
                         </p>
                       </div>
                     </div>

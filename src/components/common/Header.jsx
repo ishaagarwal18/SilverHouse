@@ -695,7 +695,7 @@ export default function Header({
                                 <div className="truncate">
                                   <p className="text-xs font-semibold leading-tight truncate">{f.name}</p>
                                   <p className="text-[9.5px] text-[var(--th-text-muted)] font-normal truncate">
-                                    {f.id === 'navratri' ? 'Garba Dancers & Garland Decor' : f.description}
+                                    {f.description}
                                   </p>
                                 </div>
                               </div>

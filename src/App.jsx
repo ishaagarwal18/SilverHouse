@@ -53,9 +53,9 @@ export default function App() {
   const [storeParams, setStoreParams] = useState(null);
   const [companyDetails, setCompanyDetails] = useState(DEFAULT_COMPANY_DETAILS);
 
-  // Active Festival Theme Tracker (e.g. 'navratri', 'diwali', or 'none')
+  // Active Festival Theme Tracker (e.g. 'diwali', 'navratri', or 'none')
   const [activeFestivalTheme, setActiveFestivalTheme] = useState(() => 
-    getActiveFestivalTheme(festivals?.find(f => f.is_active || f.name?.toLowerCase().includes('navratri'))?.name)
+    getActiveFestivalTheme(festivals?.find(f => f.is_active)?.name || 'diwali')
   );
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function App() {
       if (e.detail?.themeId) {
         setActiveFestivalTheme(e.detail.themeId);
       } else {
-        setActiveFestivalTheme(getActiveFestivalTheme(festivals?.find(f => f.is_active || f.name?.toLowerCase().includes('navratri'))?.name));
+        setActiveFestivalTheme(getActiveFestivalTheme(festivals?.find(f => f.is_active)?.name || 'diwali'));
       }
     };
     window.addEventListener('silverhouse_festival_theme_updated', handleFestivalThemeUpdate);
@@ -644,10 +644,17 @@ export default function App() {
         {/* Active Festival Decor Theme Suite (Navratri, Diwali, etc.) */}
         {!isDocumentPage && (
           <FestivalDecorOverlay 
-            activeFestivalName={festivals?.find(f => f.is_active || f.name?.toLowerCase().includes('navratri'))?.name}
+            activeFestivalName={festivals?.find(f => f.is_active)?.name || 'diwali'}
             onNavigateToFestival={() => {
-              const navratriCat = categories.find(c => c.name?.toLowerCase().includes('navratri') || c.slug?.includes('navratri'));
-              if (navratriCat) handleNavigateCategory(navratriCat);
+              const diwaliCat = categories.find(c => 
+                c.name?.toLowerCase().includes('diwali') || 
+                c.slug?.includes('diwali') || 
+                c.name?.toLowerCase().includes('festive') || 
+                c.slug?.includes('festive') ||
+                c.id === 'silver-coins' || 
+                c.slug === 'silver-coins'
+              );
+              if (diwaliCat) handleNavigateCategory(diwaliCat);
               else handleNavigateHome();
             }}
           />

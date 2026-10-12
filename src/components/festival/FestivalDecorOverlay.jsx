@@ -1,26 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import NavratriFestivalDecor from './NavratriFestivalDecor';
+import DiwaliFestivalDecor from './DiwaliFestivalDecor';
 
 /**
  * Available Festival Themes
  */
 export const FESTIVAL_THEMES = [
-  { id: 'navratri', name: 'Navratri Garba Mahotsav', icon: '🪔', description: 'Dandiya Sticks, Marigold Toran Garland, Garbo Diya & 9-Days Color Banner' },
-  { id: 'diwali', name: 'Diwali Deepavali (Upcoming)', icon: '🪔', description: 'Sparkling Fuljadi, Firecrackers, Diya Flame & Rangoli Decor' },
+  { id: 'diwali', name: 'Shubh Deepavali Mahotsav', icon: '🪔', description: 'Kamakshi Deepam, Lakshmi Charan, Golden Fuljadi & Toran Lights' },
+  { id: 'navratri', name: 'Navratri Garba Mahotsav', icon: '🥁', description: 'Dandiya Sticks, Marigold Toran Garland & Garba Dancers' },
   { id: 'none', name: 'Standard Store Theme', icon: '✨', description: 'Classic Silver House Elegance' }
 ];
 
 export const getActiveFestivalTheme = (activeFestivalName) => {
   try {
     const saved = localStorage.getItem('silverhouse_active_festival_theme');
-    if (saved) return saved;
+    if (saved && saved !== 'navratri') return saved;
+    if (!saved || saved === 'navratri') {
+      localStorage.setItem('silverhouse_active_festival_theme', 'diwali');
+      return 'diwali';
+    }
   } catch {
     // Fallback
   }
-  if (activeFestivalName && activeFestivalName.toLowerCase().includes('navratri')) {
-    return 'navratri';
-  }
-  return 'navratri';
+  return 'diwali';
 };
 
 export const setFestivalTheme = (themeId) => {
@@ -50,14 +52,12 @@ export default function FestivalDecorOverlay({ activeFestivalName, onNavigateToF
   return (
     <>
       {/* RENDER ACTIVE FESTIVAL COMPONENT SUITE */}
-      {activeTheme === 'navratri' && (
-        <NavratriFestivalDecor onNavigateToFestival={onNavigateToFestival} />
+      {activeTheme === 'diwali' && (
+        <DiwaliFestivalDecor onNavigateToFestival={onNavigateToFestival} />
       )}
 
-      {activeTheme === 'diwali' && (
-        <div className="w-full bg-gradient-to-r from-amber-600 via-red-600 to-amber-600 text-white text-xs font-bold py-2 px-4 text-center select-none shadow-md">
-          🪔 Diwali Festival Mode Preview • Diya Lights & Rangoli Active
-        </div>
+      {activeTheme === 'navratri' && (
+        <NavratriFestivalDecor onNavigateToFestival={onNavigateToFestival} />
       )}
     </>
   );
