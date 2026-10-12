@@ -3,11 +3,13 @@ import NavratriFestivalDecor from './NavratriFestivalDecor';
 import DiwaliFestivalDecor from './DiwaliFestivalDecor';
 import ChristmasFestivalDecor from './ChristmasFestivalDecor';
 import KarwaChauthFestivalDecor from './KarwaChauthFestivalDecor';
+import GaneshChaturthiDecor from './GaneshChaturthiDecor';
 
 /**
  * Available Festival Themes
  */
 export const FESTIVAL_THEMES = [
+  { id: 'ganeshchaturthi', name: 'Ganesh Chaturthi Mahotsav', icon: '🐘', description: 'Ganpati Bappa, Golden Modak & Mushak, Red Hibiscus Toran & Silver Murtis' },
   { id: 'karwachauth', name: 'Shubh Karwa Chauth', icon: '🌙', description: 'Chhalni & Moon, Sacred Silver Karwa, Red Rose Toran & Saubhagya Keepsakes' },
   { id: 'diwali', name: 'Shubh Deepavali Mahotsav', icon: '🪔', description: 'Kamakshi Deepam, Lakshmi Charan, Golden Fuljadi & Toran Lights' },
   { id: 'christmas', name: 'Merry Christmas & New Year', icon: '🎄', description: 'Winter Pine Garland, Ambient Snowfall, Santa & Silver Holiday Magic' },
@@ -18,16 +20,16 @@ export const FESTIVAL_THEMES = [
 export const getActiveFestivalTheme = (activeFestivalName) => {
   try {
     const saved = localStorage.getItem('silverhouse_active_festival_theme');
-    if (saved && (saved === 'karwachauth' || saved === 'christmas' || saved === 'diwali' || saved === 'none')) {
+    if (saved && (saved === 'ganeshchaturthi' || saved === 'karwachauth' || saved === 'christmas' || saved === 'diwali' || saved === 'none')) {
       return saved;
     }
-    // Default to active Karwa Chauth festival mode
-    localStorage.setItem('silverhouse_active_festival_theme', 'karwachauth');
-    return 'karwachauth';
+    // Default to active Ganesh Chaturthi festival mode
+    localStorage.setItem('silverhouse_active_festival_theme', 'ganeshchaturthi');
+    return 'ganeshchaturthi';
   } catch {
     // Fallback
   }
-  return 'karwachauth';
+  return 'ganeshchaturthi';
 };
 
 export const setFestivalTheme = (themeId) => {
@@ -57,6 +59,10 @@ export default function FestivalDecorOverlay({ activeFestivalName, onNavigateToF
   return (
     <>
       {/* RENDER ACTIVE FESTIVAL COMPONENT SUITE */}
+      {activeTheme === 'ganeshchaturthi' && (
+        <GaneshChaturthiDecor onNavigateToFestival={onNavigateToFestival} />
+      )}
+
       {activeTheme === 'karwachauth' && (
         <KarwaChauthFestivalDecor onNavigateToFestival={onNavigateToFestival} />
       )}
