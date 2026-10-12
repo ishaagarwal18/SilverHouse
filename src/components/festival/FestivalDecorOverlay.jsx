@@ -4,32 +4,34 @@ import DiwaliFestivalDecor from './DiwaliFestivalDecor';
 import ChristmasFestivalDecor from './ChristmasFestivalDecor';
 import KarwaChauthFestivalDecor from './KarwaChauthFestivalDecor';
 import GaneshChaturthiDecor from './GaneshChaturthiDecor';
+import NewYearFestivalDecor from './NewYearFestivalDecor';
 
 /**
  * Available Festival Themes
  */
 export const FESTIVAL_THEMES = [
+  { id: 'newyear', name: 'Happy New Year 2027', icon: '✨', description: 'Midnight Clock, Clinking Flutes, Party Poppers, Confetti & Silver Keepsakes' },
   { id: 'ganeshchaturthi', name: 'Ganesh Chaturthi Mahotsav', icon: '🐘', description: 'Ganpati Bappa, Golden Modak & Mushak, Red Hibiscus Toran & Silver Murtis' },
   { id: 'karwachauth', name: 'Shubh Karwa Chauth', icon: '🌙', description: 'Chhalni & Moon, Sacred Silver Karwa, Red Rose Toran & Saubhagya Keepsakes' },
   { id: 'diwali', name: 'Shubh Deepavali Mahotsav', icon: '🪔', description: 'Kamakshi Deepam, Lakshmi Charan, Golden Fuljadi & Toran Lights' },
-  { id: 'christmas', name: 'Merry Christmas & New Year', icon: '🎄', description: 'Winter Pine Garland, Ambient Snowfall, Santa & Silver Holiday Magic' },
+  { id: 'christmas', name: 'Merry Christmas Holiday', icon: '🎄', description: 'Winter Pine Garland, Ambient Snowfall, Santa & Silver Holiday Magic' },
   { id: 'navratri', name: 'Navratri Garba Mahotsav', icon: '🥁', description: 'Dandiya Sticks, Marigold Toran Garland & Garba Dancers' },
-  { id: 'none', name: 'Standard Store Theme', icon: '✨', description: 'Classic Silver House Elegance' }
+  { id: 'none', name: 'Standard Store Theme', icon: '💎', description: 'Classic Silver House Elegance' }
 ];
 
 export const getActiveFestivalTheme = (activeFestivalName) => {
   try {
     const saved = localStorage.getItem('silverhouse_active_festival_theme');
-    if (saved && (saved === 'ganeshchaturthi' || saved === 'karwachauth' || saved === 'christmas' || saved === 'diwali' || saved === 'none')) {
+    if (saved && (saved === 'newyear' || saved === 'ganeshchaturthi' || saved === 'karwachauth' || saved === 'christmas' || saved === 'diwali' || saved === 'none')) {
       return saved;
     }
-    // Default to active Ganesh Chaturthi festival mode
-    localStorage.setItem('silverhouse_active_festival_theme', 'ganeshchaturthi');
-    return 'ganeshchaturthi';
+    // Default to active New Year celebration mode
+    localStorage.setItem('silverhouse_active_festival_theme', 'newyear');
+    return 'newyear';
   } catch {
     // Fallback
   }
-  return 'ganeshchaturthi';
+  return 'newyear';
 };
 
 export const setFestivalTheme = (themeId) => {
@@ -59,6 +61,10 @@ export default function FestivalDecorOverlay({ activeFestivalName, onNavigateToF
   return (
     <>
       {/* RENDER ACTIVE FESTIVAL COMPONENT SUITE */}
+      {activeTheme === 'newyear' && (
+        <NewYearFestivalDecor onNavigateToFestival={onNavigateToFestival} />
+      )}
+
       {activeTheme === 'ganeshchaturthi' && (
         <GaneshChaturthiDecor onNavigateToFestival={onNavigateToFestival} />
       )}
