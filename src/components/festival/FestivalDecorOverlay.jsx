@@ -5,11 +5,13 @@ import ChristmasFestivalDecor from './ChristmasFestivalDecor';
 import KarwaChauthFestivalDecor from './KarwaChauthFestivalDecor';
 import GaneshChaturthiDecor from './GaneshChaturthiDecor';
 import NewYearFestivalDecor from './NewYearFestivalDecor';
+import ValentineFestivalDecor from './ValentineFestivalDecor';
 
 /**
  * Available Festival Themes
  */
 export const FESTIVAL_THEMES = [
+  { id: 'valentines', name: "Valentine's Day Romance", icon: '💖', description: "Love Teddy Bear, Velvet Ring Box, Blooming Roses, Floating Hearts & Love Gifts" },
   { id: 'newyear', name: 'Happy New Year 2027', icon: '✨', description: 'Midnight Clock, Clinking Flutes, Party Poppers, Confetti & Silver Keepsakes' },
   { id: 'ganeshchaturthi', name: 'Ganesh Chaturthi Mahotsav', icon: '🐘', description: 'Ganpati Bappa, Golden Modak & Mushak, Red Hibiscus Toran & Silver Murtis' },
   { id: 'karwachauth', name: 'Shubh Karwa Chauth', icon: '🌙', description: 'Chhalni & Moon, Sacred Silver Karwa, Red Rose Toran & Saubhagya Keepsakes' },
@@ -22,16 +24,16 @@ export const FESTIVAL_THEMES = [
 export const getActiveFestivalTheme = (activeFestivalName) => {
   try {
     const saved = localStorage.getItem('silverhouse_active_festival_theme');
-    if (saved && (saved === 'newyear' || saved === 'ganeshchaturthi' || saved === 'karwachauth' || saved === 'christmas' || saved === 'diwali' || saved === 'none')) {
+    if (saved && (saved === 'valentines' || saved === 'newyear' || saved === 'ganeshchaturthi' || saved === 'karwachauth' || saved === 'christmas' || saved === 'diwali' || saved === 'navratri' || saved === 'none')) {
       return saved;
     }
-    // Default to active New Year celebration mode
-    localStorage.setItem('silverhouse_active_festival_theme', 'newyear');
-    return 'newyear';
+    // Default to active Valentine's Day Romance mode
+    localStorage.setItem('silverhouse_active_festival_theme', 'valentines');
+    return 'valentines';
   } catch {
     // Fallback
   }
-  return 'newyear';
+  return 'valentines';
 };
 
 export const setFestivalTheme = (themeId) => {
@@ -61,6 +63,10 @@ export default function FestivalDecorOverlay({ activeFestivalName, onNavigateToF
   return (
     <>
       {/* RENDER ACTIVE FESTIVAL COMPONENT SUITE */}
+      {activeTheme === 'valentines' && (
+        <ValentineFestivalDecor onNavigateToFestival={onNavigateToFestival} />
+      )}
+
       {activeTheme === 'newyear' && (
         <NewYearFestivalDecor onNavigateToFestival={onNavigateToFestival} />
       )}
