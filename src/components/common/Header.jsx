@@ -5,11 +5,14 @@ import { useAuth } from '../../context/AuthContext';
 import { fetchUserAddresses } from '../../services/api';
 import {
   Search, Heart, ShoppingBag, User, Menu, Sparkles, ChevronDown,
-  LogOut, Building2, Store, MapPin, Check, Plus, Home, X, ArrowLeft, Package, Crown
+  LogOut, Building2, Store, MapPin, Check, Plus, Home, X, ArrowLeft, Package, Crown,
+  Palette
 } from 'lucide-react';
 import StoresModal from './StoresModal';
 import ThemeSwitcher from './ThemeSwitcher';
 import { getAdminUrl } from '../../utils/adminUrl';
+import { useTheme } from '../../context/ThemeContext';
+import { FESTIVAL_THEMES, getActiveFestivalTheme, setFestivalTheme } from '../festival/FestivalDecorOverlay';
 
 export default function Header({
   cartCount = 0,
@@ -44,6 +47,22 @@ export default function Header({
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Color Aesthetic & Festival Theme Controls inside User Account
+  const { theme, setTheme, themes, currentThemeObj } = useTheme();
+  const [activeFestivalTheme, setActiveFestivalTheme] = useState(() => getActiveFestivalTheme());
+
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      if (e.detail?.themeId) {
+        setActiveFestivalTheme(e.detail.themeId);
+      } else {
+        setActiveFestivalTheme(getActiveFestivalTheme());
+      }
+    };
+    window.addEventListener('silverhouse_festival_theme_updated', handleUpdate);
+    return () => window.removeEventListener('silverhouse_festival_theme_updated', handleUpdate);
+  }, []);
 
   // Refs for click-outside dismissal
   const userMenuRef = useRef(null);
@@ -482,13 +501,13 @@ export default function Header({
               <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--th-accent)]" />
             </button>
 
-            {/* User Account & Profile Dropdown */}
+            {/* User Account & Profile Dropdown with Integrated Theme Controls */}
             <div ref={userMenuRef} className="relative shrink-0 hidden sm:block">
               {isAuthenticated ? (
                 <button
                   onClick={toggleUserMenu}
                   className="flex items-center space-x-1.5 p-1 rounded-full hover:bg-[var(--th-card)] transition-colors focus:outline-hidden cursor-pointer"
-                  title={user.fullName || 'User Profile'}
+                  title={user.fullName || 'User Profile & Theme Settings'}
                 >
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--th-primary)] text-white font-bold text-xs flex items-center justify-center shadow-xs border border-[var(--th-accent)]/50 shrink-0">
                     {user.fullName ? user.fullName.trim().split(/\s+/).filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'SH'}
@@ -498,107 +517,260 @@ export default function Header({
                       ADMIN
                     </span>
                   )}
+                  <ChevronDown className={`w-3 h-3 text-[var(--th-text-muted)] group-hover:text-[var(--th-primary)] transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
               ) : (
                 <button
-                  onClick={() => navigate('/login')}
+                  onClick={toggleUserMenu}
                   className="p-1.5 sm:px-2.5 sm:py-1.5 text-[var(--th-text-main)] hover:bg-[var(--th-card)] rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer group border border-transparent hover:border-[var(--th-border)] shrink-0"
-                  title="Sign In / Register"
+                  title="Sign In, Account & Theme Settings"
                 >
                   <User className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--th-accent)] group-hover:scale-110 transition-transform shrink-0" />
                   <span className="hidden lg:inline-block text-xs font-bold uppercase tracking-wider text-[var(--th-text-main)] whitespace-nowrap">
                     Sign In
                   </span>
+                  <ChevronDown className={`w-3 h-3 text-[var(--th-text-muted)] group-hover:text-[var(--th-primary)] transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
               )}
 
-              {/* User Dropdown Menu */}
-              {isAuthenticated && isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-[var(--th-card)] rounded-2xl shadow-2xl border border-[var(--th-border)] p-4 z-50 animate-in fade-in slide-in-from-top-2 text-left">
-                  <div className="pb-3 border-b border-[var(--th-border)]/60 mb-3">
+              {/* User Dropdown Menu with Theme & Festival Preferences */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-[var(--th-card)] rounded-2xl shadow-2xl border-2 border-[var(--th-border)] p-4 z-50 animate-in fade-in slide-in-from-top-2 text-left max-h-[85vh] overflow-y-auto">
+                  {/* Account Header */}
+                  {isAuthenticated ? (
+                    <div className="pb-3 border-b border-[var(--th-border)]/60 mb-2.5">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold text-sm text-[var(--th-text-main)] truncate">{user.fullName || 'Valued Patron'}</h4>
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${isAdmin ? 'bg-[var(--th-accent)] text-white' : 'bg-[var(--th-surface-alt)] text-[var(--th-text-main)]'}`}>
+                          {user.role || 'CUSTOMER'}
+                        </span>
+                      </div>
+                      {user.phone ? (
+                        <p className="text-xs font-mono text-[var(--th-text-muted)] truncate mt-0.5 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                          {user.phone}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-[var(--th-text-muted)] truncate mt-0.5">{user.email}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="pb-3 border-b border-[var(--th-border)]/60 mb-2.5">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-serif font-bold text-[var(--th-text-main)]">Welcome to Silver House</span>
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--th-surface-alt)] text-[var(--th-text-muted)]">Guest</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          navigate('/login');
+                        }}
+                        className="w-full py-2 px-3 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white text-xs font-bold uppercase tracking-wider shadow-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+                      >
+                        <User className="w-3.5 h-3.5 text-white" />
+                        <span>Sign In / Register</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Navigation Links */}
+                  <div className="space-y-0.5 mb-2.5">
+                    {isAuthenticated ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            navigate('/login');
+                          }}
+                          className="w-full text-left px-2.5 py-1.5 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
+                        >
+                          <User className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                          <span>My Account Profile</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            navigate('/orders');
+                          }}
+                          className="w-full text-left px-2.5 py-1.5 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
+                        >
+                          <Package className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                          <span>My Orders</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            navigate('/customize');
+                          }}
+                          className="w-full text-left px-2.5 py-1.5 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                          <span>Custom & Bespoke Orders</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            navigate('/addresses');
+                          }}
+                          className="w-full text-left px-2.5 py-1.5 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                          <span>Saved Addresses</span>
+                        </button>
+
+                        {isAdmin && (
+                          <a
+                            href={getAdminUrl()}
+                            className="w-full text-left px-2.5 py-1.5 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors"
+                          >
+                            <Building2 className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                            <span>Open Admin Studio</span>
+                          </a>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            navigate('/login?redirect=/orders');
+                          }}
+                          className="w-full text-left px-2.5 py-1.5 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
+                        >
+                          <Package className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                          <span>Track Your Orders</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            navigate('/customize');
+                          }}
+                          className="w-full text-left px-2.5 py-1.5 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                          <span>Custom & Bespoke Orders</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Theme & Festival Mode Section */}
+                  <div className="pt-2.5 border-t border-[var(--th-border)]/80 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-sm text-[var(--th-text-main)] truncate">{user.fullName || 'Valued Patron'}</h4>
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${isAdmin ? 'bg-[var(--th-accent)] text-white' : 'bg-[var(--th-surface-alt)] text-[var(--th-text-main)]'}`}>
-                        {user.role || 'CUSTOMER'}
+                      <div className="flex items-center space-x-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                        <span className="font-serif font-bold text-xs text-[var(--th-text-main)] tracking-wide">
+                          Theme &amp; Festival
+                        </span>
+                      </div>
+                      <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-[var(--th-primary-light)] text-[var(--th-primary)] border border-[var(--th-primary)]/20">
+                        {activeFestivalTheme !== 'none' ? 'Festival Active' : 'Store Classic'}
                       </span>
                     </div>
-                    {user.phone ? (
-                      <p className="text-xs font-mono text-[var(--th-text-muted)] truncate mt-0.5 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                        {user.phone}
+
+                    {/* Festival Theme Selector */}
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider">
+                        Festival Mode
                       </p>
-                    ) : (
-                      <p className="text-xs text-[var(--th-text-muted)] truncate mt-0.5">{user.email}</p>
-                    )}
+                      <div className="grid grid-cols-1 gap-1">
+                        {FESTIVAL_THEMES.map((f) => {
+                          const isCurrent = activeFestivalTheme === f.id;
+                          return (
+                            <button
+                              key={f.id}
+                              onClick={() => setFestivalTheme(f.id)}
+                              className={`w-full flex items-center justify-between p-2 rounded-xl text-left border transition-all cursor-pointer ${
+                                isCurrent
+                                  ? 'border-[var(--th-primary)] bg-[var(--th-primary)]/10 text-[var(--th-primary)] font-bold shadow-2xs'
+                                  : 'border-[var(--th-border)] hover:bg-[var(--th-surface-alt)] text-[var(--th-text-main)]'
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2 truncate">
+                                <span className="text-sm shrink-0">{f.icon}</span>
+                                <div className="truncate">
+                                  <p className="text-xs font-semibold leading-tight truncate">{f.name}</p>
+                                  <p className="text-[9.5px] text-[var(--th-text-muted)] font-normal truncate">
+                                    {f.id === 'navratri' ? 'Garba Dancers & Garland Decor' : f.description}
+                                  </p>
+                                </div>
+                              </div>
+                              {isCurrent && <Check className="w-3.5 h-3.5 text-[var(--th-primary)] shrink-0 ml-1.5" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Color Aesthetic Palette Selector */}
+                    <div className="space-y-1 pt-2 border-t border-[var(--th-border)]/50">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider flex items-center gap-1">
+                          <Palette className="w-3 h-3 text-[var(--th-accent)]" />
+                          <span>Color Palette</span>
+                        </p>
+                        <span className="text-[10px] font-semibold text-[var(--th-text-main)]">
+                          {currentThemeObj.name}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {themes.map((t) => {
+                          const isSelected = t.id === theme;
+                          return (
+                            <button
+                              key={t.id}
+                              onClick={() => setTheme(t.id)}
+                              className={`p-1.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                                isSelected
+                                  ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] ring-1 ring-[var(--th-primary)] font-bold'
+                                  : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
+                              }`}
+                              title={t.description}
+                            >
+                              <div className="flex items-center space-x-1.5 truncate">
+                                <div className="flex items-center -space-x-1 shrink-0">
+                                  <span
+                                    className="w-3 h-3 rounded-full border border-white"
+                                    style={{ backgroundColor: t.preview.primary }}
+                                  />
+                                  <span
+                                    className="w-3 h-3 rounded-full border border-white"
+                                    style={{ backgroundColor: t.preview.accent }}
+                                  />
+                                </div>
+                                <span className="text-[10.5px] truncate text-[var(--th-text-main)]">
+                                  {t.name.split(' ')[0]}
+                                </span>
+                              </div>
+                              {isSelected && <Check className="w-3 h-3 text-[var(--th-primary)] shrink-0 ml-1" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        navigate('/login');
-                      }}
-                      className="w-full text-left px-3 py-2 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
-                    >
-                      <User className="w-4 h-4 text-[var(--th-accent)]" />
-                      <span>My Account Profile</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        navigate('/orders');
-                      }}
-                      className="w-full text-left px-3 py-2 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
-                    >
-                      <Package className="w-4 h-4 text-[var(--th-accent)]" />
-                      <span>My Orders</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        navigate('/customize');
-                      }}
-                      className="w-full text-left px-3 py-2 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
-                    >
-                      <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
-                      <span>Custom & Bespoke Orders</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        navigate('/addresses');
-                      }}
-                      className="w-full text-left px-3 py-2 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
-                    >
-                      <MapPin className="w-4 h-4 text-[var(--th-accent)]" />
-                      <span>Saved Addresses</span>
-                    </button>
-
-                    {isAdmin && (
-                      <a
-                        href={getAdminUrl()}
-                        className="w-full text-left px-3 py-2 text-xs font-bold text-[var(--th-text-main)] hover:bg-[var(--th-surface-alt)] rounded-xl flex items-center space-x-2 transition-colors"
+                  {/* Log Out (Authenticated Only) */}
+                  {isAuthenticated && (
+                    <div className="pt-2 mt-2.5 border-t border-[var(--th-border)]/60">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setIsUserMenuOpen(false);
+                          navigate('/login');
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
                       >
-                        <Building2 className="w-4 h-4 text-[var(--th-accent)]" />
-                        <span>Open Admin Studio</span>
-                      </a>
-                    )}
-
-                    <button
-                      onClick={() => {
-                        logout();
-                        setIsUserMenuOpen(false);
-                        navigate('/login');
-                      }}
-                      className="w-full text-left px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Log Out</span>
-                    </button>
-                  </div>
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Log Out</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -129,7 +129,7 @@ export default function ThemeSwitcher({ variant = 'floating' }) {
 
   // Variant: Floating Widget (fixed at bottom right)
   return (
-    <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 z-30" ref={dropdownRef}>
+    <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-6 z-30" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-2 p-2.5 sm:px-3.5 sm:py-2 rounded-full bg-[var(--th-primary)] text-[var(--th-btn-text)] shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 border-2 border-[var(--th-accent)] cursor-pointer group shrink-0"

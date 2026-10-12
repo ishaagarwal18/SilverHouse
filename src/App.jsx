@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AnnouncementBar from './components/common/AnnouncementBar';
 import Header from './components/common/Header';
+import FestivalDecorOverlay, { getActiveFestivalTheme } from './components/festival/FestivalDecorOverlay';
 import MobileMenu from './components/common/MobileMenu';
 import SearchModal from './components/common/SearchModal';
 import QuickViewModal from './components/common/QuickViewModal';
@@ -51,6 +52,23 @@ export default function App() {
   const [festivalCategories, setFestivalCategories] = useState([]);
   const [storeParams, setStoreParams] = useState(null);
   const [companyDetails, setCompanyDetails] = useState(DEFAULT_COMPANY_DETAILS);
+
+  // Active Festival Theme Tracker (e.g. 'navratri', 'diwali', or 'none')
+  const [activeFestivalTheme, setActiveFestivalTheme] = useState(() => 
+    getActiveFestivalTheme(festivals?.find(f => f.is_active || f.name?.toLowerCase().includes('navratri'))?.name)
+  );
+
+  useEffect(() => {
+    const handleFestivalThemeUpdate = (e) => {
+      if (e.detail?.themeId) {
+        setActiveFestivalTheme(e.detail.themeId);
+      } else {
+        setActiveFestivalTheme(getActiveFestivalTheme(festivals?.find(f => f.is_active || f.name?.toLowerCase().includes('navratri'))?.name));
+      }
+    };
+    window.addEventListener('silverhouse_festival_theme_updated', handleFestivalThemeUpdate);
+    return () => window.removeEventListener('silverhouse_festival_theme_updated', handleFestivalThemeUpdate);
+  }, [festivals]);
 
   const handleOpenPdf = (type) => {
     let path = '/purity-guide';
@@ -623,6 +641,18 @@ export default function App() {
           />
         )}
 
+        {/* Active Festival Decor Theme Suite (Navratri, Diwali, etc.) */}
+        {!isDocumentPage && (
+          <FestivalDecorOverlay 
+            activeFestivalName={festivals?.find(f => f.is_active || f.name?.toLowerCase().includes('navratri'))?.name}
+            onNavigateToFestival={() => {
+              const navratriCat = categories.find(c => c.name?.toLowerCase().includes('navratri') || c.slug?.includes('navratri'));
+              if (navratriCat) handleNavigateCategory(navratriCat);
+              else handleNavigateHome();
+            }}
+          />
+        )}
+
         {/* Sticky Header with MegaMenu */}
         {!isDocumentPage && (
           <Header
@@ -762,7 +792,10 @@ export default function App() {
         onOpenPdf={handleOpenPdf}
       />
 
-      <ThemeSwitcher variant="floating" />
+      {/* Floating ThemeSwitcher only visible when no festival theme is active (during festival theme, controls reside inside user account) */}
+      {activeFestivalTheme === 'none' && (
+        <ThemeSwitcher variant="floating" />
+      )}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );

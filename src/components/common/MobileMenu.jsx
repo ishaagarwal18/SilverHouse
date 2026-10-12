@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { CATEGORIES } from '../../data/products';
-import { X, ChevronRight, ChevronDown, Sparkles, Phone, ShieldCheck, User, FileText, ExternalLink, Mail } from 'lucide-react';
+import { X, ChevronRight, ChevronDown, Sparkles, Phone, ShieldCheck, User, FileText, ExternalLink, Mail, Palette, Check } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
+import { FESTIVAL_THEMES, getActiveFestivalTheme, setFestivalTheme } from '../festival/FestivalDecorOverlay';
 
 export default function MobileMenu({
   isOpen,
@@ -21,6 +23,21 @@ export default function MobileMenu({
   const [expandedCat, setExpandedCat] = useState(null);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  const { theme, setTheme, themes, currentThemeObj } = useTheme();
+  const [activeFestivalTheme, setActiveFestivalTheme] = useState(() => getActiveFestivalTheme());
+
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      if (e.detail?.themeId) {
+        setActiveFestivalTheme(e.detail.themeId);
+      } else {
+        setActiveFestivalTheme(getActiveFestivalTheme());
+      }
+    };
+    window.addEventListener('silverhouse_festival_theme_updated', handleUpdate);
+    return () => window.removeEventListener('silverhouse_festival_theme_updated', handleUpdate);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -85,6 +102,97 @@ export default function MobileMenu({
                 <span>Sign In / Register</span>
               </button>
             )}
+          </div>
+
+          {/* Theme & Festival Mode Section in Mobile Menu */}
+          <div className="p-3 bg-white border-b border-silver-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span className="font-serif font-bold text-xs text-[#1A1A1A]">
+                  Theme &amp; Festival Mode
+                </span>
+              </div>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                {activeFestivalTheme !== 'none' ? 'Festival Active' : 'Store Classic'}
+              </span>
+            </div>
+
+            {/* Festival Mode Selector */}
+            <div className="grid grid-cols-1 gap-1">
+              {FESTIVAL_THEMES.map((f) => {
+                const isCurrent = activeFestivalTheme === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setFestivalTheme(f.id)}
+                    className={`w-full flex items-center justify-between p-2 rounded-xl text-left border transition-all cursor-pointer ${
+                      isCurrent
+                        ? 'border-[#D4AF37] bg-amber-50/70 text-[#1A1A1A] font-bold shadow-2xs'
+                        : 'border-silver-200 hover:bg-silver-50 text-silver-800'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2 truncate">
+                      <span className="text-sm shrink-0">{f.icon}</span>
+                      <div className="truncate">
+                        <p className="text-xs font-semibold leading-tight truncate">{f.name}</p>
+                        <p className="text-[9px] text-silver-500 font-normal truncate">
+                          {f.id === 'navratri' ? 'Garba Dancers & Garland' : f.description}
+                        </p>
+                      </div>
+                    </div>
+                    {isCurrent && <Check className="w-3.5 h-3.5 text-[#D4AF37] shrink-0 ml-1.5" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Color Palette Selector */}
+            <div className="pt-2 border-t border-silver-100">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] font-bold text-silver-600 uppercase tracking-wider flex items-center gap-1">
+                  <Palette className="w-3 h-3 text-[#D4AF37]" />
+                  <span>Color Palette</span>
+                </p>
+                <span className="text-[10px] font-semibold text-[#1A1A1A]">
+                  {currentThemeObj.name}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-1.5">
+                {themes.map((t) => {
+                  const isSelected = t.id === theme;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setTheme(t.id)}
+                      className={`p-1.5 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
+                        isSelected
+                          ? 'border-[#D4AF37] bg-amber-50/50 ring-1 ring-[#D4AF37] font-bold'
+                          : 'border-silver-200 bg-white hover:border-[#D4AF37]/50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-1.5 truncate">
+                        <div className="flex items-center -space-x-1 shrink-0">
+                          <span
+                            className="w-3 h-3 rounded-full border border-white"
+                            style={{ backgroundColor: t.preview.primary }}
+                          />
+                          <span
+                            className="w-3 h-3 rounded-full border border-white"
+                            style={{ backgroundColor: t.preview.accent }}
+                          />
+                        </div>
+                        <span className="text-[10.5px] truncate text-[#1A1A1A]">
+                          {t.name.split(' ')[0]}
+                        </span>
+                      </div>
+                      {isSelected && <Check className="w-3 h-3 text-[#D4AF37] shrink-0 ml-1" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Quick Highlight Banner */}
