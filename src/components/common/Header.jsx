@@ -12,7 +12,7 @@ import StoresModal from './StoresModal';
 import ThemeSwitcher from './ThemeSwitcher';
 import { getAdminUrl } from '../../utils/adminUrl';
 import { useTheme } from '../../context/ThemeContext';
-import { FESTIVAL_THEMES, getActiveFestivalTheme, setFestivalTheme } from '../festival/FestivalDecorOverlay';
+import { getActiveFestivalTheme } from '../festival/FestivalDecorOverlay';
 
 export default function Header({
   cartCount = 0,
@@ -658,102 +658,58 @@ export default function Header({
                     )}
                   </div>
 
-                  {/* Theme & Festival Mode Section */}
+                  {/* Color Palette Section — only shown when a festival theme is active */}
+                  {activeFestivalTheme !== 'none' && (
                   <div className="pt-2.5 border-t border-[var(--th-border)]/80 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                        <Palette className="w-3.5 h-3.5 text-[var(--th-accent)]" />
                         <span className="font-serif font-bold text-xs text-[var(--th-text-main)] tracking-wide">
-                          Theme &amp; Festival
+                          Color Palette
                         </span>
                       </div>
-                      <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-[var(--th-primary-light)] text-[var(--th-primary)] border border-[var(--th-primary)]/20">
-                        {activeFestivalTheme !== 'none' ? 'Festival Active' : 'Store Classic'}
+                      <span className="text-[9.5px] font-semibold text-[var(--th-text-muted)]">
+                        {currentThemeObj.name}
                       </span>
                     </div>
 
-                    {/* Festival Theme Selector */}
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider">
-                        Festival Mode
-                      </p>
-                      <div className="grid grid-cols-1 gap-1">
-                        {FESTIVAL_THEMES.map((f) => {
-                          const isCurrent = activeFestivalTheme === f.id;
-                          return (
-                            <button
-                              key={f.id}
-                              onClick={() => setFestivalTheme(f.id)}
-                              className={`w-full flex items-center justify-between p-2 rounded-xl text-left border transition-all cursor-pointer ${
-                                isCurrent
-                                  ? 'border-[var(--th-primary)] bg-[var(--th-primary)]/10 text-[var(--th-primary)] font-bold shadow-2xs'
-                                  : 'border-[var(--th-border)] hover:bg-[var(--th-surface-alt)] text-[var(--th-text-main)]'
-                              }`}
-                            >
-                              <div className="flex items-center space-x-2 truncate">
-                                <span className="text-sm shrink-0">{f.icon}</span>
-                                <div className="truncate">
-                                  <p className="text-xs font-semibold leading-tight truncate">{f.name}</p>
-                                  <p className="text-[9.5px] text-[var(--th-text-muted)] font-normal truncate">
-                                    {f.description}
-                                  </p>
-                                </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {themes.map((t) => {
+                        const isSelected = t.id === theme;
+                        return (
+                          <button
+                            key={t.id}
+                            onClick={() => setTheme(t.id)}
+                            className={`p-1.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                              isSelected
+                                ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] ring-1 ring-[var(--th-primary)] font-bold'
+                                : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
+                            }`}
+                            title={t.description}
+                          >
+                            <div className="flex items-center space-x-1.5 truncate">
+                              <div className="flex items-center -space-x-1 shrink-0">
+                                <span
+                                  className="w-3 h-3 rounded-full border border-white"
+                                  style={{ backgroundColor: t.preview.primary }}
+                                />
+                                <span
+                                  className="w-3 h-3 rounded-full border border-white"
+                                  style={{ backgroundColor: t.preview.accent }}
+                                />
                               </div>
-                              {isCurrent && <Check className="w-3.5 h-3.5 text-[var(--th-primary)] shrink-0 ml-1.5" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Color Aesthetic Palette Selector */}
-                    <div className="space-y-1 pt-2 border-t border-[var(--th-border)]/50">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider flex items-center gap-1">
-                          <Palette className="w-3 h-3 text-[var(--th-accent)]" />
-                          <span>Color Palette</span>
-                        </p>
-                        <span className="text-[10px] font-semibold text-[var(--th-text-main)]">
-                          {currentThemeObj.name}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {themes.map((t) => {
-                          const isSelected = t.id === theme;
-                          return (
-                            <button
-                              key={t.id}
-                              onClick={() => setTheme(t.id)}
-                              className={`p-1.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                                isSelected
-                                  ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] ring-1 ring-[var(--th-primary)] font-bold'
-                                  : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
-                              }`}
-                              title={t.description}
-                            >
-                              <div className="flex items-center space-x-1.5 truncate">
-                                <div className="flex items-center -space-x-1 shrink-0">
-                                  <span
-                                    className="w-3 h-3 rounded-full border border-white"
-                                    style={{ backgroundColor: t.preview.primary }}
-                                  />
-                                  <span
-                                    className="w-3 h-3 rounded-full border border-white"
-                                    style={{ backgroundColor: t.preview.accent }}
-                                  />
-                                </div>
-                                <span className="text-[10.5px] truncate text-[var(--th-text-main)]">
-                                  {t.name.split(' ')[0]}
-                                </span>
-                              </div>
-                              {isSelected && <Check className="w-3 h-3 text-[var(--th-primary)] shrink-0 ml-1" />}
-                            </button>
-                          );
-                        })}
-                      </div>
+                              <span className="text-[10.5px] truncate text-[var(--th-text-main)]">
+                                {t.name.split(' ')[0]}
+                              </span>
+                            </div>
+                            {isSelected && <Check className="w-3 h-3 text-[var(--th-primary)] shrink-0 ml-1" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
+                  )}
+
 
                   {/* Log Out (Authenticated Only) */}
                   {isAuthenticated && (

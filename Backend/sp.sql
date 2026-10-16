@@ -565,14 +565,14 @@ BEGIN
     ELSE IF @Opr IN ('ADD', 'INSERT')
     BEGIN
         INSERT INTO dbo.festival (
-            id, category_id, name, shortName, description, primary_website_category, start_date, end_date
+            id, name, shortName, description, timing_2026, primary_website_category, start_date, end_date
         )
         VALUES (
             COALESCE(JSON_VALUE(@JSONstr, '$.table_values.id'), @Condition, 'FEST-' + CAST(ABS(CHECKSUM(NEWID())) % 10000 AS NVARCHAR(10))),
-            TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.category_id') AS INT),
             JSON_VALUE(@JSONstr, '$.table_values.name'),
             JSON_VALUE(@JSONstr, '$.table_values.shortName'),
             JSON_VALUE(@JSONstr, '$.table_values.description'),
+            JSON_VALUE(@JSONstr, '$.table_values.timing_2026'),
             JSON_VALUE(@JSONstr, '$.table_values.primary_website_category'),
             TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.start_date') AS DATE),
             TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.end_date') AS DATE)
@@ -586,7 +586,7 @@ BEGIN
             name = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.name'), name),
             shortName = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.shortName'), shortName),
             description = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.description'), description),
-            category_id = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.category_id') AS INT), category_id),
+            timing_2026 = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.timing_2026'), timing_2026),
             primary_website_category = COALESCE(JSON_VALUE(@JSONstr, '$.table_values.primary_website_category'), primary_website_category),
             start_date = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.start_date') AS DATE), start_date),
             end_date = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.end_date') AS DATE), end_date)

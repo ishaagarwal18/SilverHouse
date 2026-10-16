@@ -72,11 +72,10 @@ export default function ThemeSwitcher({ variant = 'floating' }) {
                       setTheme(t.id);
                       setIsOpen(false);
                     }}
-                    className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      isActive
-                        ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] shadow-xs ring-1 ring-[var(--th-primary)]'
-                        : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
-                    }`}
+                    className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${isActive
+                      ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] shadow-xs ring-1 ring-[var(--th-primary)]'
+                      : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
+                      }`}
                   >
                     <div className="flex items-center space-x-3">
                       {/* Swatch Pill */}
@@ -97,19 +96,9 @@ export default function ThemeSwitcher({ variant = 'floating' }) {
                           title="Accent"
                         />
                       </div>
-                      <div>
-                        <div className="flex items-center space-x-1.5">
-                          <span className="font-serif font-bold text-xs text-[var(--th-text-main)]">
-                            {t.name}
-                          </span>
-                          <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-black/5 text-[var(--th-text-muted)] font-bold">
-                            {t.vibe}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-[var(--th-text-muted)] line-clamp-1 mt-0.5">
-                          {t.description}
-                        </p>
-                      </div>
+                      <span className="font-serif font-bold text-xs text-[var(--th-text-main)]">
+                        {t.name}
+                      </span>
                     </div>
 
                     {isActive && (
@@ -153,7 +142,7 @@ export default function ThemeSwitcher({ variant = 'floating' }) {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-12 right-0 w-[calc(100vw-1.5rem)] sm:w-84 md:w-96 max-w-sm rounded-2xl p-4 bg-[var(--th-card)] border-2 border-[var(--th-border)] shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2">
+        <div className="absolute bottom-12 right-0 w-[calc(100vw-1.5rem)] sm:w-60 md:w-80 max-w-sm rounded-xl p-2 bg-[var(--th-card)] border-2 border-[var(--th-border)] shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--th-border)]">
             <div className="flex items-center space-x-2 text-[var(--th-text-main)]">
               <Sparkles className="w-4 h-4 text-[var(--th-accent)]" />
@@ -177,11 +166,10 @@ export default function ThemeSwitcher({ variant = 'floating' }) {
                     setTheme(t.id);
                     setIsOpen(false);
                   }}
-                  className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                    isActive
-                      ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] shadow-xs ring-1 ring-[var(--th-primary)]'
-                      : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
-                  }`}
+                  className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${isActive
+                    ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] shadow-xs ring-1 ring-[var(--th-primary)]'
+                    : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
+                    }`}
                 >
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center -space-x-1.5 p-1 rounded-lg bg-black/5 shrink-0">
@@ -198,19 +186,9 @@ export default function ThemeSwitcher({ variant = 'floating' }) {
                         style={{ backgroundColor: t.preview.accent }}
                       />
                     </div>
-                    <div>
-                      <div className="flex items-center space-x-1.5">
-                        <span className="font-serif font-bold text-xs text-[var(--th-text-main)]">
-                          {t.name}
-                        </span>
-                        <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-black/5 text-[var(--th-text-muted)] font-bold">
-                          {t.vibe}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-[var(--th-text-muted)] line-clamp-1 mt-0.5">
-                        {t.description}
-                      </p>
-                    </div>
+                    <span className="font-serif font-bold text-xs text-[var(--th-text-main)]">
+                      {t.name}
+                    </span>
                   </div>
 
                   {isActive && (

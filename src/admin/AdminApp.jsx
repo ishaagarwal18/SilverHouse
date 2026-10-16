@@ -11,6 +11,7 @@ import CustomOrdersPage from './pages/CustomOrdersPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import DataManagerPage from './pages/DataManagerPage';
 import EntityFormPage from './pages/EntityFormPage';
+import FestivalThemeManagerPage from './pages/FestivalThemeManagerPage';
 
 /**
  * SilverHouse Admin Studio, mounted at /admin/* (see src/main.jsx).
@@ -97,6 +98,7 @@ function AdminRoutes() {
         <Route path="catalog" element={<CatalogPage />} />
         <Route path="custom-orders" element={<CustomOrdersPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="festival-themes" element={<FestivalThemeManagerPage />} />
         <Route path="data/:entity" element={<DataManagerPage />} />
         <Route path="data/:entity/new" element={<EntityFormPage />} />
         <Route path="data/:entity/:id/edit" element={<EntityFormPage />} />

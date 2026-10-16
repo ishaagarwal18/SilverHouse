@@ -182,7 +182,7 @@ export const ENTITY_FORM_SCHEMAS = {
     { name: 'id', label: 'Festival ID', type: 'text', required: true, placeholder: 'e.g. FEST-1' },
     { name: 'name', label: 'Festival Name', type: 'text', required: true, placeholder: 'e.g. Makar Sankranti' },
     { name: 'shortName', label: 'Short Name', type: 'text', placeholder: 'e.g. Uttarayan' },
-    { name: 'category_id', label: 'Category Name', type: 'select' },
+    { name: 'timing_2026', label: 'Timing / Dates Info', type: 'text', placeholder: 'e.g. Oct 11 - 20' },
     { name: 'description', label: 'Description', type: 'textarea', fullWidth: true },
     { name: 'primary_website_category', label: 'Primary Website Category', type: 'text' },
     { name: 'start_date', label: 'Festival Start Date', type: 'date' },
@@ -210,7 +210,10 @@ export const ADMIN_NAV = [
   },
   {
     label: 'Festivals & Collections',
-    items: ['festival', 'festival_category'].map(entityNavItem)
+    items: [
+      { to: '/admin/festival-themes', label: 'Festival Theme Manager', icon: Sparkles },
+      ...['festival', 'festival_category'].map(entityNavItem)
+    ]
   },
   {
     label: 'Commerce & Users',
