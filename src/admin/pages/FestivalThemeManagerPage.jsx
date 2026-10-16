@@ -8,6 +8,7 @@ import {
 
 /** Badge colours per theme id */
 const THEME_ACCENTS = {
+  rakshabandhan: { bg: 'from-rose-600/25 via-red-600/15 to-amber-500/20', ring: 'ring-rose-400', dot: 'bg-rose-400', text: 'text-rose-300' },
   holi: { bg: 'from-pink-500/20 via-yellow-500/10 to-cyan-500/20', ring: 'ring-pink-400', dot: 'bg-pink-400', text: 'text-pink-300' },
   patriotic: { bg: 'from-orange-500/20 via-sky-500/10 to-emerald-500/20', ring: 'ring-orange-400', dot: 'bg-orange-400', text: 'text-orange-300' },
   uttarayan: { bg: 'from-sky-500/20 to-cyan-500/10', ring: 'ring-sky-400', dot: 'bg-sky-400', text: 'text-sky-300' },

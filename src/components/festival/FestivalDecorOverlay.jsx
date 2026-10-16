@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import RakshaBandhanFestivalDecor from './RakshaBandhanFestivalDecor';
 import NavratriFestivalDecor from './NavratriFestivalDecor';
 import DiwaliFestivalDecor from './DiwaliFestivalDecor';
 import ChristmasFestivalDecor from './ChristmasFestivalDecor';
@@ -14,6 +15,7 @@ import HoliFestivalDecor from './HoliFestivalDecor';
  * Available Festival Themes
  */
 export const FESTIVAL_THEMES = [
+  { id: 'rakshabandhan', name: 'Raksha Bandhan Mahotsav', icon: '🎀', description: 'Pure Silver Rakhis, Auspicious Moli, Pooja Thali, Kaju Katli & Sibling Keepsakes' },
   { id: 'holi', name: 'Holi Colors Mahotsav', icon: '🎨', description: 'Gulal Powders, Silver Pichkari, Gujiya Treats, Color Splashes & Shubh Keepsakes' },
   { id: 'patriotic', name: 'Republic & Independence Day', icon: '🇮🇳', description: 'Tiranga Flag, Amar Jawan Jyoti, Tricolor Toran & Patriotic Silver Keepsakes' },
   { id: 'uttarayan', name: 'Uttarayan & Makar Sankranti', icon: '🪁', description: 'Colorful Kites, Firki Spool, Radiant Surya Dev, Til-Gud & Silver Keepsakes' },
@@ -30,16 +32,16 @@ export const FESTIVAL_THEMES = [
 export const getActiveFestivalTheme = (activeFestivalName) => {
   try {
     const saved = localStorage.getItem('silverhouse_active_festival_theme');
-    if (saved && (saved === 'holi' || saved === 'patriotic' || saved === 'uttarayan' || saved === 'valentines' || saved === 'newyear' || saved === 'ganeshchaturthi' || saved === 'karwachauth' || saved === 'christmas' || saved === 'diwali' || saved === 'navratri' || saved === 'none')) {
+    if (saved && (saved === 'rakshabandhan' || saved === 'holi' || saved === 'patriotic' || saved === 'uttarayan' || saved === 'valentines' || saved === 'newyear' || saved === 'ganeshchaturthi' || saved === 'karwachauth' || saved === 'christmas' || saved === 'diwali' || saved === 'navratri' || saved === 'none')) {
       return saved;
     }
-    // Default to active Holi mode
-    localStorage.setItem('silverhouse_active_festival_theme', 'holi');
-    return 'holi';
+    // Default to active Raksha Bandhan mode
+    localStorage.setItem('silverhouse_active_festival_theme', 'rakshabandhan');
+    return 'rakshabandhan';
   } catch {
     // Fallback
   }
-  return 'holi';
+  return 'rakshabandhan';
 };
 
 export const setFestivalTheme = (themeId) => {
@@ -69,6 +71,10 @@ export default function FestivalDecorOverlay({ activeFestivalName, onNavigateToF
   return (
     <>
       {/* RENDER ACTIVE FESTIVAL COMPONENT SUITE */}
+      {activeTheme === 'rakshabandhan' && (
+        <RakshaBandhanFestivalDecor onNavigateToFestival={onNavigateToFestival} />
+      )}
+
       {activeTheme === 'holi' && (
         <HoliFestivalDecor onNavigateToFestival={onNavigateToFestival} />
       )}
