@@ -970,8 +970,46 @@ BEGIN
             RETURN;
         END
 
+        DECLARE @UserPhoneToDelete NVARCHAR(20);
+        SELECT @UserPhoneToDelete = phone FROM dbo.[user] WHERE user_id = @TargetUserId;
+
+        -- 1. Delete order items belonging to user's orders
+        DELETE oi
+        FROM dbo.order_item oi
+        INNER JOIN dbo.orders o ON oi.order_id = o.order_id
+        WHERE o.user_id = @TargetUserId;
+
+        -- 2. Delete user's orders
+        DELETE FROM dbo.orders WHERE user_id = @TargetUserId;
+
+        -- 3. Delete user's cart items and cart
+        DELETE ci
+        FROM dbo.cart_item ci
+        INNER JOIN dbo.cart c ON ci.cart_id = c.cart_id
+        WHERE c.user_id = @TargetUserId;
+
+        DELETE FROM dbo.cart WHERE user_id = @TargetUserId;
+
+        -- 4. Delete user's wishlist
+        DELETE FROM dbo.wishlist WHERE user_id = @TargetUserId;
+
+        -- 5. Delete user's reviews
+        DELETE FROM dbo.review WHERE userid = @TargetUserId;
+
+        -- 6. Delete user's recently viewed logs
+        DELETE FROM dbo.viewed WHERE userid = @TargetUserId;
+
+        -- 7. Delete user's addresses
+        DELETE FROM dbo.address WHERE user_id = @TargetUserId;
+
+        -- 8. Delete user's OTP verification logs
+        IF @UserPhoneToDelete IS NOT NULL AND @UserPhoneToDelete <> ''
+            DELETE FROM dbo.phone_otp WHERE phone = @UserPhoneToDelete;
+
+        -- 9. Finally delete the user record
         DELETE FROM dbo.[user] WHERE user_id = @TargetUserId;
-        SELECT @TargetUserId AS user_id, 'User deleted successfully' AS [Message];
+
+        SELECT @TargetUserId AS user_id, 'User and associated records deleted successfully' AS [Message];
         RETURN;
     END
 END;
@@ -1126,6 +1164,9 @@ BEGIN
             RETURN;
         END
 
+        -- Unlink referencing orders so existing orders remain intact without FK conflict
+        UPDATE dbo.orders SET address_id = NULL WHERE address_id = @TargetAddressId;
+
         DELETE FROM dbo.address WHERE address_id = @TargetAddressId;
         SELECT @TargetAddressId AS address_id, 'Address deleted successfully' AS [Message];
         RETURN;
@@ -1160,28 +1201,14 @@ BEGIN
             @TargetCartId = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.cart_id') AS INT), @TargetCartId);
     END
 
-    -- Resolve Cart ID
+    -- Resolve Cart ID (Lookup only; do not create empty cart records)
     DECLARE @CartId INT = @TargetCartId;
     IF @CartId IS NULL
     BEGIN
         IF @UserId IS NOT NULL AND @UserId > 0
-        BEGIN
-            SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE user_id = @UserId;
-            IF @CartId IS NULL
-            BEGIN
-                INSERT INTO dbo.cart (user_id, guest_token) VALUES (@UserId, NULL);
-                SET @CartId = SCOPE_IDENTITY();
-            END
-        END
+            SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE user_id = @UserId ORDER BY cart_id DESC;
         ELSE IF @GuestToken IS NOT NULL AND @GuestToken <> ''
-        BEGIN
-            SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE guest_token = @GuestToken;
-            IF @CartId IS NULL
-            BEGIN
-                INSERT INTO dbo.cart (user_id, guest_token) VALUES (NULL, @GuestToken);
-                SET @CartId = SCOPE_IDENTITY();
-            END
-        END
+            SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE guest_token = @GuestToken ORDER BY cart_id DESC;
     END
 
     -- SELECT (Computes amount, discount, and final_rate from dbo.product)
@@ -1189,7 +1216,8 @@ BEGIN
     BEGIN
         IF @CartId IS NULL
         BEGIN
-            SELECT 0 AS cart_id, 0 AS total_quantity, 0.00 AS cart_subtotal, 0.00 AS cart_total;
+            -- If user or guest has no cart yet, return empty result without creating a cart
+            SELECT 0 AS cart_id, 0 AS total_quantity, 0.00 AS cart_subtotal, 0.00 AS cart_total WHERE 1 = 0;
             RETURN;
         END
 
@@ -1223,16 +1251,36 @@ BEGIN
     -- ADD
     IF @Opr = 'ADD'
     BEGIN
-        IF @CartId IS NULL
-        BEGIN
-            RAISERROR('Validation Error: user_id or guest_token is required to identify the cart.', 16, 1);
-            RETURN;
-        END
-
         IF @ProductId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.product WHERE product_id = @ProductId)
         BEGIN
             RAISERROR('Validation Error: Valid product_id is required.', 16, 1);
             RETURN;
+        END
+
+        IF @Quantity <= 0
+        BEGIN
+            RAISERROR('Validation Error: Quantity must be greater than 0 to add to cart.', 16, 1);
+            RETURN;
+        END
+
+        -- Create cart record only when a valid product is actually being added
+        IF @CartId IS NULL
+        BEGIN
+            IF @UserId IS NOT NULL AND @UserId > 0
+            BEGIN
+                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (@UserId, NULL, DATEADD(minute, 330, SYSUTCDATETIME()));
+                SET @CartId = SCOPE_IDENTITY();
+            END
+            ELSE IF @GuestToken IS NOT NULL AND @GuestToken <> ''
+            BEGIN
+                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (NULL, @GuestToken, DATEADD(minute, 330, SYSUTCDATETIME()));
+                SET @CartId = SCOPE_IDENTITY();
+            END
+            ELSE
+            BEGIN
+                RAISERROR('Validation Error: user_id or guest_token is required to identify the cart.', 16, 1);
+                RETURN;
+            END
         END
 
         IF EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId)
@@ -1265,6 +1313,13 @@ BEGIN
         IF @Quantity <= 0
         BEGIN
             DELETE FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId;
+
+            -- If no items remain, remove the empty cart record
+            IF NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @CartId)
+            BEGIN
+                DELETE FROM dbo.cart WHERE cart_id = @CartId;
+            END
+
             SELECT @CartId AS cart_id, @ProductId AS product_id, 'Item removed from cart' AS [Message];
         END
         ELSE
@@ -1284,22 +1339,28 @@ BEGIN
     BEGIN
         IF @CartId IS NULL
         BEGIN
-            RAISERROR('Validation Error: cart_id is required.', 16, 1);
+            SELECT 0 AS cart_id, 'No cart to delete' AS [Message];
             RETURN;
         END
 
         IF @ProductId IS NOT NULL AND @ProductId > 0
         BEGIN
             DELETE FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId;
+
+            -- If no items remain, remove the empty cart record
+            IF NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @CartId)
+            BEGIN
+                DELETE FROM dbo.cart WHERE cart_id = @CartId;
+            END
+
             SELECT @CartId AS cart_id, @ProductId AS product_id, 'Item removed from cart' AS [Message];
         END
         ELSE
         BEGIN
             DELETE FROM dbo.cart_item WHERE cart_id = @CartId;
+            DELETE FROM dbo.cart WHERE cart_id = @CartId;
             SELECT @CartId AS cart_id, 'Cart cleared completely' AS [Message];
         END
-
-        UPDATE dbo.cart SET updated_at = DATEADD(minute, 330, SYSUTCDATETIME()) WHERE cart_id = @CartId;
         RETURN;
     END
 
@@ -1311,8 +1372,14 @@ BEGIN
             DECLARE @GuestCartId INT;
             SELECT TOP 1 @GuestCartId = cart_id FROM dbo.cart WHERE guest_token = @GuestToken;
 
-            IF @GuestCartId IS NOT NULL
+            IF @GuestCartId IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @GuestCartId)
             BEGIN
+                IF @CartId IS NULL
+                BEGIN
+                    INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (@UserId, NULL, DATEADD(minute, 330, SYSUTCDATETIME()));
+                    SET @CartId = SCOPE_IDENTITY();
+                END
+
                 MERGE dbo.cart_item AS target
                 USING (SELECT product_id, quantity FROM dbo.cart_item WHERE cart_id = @GuestCartId) AS source
                 ON (target.cart_id = @CartId AND target.product_id = source.product_id)
@@ -1322,6 +1389,10 @@ BEGIN
                     INSERT (cart_id, product_id, quantity)
                     VALUES (@CartId, source.product_id, source.quantity);
 
+                DELETE FROM dbo.cart WHERE cart_id = @GuestCartId;
+            END
+            ELSE IF @GuestCartId IS NOT NULL
+            BEGIN
                 DELETE FROM dbo.cart WHERE cart_id = @GuestCartId;
             END
 
@@ -1361,27 +1432,13 @@ BEGIN
             @Quantity         = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.quantity') AS INT), 1);
     END
 
-    -- Auto-resolve Cart ID if not provided
+    -- Auto-resolve Cart ID if not provided (Lookup only; do not create empty cart records)
     IF @CartId IS NULL
     BEGIN
         IF @UserId IS NOT NULL AND @UserId > 0
-        BEGIN
             SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE user_id = @UserId ORDER BY cart_id DESC;
-            IF @CartId IS NULL
-            BEGIN
-                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (@UserId, NULL, DATEADD(minute, 330, SYSUTCDATETIME()));
-                SET @CartId = SCOPE_IDENTITY();
-            END
-        END
         ELSE IF @GuestToken IS NOT NULL AND @GuestToken <> ''
-        BEGIN
             SELECT TOP 1 @CartId = cart_id FROM dbo.cart WHERE guest_token = @GuestToken ORDER BY cart_id DESC;
-            IF @CartId IS NULL
-            BEGIN
-                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (NULL, @GuestToken, DATEADD(minute, 330, SYSUTCDATETIME()));
-                SET @CartId = SCOPE_IDENTITY();
-            END
-        END
     END
 
     -- Safe product id fallback
@@ -1393,6 +1450,24 @@ BEGIN
     -- SELECT
     IF @Opr = 'SELECT'
     BEGIN
+        -- If querying for a user/guest who has no cart yet, return empty result without creating a cart
+        IF @TargetCartItemId IS NULL AND @CartId IS NULL AND (@UserId IS NOT NULL OR (@GuestToken IS NOT NULL AND @GuestToken <> ''))
+        BEGIN
+            SELECT 
+                CAST(NULL AS INT) AS cart_item_id,
+                CAST(NULL AS INT) AS cart_id,
+                CAST(NULL AS INT) AS user_id,
+                CAST(NULL AS NVARCHAR(150)) AS user_name,
+                CAST(NULL AS INT) AS product_id,
+                CAST(NULL AS NVARCHAR(255)) AS product_name,
+                CAST(NULL AS DECIMAL(18,2)) AS unit_price,
+                CAST(NULL AS INT) AS quantity,
+                CAST(NULL AS DECIMAL(18,2)) AS subtotal,
+                CAST(NULL AS DATETIME2) AS created_at
+            WHERE 1 = 0;
+            RETURN;
+        END
+
         SELECT 
             ci.cart_item_id,
             ci.cart_id,
@@ -1410,7 +1485,7 @@ BEGIN
         LEFT JOIN dbo.product p ON ci.product_id = p.product_id
         WHERE (@TargetCartItemId IS NOT NULL AND ci.cart_item_id = @TargetCartItemId)
            OR (@CartId IS NOT NULL AND ci.cart_id = @CartId)
-           OR (@TargetCartItemId IS NULL AND @CartId IS NULL)
+           OR (@TargetCartItemId IS NULL AND @CartId IS NULL AND @UserId IS NULL AND (@GuestToken IS NULL OR @GuestToken = ''))
         ORDER BY ci.cart_item_id DESC;
         RETURN;
     END
@@ -1418,10 +1493,36 @@ BEGIN
     -- ADD / INSERT
     IF @Opr IN ('ADD', 'INSERT')
     BEGIN
-        IF @CartId IS NULL OR @ProductId IS NULL
+        IF @ProductId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.product WHERE product_id = @ProductId)
         BEGIN
-            RAISERROR('Validation Error: Valid cart_id and product_id are required.', 16, 1);
+            RAISERROR('Validation Error: Valid product_id is required.', 16, 1);
             RETURN;
+        END
+
+        IF @Quantity <= 0
+        BEGIN
+            RAISERROR('Validation Error: Quantity must be greater than 0.', 16, 1);
+            RETURN;
+        END
+
+        -- Create cart record only when a valid product is actually being added
+        IF @CartId IS NULL
+        BEGIN
+            IF @UserId IS NOT NULL AND @UserId > 0
+            BEGIN
+                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (@UserId, NULL, DATEADD(minute, 330, SYSUTCDATETIME()));
+                SET @CartId = SCOPE_IDENTITY();
+            END
+            ELSE IF @GuestToken IS NOT NULL AND @GuestToken <> ''
+            BEGIN
+                INSERT INTO dbo.cart (user_id, guest_token, updated_at) VALUES (NULL, @GuestToken, DATEADD(minute, 330, SYSUTCDATETIME()));
+                SET @CartId = SCOPE_IDENTITY();
+            END
+            ELSE
+            BEGIN
+                RAISERROR('Validation Error: Valid cart_id, user_id or guest_token is required.', 16, 1);
+                RETURN;
+            END
         END
 
         IF EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId)
@@ -1450,9 +1551,20 @@ BEGIN
         IF @Quantity <= 0
         BEGIN
             IF @TargetCartItemId IS NOT NULL
+            BEGIN
+                SELECT @CartId = cart_id FROM dbo.cart_item WHERE cart_item_id = @TargetCartItemId;
                 DELETE FROM dbo.cart_item WHERE cart_item_id = @TargetCartItemId;
+            END
             ELSE IF @CartId IS NOT NULL AND @ProductId IS NOT NULL
+            BEGIN
                 DELETE FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId;
+            END
+
+            -- Clean up empty cart row if no items remain
+            IF @CartId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @CartId)
+            BEGIN
+                DELETE FROM dbo.cart WHERE cart_id = @CartId;
+            END
 
             SELECT 'Item removed from cart' AS [Message];
             RETURN;
@@ -1479,18 +1591,45 @@ BEGIN
     BEGIN
         IF @TargetCartItemId IS NOT NULL
         BEGIN
+            SELECT @CartId = cart_id FROM dbo.cart_item WHERE cart_item_id = @TargetCartItemId;
             DELETE FROM dbo.cart_item WHERE cart_item_id = @TargetCartItemId;
+            IF @CartId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @CartId)
+            BEGIN
+                DELETE FROM dbo.cart WHERE cart_id = @CartId;
+            END
             SELECT @TargetCartItemId AS cart_item_id, 'Cart item deleted successfully' AS [Message];
         END
         ELSE IF @CartId IS NOT NULL AND @ProductId IS NOT NULL
         BEGIN
             DELETE FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId;
+            IF NOT EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @CartId)
+            BEGIN
+                DELETE FROM dbo.cart WHERE cart_id = @CartId;
+            END
             SELECT @CartId AS cart_id, @ProductId AS product_id, 'Cart item removed successfully' AS [Message];
         END
         ELSE IF @CartId IS NOT NULL
         BEGIN
             DELETE FROM dbo.cart_item WHERE cart_id = @CartId;
+            DELETE FROM dbo.cart WHERE cart_id = @CartId;
             SELECT @CartId AS cart_id, 'All cart items removed' AS [Message];
+        END
+        ELSE
+        BEGIN
+            -- CartId is null, clean up by user_id or guest_token if provided
+            IF @UserId IS NOT NULL OR (@GuestToken IS NOT NULL AND @GuestToken <> '')
+            BEGIN
+                DELETE ci
+                FROM dbo.cart_item ci
+                INNER JOIN dbo.cart c ON ci.cart_id = c.cart_id
+                WHERE (c.user_id = @UserId AND @UserId IS NOT NULL)
+                   OR (c.guest_token = @GuestToken AND @GuestToken IS NOT NULL);
+
+                DELETE FROM dbo.cart
+                WHERE (user_id = @UserId AND @UserId IS NOT NULL)
+                   OR (guest_token = @GuestToken AND @GuestToken IS NOT NULL);
+            END
+            SELECT 'All cart items removed' AS [Message];
         END
         RETURN;
     END
@@ -1744,10 +1883,11 @@ BEGIN
                 GROUP BY product_id
             ) oi ON p.product_id = oi.product_id;
 
-            -- 4. Clear cart if user/guest cart exists
+            -- 4. Clear and remove cart if user/guest cart exists
             IF @CartId IS NOT NULL
             BEGIN
                 DELETE FROM dbo.cart_item WHERE cart_id = @CartId;
+                DELETE FROM dbo.cart WHERE cart_id = @CartId;
             END
             ELSE IF @UserId IS NOT NULL OR (@GuestToken IS NOT NULL AND @GuestToken <> '')
             BEGIN
@@ -1756,6 +1896,10 @@ BEGIN
                 INNER JOIN dbo.cart c ON ci.cart_id = c.cart_id
                 WHERE (c.user_id = @UserId AND @UserId IS NOT NULL)
                    OR (c.guest_token = @GuestToken AND @GuestToken IS NOT NULL);
+
+                DELETE FROM dbo.cart
+                WHERE (user_id = @UserId AND @UserId IS NOT NULL)
+                   OR (guest_token = @GuestToken AND @GuestToken IS NOT NULL);
             END
 
             COMMIT TRANSACTION;

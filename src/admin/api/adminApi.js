@@ -110,10 +110,17 @@ export async function linkProductImage(productId, imageUrl) {
   }
 }
 
-/** Strips SQL error prefixes like "ERROR [50000]: ". */
+/** Strips SQL error prefixes and converts database constraint codes into friendly English. */
 export function cleanErrorMessage(raw) {
   if (!raw) return '';
-  return String(raw).replace(/^ERROR\s*\[\d+\]:\s*/i, '').trim();
+  const str = String(raw);
+  if (str.includes('REFERENCE constraint') || str.includes('547')) {
+    if (str.includes('address') || str.includes('FK__orders__address')) {
+      return 'This address is linked to existing orders.';
+    }
+    return 'This record cannot be deleted because other records depend on it.';
+  }
+  return str.replace(/^ERROR\s*\[\d+\]:\s*/i, '').trim();
 }
 
 /** Resolves a product/record image (string, object or array) to a displayable URL. */

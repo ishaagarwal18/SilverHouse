@@ -189,8 +189,8 @@ export const ENTITY_FORM_SCHEMAS = {
     { name: 'end_date', label: 'Festival End Date', type: 'date' }
   ],
   festival_category: [
-    { name: 'category_id', label: 'Category Name', type: 'select', required: true },
-    { name: 'festival_id', label: 'Festival Name', type: 'select', required: true }
+    { name: 'festival_id', label: 'Festival Name', type: 'select', required: true, fullWidth: true },
+    { name: 'category_id', label: 'Categories', type: 'select', required: true, fullWidth: true }
   ]
 };
 
@@ -217,7 +217,7 @@ export const ADMIN_NAV = [
   },
   {
     label: 'Commerce & Users',
-    items: ['custom_orders', 'orders', 'order_item', 'cart', 'cart_item', 'wishlist', 'user', 'address', 'viewed', 'review'].map(entityNavItem)
+    items: ['custom_orders', 'orders', 'cart', 'cart_item', 'wishlist', 'user', 'address', 'viewed', 'review'].map(entityNavItem)
   },
   {
     label: 'System & Configuration',

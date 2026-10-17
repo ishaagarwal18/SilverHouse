@@ -179,7 +179,7 @@ BEGIN
         order_id INT IDENTITY(1,1) PRIMARY KEY,
         order_number NVARCHAR(50) NOT NULL UNIQUE,
         user_id INT NOT NULL FOREIGN KEY REFERENCES dbo.[user](user_id),
-        address_id INT NULL FOREIGN KEY REFERENCES dbo.address(address_id),
+        address_id INT NULL FOREIGN KEY REFERENCES dbo.address(address_id) ON DELETE SET NULL,
         total_amount DECIMAL(18,2) NOT NULL,
         discount_amount DECIMAL(18,2) NOT NULL DEFAULT 0.00,
         final_payable DECIMAL(18,2) NOT NULL,

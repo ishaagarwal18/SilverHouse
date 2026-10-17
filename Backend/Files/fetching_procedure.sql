@@ -273,6 +273,7 @@ BEGIN
             FROM dbo.cart c
             LEFT JOIN dbo.[user] u ON c.user_id = u.user_id
             WHERE (@CartFilterUid IS NULL OR c.user_id = @CartFilterUid OR c.cart_id = @CartFilterUid)
+              AND EXISTS (SELECT 1 FROM dbo.cart_item ci WHERE ci.cart_id = c.cart_id)
             ORDER BY c.cart_id DESC;
         END
 

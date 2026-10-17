@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, Image as ImageIcon, Pencil, Plus, Sparkles, Tag, Trash2, Upload, Zap } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronRight, Image as ImageIcon, Pencil, Plus, Receipt, Sparkles, Tag, Trash2, Upload, Zap } from 'lucide-react';
 import { adminFetch, adminImageUrl, callProc, fetchRows, PLACEHOLDER_IMG } from '../api/adminApi';
 import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISIONS, PK_MAP } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
@@ -66,6 +66,7 @@ const recordLabel = (row, id) => row.title || row.name || row.slug || row.type |
 /** Route: /admin/data/:entity — generic table manager for every database table. */
 export default function DataManagerPage() {
   const { entity } = useParams();
+  if (entity === 'order_item') return <Navigate to="/admin/data/orders" replace />;
   if (!PK_MAP[entity]) return <Navigate to="/admin/data/product" replace />;
   return <DataManager key={entity} entity={entity} />;
 }
@@ -88,6 +89,11 @@ function DataManager({ entity }) {
   });
   const [lookups, setLookups] = useState({ categories: {}, makes: {} });
   const [recordModal, setRecordModal] = useState(null); // { mode: 'ADD' | 'EDIT', id? }
+  const [expandedOrders, setExpandedOrders] = useState(() => new Set());
+  const [orderItemsMap, setOrderItemsMap] = useState({});
+  const [orderItemModal, setOrderItemModal] = useState(null); // { mode: 'ADD' | 'EDIT', orderId, item? }
+  const [deleteOrderItemCtx, setDeleteOrderItemCtx] = useState(null);
+  const [deletingOrderItem, setDeletingOrderItem] = useState(false);
   const [deleteCtx, setDeleteCtx] = useState(null); // { ids: [], imageId? }
   const [deleting, setDeleting] = useState(false);
   const [lightbox, setLightbox] = useState(null); // { images, index }
@@ -107,19 +113,32 @@ function DataManager({ entity }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [data, cats, makes, festList] = await Promise.all([
+      const [data, cats, makes, festList, itemsData, prodList] = await Promise.all([
         fetchRows(entity),
         fetchRows('category'),
         fetchRows('make_master'),
-        fetchRows('festival')
+        fetchRows('festival'),
+        entity === 'orders' ? fetchRows('order_item') : Promise.resolve([]),
+        entity === 'orders' ? fetchRows('product') : Promise.resolve([])
       ]);
       setRows(data);
+      if (entity === 'orders' && Array.isArray(itemsData)) {
+        const map = {};
+        for (const item of itemsData) {
+          const oid = String(item.order_id);
+          if (!map[oid]) map[oid] = [];
+          map[oid].push(item);
+        }
+        setOrderItemsMap(map);
+      }
       setLookups({
         categories: Object.fromEntries(cats.map(c => [c.category_id, c.name])),
         makes: Object.fromEntries(makes.map(m => [m.m_id, m.type])),
         festivals: Object.fromEntries((festList || []).map(f => [f.id, f.name || f.shortName || f.id])),
+        products: Object.fromEntries((prodList || []).map(p => [p.product_id, p.title || p.name || `Product #${p.product_id}`])),
         categoryList: cats || [],
-        festivalList: festList || []
+        festivalList: festList || [],
+        productList: prodList || []
       });
     } catch (err) {
       showToast('Failed to load table: ' + err.message, true);
@@ -127,6 +146,50 @@ function DataManager({ entity }) {
       setLoading(false);
     }
   }, [entity, showToast]);
+
+  const refreshOrderItems = useCallback(async () => {
+    try {
+      const items = await fetchRows('order_item');
+      if (Array.isArray(items)) {
+        const map = {};
+        for (const it of items) {
+          const oid = String(it.order_id);
+          if (!map[oid]) map[oid] = [];
+          map[oid].push(it);
+        }
+        setOrderItemsMap(map);
+      }
+    } catch (err) {
+      console.warn('Failed to refresh order items:', err);
+    }
+  }, []);
+
+  const toggleExpandOrder = idVal => {
+    setExpandedOrders(prev => {
+      const next = new Set(prev);
+      const strId = String(idVal);
+      if (next.has(strId)) next.delete(strId);
+      else next.add(strId);
+      return next;
+    });
+  };
+
+  const executeDeleteOrderItem = async () => {
+    if (!deleteOrderItemCtx) return;
+    setDeletingOrderItem(true);
+    try {
+      const res = await callProc('order_item', 'DELETE', undefined, String(deleteOrderItemCtx.order_item_id));
+      if (!res.success) throw new Error(res.status || res.error || 'Failed to delete order item');
+      showToast(`Order item #${deleteOrderItemCtx.order_item_id} deleted successfully!`);
+      setDeleteOrderItemCtx(null);
+      await refreshOrderItems();
+      await loadData();
+    } catch (err) {
+      showToast(err.message, true);
+    } finally {
+      setDeletingOrderItem(false);
+    }
+  };
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -145,16 +208,50 @@ function DataManager({ entity }) {
     return entity === 'orders' ? keys.filter(h => !HIDDEN_ORDER_COLUMNS.includes(h)) : keys;
   }, [rows, entity]);
 
-  const numericCols = useMemo(() => new Set(headers.filter(h => isNumericCol(h, rows))), [headers, rows]);
+  const getSortValue = useCallback((row, col) => {
+    if (!row) return null;
+    const val = row[col];
+    if (val === null || val === undefined || val === '' || val === '-') return null;
+
+    if (col === 'category_id') {
+      return lookups.categories?.[val] || row.category_name || String(val);
+    }
+    if (col === 'festival_id') {
+      return lookups.festivals?.[val] || row.festival_name || String(val);
+    }
+    if (entity === 'product' && col === 'm_id') {
+      return lookups.makes?.[val] || String(val);
+    }
+
+    if (typeof val === 'number') return val;
+    const str = String(val).trim();
+    if (str !== '' && !isNaN(Number(str))) return Number(str);
+    return str;
+  }, [lookups, entity]);
 
   const sortedRows = useMemo(() => {
-    if (!sort.col || !sort.dir || !numericCols.has(sort.col)) return rows;
-    const toNum = v => (v === null || v === undefined || v === '-' || v === '' ? 0 : Number(v));
-    return [...rows].sort((a, b) => (sort.dir === 'asc' ? 1 : -1) * (toNum(a[sort.col]) - toNum(b[sort.col])));
-  }, [rows, sort, numericCols]);
+    if (!sort.col || !sort.dir) return rows;
+    const col = sort.col;
+    const dir = sort.dir === 'asc' ? 1 : -1;
+
+    return [...rows].sort((a, b) => {
+      const valA = getSortValue(a, col);
+      const valB = getSortValue(b, col);
+
+      if (valA === null && valB === null) return 0;
+      if (valA === null) return 1;
+      if (valB === null) return -1;
+
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return dir * (valA - valB);
+      }
+
+      return dir * String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+    });
+  }, [rows, sort, getSortValue]);
 
   const handleSort = col => {
-    if (!numericCols.has(col)) return;
+    if (isImageColumn(col)) return;
     setSort(prev => {
       if (prev.col !== col) return { col, dir: 'asc' };
       if (prev.dir === 'asc') return { col, dir: 'desc' };
@@ -226,7 +323,7 @@ function DataManager({ entity }) {
       showToast(`Successfully deleted ${ok} record(s).`);
       loadData();
     }
-    if (failed > 0) showToast(`Failed to delete ${failed} record(s): ${lastError || 'Unknown error'}`, true);
+    if (failed > 0) showToast(`Failed to delete ${failed} record(s): ${cleanErrorMessage(lastError) || 'Unknown error'}`, true);
   };
 
   // ---------- Import ----------
@@ -327,7 +424,15 @@ function DataManager({ entity }) {
       return <span className="font-mono font-semibold">₹{Number(val).toLocaleString('en-IN')}</span>;
     }
     if (h === 'items' && Array.isArray(raw)) {
-      return <span className="font-semibold cursor-help" title={raw.map(i => `${i.product_name || i.name} (${i.quantity}x)`).join(', ')}>{raw.length} item(s)</span>;
+      if (raw.length === 0) return <span className="text-ad-muted">-</span>;
+      return (
+        <span
+          className="font-semibold font-mono cursor-help"
+          title={raw.map(i => `${i.product_name || i.name} (${i.quantity}x)`).join(', ')}
+        >
+          {raw.length}
+        </span>
+      );
     }
     if (h === 'category_id' && val !== '-') {
       return lookups.categories[val] ? `${lookups.categories[val]} (#${val})` : (row.category_name || val);
@@ -426,14 +531,17 @@ function DataManager({ entity }) {
                       aria-label="Select all"
                     />
                   </th>
+                  {entity === 'orders' && (
+                    <th className="w-12 border-b border-ad-border px-2 py-3" aria-label="Expand order" />
+                  )}
                   {headers.map(h => {
-                    const sortable = numericCols.has(h);
+                    const sortable = !isImageColumn(h);
                     const active = sort.col === h;
                     const SortIcon = !active ? ArrowUpDown : sort.dir === 'asc' ? ArrowUp : ArrowDown;
                     return (
                       <th key={h} className="whitespace-nowrap border-b border-ad-border px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-ad-muted">
                         {sortable ? (
-                          <button type="button" onClick={() => handleSort(h)} className={`inline-flex items-center gap-1 uppercase cursor-pointer hover:text-ad-text ${active ? 'text-ad-primary' : ''}`}>
+                          <button type="button" onClick={() => handleSort(h)} className={`inline-flex items-center gap-1 uppercase cursor-pointer hover:text-ad-text ${active ? 'text-ad-primary font-bold' : ''}`}>
                             {columnTitle(h)} <SortIcon className="w-3.5 h-3.5" />
                           </button>
                         ) : columnTitle(h)}
@@ -451,39 +559,185 @@ function DataManager({ entity }) {
                   const isFirstHighlight = hl && !firstHighlightAssigned;
                   if (isFirstHighlight) firstHighlightAssigned = true;
                   const checked = selected.has(String(idVal));
+                  const isOrderExpanded = entity === 'orders' && expandedOrders.has(String(idVal));
+                  const orderItems = (entity === 'orders' && orderItemsMap[String(idVal)]) || [];
+
                   return (
-                    <tr
-                      key={`${idVal}-${rowIdx}`}
-                      ref={isFirstHighlight ? highlightedRowRef : undefined}
-                      className={`border-b border-ad-border last:border-0 hover:bg-ad-card/60 ${hl ? 'ad-row-flash' : ''} ${checked ? 'bg-ad-primary/5' : ''}`}
-                      style={hl ? { '--ad-flash': hl.color, boxShadow: `inset 3px 0 0 ${hl.color}` } : undefined}
-                    >
-                      <td className="px-3 py-2.5">
-                        <input type="checkbox" checked={checked} onChange={e => toggleOne(idVal, e.target.checked)} aria-label={`Select record ${idVal}`} />
-                      </td>
-                      {headers.map((h, idx) => (
-                        <td key={h} className="max-w-72 px-3 py-2.5 align-middle text-ad-text">
-                          <div className="flex items-center gap-2">
-                            <span className="min-w-0 truncate">{renderCell(h, row, idVal)}</span>
-                            {idx === 0 && hl && (
-                              <span className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase text-white" style={{ background: hl.color }}>
-                                <hl.icon className="w-3 h-3" /> {hl.label}
-                              </span>
-                            )}
+                    <React.Fragment key={`${idVal}-${rowIdx}`}>
+                      <tr
+                        ref={isFirstHighlight ? highlightedRowRef : undefined}
+                        className={`border-b border-ad-border last:border-0 hover:bg-ad-card/60 transition-colors ${hl ? 'ad-row-flash' : ''} ${checked ? 'bg-ad-primary/5' : ''} ${isOrderExpanded ? 'bg-ad-card/30' : ''}`}
+                        style={hl ? { '--ad-flash': hl.color, boxShadow: `inset 3px 0 0 ${hl.color}` } : undefined}
+                      >
+                        <td className="px-3 py-2.5">
+                          <input type="checkbox" checked={checked} onChange={e => toggleOne(idVal, e.target.checked)} aria-label={`Select record ${idVal}`} />
+                        </td>
+                        {entity === 'orders' && (
+                          <td className="w-12 px-2 py-2.5 text-center">
+                            <button
+                              type="button"
+                              onClick={() => toggleExpandOrder(idVal)}
+                              className={`inline-flex items-center justify-center w-7 h-7 rounded-lg border transition-all cursor-pointer ${isOrderExpanded
+                                  ? 'bg-ad-primary text-white border-ad-primary shadow-xs'
+                                  : 'bg-ad-card text-ad-muted hover:text-ad-text hover:bg-ad-hover border-ad-border'
+                                }`}
+                              title={isOrderExpanded ? 'Hide order items' : `View ${orderItems.length} order line item(s)`}
+                              aria-label={`Toggle order items for order ${row.order_number || idVal}`}
+                            >
+                              <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isOrderExpanded ? 'rotate-90' : ''}`} />
+                            </button>
+                          </td>
+                        )}
+                        {headers.map((h, idx) => (
+                          <td key={h} className="max-w-72 px-3 py-2.5 align-middle text-ad-text">
+                            <div className="flex items-center gap-2">
+                              <span className="min-w-0 truncate">{renderCell(h, row, idVal)}</span>
+                              {idx === 0 && hl && (
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase text-white" style={{ background: hl.color }}>
+                                  <hl.icon className="w-3 h-3" /> {hl.label}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        ))}
+                        <td className="sticky right-0 whitespace-nowrap bg-ad-surface px-3 py-2.5 text-right">
+                          <div className="inline-flex gap-1.5">
+                            <button type="button" onClick={() => openEdit(idVal)} className="inline-flex items-center gap-1 rounded-md border border-ad-primary/30 bg-ad-primary/10 px-2.5 py-1.5 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white cursor-pointer" aria-label={`Edit record ${idVal}`}>
+                              <Pencil className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Edit</span>
+                            </button>
+                            <button type="button" onClick={() => setDeleteCtx({ ids: [String(idVal)], imageId: row.image_id || null })} className="inline-flex items-center gap-1 rounded-md border border-ad-danger/30 bg-ad-danger/10 px-2.5 py-1.5 text-xs font-semibold text-ad-danger hover:bg-ad-danger hover:text-white cursor-pointer" aria-label={`Delete record ${idVal}`}>
+                              <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Delete</span>
+                            </button>
                           </div>
                         </td>
-                      ))}
-                      <td className="sticky right-0 whitespace-nowrap bg-ad-surface px-3 py-2.5 text-right">
-                        <div className="inline-flex gap-1.5">
-                          <button type="button" onClick={() => openEdit(idVal)} className="inline-flex items-center gap-1 rounded-md border border-ad-primary/30 bg-ad-primary/10 px-2.5 py-1.5 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white cursor-pointer" aria-label={`Edit record ${idVal}`}>
-                            <Pencil className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Edit</span>
-                          </button>
-                          <button type="button" onClick={() => setDeleteCtx({ ids: [String(idVal)], imageId: row.image_id || null })} className="inline-flex items-center gap-1 rounded-md border border-ad-danger/30 bg-ad-danger/10 px-2.5 py-1.5 text-xs font-semibold text-ad-danger hover:bg-ad-danger hover:text-white cursor-pointer" aria-label={`Delete record ${idVal}`}>
-                            <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Delete</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                      </tr>
+
+                      {/* Expandable Order Line Items Row */}
+                      {entity === 'orders' && isOrderExpanded && (
+                        <tr className="border-b border-ad-border bg-ad-card/25">
+                          <td colSpan={headers.length + 3} className="px-3 py-3 sm:px-6 sm:py-4">
+                            <div className="rounded-xl border border-ad-border bg-ad-surface p-4 shadow-sm animate-in fade-in-50 duration-200">
+                              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-ad-border">
+                                <div className="flex items-center gap-2.5">
+                                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ad-primary/15 text-ad-primary">
+                                    <Receipt className="w-4 h-4" />
+                                  </span>
+                                  <div>
+                                    <h4 className="text-xs font-bold text-ad-text uppercase tracking-wider flex items-center gap-2">
+                                      <span>Order Line Items</span>
+                                      <span className="rounded-md bg-ad-card px-2 py-0.5 font-mono text-[11px] border border-ad-border">
+                                        {row.order_number ? `#${row.order_number}` : `Order #${idVal}`}
+                                      </span>
+                                    </h4>
+                                    <p className="text-[11px] text-ad-muted mt-0.5">
+                                      {orderItems.length} {orderItems.length === 1 ? 'item' : 'items'} in this order
+                                      {row.customer_name ? ` · Customer: ${row.customer_name}` : ''}
+                                      {row.phone ? ` (${row.phone})` : ''}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setOrderItemModal({ mode: 'ADD', orderId: idVal })}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-ad-primary/40 bg-ad-primary/10 px-3 py-1.5 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white transition-colors cursor-pointer"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" /> Add Order Item
+                                  </button>
+                                </div>
+                              </div>
+
+                              {orderItems.length === 0 ? (
+                                <div className="py-6 text-center text-xs text-ad-muted">
+                                  No items currently recorded for this order. Click "Add Order Item" to attach products.
+                                </div>
+                              ) : (
+                                <div className="mt-3 overflow-x-auto">
+                                  <table className="w-full text-left text-xs">
+                                    <thead>
+                                      <tr className="border-b border-ad-border text-[10.5px] font-bold uppercase tracking-wider text-ad-muted bg-ad-card/40">
+                                        <th className="py-2.5 px-3">Item #</th>
+                                        <th className="py-2.5 px-3">Product Name</th>
+                                        <th className="py-2.5 px-3 text-right">Unit Price</th>
+                                        <th className="py-2.5 px-3 text-center">Discount</th>
+                                        <th className="py-2.5 px-3 text-center">Quantity</th>
+                                        <th className="py-2.5 px-3 text-right">Subtotal</th>
+                                        <th className="py-2.5 px-3 text-right">Actions</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-ad-border">
+                                      {orderItems.map(item => {
+                                        const prodTitle = item.product_name || lookups.products?.[item.product_id] || `Product #${item.product_id}`;
+                                        const lineSubtotal = Number(item.subtotal || (Number(item.unit_price || 0) * (1 - Number(item.discount_percent || 0) / 100) * Number(item.quantity || 1)));
+                                        return (
+                                          <tr key={item.order_item_id} className="hover:bg-ad-card/50 transition-colors">
+                                            <td className="py-2.5 px-3 font-mono text-ad-muted">#{item.order_item_id}</td>
+                                            <td className="py-2.5 px-3">
+                                              <span className="font-semibold text-ad-text">{prodTitle}</span>
+                                              <span className="block text-[10.5px] text-ad-muted font-mono">Product ID: {item.product_id}</span>
+                                            </td>
+                                            <td className="py-2.5 px-3 text-right font-mono font-medium">₹{Number(item.unit_price || 0).toLocaleString('en-IN')}</td>
+                                            <td className="py-2.5 px-3 text-center">
+                                              {Number(item.discount_percent || 0) > 0 ? (
+                                                <span className="rounded-md bg-ad-success/15 px-1.5 py-0.5 text-[10.5px] font-bold text-ad-success">
+                                                  {Number(item.discount_percent)}% OFF
+                                                </span>
+                                              ) : (
+                                                <span className="text-ad-muted">-</span>
+                                              )}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-center font-bold text-ad-text">{item.quantity}</td>
+                                            <td className="py-2.5 px-3 text-right font-mono font-bold text-ad-text">
+                                              ₹{lineSubtotal.toLocaleString('en-IN')}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                                              <div className="inline-flex gap-1">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setOrderItemModal({ mode: 'EDIT', orderId: idVal, item })}
+                                                  className="p-1 rounded text-ad-primary hover:bg-ad-primary/15 transition-colors cursor-pointer"
+                                                  title="Edit item"
+                                                  aria-label={`Edit item ${item.order_item_id}`}
+                                                >
+                                                  <Pencil className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setDeleteOrderItemCtx(item)}
+                                                  className="p-1 rounded text-ad-danger hover:bg-ad-danger/15 transition-colors cursor-pointer"
+                                                  title="Delete item"
+                                                  aria-label={`Delete item ${item.order_item_id}`}
+                                                >
+                                                  <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                    <tfoot>
+                                      <tr className="border-t-2 border-ad-border bg-ad-card/30 font-bold">
+                                        <td colSpan={4} className="py-2 px-3 text-right text-ad-muted uppercase tracking-wider text-[11px]">
+                                          Total Order Line Items:
+                                        </td>
+                                        <td className="py-2 px-3 text-center text-ad-text font-bold">
+                                          {orderItems.reduce((acc, it) => acc + Number(it.quantity || 0), 0)} pcs
+                                        </td>
+                                        <td className="py-2 px-3 text-right font-mono text-ad-text text-[13px] font-bold">
+                                          ₹{orderItems.reduce((acc, it) => acc + Number(it.subtotal || (Number(it.unit_price || 0) * (1 - Number(it.discount_percent || 0) / 100) * Number(it.quantity || 1))), 0).toLocaleString('en-IN')}
+                                        </td>
+                                        <td></td>
+                                      </tr>
+                                    </tfoot>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -494,7 +748,7 @@ function DataManager({ entity }) {
 
       {!loading && rows.length > 0 && (
         <p className="mt-3 text-xs text-ad-muted">
-          {rows.length} record{rows.length === 1 ? '' : 's'} · Numeric columns are sortable{cfg.hasFormPage ? '' : ' · Edits open in a dialog'}
+          {rows.length} record{rows.length === 1 ? '' : 's'} · Columns are sortable{cfg.hasFormPage ? '' : ' · Edits open in a dialog'}
           {entity === 'custom_orders' && <> · <Link to="/admin/custom-orders" className="font-semibold text-ad-primary hover:underline">Open the Custom Orders board →</Link></>}
         </p>
       )}
@@ -524,6 +778,41 @@ function DataManager({ entity }) {
       />
 
       {lightbox && <ImageLightbox images={lightbox.images} startIndex={lightbox.index} title="Image Preview" onClose={() => setLightbox(null)} />}
+
+      {orderItemModal && (
+        <OrderItemModal
+          mode={orderItemModal.mode}
+          orderId={orderItemModal.orderId}
+          item={orderItemModal.item}
+          products={lookups.productList || []}
+          onClose={() => setOrderItemModal(null)}
+          onSaved={() => {
+            setOrderItemModal(null);
+            refreshOrderItems();
+            loadData();
+          }}
+        />
+      )}
+
+      <ConfirmDeleteModal
+        open={Boolean(deleteOrderItemCtx)}
+        busy={deletingOrderItem}
+        title="Delete Order Item"
+        subtitle={`Remove line item #${deleteOrderItemCtx?.order_item_id} from Order #${deleteOrderItemCtx?.order_id}`}
+        confirmLabel="Delete Item"
+        onClose={() => setDeleteOrderItemCtx(null)}
+        onConfirm={executeDeleteOrderItem}
+        details={deleteOrderItemCtx && (
+          <div className="rounded-lg border border-ad-border bg-ad-card p-3 text-xs">
+            <p className="font-semibold text-ad-text">
+              {deleteOrderItemCtx.product_name || `Product #${deleteOrderItemCtx.product_id}`}
+            </p>
+            <p className="text-ad-muted mt-1">
+              Quantity: {deleteOrderItemCtx.quantity} · Unit Price: ₹{Number(deleteOrderItemCtx.unit_price || 0).toLocaleString('en-IN')}
+            </p>
+          </div>
+        )}
+      />
 
       <Modal open={textPreview !== null} onClose={() => setTextPreview(null)} size="md" title="Full Description">
         <ModalBody><p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ad-text">{textPreview}</p></ModalBody>
@@ -590,6 +879,38 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, onClose, onSaved, o
   const isEdit = mode === 'EDIT';
   const rowData = isEdit ? rows.find(r => String(r[pkField]) === String(id)) || {} : {};
 
+  // Multi-category checkbox state for festival_category
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState(() => {
+    if (entity === 'festival_category' && rowData.category_id !== undefined && rowData.category_id !== null) {
+      return [Number(rowData.category_id)];
+    }
+    return [];
+  });
+  const [categorySearch, setCategorySearch] = useState('');
+
+  const toggleCategory = catId => {
+    const numId = Number(catId);
+    setSelectedCategoryIds(prev =>
+      prev.includes(numId) ? prev.filter(x => x !== numId) : [...prev, numId]
+    );
+  };
+
+  const handleSelectAllCategories = () => {
+    const allIds = (lookups.categoryList || []).map(c => Number(c.category_id));
+    setSelectedCategoryIds(allIds);
+  };
+
+  const handleClearAllCategories = () => {
+    setSelectedCategoryIds([]);
+  };
+
+  const filteredCategories = useMemo(() => {
+    const list = lookups.categoryList || [];
+    if (!categorySearch.trim()) return list;
+    const q = categorySearch.toLowerCase().trim();
+    return list.filter(c => (c.name || '').toLowerCase().includes(q) || String(c.category_id).includes(q));
+  }, [lookups.categoryList, categorySearch]);
+
   const schema = useMemo(() => {
     if (ENTITY_FORM_SCHEMAS[entity]) return ENTITY_FORM_SCHEMAS[entity];
     return Object.keys(rows[0] || {})
@@ -609,6 +930,52 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, onClose, onSaved, o
       const keepText = ['phone', 'pincode', 'order_number', 'guest_token'].some(k => key.includes(k));
       tableValues[key] = !isNaN(trimmed) && !keepText ? Number(trimmed) : trimmed;
     });
+
+    // Special handling for festival_category multi-select
+    if (entity === 'festival_category') {
+      const festivalId = tableValues.festival_id;
+      if (!festivalId) {
+        showToast('Please select a festival.', true);
+        setSaving(false);
+        return;
+      }
+      if (selectedCategoryIds.length === 0) {
+        showToast('Please select at least one category.', true);
+        setSaving(false);
+        return;
+      }
+
+      try {
+        if (isEdit) {
+          const firstCat = selectedCategoryIds[0];
+          const res = await callProc(entity, 'EDIT', { festival_id: festivalId, category_id: firstCat }, String(id));
+          if (!res.success) throw new Error(res.status || res.error || 'Failed to update mapping');
+          if (selectedCategoryIds.length > 1) {
+            const extraCats = selectedCategoryIds.slice(1);
+            await Promise.all(
+              extraCats.map(catId => callProc(entity, 'ADD', { festival_id: festivalId, category_id: catId }))
+            );
+          }
+          showToast(`Festival category mapping updated successfully!`);
+        } else {
+          const results = await Promise.all(
+            selectedCategoryIds.map(catId =>
+              callProc(entity, 'ADD', { festival_id: festivalId, category_id: catId })
+            )
+          );
+          const failed = results.filter(r => !r || !r.success);
+          if (failed.length === results.length) {
+            throw new Error(results[0]?.status || results[0]?.error || 'Failed to create festival category mappings');
+          }
+          showToast(`Successfully created ${results.length - failed.length} festival category mapping(s)!`);
+        }
+        onSaved();
+      } catch (err) {
+        showToast(err.message, true);
+        setSaving(false);
+      }
+      return;
+    }
 
     try {
       const res = await callProc(entity, isEdit ? 'EDIT' : 'ADD', tableValues, isEdit ? String(id) : null);
@@ -654,7 +1021,82 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, onClose, onSaved, o
               const fieldId = `rec-${field.name}`;
               return (
                 <Field key={field.name} label={field.label} required={field.required} fullWidth={field.fullWidth} htmlFor={fieldId}>
-                  {field.name === 'category_id' ? (
+                  {field.name === 'category_id' && entity === 'festival_category' ? (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-ad-muted">Select categories to associate with festival:</span>
+                          <span className="rounded-full bg-ad-primary/15 px-2 py-0.5 text-[11px] font-bold text-ad-primary">
+                            {selectedCategoryIds.length} selected
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={handleSelectAllCategories}
+                            className="text-[11px] font-semibold text-ad-primary hover:underline cursor-pointer px-1 py-0.5"
+                          >
+                            Select All
+                          </button>
+                          <span className="text-ad-border">·</span>
+                          <button
+                            type="button"
+                            onClick={handleClearAllCategories}
+                            className="text-[11px] font-semibold text-ad-muted hover:text-ad-danger cursor-pointer px-1 py-0.5"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+
+                      {(lookups.categoryList || []).length > 6 && (
+                        <input
+                          type="text"
+                          placeholder="Search / filter categories..."
+                          value={categorySearch}
+                          onChange={e => setCategorySearch(e.target.value)}
+                          className="ad-input py-1.5 px-3 text-xs"
+                        />
+                      )}
+
+                      <div className="max-h-60 overflow-y-auto ad-scroll rounded-xl border border-ad-border bg-ad-card/30 p-2 space-y-1.5">
+                        {filteredCategories.length === 0 ? (
+                          <div className="p-4 text-center text-xs text-ad-muted">
+                            No categories found matching "{categorySearch}"
+                          </div>
+                        ) : (
+                          filteredCategories.map(cat => {
+                            const isChecked = selectedCategoryIds.includes(Number(cat.category_id));
+                            return (
+                              <label
+                                key={cat.category_id}
+                                className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
+                                  isChecked
+                                    ? 'border-ad-primary/40 bg-ad-primary/10 text-ad-text shadow-2xs'
+                                    : 'border-ad-border/60 bg-ad-surface hover:bg-ad-hover text-ad-muted hover:text-ad-text'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => toggleCategory(cat.category_id)}
+                                    className="w-4 h-4 rounded border-ad-border text-ad-primary focus:ring-ad-primary accent-ad-primary cursor-pointer"
+                                  />
+                                  <span className="text-xs font-semibold truncate text-ad-text">
+                                    {cat.name}
+                                  </span>
+                                </div>
+                                <span className="shrink-0 font-mono text-[10px] px-1.5 py-0.5 rounded bg-ad-card border border-ad-border text-ad-muted">
+                                  ID: {cat.category_id}
+                                </span>
+                              </label>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  ) : field.name === 'category_id' ? (
                     <select id={fieldId} name={field.name} className="ad-input cursor-pointer" defaultValue={String(value)} required={field.required}>
                       <option value="">-- Select Category --</option>
                       {(lookups.categoryList || []).map(cat => (
@@ -696,3 +1138,154 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, onClose, onSaved, o
     </Modal>
   );
 }
+
+/** In-page line-item creation/edition modal for an expanded order. */
+function OrderItemModal({ mode, orderId, item, products = [], onClose, onSaved }) {
+  const { showToast } = useAdminUI();
+  const [saving, setSaving] = useState(false);
+  const isEdit = mode === 'EDIT';
+
+  const [selectedProductId, setSelectedProductId] = useState(() => item?.product_id || (products[0]?.product_id || ''));
+  const [unitPrice, setUnitPrice] = useState(() => item?.unit_price ?? '');
+  const [discountPercent, setDiscountPercent] = useState(() => item?.discount_percent ?? 0);
+  const [quantity, setQuantity] = useState(() => item?.quantity ?? 1);
+
+  const handleProductChange = e => {
+    const pid = e.target.value;
+    setSelectedProductId(pid);
+    if (!isEdit) {
+      const prod = products.find(p => String(p.product_id) === String(pid));
+      if (prod && prod.price !== undefined) {
+        setUnitPrice(prod.price);
+        if (prod.discount) setDiscountPercent(prod.discount);
+      }
+    }
+  };
+
+  const calculatedSubtotal = useMemo(() => {
+    const up = Number(unitPrice) || 0;
+    const disc = Number(discountPercent) || 0;
+    const qty = Number(quantity) || 1;
+    return Math.max(0, up * (1 - disc / 100) * qty);
+  }, [unitPrice, discountPercent, quantity]);
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    setSaving(true);
+    const tableValues = {
+      order_id: Number(orderId),
+      product_id: Number(selectedProductId),
+      unit_price: Number(unitPrice),
+      discount_percent: Number(discountPercent) || 0,
+      quantity: Number(quantity) || 1,
+      subtotal: Number(calculatedSubtotal.toFixed(2))
+    };
+
+    try {
+      const res = await callProc('order_item', isEdit ? 'EDIT' : 'ADD', tableValues, isEdit ? String(item.order_item_id) : null);
+      if (!res.success) throw new Error(res.status || res.error || 'Failed to save order item');
+      showToast(`Order item ${isEdit ? 'updated' : 'added'} successfully!`);
+      onSaved();
+    } catch (err) {
+      showToast(err.message, true);
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={isEdit ? `Edit Order Item (#${item.order_item_id})` : `Add Item to Order #${orderId}`}
+      subtitle={`Manage line item details for Order #${orderId}`}
+    >
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <ModalBody>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-ad-text mb-1">Product</label>
+              {products.length > 0 ? (
+                <select
+                  value={selectedProductId}
+                  onChange={handleProductChange}
+                  required
+                  className="ad-input w-full cursor-pointer"
+                >
+                  <option value="">-- Select Product --</option>
+                  {products.map(p => (
+                    <option key={p.product_id} value={p.product_id}>
+                      {p.title || p.name} (ID: {p.product_id}) {p.price ? `— ₹${Number(p.price).toLocaleString('en-IN')}` : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="number"
+                  value={selectedProductId}
+                  onChange={e => setSelectedProductId(e.target.value)}
+                  placeholder="Enter Product ID"
+                  required
+                  className="ad-input w-full"
+                />
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-ad-text mb-1">Unit Price (₹)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={unitPrice}
+                  onChange={e => setUnitPrice(e.target.value)}
+                  placeholder="e.g. 1599.00"
+                  required
+                  className="ad-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ad-text mb-1">Discount (%)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={discountPercent}
+                  onChange={e => setDiscountPercent(e.target.value)}
+                  className="ad-input w-full"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-ad-text mb-1">Quantity</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={e => setQuantity(e.target.value)}
+                  required
+                  className="ad-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ad-text mb-1">Calculated Line Subtotal</label>
+                <div className="ad-input w-full bg-ad-card font-mono font-bold text-ad-primary flex items-center">
+                  ₹{calculatedSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </ModalBody>
+        <div className="flex flex-col-reverse gap-2 border-t border-ad-border bg-ad-card/50 px-5 py-3.5 sm:flex-row sm:justify-end">
+          <Button onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button type="submit" variant="primary" disabled={saving}>
+            {saving && <Spinner />} {isEdit ? 'Update Item' : 'Add Item'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+

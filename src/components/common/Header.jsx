@@ -146,6 +146,26 @@ export default function Header({
   const hasDbCategories = Array.isArray(categories) && categories.length > 0;
 
   const DROPDOWNS = {
+    shopAll: [
+      { label: "VIEW ALL PRODUCTS", action: () => onNavigateCategory("all") },
+      ...(hasDbCategories
+        ? categories.map(c => ({
+          label: (c.name || c.title || '').toUpperCase(),
+          action: () => onNavigateCategory(c.id || c.slug)
+        }))
+        : [
+          { label: "ANKLETS & PAYAL", action: () => onNavigateCategory("anklets-payal") },
+          { label: "BABY SILVER", action: () => onNavigateCategory("baby-silver") },
+          { label: "SILVER IDOLS", action: () => onNavigateCategory("silver-idols") },
+          { label: "CAR ACCESSORIES", action: () => onNavigateCategory("car-accessories") },
+          { label: "SILVER RINGS", action: () => onNavigateCategory("rings") },
+          { label: "SPIRITUAL WEAR", action: () => onNavigateCategory("spiritual-wear") },
+          { label: "SILVER COINS", action: () => onNavigateCategory("silver-coins") },
+          { label: "POOJA ARTICLES", action: () => onNavigateCategory("pooja-articles") },
+          { label: "SILVERWARE", action: () => onNavigateCategory("silverware") },
+          { label: "BANGLES & BRACELETS", action: () => onNavigateCategory("bangles-bracelets") }
+        ])
+    ],
     festive: [
       { label: "VIEW ALL FESTIVE EDITS", action: () => onNavigateCategory("festive") },
       ...(festivals && festivals.length > 0
@@ -772,21 +792,42 @@ export default function Header({
         {/* Secondary Row: Desktop Category Navigation Links */}
         <nav className="hidden lg:flex flex-wrap items-center justify-start xl:justify-center gap-x-1 xl:gap-x-3 gap-y-2 border-t border-[var(--th-border)]/80 py-2.5">
 
-          {/* SHOP ALL (MegaMenu Trigger) */}
+          {/* SHOP ALL */}
           <div
             className="relative"
             onMouseEnter={() => {
-              setActiveDropdown(null);
-              setIsMegaMenuOpen(true);
+              setIsMegaMenuOpen(false);
+              setActiveDropdown('shopAll');
             }}
+            onMouseLeave={() => setActiveDropdown(null)}
           >
             <button
-              onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
+              onClick={() => onNavigateCategory("all")}
               className="px-3 py-1.5 text-xs xl:text-[13px] font-bold tracking-wider text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-colors flex items-center space-x-1 uppercase focus:outline-hidden cursor-pointer"
             >
               <span>SHOP ALL</span>
-              <ChevronDown className={`w-3.5 h-3.5 text-[var(--th-accent)] transition-transform duration-200 ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3.5 h-3.5 text-[var(--th-accent)] transition-transform duration-200 ${activeDropdown === 'shopAll' ? 'rotate-180' : ''}`} />
             </button>
+
+            {activeDropdown === 'shopAll' && (
+              <div className="absolute top-full left-0 w-64 bg-[var(--th-card)] shadow-2xl rounded-2xl border border-[var(--th-border)] z-50 py-3 px-5 text-left animate-in fade-in slide-in-from-top-1 max-h-[460px] overflow-y-auto ad-scroll">
+                <ul className="space-y-2">
+                  {DROPDOWNS.shopAll.map((item, idx) => (
+                    <li key={idx}>
+                      <button
+                        onClick={() => {
+                          item.action();
+                          setActiveDropdown(null);
+                        }}
+                        className={`text-[11px] font-bold tracking-wider uppercase transition-colors text-left block w-full py-1.5 border-b border-[var(--th-border)]/30 last:border-0 cursor-pointer ${idx === 0 ? 'text-[var(--th-accent)] hover:text-[var(--th-primary)] font-extrabold' : 'text-[var(--th-text-main)] hover:text-[var(--th-primary)]'}`}
+                      >
+                        {item.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* FESTIVE COLLECTION */}
@@ -1107,15 +1148,6 @@ export default function Header({
         </nav>
       </div>
 
-      {/* MegaMenu Dropdown */}
-      {isMegaMenuOpen && (
-        <MegaMenu
-          categories={categories}
-          onSelectCategory={onNavigateCategory}
-          onSelectSubcategory={onNavigateSubcategory}
-          onClose={() => setIsMegaMenuOpen(false)}
-        />
-      )}
 
       {/* Flagship Stores Modal */}
       <StoresModal

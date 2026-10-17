@@ -1335,44 +1335,6 @@ async function getWhatsAppApiUrl(pool) {
     return url;
 }
 
-async function sendWhatsAppMessage(phone, message, pool = null) {
-    const waPhone = formatWhatsAppPhone(phone);
-    const cleaned = cleanPhoneNumber(phone) || phone;
-    console.log(`\n======================================================`);
-    console.log(`[WhatsApp Gateway] 💬 Outgoing WhatsApp Message:`);
-    console.log(`To: ${cleaned} (WA: ${waPhone})`);
-    console.log(`Message:\n${message}`);
-    console.log(`======================================================\n`);
-
-    const apiUrl = await getWhatsAppApiUrl(pool);
-
-    if (apiUrl) {
-        try {
-            const urlObj = new URL(apiUrl);
-            const token = urlObj.searchParams.get('token') || '';
-
-            const queryParams = new URLSearchParams();
-            if (token) queryParams.set('token', token);
-            queryParams.set('phone', waPhone);
-            queryParams.set('message', message);
-
-            const targetUrl = `${urlObj.origin}${urlObj.pathname}?${queryParams.toString().replace(/\+/g, '%20')}`;
-
-            console.log(`[WhatsApp Gateway] Dispatching to: ${urlObj.origin}${urlObj.pathname}?phone=${waPhone}`);
-            const response = await fetch(targetUrl, {
-                method: 'GET',
-                headers: { 'Accept': 'application/json, text/plain, */*' }
-            });
-            const data = await response.json().catch(() => ({}));
-            console.log(`[WhatsApp Gateway] Provider response:`, JSON.stringify(data));
-            return { success: true, data };
-        } catch (apiErr) {
-            console.warn(`[WhatsApp Gateway Warning] Provider dispatch failed:`, apiErr.message);
-            return { success: false, error: apiErr.message };
-        }
-    }
-    return { success: true };
-}
 
 async function sendWhatsAppOtp(phone, otp, pool = null) {
     const waPhone = formatWhatsAppPhone(phone);
