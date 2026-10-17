@@ -680,10 +680,18 @@ export default function AuthPage({ onTriggerToast }) {
 
               <div
                 onClick={() => navigate('/')}
-                className="inline-flex items-center space-x-1 cursor-pointer"
+                className="inline-flex items-center space-x-1.5 cursor-pointer group"
               >
-                <Sparkles className="w-3.5 h-3.5 text-[var(--th-accent)]" />
-                <span className="font-serif text-sm font-bold tracking-wider text-[var(--th-text-main)]">
+                <div className="w-5 h-5 rounded-full overflow-hidden border border-[var(--th-accent)] bg-white p-0.5 shrink-0 flex items-center justify-center shadow-2xs">
+                  <img
+                    src="/logo.jpeg"
+                    alt="SilverHouse"
+                    className="w-full h-full object-contain rounded-full"
+                    width="20"
+                    height="20"
+                  />
+                </div>
+                <span className="font-serif text-sm font-bold tracking-wider text-[var(--th-text-main)] group-hover:text-[var(--th-primary)] transition-colors">
                   SILVER<span className="text-[var(--th-accent)]">HOUSE</span>
                 </span>
               </div>

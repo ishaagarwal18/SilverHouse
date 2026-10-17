@@ -59,8 +59,14 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
           {/* Col 1: Brand Info */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 border border-[var(--th-accent)] flex items-center justify-center shadow-sm">
-                <Sparkles className="w-5 h-5 text-[var(--th-accent)]" />
+              <div className="w-11 h-11 rounded-full bg-white border-2 border-[var(--th-accent)] flex items-center justify-center shadow-md overflow-hidden p-0.5 shrink-0">
+                <img
+                  src="/logo.jpeg"
+                  alt="SilverHouse Logo"
+                  className="w-full h-full object-contain rounded-full"
+                  width="44"
+                  height="44"
+                />
               </div>
               <span className="font-serif text-2xl font-bold tracking-tight text-white uppercase">
                 {compName.split(' ')[0]}<span className="text-[var(--th-accent)] font-light">{compName.split(' ').slice(1).join(' ') || 'HOUSE'}</span>

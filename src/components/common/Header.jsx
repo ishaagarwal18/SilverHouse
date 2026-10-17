@@ -261,12 +261,17 @@ export default function Header({
               onClick={onNavigateHome}
               className="group text-left flex items-center space-x-1.5 sm:space-x-3 focus:outline-hidden cursor-pointer shrink-0"
             >
-              {/* Opulent Circular Crest */}
+              {/* Opulent Circular Crest with SilverHouse Logo */}
               <div
-                className="hidden min-[360px]:flex w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 rounded-full border border-[var(--th-accent)] sm:border-2 items-center justify-center shadow-md group-hover:scale-105 transition-all duration-300 text-white shrink-0"
-                style={{ background: 'var(--th-nav-gradient)' }}
+                className="flex w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 rounded-full border border-[var(--th-accent)] sm:border-2 items-center justify-center shadow-md group-hover:scale-105 transition-all duration-300 bg-white p-0.5 overflow-hidden shrink-0"
               >
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--th-accent)] drop-shadow-sm animate-pulse" />
+                <img
+                  src="/logo.jpeg"
+                  alt="SilverHouse Logo"
+                  className="w-full h-full object-contain rounded-full"
+                  width="44"
+                  height="44"
+                />
               </div>
 
               <div className="flex flex-col">
@@ -660,54 +665,53 @@ export default function Header({
 
                   {/* Color Palette Section — only shown when a festival theme is active */}
                   {activeFestivalTheme !== 'none' && (
-                  <div className="pt-2.5 border-t border-[var(--th-border)]/80 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-1.5">
-                        <Palette className="w-3.5 h-3.5 text-[var(--th-accent)]" />
-                        <span className="font-serif font-bold text-xs text-[var(--th-text-main)] tracking-wide">
-                          Color Palette
+                    <div className="pt-2.5 border-t border-[var(--th-border)]/80 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1.5">
+                          <Palette className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                          <span className="font-serif font-bold text-xs text-[var(--th-text-main)] tracking-wide">
+                            Color Palette
+                          </span>
+                        </div>
+                        <span className="text-[9.5px] font-semibold text-[var(--th-text-muted)]">
+                          {currentThemeObj.name}
                         </span>
                       </div>
-                      <span className="text-[9.5px] font-semibold text-[var(--th-text-muted)]">
-                        {currentThemeObj.name}
-                      </span>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {themes.map((t) => {
-                        const isSelected = t.id === theme;
-                        return (
-                          <button
-                            key={t.id}
-                            onClick={() => setTheme(t.id)}
-                            className={`p-1.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                              isSelected
-                                ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] ring-1 ring-[var(--th-primary)] font-bold'
-                                : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
-                            }`}
-                            title={t.description}
-                          >
-                            <div className="flex items-center space-x-1.5 truncate">
-                              <div className="flex items-center -space-x-1 shrink-0">
-                                <span
-                                  className="w-3 h-3 rounded-full border border-white"
-                                  style={{ backgroundColor: t.preview.primary }}
-                                />
-                                <span
-                                  className="w-3 h-3 rounded-full border border-white"
-                                  style={{ backgroundColor: t.preview.accent }}
-                                />
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {themes.map((t) => {
+                          const isSelected = t.id === theme;
+                          return (
+                            <button
+                              key={t.id}
+                              onClick={() => setTheme(t.id)}
+                              className={`p-1.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${isSelected
+                                  ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] ring-1 ring-[var(--th-primary)] font-bold'
+                                  : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
+                                }`}
+                              title={t.description}
+                            >
+                              <div className="flex items-center space-x-1.5 truncate">
+                                <div className="flex items-center -space-x-1 shrink-0">
+                                  <span
+                                    className="w-3 h-3 rounded-full border border-white"
+                                    style={{ backgroundColor: t.preview.primary }}
+                                  />
+                                  <span
+                                    className="w-3 h-3 rounded-full border border-white"
+                                    style={{ backgroundColor: t.preview.accent }}
+                                  />
+                                </div>
+                                <span className="text-[10.5px] truncate text-[var(--th-text-main)]">
+                                  {t.name.split(' ')[0]}
+                                </span>
                               </div>
-                              <span className="text-[10.5px] truncate text-[var(--th-text-main)]">
-                                {t.name.split(' ')[0]}
-                              </span>
-                            </div>
-                            {isSelected && <Check className="w-3 h-3 text-[var(--th-primary)] shrink-0 ml-1" />}
-                          </button>
-                        );
-                      })}
+                              {isSelected && <Check className="w-3 h-3 text-[var(--th-primary)] shrink-0 ml-1" />}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
                   )}
 
 

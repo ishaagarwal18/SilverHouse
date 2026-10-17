@@ -46,7 +46,7 @@ export default function MobileMenu({
   return (
     <div className="fixed inset-0 z-50 flex lg:hidden">
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
@@ -56,8 +56,16 @@ export default function MobileMenu({
         <div>
           {/* Mobile Header */}
           <div className="p-4 border-b border-silver-200 flex items-center justify-between bg-silver-50">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+            <div className="flex items-center space-x-2.5">
+              <div className="w-8 h-8 rounded-full border border-amber-400 overflow-hidden bg-white shadow-xs p-0.5 shrink-0 flex items-center justify-center">
+                <img
+                  src="/logo.jpeg"
+                  alt="SilverHouse Logo"
+                  className="w-full h-full object-contain rounded-full"
+                  width="32"
+                  height="32"
+                />
+              </div>
               <span className="font-serif text-lg font-bold text-[#1A1A1A]">SILVERHOUSE</span>
             </div>
             <button
@@ -106,27 +114,26 @@ export default function MobileMenu({
 
           {/* Color Palette — only shown when a festival theme is active */}
           {activeFestivalTheme !== 'none' && (
-          <div className="p-3 bg-white border-b border-silver-200 space-y-2">
-            <div className="flex items-center space-x-1.5">
-              <Palette className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span className="font-serif font-bold text-xs text-[#1A1A1A]">
-                Color Palette
-              </span>
-              <span className="ml-auto text-[9px] font-semibold text-silver-500">{currentThemeObj.name}</span>
-            </div>
+            <div className="p-3 bg-white border-b border-silver-200 space-y-2">
+              <div className="flex items-center space-x-1.5">
+                <Palette className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span className="font-serif font-bold text-xs text-[#1A1A1A]">
+                  Color Palette
+                </span>
+                <span className="ml-auto text-[9px] font-semibold text-silver-500">{currentThemeObj.name}</span>
+              </div>
 
-            <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 {themes.map((t) => {
                   const isSelected = t.id === theme;
                   return (
                     <button
                       key={t.id}
                       onClick={() => setTheme(t.id)}
-                      className={`p-1.5 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
-                        isSelected
+                      className={`p-1.5 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${isSelected
                           ? 'border-[#D4AF37] bg-amber-50/50 ring-1 ring-[#D4AF37] font-bold'
                           : 'border-silver-200 bg-white hover:border-[#D4AF37]/50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center space-x-1.5 truncate">
                         <div className="flex items-center -space-x-1 shrink-0">
@@ -148,7 +155,7 @@ export default function MobileMenu({
                   );
                 })}
               </div>
-          </div>
+            </div>
           )}
 
           {/* Quick Highlight Banner */}

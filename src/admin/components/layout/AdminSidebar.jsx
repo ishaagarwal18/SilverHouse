@@ -27,8 +27,14 @@ export default function AdminSidebar({ open, onClose }) {
       >
         <div className="flex items-center gap-3 px-5 pt-5 pb-4">
           <NavLink to="/admin" onClick={onClose} className="flex min-w-0 flex-1 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-ad-primary to-ad-accent text-white shadow-md shadow-ad-primary/30">
-              <Gem className="w-5 h-5" />
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-ad-border shadow-xs overflow-hidden p-0.5">
+              <img
+                src="/logo.jpeg"
+                alt="SilverHouse"
+                className="w-full h-full object-contain rounded-lg"
+                width="36"
+                height="36"
+              />
             </span>
             <span className="min-w-0">
               <span className="block text-[15px] font-extrabold tracking-tight text-ad-text">SilverHouse</span>

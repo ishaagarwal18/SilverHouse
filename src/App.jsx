@@ -16,12 +16,12 @@ import ThemeSwitcher from './components/common/ThemeSwitcher';
 import AppRouter from './router/AppRouter';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
-import { 
-  fetchProducts, 
-  fetchCategories, 
+import {
+  fetchProducts,
+  fetchCategories,
   fetchFestivals,
-  fetchUserWishlist, 
-  addToWishlistApi, 
+  fetchUserWishlist,
+  addToWishlistApi,
   removeFromWishlistApi,
   addToCartApi,
   updateCartQtyApi,
@@ -54,7 +54,7 @@ export default function App() {
   const [companyDetails, setCompanyDetails] = useState(DEFAULT_COMPANY_DETAILS);
 
   // Active Festival Theme Tracker (e.g. 'diwali', 'navratri', or 'none')
-  const [activeFestivalTheme, setActiveFestivalTheme] = useState(() => 
+  const [activeFestivalTheme, setActiveFestivalTheme] = useState(() =>
     getActiveFestivalTheme(festivals?.find(f => f.is_active)?.name || 'diwali')
   );
 
@@ -161,7 +161,7 @@ export default function App() {
           } else {
             const currentProducts = (products && products.length > 0) ? products : PRODUCTS;
             const mappedItems = dbItems.map(dbItem => {
-              const matchedProduct = currentProducts.find(p => 
+              const matchedProduct = currentProducts.find(p =>
                 String(p.id || p.product_id) === String(dbItem.product_id)
               );
               const prod = matchedProduct || {
@@ -298,8 +298,8 @@ export default function App() {
           // Apply default_theme fetched directly from database table store_parameter
           if (paramsRes.parameters.default_theme) {
             const dbThemeRaw = paramsRes.parameters.default_theme.trim().toLowerCase();
-            const matchedTheme = themes.find(t => 
-              t.name.toLowerCase() === dbThemeRaw || 
+            const matchedTheme = themes.find(t =>
+              t.name.toLowerCase() === dbThemeRaw ||
               t.id.toLowerCase() === dbThemeRaw
             );
             if (matchedTheme && !localStorage.getItem('silverhouse_theme_user_override')) {
@@ -340,7 +340,7 @@ export default function App() {
   const handleOpenInfoModal = (tab = 'about') => {
     setInfoModalTab(tab);
   };
-  
+
   // Checkout Modal State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState({ totalAmount: 0, discountAmount: 0, appliedCoupon: null });
@@ -634,24 +634,24 @@ export default function App() {
       <div>
         {/* Top Announcement Bar */}
         {!isDocumentPage && (
-          <AnnouncementBar 
-            onNavigateCategory={handleNavigateCategory} 
-            storeParams={storeParams} 
+          <AnnouncementBar
+            onNavigateCategory={handleNavigateCategory}
+            storeParams={storeParams}
             onOpenPdf={handleOpenPdf}
           />
         )}
 
         {/* Active Festival Decor Theme Suite (Navratri, Diwali, etc.) */}
         {!isDocumentPage && (
-          <FestivalDecorOverlay 
+          <FestivalDecorOverlay
             activeFestivalName={festivals?.find(f => f.is_active)?.name || 'diwali'}
             onNavigateToFestival={() => {
-              const diwaliCat = categories.find(c => 
-                c.name?.toLowerCase().includes('diwali') || 
-                c.slug?.includes('diwali') || 
-                c.name?.toLowerCase().includes('festive') || 
+              const diwaliCat = categories.find(c =>
+                c.name?.toLowerCase().includes('diwali') ||
+                c.slug?.includes('diwali') ||
+                c.name?.toLowerCase().includes('festive') ||
                 c.slug?.includes('festive') ||
-                c.id === 'silver-coins' || 
+                c.id === 'silver-coins' ||
                 c.slug === 'silver-coins'
               );
               if (diwaliCat) handleNavigateCategory(diwaliCat);

@@ -34,7 +34,16 @@ export default function AdminLoginScreen() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0b0f19] p-4">
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-amber-400/40 bg-gray-900 text-gray-100 shadow-[0_25px_60px_rgba(0,0,0,0.6)]">
-        <div className="border-b border-white/10 bg-linear-to-b from-amber-400/10 to-transparent px-6 pt-7 pb-5 text-center">
+        <div className="border-b border-white/10 bg-linear-to-b from-amber-400/10 to-transparent px-6 pt-7 pb-5 text-center flex flex-col items-center">
+          <div className="w-14 h-14 rounded-full bg-white border-2 border-amber-400/80 shadow-lg overflow-hidden p-0.5 mb-3">
+            <img
+              src="/logo.jpeg"
+              alt="SilverHouse"
+              className="w-full h-full object-contain rounded-full"
+              width="56"
+              height="56"
+            />
+          </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-400">
             <ShieldCheck className="w-3.5 h-3.5" /> SilverHouse Studio
           </span>

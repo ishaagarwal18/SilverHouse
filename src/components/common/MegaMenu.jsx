@@ -30,11 +30,10 @@ export default function MegaMenu({ categories, onSelectCategory, onSelectSubcate
                       onSelectCategory(cat.id);
                       onClose();
                     }}
-                    className={`w-full px-6 py-3 text-left font-medium text-xs sm:text-sm flex items-center justify-between transition-all cursor-pointer ${
-                      isActive
+                    className={`w-full px-6 py-3 text-left font-medium text-xs sm:text-sm flex items-center justify-between transition-all cursor-pointer ${isActive
                         ? 'bg-[var(--th-card)] text-[var(--th-primary)] font-bold border-l-4 border-[var(--th-primary)] shadow-xs'
                         : 'text-[var(--th-text-main)] hover:text-[var(--th-primary)] hover:bg-[var(--th-card)]/60'
-                    }`}
+                      }`}
                   >
                     <span>{cat.name}</span>
                     <ChevronRight className={`w-4 h-4 transition-transform ${isActive ? 'text-[var(--th-accent)] translate-x-1' : 'text-[var(--th-text-muted)]'}`} />
