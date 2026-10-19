@@ -93,8 +93,8 @@ export const ENTITY_FORM_SCHEMAS = {
     { name: 'discount_amount', label: 'Discount Amount (₹)', type: 'number', step: '0.01', default: 0 },
     { name: 'final_payable', label: 'Final Payable (₹)', type: 'number', step: '0.01', placeholder: 'e.g. 1599.00' },
     { name: 'delivery_address', label: 'Delivery Address', type: 'textarea', fullWidth: true, placeholder: 'Street, City, State - Pincode' },
-    { name: 'user_id', label: 'User ID', type: 'number', placeholder: 'e.g. 1' },
-    { name: 'address_id', label: 'Address ID', type: 'number', placeholder: 'e.g. 1' }
+    { name: 'user_id', label: 'User ID', type: 'number', required: true, placeholder: 'e.g. 1' },
+    { name: 'address_id', label: 'Address ID', type: 'number', required: true, placeholder: 'e.g. 1 (Linked Delivery Address)' }
   ],
   custom_orders: [
     { name: 'order_number', label: 'Custom Order #', type: 'text', placeholder: 'e.g. CUST-...' },

@@ -318,10 +318,39 @@ export default function CheckoutModal({
       };
     });
 
-    const effectiveUserId = (isAuthenticated && user?.userId) ? user.userId : 1;
+    const effectiveUserId = (isAuthenticated && user) ? (user.userId || user.user_id || user.id || 1) : 1;
     const patronName = effective.fullName?.trim() || user?.fullName || 'Valued Patron';
     const patronPhone = effective.phone?.trim() || user?.phone || '9999999999';
     const patronEmail = effective.email?.trim() || user?.email || null;
+
+    let finalAddressId = effective.addressId;
+    if (!finalAddressId && effectiveUserId) {
+      try {
+        const newAddr = await addUserAddress({
+          userId: effectiveUserId,
+          address_name: effective.addressType || 'Home',
+          recipient_name: patronName,
+          Block: '',
+          street: formData.address?.trim() || effective.fullAddress,
+          area: formData.city?.trim() || 'Ahmedabad',
+          city: formData.city?.trim() || 'Ahmedabad',
+          state: formData.state || 'Gujarat',
+          pincode: formData.pincode?.trim() || '380001',
+          country: 'India'
+        });
+        if (newAddr && newAddr.success && newAddr.address_id) {
+          finalAddressId = newAddr.address_id;
+          setSelectedAddressId(finalAddressId);
+        }
+      } catch (err) {
+        console.warn('Could not auto-save address to account:', err);
+      }
+    }
+
+    if (!finalAddressId) {
+      setErrorMessage('A delivery address is required to place an order. Please select or add an address.');
+      return;
+    }
 
     const orderPayload = {
       proc_name: 'orders',
@@ -329,7 +358,7 @@ export default function CheckoutModal({
       table_values: {
         order_number: generatedID,
         user_id: effectiveUserId,
-        address_id: effective.addressId || null,
+        address_id: finalAddressId,
         customer_name: patronName,
         customer_email: patronEmail,
         customer_phone: patronPhone,

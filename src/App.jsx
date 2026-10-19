@@ -43,7 +43,7 @@ export default function App() {
   const location = useLocation();
   const { user, isAuthenticated } = useAuth();
   const { setTheme, themes } = useTheme();
-  const effectiveUserId = user?.userId || null;
+  const effectiveUserId = user ? (user.userId || user.user_id || user.id) : null;
 
   // Datasets loaded live from Backend API
   const [products, setProducts] = useState(PRODUCTS);
@@ -491,7 +491,7 @@ export default function App() {
     // Sync addition directly to database table dbo.cart & dbo.cart_item
     try {
       await addToCartApi({
-        userId: isAuthenticated && user?.userId ? user.userId : null,
+        userId: effectiveUserId,
         guestToken: getGuestToken(),
         productId: prodId,
         quantity: quantity
@@ -519,13 +519,13 @@ export default function App() {
     try {
       if (newQty <= 0) {
         await removeCartItemApi({
-          userId: isAuthenticated && user?.userId ? user.userId : null,
+          userId: effectiveUserId,
           guestToken: getGuestToken(),
           productId: prodId
         });
       } else {
         await updateCartQtyApi({
-          userId: isAuthenticated && user?.userId ? user.userId : null,
+          userId: effectiveUserId,
           guestToken: getGuestToken(),
           productId: prodId,
           quantity: newQty
@@ -548,7 +548,7 @@ export default function App() {
     // Sync removal directly to database table dbo.cart_item
     try {
       await removeCartItemApi({
-        userId: isAuthenticated && user?.userId ? user.userId : null,
+        userId: effectiveUserId,
         guestToken: getGuestToken(),
         productId: prodId
       });

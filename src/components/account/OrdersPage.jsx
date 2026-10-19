@@ -32,9 +32,10 @@ export default function OrdersPage({ onTriggerToast }) {
           proc_name: 'orders',
           opr: 'SELECT'
         };
-        if (user?.userId) {
-          payload.condition = String(user.userId);
-          payload.table_values = { user_id: user.userId };
+        const effectiveUid = user ? (user.userId || user.user_id || user.id) : null;
+        if (effectiveUid) {
+          payload.condition = String(effectiveUid);
+          payload.table_values = { user_id: effectiveUid };
         }
         const res = await postApiData(payload);
         if (res && res.data && Array.isArray(res.data)) {
@@ -84,7 +85,7 @@ export default function OrdersPage({ onTriggerToast }) {
             items: (lo.items && lo.items.length > 0) ? lo.items : existing.items
           });
         } else {
-          if (!user?.userId || !lo.user_id || lo.user_id === user.userId) {
+          if (!effectiveUid || !lo.user_id || lo.user_id === effectiveUid) {
             orderMap.set(key, lo);
           }
         }

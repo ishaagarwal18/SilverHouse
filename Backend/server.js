@@ -2622,13 +2622,34 @@ app.post('/api/data', async (req, res) => {
             }
         }
 
-        const effectiveJsonStr = table_values ? JSON.stringify({ table_values }) : jsonStr;
-
         // Customer Order Validation (Supports verified accounts and guest checkout)
         if (mutationProc === 'orders' && (operation === 'ADD' || operation === 'INSERT')) {
             const parsedUserId = table_values && (table_values.user_id || table_values.userId);
             const isGuest = !parsedUserId || isNaN(parseInt(parsedUserId, 10)) || parseInt(parsedUserId, 10) <= 0;
             const paymentMethod = ((table_values && table_values.payment_method) || '').trim().toLowerCase();
+
+            // Mandatory delivery address validation: An order cannot be placed without a delivery address linked to the user
+            let addressId = table_values && (table_values.address_id || table_values.addressId);
+            if (!addressId && parsedUserId && !isGuest) {
+                try {
+                    const addrReq = pool.request();
+                    addrReq.input('uid', sql.Int, parseInt(parsedUserId, 10));
+                    const addrRes = await addrReq.query('SELECT TOP 1 address_id FROM dbo.address WHERE user_id = @uid ORDER BY address_id DESC');
+                    if (addrRes.recordset && addrRes.recordset.length > 0) {
+                        addressId = addrRes.recordset[0].address_id;
+                        table_values.address_id = addressId;
+                    }
+                } catch (e) {
+                    console.warn('[Address Check Warn]:', e.message);
+                }
+            }
+
+            if (!addressId) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Cannot place an order without a delivery address. At least 1 address must be linked to the user.'
+                });
+            }
 
             if (isGuest) {
                 // Strictly disallow Cash on Delivery (COD) for guest orders to eliminate fake orders
@@ -2650,6 +2671,8 @@ app.post('/api/data', async (req, res) => {
                 }
             }
         }
+
+        const effectiveJsonStr = table_values ? JSON.stringify({ table_values }) : jsonStr;
 
         const request = pool.request();
         request.input('proc_name', sql.NVarChar(50), mutationProc);

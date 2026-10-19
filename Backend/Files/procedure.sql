@@ -1762,6 +1762,22 @@ BEGIN
         IF @AddressId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.address WHERE address_id = @AddressId)
             SET @AddressId = NULL;
 
+        -- If address_id was not explicitly specified, auto-link the user's latest saved address
+        IF @AddressId IS NULL AND @UserId IS NOT NULL
+        BEGIN
+            SELECT TOP 1 @AddressId = address_id
+            FROM dbo.address
+            WHERE user_id = @UserId
+            ORDER BY address_id DESC;
+        END
+
+        -- Strictly enforce: An order CANNOT be placed without a delivery address linked to the user
+        IF @AddressId IS NULL
+        BEGIN
+            RAISERROR('Validation Error: Cannot place an order without a delivery address. At least 1 address must be linked to the user.', 16, 1);
+            RETURN;
+        END
+
         -- Generate Order Number if not provided
         IF @OrderNumber IS NULL OR @OrderNumber = ''
             SET @OrderNumber = 'SH-' + CONVERT(VARCHAR(8), DATEADD(minute, 330, SYSUTCDATETIME()), 112) + '-' + RIGHT(CAST(NEWID() AS VARCHAR(36)), 4);

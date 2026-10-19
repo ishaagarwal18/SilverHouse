@@ -43,13 +43,34 @@ export default function AddressPage({ onTriggerToast }) {
     country: 'India'
   });
 
+  const [activeAddressId, setActiveAddressId] = useState(() => localStorage.getItem('silverhouse_active_address_id') || '');
+
   // Load addresses when user is authenticated
   const loadAddresses = async () => {
-    if (!user || !user.userId) return;
+    const uid = user?.userId || user?.user_id || user?.id;
+    if (!uid) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const data = await fetchUserAddresses(user.userId);
-      setAddresses(Array.isArray(data) ? data : []);
+      const data = await fetchUserAddresses(uid);
+      const list = Array.isArray(data) ? data : [];
+      setAddresses(list);
+      if (list.length > 0) {
+        const savedId = localStorage.getItem('silverhouse_active_address_id');
+        const found = list.find(a => String(a.address_id) === String(savedId));
+        const chosen = found || list[0];
+        setActiveAddressId(String(chosen.address_id));
+        localStorage.setItem('silverhouse_active_address_id', String(chosen.address_id));
+        if (chosen.pincode) {
+          localStorage.setItem('silverhouse_pincode', chosen.pincode);
+        }
+      } else {
+        setActiveAddressId('');
+        localStorage.removeItem('silverhouse_active_address_id');
+        localStorage.removeItem('silverhouse_pincode');
+      }
     } catch (err) {
       console.error('Failed to load addresses:', err);
     } finally {
@@ -82,6 +103,12 @@ export default function AddressPage({ onTriggerToast }) {
     e.preventDefault();
     setError('');
 
+    const uid = user?.userId || user?.user_id || user?.id;
+    if (!uid) {
+      setError('Please sign in to save an address.');
+      return;
+    }
+
     if (!formData.recipient_name.trim() || !formData.Block.trim() || !formData.street.trim() || !formData.area.trim() || !formData.city.trim() || !formData.pincode.trim()) {
       setError('Please fill out all required fields.');
       return;
@@ -95,7 +122,7 @@ export default function AddressPage({ onTriggerToast }) {
     setSubmitting(true);
     try {
       const payload = {
-        userId: user.userId,
+        userId: uid,
         address_name: formData.address_name,
         recipient_name: formData.recipient_name.trim(),
         Block: formData.Block.trim(),
@@ -111,6 +138,20 @@ export default function AddressPage({ onTriggerToast }) {
       if (res && res.success) {
         if (onTriggerToast) onTriggerToast('Address saved successfully!');
         setIsModalOpen(false);
+
+        if (payload.pincode) {
+          localStorage.setItem('silverhouse_pincode', payload.pincode);
+        }
+        const newAddrId = res.data?.address_id || (Array.isArray(res.data) && res.data[0]?.address_id);
+        if (newAddrId) {
+          localStorage.setItem('silverhouse_active_address_id', String(newAddrId));
+          setActiveAddressId(String(newAddrId));
+        }
+
+        window.dispatchEvent(new CustomEvent('silverhouse_address_updated', {
+          detail: { address: { ...payload, address_id: newAddrId } }
+        }));
+
         // Reset fields
         setFormData({
           address_name: 'Home',
@@ -123,7 +164,7 @@ export default function AddressPage({ onTriggerToast }) {
           pincode: '',
           country: 'India'
         });
-        loadAddresses();
+        await loadAddresses();
       } else {
         setError(res?.error || 'Failed to save address. Please try again.');
       }
@@ -136,13 +177,21 @@ export default function AddressPage({ onTriggerToast }) {
 
   const confirmDeleteAddress = async () => {
     if (!addressToDelete) return;
+    const uid = user?.userId || user?.user_id || user?.id;
     setIsDeleting(true);
     try {
-      const res = await deleteUserAddress(addressToDelete.address_id, user.userId);
+      const res = await deleteUserAddress(addressToDelete.address_id, uid);
       if (res && res.success) {
         if (onTriggerToast) onTriggerToast('Address removed successfully.');
+        if (String(activeAddressId) === String(addressToDelete.address_id)) {
+          localStorage.removeItem('silverhouse_active_address_id');
+          setActiveAddressId('');
+        }
+        window.dispatchEvent(new CustomEvent('silverhouse_address_updated', {
+          detail: { addressId: addressToDelete.address_id, deleted: true }
+        }));
         setAddressToDelete(null);
-        loadAddresses();
+        await loadAddresses();
       } else {
         alert(res?.error || 'Failed to delete address.');
       }
@@ -274,11 +323,32 @@ export default function AddressPage({ onTriggerToast }) {
                   </div>
 
                   {/* Card Footer */}
-                  <div className="pt-4 mt-4 border-t border-[var(--th-border)]/70 flex items-center justify-between text-[11px] text-[var(--th-text-muted)]">
+                  <div className="pt-4 mt-4 border-t border-[var(--th-border)]/70 flex items-center justify-between text-[11px]">
                     <span className="flex items-center space-x-1.5 text-emerald-700 dark:text-emerald-400 font-medium">
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Insured Transit Verified</span>
+                      <span>Verified</span>
                     </span>
+
+                    {String(activeAddressId) === String(addr.address_id) ? (
+                      <span className="inline-flex items-center space-x-1 text-xs font-bold text-[var(--th-primary)] bg-[var(--th-primary)]/10 px-2.5 py-1 rounded-full border border-[var(--th-primary)]/30">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Deliver Here</span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          localStorage.setItem('silverhouse_active_address_id', String(addr.address_id));
+                          if (addr.pincode) localStorage.setItem('silverhouse_pincode', addr.pincode);
+                          setActiveAddressId(String(addr.address_id));
+                          window.dispatchEvent(new CustomEvent('silverhouse_address_updated', { detail: { address: addr } }));
+                          if (onTriggerToast) onTriggerToast(`Deliver to set to ${addr.address_name || addr.city || addr.pincode}`);
+                        }}
+                        className="text-xs font-bold text-[var(--th-text-muted)] hover:text-[var(--th-primary)] underline decoration-dotted hover:decoration-solid cursor-pointer"
+                      >
+                        Set as Deliver to
+                      </button>
+                    )}
                   </div>
                 </div>
               );

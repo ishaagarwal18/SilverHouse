@@ -228,8 +228,12 @@ BEGIN
                 o.address_id,
                 a.recipient_name,
                 a.city,
-                a.pincode,
-                ISNULL(a.street + ', ' + a.city + ' - ' + a.pincode, 'Registered Address') AS delivery_address,
+                COALESCE(
+                    NULLIF(LTRIM(RTRIM(a.street + ', ' + a.city + ' - ' + a.pincode)), ''),
+                    (SELECT TOP 1 a2.street + ', ' + a2.city + ' - ' + a2.pincode FROM dbo.address a2 WHERE a2.user_id = o.user_id ORDER BY a2.address_id DESC),
+                    NULLIF(LTRIM(RTRIM(o.delivery_address)), ''),
+                    'Address Not Linked'
+                ) AS delivery_address,
                 o.created_at,
                 (
                     SELECT 

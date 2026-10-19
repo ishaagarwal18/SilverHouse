@@ -4,16 +4,17 @@ import { loginUser, registerUser, fetchCurrentUser, sendPhoneOtp, verifyPhoneOtp
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const [token, setToken] = useState(() => localStorage.getItem('silverhouse_token') || null);
   const [user, setUser] = useState(() => {
     try {
+      const savedToken = localStorage.getItem('silverhouse_token');
+      if (!savedToken) return null;
       const savedUser = localStorage.getItem('silverhouse_user');
       return savedUser ? JSON.parse(savedUser) : null;
     } catch {
       return null;
     }
   });
-
-  const [token, setToken] = useState(() => localStorage.getItem('silverhouse_token') || null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +28,9 @@ export function AuthProvider({ children }) {
           // Token expired or invalid
           logout();
         }
+      } else {
+        setUser(null);
+        localStorage.removeItem('silverhouse_user');
       }
       setLoading(false);
     }
@@ -105,6 +109,8 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('silverhouse_guest_cart');
     localStorage.removeItem('silverhouse_guest_wishlist');
     localStorage.removeItem('silverhouse_guest_token');
+    localStorage.removeItem('silverhouse_pincode');
+    localStorage.removeItem('silverhouse_active_address_id');
     window.dispatchEvent(new Event('silverhouse_logout'));
   };
 

@@ -30,7 +30,7 @@ export const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
  */
 export function getAuthToken() {
   if (typeof localStorage === 'undefined') return null;
-  return localStorage.getItem('silverhouse_token') || localStorage.getItem('silverhouse_admin_token') || null;
+  return localStorage.getItem('silverhouse_token') || null;
 }
 
 // Helpful console info indicating active environment
@@ -388,7 +388,29 @@ export async function addUserAddress(addressData) {
         country: addressData.country || 'India'
       }
     };
-    return await postApiData(payload);
+    const res = await postApiData(payload);
+    if (res && res.success) {
+      if (addressData.pincode) {
+        localStorage.setItem('silverhouse_pincode', addressData.pincode);
+      }
+      const newId = res.data?.address_id || (Array.isArray(res.data) && res.data[0]?.address_id);
+      if (newId) {
+        localStorage.setItem('silverhouse_active_address_id', String(newId));
+      }
+      try {
+        window.dispatchEvent(new CustomEvent('silverhouse_address_updated', {
+          detail: {
+            address: {
+              ...addressData,
+              address_id: newId || undefined
+            }
+          }
+        }));
+      } catch (e) {
+        console.warn('Could not dispatch silverhouse_address_updated:', e);
+      }
+    }
+    return res;
   } catch (err) {
     console.error('[API Service] Error adding address:', err);
     return { success: false, error: err.message };
@@ -400,12 +422,25 @@ export async function addUserAddress(addressData) {
  */
 export async function updateUserAddress(addressId, addressData) {
   try {
-    return await postApiData({
+    const res = await postApiData({
       proc_name: 'address',
       opr: 'UPDATE',
       condition: String(addressId),
       table_values: addressData
     });
+    if (res && res.success) {
+      if (addressData?.pincode) {
+        localStorage.setItem('silverhouse_pincode', addressData.pincode);
+      }
+      try {
+        window.dispatchEvent(new CustomEvent('silverhouse_address_updated', {
+          detail: { addressId, address: addressData }
+        }));
+      } catch (e) {
+        console.warn('Could not dispatch silverhouse_address_updated:', e);
+      }
+    }
+    return res;
   } catch (err) {
     console.error('[API Service] Error updating address:', err);
     return { success: false, error: err.message };
@@ -417,11 +452,24 @@ export async function updateUserAddress(addressId, addressData) {
  */
 export async function deleteUserAddress(addressId) {
   try {
-    return await postApiData({
+    const res = await postApiData({
       proc_name: 'address',
       opr: 'DELETE',
       condition: String(addressId)
     });
+    if (res && res.success) {
+      if (localStorage.getItem('silverhouse_active_address_id') === String(addressId)) {
+        localStorage.removeItem('silverhouse_active_address_id');
+      }
+      try {
+        window.dispatchEvent(new CustomEvent('silverhouse_address_updated', {
+          detail: { addressId, deleted: true }
+        }));
+      } catch (e) {
+        console.warn('Could not dispatch silverhouse_address_updated:', e);
+      }
+    }
+    return res;
   } catch (err) {
     console.error('[API Service] Error deleting address:', err);
     return { success: false, error: err.message };

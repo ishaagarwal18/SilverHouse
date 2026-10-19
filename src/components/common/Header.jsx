@@ -113,8 +113,9 @@ export default function Header({
 
   // Load user's saved addresses to display active delivery destination
   const loadAddressesForHeader = () => {
-    if (isAuthenticated && user?.userId) {
-      fetchUserAddresses(user.userId).then(list => {
+    const uid = user?.userId || user?.user_id || user?.id;
+    if (isAuthenticated && uid) {
+      fetchUserAddresses(uid).then(list => {
         if (Array.isArray(list) && list.length > 0) {
           setSavedAddresses(list);
           const savedId = localStorage.getItem('silverhouse_active_address_id');
@@ -123,10 +124,17 @@ export default function Header({
           setActiveAddress(chosen);
           if (chosen?.pincode) {
             setPincode(chosen.pincode);
+            localStorage.setItem('silverhouse_pincode', chosen.pincode);
+          }
+          if (chosen?.address_id) {
+            localStorage.setItem('silverhouse_active_address_id', String(chosen.address_id));
           }
         } else {
           setSavedAddresses([]);
           setActiveAddress(null);
+          setPincode('');
+          localStorage.removeItem('silverhouse_pincode');
+          localStorage.removeItem('silverhouse_active_address_id');
         }
       }).catch(err => console.warn('Could not fetch addresses for header:', err));
     } else {
@@ -137,9 +145,23 @@ export default function Header({
 
   useEffect(() => {
     loadAddressesForHeader();
-    window.addEventListener('silverhouse_address_updated', loadAddressesForHeader);
+    const handleAddressUpdated = (e) => {
+      if (e?.detail?.address) {
+        const addr = e.detail.address;
+        if (addr.pincode) {
+          setPincode(addr.pincode);
+          localStorage.setItem('silverhouse_pincode', addr.pincode);
+        }
+        if (addr.address_id) {
+          localStorage.setItem('silverhouse_active_address_id', String(addr.address_id));
+        }
+        setActiveAddress(prev => ({ ...(prev || {}), ...addr }));
+      }
+      loadAddressesForHeader();
+    };
+    window.addEventListener('silverhouse_address_updated', handleAddressUpdated);
     return () => {
-      window.removeEventListener('silverhouse_address_updated', loadAddressesForHeader);
+      window.removeEventListener('silverhouse_address_updated', handleAddressUpdated);
     };
   }, [isAuthenticated, user]);
 
@@ -355,13 +377,19 @@ export default function Header({
               <button
                 onClick={toggleLocationPopover}
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-[var(--th-card)] border border-[var(--th-border)] hover:border-[var(--th-accent)] text-xs text-[var(--th-text-main)] transition-all cursor-pointer shadow-2xs group"
-                title={activeAddress || pincode ? "Change delivery location" : "Add delivery address"}
+                title={(activeAddress || (savedAddresses && savedAddresses.length > 0)) ? `Deliver to: ${(activeAddress || savedAddresses[0])?.address_name || (activeAddress || savedAddresses[0])?.city || 'Selected Address'}` : (!isAuthenticated && pincode) ? `Deliver to: ${pincode}` : "Add delivery address"}
               >
                 <MapPin className="w-3.5 h-3.5 text-[var(--th-accent)] shrink-0 group-hover:scale-110 transition-transform" />
                 <span className="font-semibold text-xs truncate max-w-[175px]">
-                  {activeAddress ? (
-                    <>Deliver to: <strong className="text-[var(--th-primary)] font-bold">{activeAddress.address_name || activeAddress.city}</strong></>
-                  ) : pincode ? (
+                  {(activeAddress || (savedAddresses && savedAddresses.length > 0)) ? (
+                    (() => {
+                      const displayAddr = activeAddress || savedAddresses[0];
+                      const locationLabel = displayAddr.address_name?.trim() || displayAddr.city || displayAddr.pincode || 'Destination';
+                      return (
+                        <>Deliver to: <strong className="text-[var(--th-primary)] font-bold">{locationLabel}</strong></>
+                      );
+                    })()
+                  ) : (!isAuthenticated && pincode) ? (
                     <>Deliver to: <strong className="text-[var(--th-primary)] font-bold">{pincode}</strong></>
                   ) : (
                     <span className="text-[var(--th-text-muted)] group-hover:text-[var(--th-primary)] font-semibold flex items-center space-x-1">
@@ -380,7 +408,7 @@ export default function Header({
                     <div className="flex items-center space-x-2">
                       <MapPin className="w-4 h-4 text-[var(--th-accent)]" />
                       <h4 className="font-serif font-bold text-sm text-[var(--th-text-main)]">
-                        {activeAddress ? 'Delivery Location' : 'Add Delivery Address'}
+                        {(activeAddress || (savedAddresses && savedAddresses.length > 0)) ? 'Delivery Location' : 'Add Delivery Address'}
                       </h4>
                     </div>
                     <button
@@ -409,8 +437,9 @@ export default function Header({
                                     setActiveAddress(addr);
                                     setPincode(addr.pincode);
                                     localStorage.setItem('silverhouse_pincode', addr.pincode);
-                                    localStorage.setItem('silverhouse_active_address_id', addr.address_id);
+                                    localStorage.setItem('silverhouse_active_address_id', String(addr.address_id));
                                     setIsLocationPopoverOpen(false);
+                                    window.dispatchEvent(new CustomEvent('silverhouse_address_updated', { detail: { address: addr } }));
                                   }}
                                   className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-start justify-between ${isSelected
                                     ? 'border-[var(--th-primary)] bg-[var(--th-primary)]/10 text-[var(--th-primary)] font-bold'
