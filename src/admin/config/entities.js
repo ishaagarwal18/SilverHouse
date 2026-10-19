@@ -28,7 +28,7 @@ export const PK_MAP = {
   category: 'category_id',
   image: 'image_id',
   make_master: 'm_id',
-  product_image: 'product_id',
+  product_image: 'image_id',
   festival: 'id',
   festival_category: 'id',
   orders: 'order_id',
@@ -132,6 +132,9 @@ export const ENTITY_FORM_SCHEMAS = {
     { name: 'full_name', label: 'Full Name', type: 'text', required: true, placeholder: 'e.g. Isha Agarwal' },
     { name: 'phone', label: 'Mobile Number', type: 'text', required: true, placeholder: 'e.g. +91 98765 43210' },
     { name: 'role', label: 'User Role', type: 'select', options: ['CUSTOMER', 'ADMIN'], default: 'CUSTOMER' },
+    { name: 'birthday_date', label: 'Birthday Date', type: 'date', placeholder: 'YYYY-MM-DD' },
+    { name: 'anniversary_date', label: 'Anniversary Date', type: 'date', placeholder: 'YYYY-MM-DD' },
+    { name: 'gst_number', label: 'GST Number', type: 'text', placeholder: '15-character GSTIN' },
     { name: 'password', label: 'Password (Admins Only)', type: 'password', placeholder: 'Enter password for Admin' }
   ],
   address: [

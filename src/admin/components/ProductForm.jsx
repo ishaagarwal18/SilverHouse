@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Calculator, Check, ShoppingBag, Star } from 'lucide-react';
-import { callProc, fetchRows, formatINR, linkProductImage, productImage } from '../api/adminApi';
+import { Calculator, Check, Image as ImageIcon, ShoppingBag, Star, Trash2 } from 'lucide-react';
+import { adminImageUrl, callProc, fetchRows, formatINR, linkProductImage, PLACEHOLDER_IMG, productImage } from '../api/adminApi';
 import { AUDIENCE_OPTIONS, FINISH_OPTIONS, PURITY_OPTIONS } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
 import { Button, Field, FormGrid, ImageUrlField, LoadingBlock, Spinner } from './ui';
@@ -58,6 +58,8 @@ export default function ProductForm({ productId, initialRow, categories: categor
   const [values, setValues] = useState(() => (initialRow ? rowToValues(initialRow) : EMPTY_PRODUCT));
   const [imageUrl, setImageUrl] = useState(() => (initialRow ? productImage(initialRow) : ''));
   const [originalImage, setOriginalImage] = useState(() => (initialRow ? productImage(initialRow) : ''));
+  const [imageList, setImageList] = useState([]);
+  const [deletingImageId, setDeletingImageId] = useState(null);
   const [stats, setStats] = useState(() => ({ sold: initialRow?.sold || 0, review: initialRow?.review || 0 }));
   const [categories, setCategories] = useState(categoriesProp || []);
   const [makes, setMakes] = useState(makesProp || []);
@@ -69,19 +71,23 @@ export default function ProductForm({ productId, initialRow, categories: categor
     let cancelled = false;
     (async () => {
       try {
-        const [cats, mks, rows] = await Promise.all([
+        const [cats, mks, rows, imgs] = await Promise.all([
           categoriesProp ? categoriesProp : fetchRows('category'),
           makesProp ? makesProp : fetchRows('make_master'),
-          isEdit && !initialRow ? fetchRows('product', productId) : null
+          isEdit && !initialRow ? fetchRows('product', productId) : null,
+          isEdit ? fetchRows('product_image', productId) : Promise.resolve([])
         ]);
         if (cancelled) return;
         setCategories(cats);
         setMakes(mks);
+        if (Array.isArray(imgs)) {
+          setImageList(imgs);
+        }
         const row = rows?.[0];
         if (row) {
           setValues(rowToValues(row));
-          setImageUrl(productImage(row));
-          setOriginalImage(productImage(row));
+          setImageUrl('');
+          setOriginalImage('');
           setStats({ sold: row.sold || 0, review: row.review || 0 });
         } else if (rows) {
           showToast(`Product #${productId} was not found.`, true);
@@ -94,6 +100,22 @@ export default function ProductForm({ productId, initialRow, categories: categor
     })();
     return () => { cancelled = true; };
   }, [productId, isEdit, initialRow, categoriesProp, makesProp, showToast]);
+
+  const handleRemoveImage = async (imgId) => {
+    if (!window.confirm(`Are you sure you want to remove Image #${imgId} from this product?`)) return;
+    setDeletingImageId(imgId);
+    try {
+      const res = await callProc('product_image', 'DELETE', { product_id: Number(productId), image_id: Number(imgId) }, String(productId));
+      if (!res.success) throw new Error(res.status || res.error || 'Failed to remove image');
+      showToast(`Image #${imgId} removed from product!`);
+      const updated = await fetchRows('product_image', productId);
+      setImageList(Array.isArray(updated) ? updated : []);
+    } catch (err) {
+      showToast(err.message, true);
+    } finally {
+      setDeletingImageId(null);
+    }
+  };
 
   const pricing = useMemo(() => computePricing(values), [values]);
   const set = key => e => setValues(v => ({ ...v, [key]: e.target.value }));
@@ -224,7 +246,60 @@ export default function ProductForm({ productId, initialRow, categories: categor
           <textarea id="pf-desc" rows={3} className="ad-input" value={values.description} onChange={set('description')} placeholder="Detailed item specifications, hallmark details, and styling notes..." />
         </Field>
 
-        <ImageUrlField label="Product Primary Image" value={imageUrl} onChange={setImageUrl} />
+        {/* Image Management Section */}
+        <div className="sm:col-span-2 space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold text-ad-text">
+              Product Images ({imageList.length} of 5 photos)
+            </label>
+            <span className="text-[11px] text-ad-muted">
+              A product can have at most 5 images
+            </span>
+          </div>
+
+          {imageList.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {imageList.map((img, idx) => (
+                <div key={img.image_id || idx} className="group relative rounded-xl border border-ad-border bg-ad-card p-2 flex flex-col items-center">
+                  <img
+                    src={adminImageUrl(img.image_url)}
+                    alt=""
+                    className="w-full h-24 object-cover rounded-lg border border-ad-border bg-ad-surface"
+                    onError={e => { e.currentTarget.src = PLACEHOLDER_IMG; }}
+                  />
+                  <div className="w-full mt-2 flex items-center justify-between">
+                    <span className="text-[10px] font-mono text-ad-muted font-bold">
+                      #{img.image_id} {idx === 0 && <span className="text-ad-primary font-bold">(Main)</span>}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={deletingImageId === img.image_id}
+                      onClick={() => handleRemoveImage(img.image_id)}
+                      className="p-1 rounded-md text-ad-danger hover:bg-ad-danger/15 transition-colors cursor-pointer"
+                      title="Delete this image"
+                      aria-label={`Delete image ${img.image_id}`}
+                    >
+                      {deletingImageId === img.image_id ? <Spinner className="w-3.5 h-3.5" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {imageList.length < 5 ? (
+            <ImageUrlField
+              label={imageList.length === 0 ? "Product Primary Image" : "Add Another Photo to Product"}
+              value={imageUrl}
+              onChange={setImageUrl}
+            />
+          ) : (
+            <div className="rounded-lg border border-ad-border bg-ad-card/40 px-3.5 py-2.5 text-xs text-ad-muted flex items-center gap-2">
+              <span className="font-semibold text-ad-text">Maximum Photo Limit Reached (5 of 5):</span>
+              To add or change a photo, please delete one of the existing images above.
+            </div>
+          )}
+        </div>
 
         <Field label="Customer Review Rating">
           <div className="flex items-center gap-2 rounded-lg border border-ad-border bg-ad-card px-3.5 py-2.5 text-[12.5px] text-ad-muted">

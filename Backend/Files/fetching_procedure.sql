@@ -232,11 +232,11 @@ BEGIN
                 SET @UserPhone = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.phone')));
 
             IF @Condition IS NOT NULL AND @Condition <> ''
-                SELECT user_id, full_name, phone, role, created_at FROM dbo.[user] WHERE user_id = TRY_CAST(@Condition AS INT) OR phone = @Condition;
+                SELECT user_id, full_name, phone, role, birthday_date, anniversary_date, gst_number, created_at FROM dbo.[user] WHERE user_id = TRY_CAST(@Condition AS INT) OR phone = @Condition;
             ELSE IF @UserPhone IS NOT NULL AND @UserPhone <> ''
-                SELECT user_id, full_name, phone, role, created_at FROM dbo.[user] WHERE phone = @UserPhone;
+                SELECT user_id, full_name, phone, role, birthday_date, anniversary_date, gst_number, created_at FROM dbo.[user] WHERE phone = @UserPhone;
             ELSE
-                SELECT user_id, full_name, phone, role, created_at FROM dbo.[user] ORDER BY user_id DESC;
+                SELECT user_id, full_name, phone, role, birthday_date, anniversary_date, gst_number, created_at FROM dbo.[user] ORDER BY user_id DESC;
         END
 
         -- 7. Address Entity Fetcher
@@ -355,7 +355,6 @@ BEGIN
                 COALESCE(
                     NULLIF(LTRIM(RTRIM(a.street + ', ' + a.city + ' - ' + a.pincode)), ''),
                     (SELECT TOP 1 a2.street + ', ' + a2.city + ' - ' + a2.pincode FROM dbo.address a2 WHERE a2.user_id = o.user_id ORDER BY a2.address_id DESC),
-                    NULLIF(LTRIM(RTRIM(o.delivery_address)), ''),
                     'Address Not Linked'
                 ) AS delivery_address,
                 o.created_at,

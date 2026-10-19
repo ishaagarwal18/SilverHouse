@@ -15,7 +15,7 @@ const VARCHAR_COLUMNS = [
   'name', 'title', 'product_name', 'category_name', 'category', 'description', 'purity', 'weight', 'image_url', 'url',
   'images', 'image', 'confirm', 'custom_category', 'is_custom', 'role', 'email', 'full_name', 'phone', 'address_line1',
   'address_line2', 'city', 'state', 'postal_code', 'country', 'order_number', 'payment_status', 'password_hash',
-  'password', 'remark', 'status', 'created_at', 'updated_at'
+  'password', 'remark', 'status', 'created_at', 'updated_at', 'birthday_date', 'anniversary_date', 'gst_number'
 ];
 const VARCHAR_HINTS = ['url', 'name', 'desc', 'date', 'email', 'phone', 'address', 'status', 'text', 'hash', 'time', 'role', 'code', 'number', 'weight', 'purity'];
 const NUMERIC_COLUMNS = ['quantity', 'qty', 'stock', 'stock_available', 'stock_qty', 'price', 'discount', 'discount_percent', 'final_price', 'unit_price', 'subtotal', 'total_amount', 'discount_amount', 'final_payable'];
@@ -82,7 +82,7 @@ function getProductThumbnail(item, prod) {
   return adminImageUrl(raw);
 }
 
-const recordLabel = (row, id) => row.title || row.name || row.slug || row.type || `Record #${id}`;
+const recordLabel = (row, id) => row.title || row.name || row.product_name || row.slug || row.type || `Record #${id}`;
 
 /** Route: /admin/data/:entity — generic table manager for every database table. */
 export default function DataManagerPage() {
@@ -388,9 +388,17 @@ function DataManager({ entity }) {
     let failed = 0;
     let lastError = '';
     for (const id of deleteCtx.ids) {
-      const tableValues = entity === 'product_image' && deleteCtx.imageId ? { product_id: id, image_id: deleteCtx.imageId } : undefined;
+      let tableValues = undefined;
+      let targetCondition = String(id);
+      if (entity === 'product_image') {
+        const row = deleteCtx.row || rows.find(r => String(r.image_id) === String(id));
+        const pId = row?.product_id || deleteCtx.productId;
+        const imgId = row?.image_id || id;
+        tableValues = { product_id: pId, image_id: Number(imgId) };
+        targetCondition = String(pId);
+      }
       try {
-        const res = await callProc(entity, 'DELETE', tableValues, String(id));
+        const res = await callProc(entity, 'DELETE', tableValues, targetCondition);
         if (res.success) ok++;
         else { failed++; lastError = res.status || res.error; }
       } catch (err) {
@@ -522,6 +530,21 @@ function DataManager({ entity }) {
     if (h === 'festival_id' && val !== '-') {
       return lookups.festivals[val] ? `${lookups.festivals[val]} (${val})` : (row.festival_name || val);
     }
+    if ((h === 'birthday_date' || h === 'anniversary_date') && val !== '-') {
+      try {
+        const d = new Date(val);
+        if (!isNaN(d.getTime())) {
+          return (
+            <span className="font-mono text-xs text-ad-text">
+              {d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </span>
+          );
+        }
+      } catch { /* fallback to string */ }
+    }
+    if (h === 'gst_number' && val !== '-') {
+      return <span className="font-mono text-xs font-semibold tracking-wider text-ad-text uppercase">{val}</span>;
+    }
     if (entity === 'product' && h === 'm_id' && val !== '-') return lookups.makes[val] || val;
     if (typeof val === 'object') return JSON.stringify(val);
     return String(val);
@@ -530,6 +553,9 @@ function DataManager({ entity }) {
   const columnTitle = h => {
     if (h === 'category_id') return 'Category Name';
     if (h === 'festival_id') return 'Festival Name';
+    if (h === 'birthday_date') return 'Birthday';
+    if (h === 'anniversary_date') return 'Anniversary';
+    if (h === 'gst_number') return 'GST Number';
     if (entity === 'product') {
       if (h === 'm_id') return 'Make Master';
       if (h === 'title') return 'Product Name';
@@ -703,10 +729,22 @@ function DataManager({ entity }) {
                         ))}
                         <td className="sticky right-0 whitespace-nowrap bg-ad-surface px-3 py-2.5 text-right">
                           <div className="inline-flex gap-1.5">
-                            <button type="button" onClick={() => openEdit(idVal)} className="inline-flex items-center gap-1 rounded-md border border-ad-primary/30 bg-ad-primary/10 px-2.5 py-1.5 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white cursor-pointer" aria-label={`Edit record ${idVal}`}>
-                              <Pencil className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Edit</span>
-                            </button>
-                            <button type="button" onClick={() => setDeleteCtx({ ids: [String(idVal)], imageId: row.image_id || null })} className="inline-flex items-center gap-1 rounded-md border border-ad-danger/30 bg-ad-danger/10 px-2.5 py-1.5 text-xs font-semibold text-ad-danger hover:bg-ad-danger hover:text-white cursor-pointer" aria-label={`Delete record ${idVal}`}>
+                            {entity !== 'product_image' && (
+                              <button type="button" onClick={() => openEdit(idVal)} className="inline-flex items-center gap-1 rounded-md border border-ad-primary/30 bg-ad-primary/10 px-2.5 py-1.5 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white cursor-pointer" aria-label={`Edit record ${idVal}`}>
+                                <Pencil className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Edit</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setDeleteCtx({
+                                ids: [String(idVal)],
+                                row,
+                                imageId: row.image_id || null,
+                                productId: row.product_id || null
+                              })}
+                              className="inline-flex items-center gap-1 rounded-md border border-ad-danger/30 bg-ad-danger/10 px-2.5 py-1.5 text-xs font-semibold text-ad-danger hover:bg-ad-danger hover:text-white cursor-pointer"
+                              aria-label={`Delete record ${idVal}`}
+                            >
                               <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Delete</span>
                             </button>
                           </div>
@@ -1238,6 +1276,24 @@ function DeletePreview({ ids, rows, pkField, lookups }) {
     if (row.m_id !== undefined) meta.push(['Make', lookups.makes[row.m_id] || `Make #${row.m_id}`]);
     return (
       <div className="rounded-lg border border-ad-border bg-ad-card p-3.5">
+        {row.image_url && (
+          <div className="flex items-center gap-3 mb-3 pb-3 border-b border-ad-border">
+            <img
+              src={adminImageUrl(row.image_url)}
+              alt=""
+              className="w-14 h-14 rounded-lg object-cover border border-ad-border bg-ad-surface shrink-0"
+              onError={e => { e.currentTarget.src = PLACEHOLDER_IMG; }}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-xs text-ad-text truncate">
+                {row.product_name || `Product #${row.product_id}`}
+              </p>
+              <p className="text-[11px] font-mono text-ad-muted mt-0.5">
+                Image ID: #{row.image_id || ids[0]}
+              </p>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between gap-3 font-bold text-ad-text">
           <span className="min-w-0 truncate">{recordLabel(row, ids[0])}</span>
           <span className="shrink-0 rounded-md bg-ad-hover px-2 py-0.5 font-mono text-xs">#{ids[0]}</span>
