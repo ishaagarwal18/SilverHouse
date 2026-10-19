@@ -217,7 +217,7 @@ export const ADMIN_NAV = [
   },
   {
     label: 'Commerce & Users',
-    items: ['custom_orders', 'orders', 'cart', 'cart_item', 'wishlist', 'user', 'address', 'viewed', 'review'].map(entityNavItem)
+    items: ['custom_orders', 'orders', 'cart', 'wishlist', 'user', 'address', 'viewed', 'review'].map(entityNavItem)
   },
   {
     label: 'System & Configuration',

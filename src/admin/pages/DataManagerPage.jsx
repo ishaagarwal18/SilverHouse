@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronRight, Image as ImageIcon, Pencil, Plus, Receipt, Sparkles, Tag, Trash2, Upload, Zap } from 'lucide-react';
-import { adminFetch, adminImageUrl, callProc, fetchRows, PLACEHOLDER_IMG } from '../api/adminApi';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronRight, Image as ImageIcon, Pencil, Plus, Receipt, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Upload, Zap } from 'lucide-react';
+import { adminFetch, adminImageUrl, callProc, fetchRows, PLACEHOLDER_IMG, productImage } from '../api/adminApi';
 import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISIONS, PK_MAP } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
 import { importRecordsFromFile } from '../lib/importRecords';
@@ -61,12 +61,34 @@ function parseImageList(val) {
   return [trimmed];
 }
 
+/** Extracts the best available image URL for an order line item or product. */
+function getProductThumbnail(item, prod) {
+  let raw = item?.image_url;
+  if (!raw && prod) {
+    raw = productImage(prod);
+    if (!raw && prod.images_json) {
+      try {
+        const parsed = typeof prod.images_json === 'string' ? JSON.parse(prod.images_json) : prod.images_json;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          raw = parsed[0]?.image_url || parsed[0];
+        }
+      } catch { /* ignore */ }
+    }
+    if (!raw && prod.image) {
+      const parsedList = parseImageList(prod.image);
+      if (parsedList.length > 0) raw = parsedList[0];
+    }
+  }
+  return adminImageUrl(raw);
+}
+
 const recordLabel = (row, id) => row.title || row.name || row.slug || row.type || `Record #${id}`;
 
 /** Route: /admin/data/:entity — generic table manager for every database table. */
 export default function DataManagerPage() {
   const { entity } = useParams();
   if (entity === 'order_item') return <Navigate to="/admin/data/orders" replace />;
+  if (entity === 'cart_item') return <Navigate to="/admin/data/cart" replace />;
   if (!PK_MAP[entity]) return <Navigate to="/admin/data/product" replace />;
   return <DataManager key={entity} entity={entity} />;
 }
@@ -94,6 +116,11 @@ function DataManager({ entity }) {
   const [orderItemModal, setOrderItemModal] = useState(null); // { mode: 'ADD' | 'EDIT', orderId, item? }
   const [deleteOrderItemCtx, setDeleteOrderItemCtx] = useState(null);
   const [deletingOrderItem, setDeletingOrderItem] = useState(false);
+  const [expandedCarts, setExpandedCarts] = useState(() => new Set());
+  const [cartItemsMap, setCartItemsMap] = useState({});
+  const [cartItemModal, setCartItemModal] = useState(null); // { mode: 'ADD' | 'EDIT', cartId, item? }
+  const [deleteCartItemCtx, setDeleteCartItemCtx] = useState(null);
+  const [deletingCartItem, setDeletingCartItem] = useState(false);
   const [deleteCtx, setDeleteCtx] = useState(null); // { ids: [], imageId? }
   const [deleting, setDeleting] = useState(false);
   const [lightbox, setLightbox] = useState(null); // { images, index }
@@ -113,13 +140,14 @@ function DataManager({ entity }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [data, cats, makes, festList, itemsData, prodList] = await Promise.all([
+      const [data, cats, makes, festList, itemsData, prodList, cartItemsData] = await Promise.all([
         fetchRows(entity),
         fetchRows('category'),
         fetchRows('make_master'),
         fetchRows('festival'),
         entity === 'orders' ? fetchRows('order_item') : Promise.resolve([]),
-        entity === 'orders' ? fetchRows('product') : Promise.resolve([])
+        (entity === 'orders' || entity === 'cart') ? fetchRows('product') : Promise.resolve([]),
+        entity === 'cart' ? fetchRows('cart_item') : Promise.resolve([])
       ]);
       setRows(data);
       if (entity === 'orders' && Array.isArray(itemsData)) {
@@ -131,11 +159,21 @@ function DataManager({ entity }) {
         }
         setOrderItemsMap(map);
       }
+      if (entity === 'cart' && Array.isArray(cartItemsData)) {
+        const map = {};
+        for (const item of cartItemsData) {
+          const cid = String(item.cart_id);
+          if (!map[cid]) map[cid] = [];
+          map[cid].push(item);
+        }
+        setCartItemsMap(map);
+      }
       setLookups({
         categories: Object.fromEntries(cats.map(c => [c.category_id, c.name])),
         makes: Object.fromEntries(makes.map(m => [m.m_id, m.type])),
         festivals: Object.fromEntries((festList || []).map(f => [f.id, f.name || f.shortName || f.id])),
         products: Object.fromEntries((prodList || []).map(p => [p.product_id, p.title || p.name || `Product #${p.product_id}`])),
+        productMap: Object.fromEntries((prodList || []).map(p => [String(p.product_id), p])),
         categoryList: cats || [],
         festivalList: festList || [],
         productList: prodList || []
@@ -164,8 +202,35 @@ function DataManager({ entity }) {
     }
   }, []);
 
+  const refreshCartItems = useCallback(async () => {
+    try {
+      const items = await fetchRows('cart_item');
+      if (Array.isArray(items)) {
+        const map = {};
+        for (const it of items) {
+          const cid = String(it.cart_id);
+          if (!map[cid]) map[cid] = [];
+          map[cid].push(it);
+        }
+        setCartItemsMap(map);
+      }
+    } catch (err) {
+      console.warn('Failed to refresh cart items:', err);
+    }
+  }, []);
+
   const toggleExpandOrder = idVal => {
     setExpandedOrders(prev => {
+      const next = new Set(prev);
+      const strId = String(idVal);
+      if (next.has(strId)) next.delete(strId);
+      else next.add(strId);
+      return next;
+    });
+  };
+
+  const toggleExpandCart = idVal => {
+    setExpandedCarts(prev => {
       const next = new Set(prev);
       const strId = String(idVal);
       if (next.has(strId)) next.delete(strId);
@@ -188,6 +253,23 @@ function DataManager({ entity }) {
       showToast(err.message, true);
     } finally {
       setDeletingOrderItem(false);
+    }
+  };
+
+  const executeDeleteCartItem = async () => {
+    if (!deleteCartItemCtx) return;
+    setDeletingCartItem(true);
+    try {
+      const res = await callProc('cart_item', 'DELETE', undefined, String(deleteCartItemCtx.cart_item_id));
+      if (!res.success) throw new Error(res.status || res.error || 'Failed to delete cart item');
+      showToast(`Cart item #${deleteCartItemCtx.cart_item_id} deleted successfully!`);
+      setDeleteCartItemCtx(null);
+      await refreshCartItems();
+      await loadData();
+    } catch (err) {
+      showToast(err.message, true);
+    } finally {
+      setDeletingCartItem(false);
     }
   };
 
@@ -531,8 +613,8 @@ function DataManager({ entity }) {
                       aria-label="Select all"
                     />
                   </th>
-                  {entity === 'orders' && (
-                    <th className="w-12 border-b border-ad-border px-2 py-3" aria-label="Expand order" />
+                  {(entity === 'orders' || entity === 'cart') && (
+                    <th className="w-12 border-b border-ad-border px-2 py-3" aria-label={`Expand ${entity === 'orders' ? 'order' : 'cart'}`} />
                   )}
                   {headers.map(h => {
                     const sortable = !isImageColumn(h);
@@ -560,13 +642,16 @@ function DataManager({ entity }) {
                   if (isFirstHighlight) firstHighlightAssigned = true;
                   const checked = selected.has(String(idVal));
                   const isOrderExpanded = entity === 'orders' && expandedOrders.has(String(idVal));
+                  const isCartExpanded = entity === 'cart' && expandedCarts.has(String(idVal));
+                  const isExpanded = isOrderExpanded || isCartExpanded;
                   const orderItems = (entity === 'orders' && orderItemsMap[String(idVal)]) || [];
+                  const cartItems = (entity === 'cart' && cartItemsMap[String(idVal)]) || [];
 
                   return (
                     <React.Fragment key={`${idVal}-${rowIdx}`}>
                       <tr
                         ref={isFirstHighlight ? highlightedRowRef : undefined}
-                        className={`border-b border-ad-border last:border-0 hover:bg-ad-card/60 transition-colors ${hl ? 'ad-row-flash' : ''} ${checked ? 'bg-ad-primary/5' : ''} ${isOrderExpanded ? 'bg-ad-card/30' : ''}`}
+                        className={`border-b border-ad-border last:border-0 hover:bg-ad-card/60 transition-colors ${hl ? 'ad-row-flash' : ''} ${checked ? 'bg-ad-primary/5' : ''} ${isExpanded ? 'bg-ad-card/30' : ''}`}
                         style={hl ? { '--ad-flash': hl.color, boxShadow: `inset 3px 0 0 ${hl.color}` } : undefined}
                       >
                         <td className="px-3 py-2.5">
@@ -585,6 +670,22 @@ function DataManager({ entity }) {
                               aria-label={`Toggle order items for order ${row.order_number || idVal}`}
                             >
                               <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isOrderExpanded ? 'rotate-90' : ''}`} />
+                            </button>
+                          </td>
+                        )}
+                        {entity === 'cart' && (
+                          <td className="w-12 px-2 py-2.5 text-center">
+                            <button
+                              type="button"
+                              onClick={() => toggleExpandCart(idVal)}
+                              className={`inline-flex items-center justify-center w-7 h-7 rounded-lg border transition-all cursor-pointer ${isCartExpanded
+                                  ? 'bg-ad-primary text-white border-ad-primary shadow-xs'
+                                  : 'bg-ad-card text-ad-muted hover:text-ad-text hover:bg-ad-hover border-ad-border'
+                                }`}
+                              title={isCartExpanded ? 'Hide cart items' : `View ${cartItems.length} cart line item(s)`}
+                              aria-label={`Toggle cart items for cart #${idVal}`}
+                            >
+                              <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isCartExpanded ? 'rotate-90' : ''}`} />
                             </button>
                           </td>
                         )}
@@ -656,8 +757,8 @@ function DataManager({ entity }) {
                                   <table className="w-full text-left text-xs">
                                     <thead>
                                       <tr className="border-b border-ad-border text-[10.5px] font-bold uppercase tracking-wider text-ad-muted bg-ad-card/40">
-                                        <th className="py-2.5 px-3">Item #</th>
-                                        <th className="py-2.5 px-3">Product Name</th>
+                                        <th className="py-2.5 px-3 w-16">Item #</th>
+                                        <th className="py-2.5 px-3 min-w-[280px]">Product Details & Photo</th>
                                         <th className="py-2.5 px-3 text-right">Unit Price</th>
                                         <th className="py-2.5 px-3 text-center">Discount</th>
                                         <th className="py-2.5 px-3 text-center">Quantity</th>
@@ -667,17 +768,89 @@ function DataManager({ entity }) {
                                     </thead>
                                     <tbody className="divide-y divide-ad-border">
                                       {orderItems.map(item => {
-                                        const prodTitle = item.product_name || lookups.products?.[item.product_id] || `Product #${item.product_id}`;
+                                        const prod = lookups.productMap?.[String(item.product_id)] || {};
+                                        const prodTitle = item.product_name || prod.title || prod.product_name || lookups.products?.[item.product_id] || `Product #${item.product_id}`;
+                                        const imgUrl = getProductThumbnail(item, prod);
+                                        const categoryName = item.category_name || prod.category_name || lookups.categories?.[prod.category_id];
+                                        const purity = item.purity || prod.purity;
+                                        const weight = item.weight || prod.weight;
+                                        const idealFor = item.ideal_for || prod.ideal_for;
+                                        const makeType = item.make_type || prod.make_type || lookups.makes?.[prod.m_id];
+                                        const packaging = prod.packaging;
                                         const lineSubtotal = Number(item.subtotal || (Number(item.unit_price || 0) * (1 - Number(item.discount_percent || 0) / 100) * Number(item.quantity || 1)));
                                         return (
                                           <tr key={item.order_item_id} className="hover:bg-ad-card/50 transition-colors">
-                                            <td className="py-2.5 px-3 font-mono text-ad-muted">#{item.order_item_id}</td>
-                                            <td className="py-2.5 px-3">
-                                              <span className="font-semibold text-ad-text">{prodTitle}</span>
-                                              <span className="block text-[10.5px] text-ad-muted font-mono">Product ID: {item.product_id}</span>
+                                            <td className="py-3 px-3 font-mono text-ad-muted align-middle">#{item.order_item_id}</td>
+                                            <td className="py-3 px-3 align-middle">
+                                              <div className="flex items-center gap-3">
+                                                {/* Product Photo with hover-zoom & click to enlarge */}
+                                                <div className="relative group shrink-0">
+                                                  <img
+                                                    src={imgUrl}
+                                                    alt={prodTitle}
+                                                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border border-ad-border bg-ad-card object-cover shadow-2xs transition-transform group-hover:scale-105"
+                                                    onError={e => { e.currentTarget.src = PLACEHOLDER_IMG; }}
+                                                  />
+                                                  {imgUrl && imgUrl !== PLACEHOLDER_IMG && (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => setLightbox({ images: [imgUrl], index: 0 })}
+                                                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl text-white transition-opacity cursor-pointer"
+                                                      title="Click to view photo"
+                                                    >
+                                                      <ImageIcon className="w-4 h-4" />
+                                                    </button>
+                                                  )}
+                                                </div>
+
+                                                {/* Product Details & Specification Badges */}
+                                                <div className="min-w-0 flex-1 space-y-1">
+                                                  <div className="flex flex-wrap items-center gap-1.5">
+                                                    <span className="font-bold text-[13px] text-ad-text">
+                                                      {prodTitle}
+                                                    </span>
+                                                    <span className="rounded-md bg-ad-card px-1.5 py-0.5 text-[10px] font-mono text-ad-muted border border-ad-border">
+                                                      ID: #{item.product_id}
+                                                    </span>
+                                                    {categoryName && (
+                                                      <span className="inline-flex items-center gap-1 rounded-md bg-ad-accent/10 border border-ad-accent/25 px-1.5 py-0.5 text-[10.5px] font-semibold text-ad-accent">
+                                                        <Tag className="w-2.5 h-2.5" /> {categoryName}
+                                                      </span>
+                                                    )}
+                                                  </div>
+
+                                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                                    {purity && (
+                                                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                        <ShieldCheck className="w-3 h-3 text-emerald-500" /> {purity}
+                                                      </span>
+                                                    )}
+                                                    {weight && (
+                                                      <span className="inline-flex items-center gap-1 rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] font-mono text-ad-text">
+                                                        <Scale className="w-3 h-3 text-ad-muted" /> {weight}
+                                                      </span>
+                                                    )}
+                                                    {idealFor && (
+                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted">
+                                                        Ideal For: <strong className="text-ad-text font-medium">{idealFor}</strong>
+                                                      </span>
+                                                    )}
+                                                    {makeType && (
+                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted">
+                                                        Make: <strong className="text-ad-text font-medium">{makeType}</strong>
+                                                      </span>
+                                                    )}
+                                                    {packaging && (
+                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted hidden lg:inline-flex">
+                                                        📦 {packaging}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
                                             </td>
-                                            <td className="py-2.5 px-3 text-right font-mono font-medium">₹{Number(item.unit_price || 0).toLocaleString('en-IN')}</td>
-                                            <td className="py-2.5 px-3 text-center">
+                                            <td className="py-3 px-3 text-right font-mono font-medium align-middle">₹{Number(item.unit_price || 0).toLocaleString('en-IN')}</td>
+                                            <td className="py-3 px-3 text-center align-middle">
                                               {Number(item.discount_percent || 0) > 0 ? (
                                                 <span className="rounded-md bg-ad-success/15 px-1.5 py-0.5 text-[10.5px] font-bold text-ad-success">
                                                   {Number(item.discount_percent)}% OFF
@@ -686,16 +859,16 @@ function DataManager({ entity }) {
                                                 <span className="text-ad-muted">-</span>
                                               )}
                                             </td>
-                                            <td className="py-2.5 px-3 text-center font-bold text-ad-text">{item.quantity}</td>
-                                            <td className="py-2.5 px-3 text-right font-mono font-bold text-ad-text">
+                                            <td className="py-3 px-3 text-center font-bold text-ad-text align-middle">{item.quantity}</td>
+                                            <td className="py-3 px-3 text-right font-mono font-bold text-ad-text text-[13px] align-middle">
                                               ₹{lineSubtotal.toLocaleString('en-IN')}
                                             </td>
-                                            <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                                            <td className="py-3 px-3 text-right whitespace-nowrap align-middle">
                                               <div className="inline-flex gap-1">
                                                 <button
                                                   type="button"
                                                   onClick={() => setOrderItemModal({ mode: 'EDIT', orderId: idVal, item })}
-                                                  className="p-1 rounded text-ad-primary hover:bg-ad-primary/15 transition-colors cursor-pointer"
+                                                  className="p-1.5 rounded-lg text-ad-primary hover:bg-ad-primary/15 transition-colors cursor-pointer"
                                                   title="Edit item"
                                                   aria-label={`Edit item ${item.order_item_id}`}
                                                 >
@@ -704,7 +877,7 @@ function DataManager({ entity }) {
                                                 <button
                                                   type="button"
                                                   onClick={() => setDeleteOrderItemCtx(item)}
-                                                  className="p-1 rounded text-ad-danger hover:bg-ad-danger/15 transition-colors cursor-pointer"
+                                                  className="p-1.5 rounded-lg text-ad-danger hover:bg-ad-danger/15 transition-colors cursor-pointer"
                                                   title="Delete item"
                                                   aria-label={`Delete item ${item.order_item_id}`}
                                                 >
@@ -726,6 +899,201 @@ function DataManager({ entity }) {
                                         </td>
                                         <td className="py-2 px-3 text-right font-mono text-ad-text text-[13px] font-bold">
                                           ₹{orderItems.reduce((acc, it) => acc + Number(it.subtotal || (Number(it.unit_price || 0) * (1 - Number(it.discount_percent || 0) / 100) * Number(it.quantity || 1))), 0).toLocaleString('en-IN')}
+                                        </td>
+                                        <td></td>
+                                      </tr>
+                                    </tfoot>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+
+                      {/* Expandable Cart Line Items Row */}
+                      {entity === 'cart' && isCartExpanded && (
+                        <tr className="border-b border-ad-border bg-ad-card/25">
+                          <td colSpan={headers.length + 3} className="px-3 py-3 sm:px-6 sm:py-4">
+                            <div className="rounded-xl border border-ad-border bg-ad-surface p-4 shadow-sm animate-in fade-in-50 duration-200">
+                              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-ad-border">
+                                <div className="flex items-center gap-2.5">
+                                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ad-primary/15 text-ad-primary">
+                                    <ShoppingCart className="w-4 h-4" />
+                                  </span>
+                                  <div>
+                                    <h4 className="text-xs font-bold text-ad-text uppercase tracking-wider flex items-center gap-2">
+                                      <span>Cart Line Items</span>
+                                      <span className="rounded-md bg-ad-card px-2 py-0.5 font-mono text-[11px] border border-ad-border">
+                                        Cart #{idVal}
+                                      </span>
+                                    </h4>
+                                    <p className="text-[11px] text-ad-muted mt-0.5">
+                                      {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'} in this cart
+                                      {row.user_id ? ` · User ID: #${row.user_id}` : ''}
+                                      {row.customer_name || row.user_name ? ` · Customer: ${row.customer_name || row.user_name}` : ''}
+                                      {row.guest_token ? ` · Guest: ${String(row.guest_token).substring(0, 10)}…` : ''}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setCartItemModal({ mode: 'ADD', cartId: idVal })}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-ad-primary/40 bg-ad-primary/10 px-3 py-1.5 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white transition-colors cursor-pointer"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" /> Add Cart Item
+                                  </button>
+                                </div>
+                              </div>
+
+                              {cartItems.length === 0 ? (
+                                <div className="py-6 text-center text-xs text-ad-muted">
+                                  No items currently recorded in this cart. Click "Add Cart Item" to attach products.
+                                </div>
+                              ) : (
+                                <div className="mt-3 overflow-x-auto">
+                                  <table className="w-full text-left text-xs">
+                                    <thead>
+                                      <tr className="border-b border-ad-border text-[10.5px] font-bold uppercase tracking-wider text-ad-muted bg-ad-card/40">
+                                        <th className="py-2.5 px-3 w-16">Item #</th>
+                                        <th className="py-2.5 px-3 min-w-[280px]">Product Details & Photo</th>
+                                        <th className="py-2.5 px-3 text-right">Unit Price</th>
+                                        <th className="py-2.5 px-3 text-center">Quantity</th>
+                                        <th className="py-2.5 px-3 text-right">Subtotal</th>
+                                        <th className="py-2.5 px-3 text-right">Actions</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-ad-border">
+                                      {cartItems.map(item => {
+                                        const prod = lookups.productMap?.[String(item.product_id)] || {};
+                                        const prodTitle = item.product_name || prod.title || prod.product_name || lookups.products?.[item.product_id] || `Product #${item.product_id}`;
+                                        const imgUrl = getProductThumbnail(item, prod);
+                                        const categoryName = item.category_name || prod.category_name || lookups.categories?.[prod.category_id];
+                                        const purity = item.purity || prod.purity;
+                                        const weight = item.weight || prod.weight;
+                                        const idealFor = item.ideal_for || prod.ideal_for;
+                                        const makeType = item.make_type || prod.make_type || lookups.makes?.[prod.m_id];
+                                        const packaging = prod.packaging;
+                                        const unitPrice = Number(item.unit_price || prod.price || 0);
+                                        const lineSubtotal = Number(item.subtotal || (unitPrice * Number(item.quantity || 1)));
+
+                                        return (
+                                          <tr key={item.cart_item_id} className="hover:bg-ad-card/50 transition-colors">
+                                            <td className="py-3 px-3 font-mono text-ad-muted align-middle">#{item.cart_item_id}</td>
+                                            <td className="py-3 px-3 align-middle">
+                                              <div className="flex items-center gap-3">
+                                                {/* Product Photo with hover-zoom & click to enlarge */}
+                                                <div className="relative group shrink-0">
+                                                  <img
+                                                    src={imgUrl}
+                                                    alt={prodTitle}
+                                                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border border-ad-border bg-ad-card object-cover shadow-2xs transition-transform group-hover:scale-105"
+                                                    onError={e => { e.currentTarget.src = PLACEHOLDER_IMG; }}
+                                                  />
+                                                  {imgUrl && imgUrl !== PLACEHOLDER_IMG && (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => setLightbox({ images: [imgUrl], index: 0 })}
+                                                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl text-white transition-opacity cursor-pointer"
+                                                      title="Click to view photo"
+                                                    >
+                                                      <ImageIcon className="w-4 h-4" />
+                                                    </button>
+                                                  )}
+                                                </div>
+
+                                                {/* Product Details & Specification Badges */}
+                                                <div className="min-w-0 flex-1 space-y-1">
+                                                  <div className="flex flex-wrap items-center gap-1.5">
+                                                    <span className="font-bold text-[13px] text-ad-text">
+                                                      {prodTitle}
+                                                    </span>
+                                                    <span className="rounded-md bg-ad-card px-1.5 py-0.5 text-[10px] font-mono text-ad-muted border border-ad-border">
+                                                      ID: #{item.product_id}
+                                                    </span>
+                                                    {categoryName && (
+                                                      <span className="inline-flex items-center gap-1 rounded-md bg-ad-accent/10 border border-ad-accent/25 px-1.5 py-0.5 text-[10.5px] font-semibold text-ad-accent">
+                                                        <Tag className="w-2.5 h-2.5" /> {categoryName}
+                                                      </span>
+                                                    )}
+                                                  </div>
+
+                                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                                    {purity && (
+                                                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                        <ShieldCheck className="w-3 h-3 text-emerald-500" /> {purity}
+                                                      </span>
+                                                    )}
+                                                    {weight && (
+                                                      <span className="inline-flex items-center gap-1 rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] font-mono text-ad-text">
+                                                        <Scale className="w-3 h-3 text-ad-muted" /> {weight}
+                                                      </span>
+                                                    )}
+                                                    {idealFor && (
+                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted">
+                                                        Ideal For: <strong className="text-ad-text font-medium">{idealFor}</strong>
+                                                      </span>
+                                                    )}
+                                                    {makeType && (
+                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted">
+                                                        Make: <strong className="text-ad-text font-medium">{makeType}</strong>
+                                                      </span>
+                                                    )}
+                                                    {packaging && (
+                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted hidden lg:inline-flex">
+                                                        📦 {packaging}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </td>
+                                            <td className="py-3 px-3 text-right font-mono font-medium align-middle">₹{unitPrice.toLocaleString('en-IN')}</td>
+                                            <td className="py-3 px-3 text-center font-bold text-ad-text align-middle">{item.quantity}</td>
+                                            <td className="py-3 px-3 text-right font-mono font-bold text-ad-text text-[13px] align-middle">
+                                              ₹{lineSubtotal.toLocaleString('en-IN')}
+                                            </td>
+                                            <td className="py-3 px-3 text-right whitespace-nowrap align-middle">
+                                              <div className="inline-flex gap-1">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setCartItemModal({ mode: 'EDIT', cartId: idVal, item })}
+                                                  className="p-1.5 rounded-lg text-ad-primary hover:bg-ad-primary/15 transition-colors cursor-pointer"
+                                                  title="Edit cart item"
+                                                  aria-label={`Edit cart item ${item.cart_item_id}`}
+                                                >
+                                                  <Pencil className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setDeleteCartItemCtx(item)}
+                                                  className="p-1.5 rounded-lg text-ad-danger hover:bg-ad-danger/15 transition-colors cursor-pointer"
+                                                  title="Delete cart item"
+                                                  aria-label={`Delete cart item ${item.cart_item_id}`}
+                                                >
+                                                  <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                    <tfoot>
+                                      <tr className="border-t-2 border-ad-border bg-ad-card/30 font-bold">
+                                        <td colSpan={3} className="py-2 px-3 text-right text-ad-muted uppercase tracking-wider text-[11px]">
+                                          Total Cart Items:
+                                        </td>
+                                        <td className="py-2 px-3 text-center text-ad-text font-bold">
+                                          {cartItems.reduce((acc, it) => acc + Number(it.quantity || 0), 0)} pcs
+                                        </td>
+                                        <td className="py-2 px-3 text-right font-mono text-ad-text text-[13px] font-bold">
+                                          ₹{cartItems.reduce((acc, it) => {
+                                            const prod = lookups.productMap?.[String(it.product_id)] || {};
+                                            const up = Number(it.unit_price || prod.price || 0);
+                                            return acc + Number(it.subtotal || (up * Number(it.quantity || 1)));
+                                          }, 0).toLocaleString('en-IN')}
                                         </td>
                                         <td></td>
                                       </tr>
@@ -794,6 +1162,21 @@ function DataManager({ entity }) {
         />
       )}
 
+      {cartItemModal && (
+        <CartItemModal
+          mode={cartItemModal.mode}
+          cartId={cartItemModal.cartId}
+          item={cartItemModal.item}
+          products={lookups.productList || []}
+          onClose={() => setCartItemModal(null)}
+          onSaved={() => {
+            setCartItemModal(null);
+            refreshCartItems();
+            loadData();
+          }}
+        />
+      )}
+
       <ConfirmDeleteModal
         open={Boolean(deleteOrderItemCtx)}
         busy={deletingOrderItem}
@@ -809,6 +1192,26 @@ function DataManager({ entity }) {
             </p>
             <p className="text-ad-muted mt-1">
               Quantity: {deleteOrderItemCtx.quantity} · Unit Price: ₹{Number(deleteOrderItemCtx.unit_price || 0).toLocaleString('en-IN')}
+            </p>
+          </div>
+        )}
+      />
+
+      <ConfirmDeleteModal
+        open={Boolean(deleteCartItemCtx)}
+        busy={deletingCartItem}
+        title="Delete Cart Item"
+        subtitle={`Remove line item #${deleteCartItemCtx?.cart_item_id} from Cart #${deleteCartItemCtx?.cart_id}`}
+        confirmLabel="Delete Item"
+        onClose={() => setDeleteCartItemCtx(null)}
+        onConfirm={executeDeleteCartItem}
+        details={deleteCartItemCtx && (
+          <div className="rounded-lg border border-ad-border bg-ad-card p-3 text-xs">
+            <p className="font-semibold text-ad-text">
+              {deleteCartItemCtx.product_name || `Product #${deleteCartItemCtx.product_id}`}
+            </p>
+            <p className="text-ad-muted mt-1">
+              Quantity: {deleteCartItemCtx.quantity} · Price: ₹{Number(deleteCartItemCtx.unit_price || 0).toLocaleString('en-IN')}
             </p>
           </div>
         )}
@@ -1230,6 +1633,34 @@ function OrderItemModal({ mode, orderId, item, products = [], onClose, onSaved }
               )}
             </div>
 
+            {/* Selected Product Preview Card */}
+            {(() => {
+              const selectedProd = products.find(p => String(p.product_id) === String(selectedProductId));
+              if (!selectedProd) return null;
+              const selectedImg = getProductThumbnail(null, selectedProd);
+              return (
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-ad-border bg-ad-card/40 animate-in fade-in-50">
+                  <img
+                    src={selectedImg}
+                    alt={selectedProd.title || selectedProd.name}
+                    className="w-12 h-12 rounded-lg object-cover border border-ad-border shrink-0 bg-ad-surface"
+                    onError={e => { e.currentTarget.src = PLACEHOLDER_IMG; }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-xs text-ad-text truncate">
+                      {selectedProd.title || selectedProd.name}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10.5px] text-ad-muted">
+                      {selectedProd.category_name && <span className="text-ad-accent font-medium">{selectedProd.category_name}</span>}
+                      {selectedProd.purity && <span>· {selectedProd.purity}</span>}
+                      {selectedProd.weight && <span>· {selectedProd.weight}</span>}
+                      {selectedProd.price && <span>· Base Price: ₹{Number(selectedProd.price).toLocaleString('en-IN')}</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-ad-text mb-1">Unit Price (₹)</label>
@@ -1288,4 +1719,143 @@ function OrderItemModal({ mode, orderId, item, products = [], onClose, onSaved }
     </Modal>
   );
 }
+
+/** In-page line-item creation/edition modal for an expanded cart. */
+function CartItemModal({ mode, cartId, item, products = [], onClose, onSaved }) {
+  const { showToast } = useAdminUI();
+  const [saving, setSaving] = useState(false);
+  const isEdit = mode === 'EDIT';
+
+  const [selectedProductId, setSelectedProductId] = useState(() => item?.product_id || (products[0]?.product_id || ''));
+  const [quantity, setQuantity] = useState(() => item?.quantity ?? 1);
+
+  const selectedProd = useMemo(() => {
+    return products.find(p => String(p.product_id) === String(selectedProductId));
+  }, [products, selectedProductId]);
+
+  const unitPrice = Number(item?.unit_price || selectedProd?.price || 0);
+  const calculatedSubtotal = useMemo(() => {
+    const qty = Number(quantity) || 1;
+    return unitPrice * qty;
+  }, [unitPrice, quantity]);
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if (!selectedProductId) {
+      showToast('Please select a product.', true);
+      return;
+    }
+    setSaving(true);
+    const tableValues = {
+      cart_id: Number(cartId),
+      product_id: Number(selectedProductId),
+      quantity: Number(quantity) || 1
+    };
+
+    try {
+      const res = await callProc('cart_item', isEdit ? 'EDIT' : 'ADD', tableValues, isEdit ? String(item.cart_item_id) : null);
+      if (!res.success) throw new Error(res.status || res.error || 'Failed to save cart item');
+      showToast(`Cart item ${isEdit ? 'updated' : 'added'} successfully!`);
+      onSaved();
+    } catch (err) {
+      showToast(err.message, true);
+      setSaving(false);
+    }
+  };
+
+  const selectedImg = selectedProd ? getProductThumbnail(null, selectedProd) : null;
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={isEdit ? `Edit Cart Item (#${item.cart_item_id})` : `Add Item to Cart #${cartId}`}
+      subtitle={`Manage line item details for Cart #${cartId}`}
+    >
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <ModalBody>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-ad-text mb-1">Product</label>
+              {products.length > 0 ? (
+                <select
+                  value={selectedProductId}
+                  onChange={e => setSelectedProductId(e.target.value)}
+                  required
+                  className="ad-input w-full cursor-pointer"
+                >
+                  <option value="">-- Select Product --</option>
+                  {products.map(p => (
+                    <option key={p.product_id} value={p.product_id}>
+                      {p.title || p.name} (ID: {p.product_id}) {p.price ? `— ₹${Number(p.price).toLocaleString('en-IN')}` : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="number"
+                  value={selectedProductId}
+                  onChange={e => setSelectedProductId(e.target.value)}
+                  placeholder="Enter Product ID"
+                  required
+                  className="ad-input w-full"
+                />
+              )}
+            </div>
+
+            {/* Selected Product Preview Card */}
+            {selectedProd && (
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-ad-border bg-ad-card/40 animate-in fade-in-50">
+                <img
+                  src={selectedImg}
+                  alt={selectedProd.title || selectedProd.name}
+                  className="w-12 h-12 rounded-lg object-cover border border-ad-border shrink-0 bg-ad-surface"
+                  onError={e => { e.currentTarget.src = PLACEHOLDER_IMG; }}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-xs text-ad-text truncate">
+                    {selectedProd.title || selectedProd.name}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10.5px] text-ad-muted">
+                    {selectedProd.category_name && <span className="text-ad-accent font-medium">{selectedProd.category_name}</span>}
+                    {selectedProd.purity && <span>· {selectedProd.purity}</span>}
+                    {selectedProd.weight && <span>· {selectedProd.weight}</span>}
+                    {selectedProd.price && <span>· Price: ₹{Number(selectedProd.price).toLocaleString('en-IN')}</span>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-ad-text mb-1">Quantity</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={e => setQuantity(e.target.value)}
+                  required
+                  className="ad-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ad-text mb-1">Calculated Line Subtotal</label>
+                <div className="ad-input w-full bg-ad-card font-mono font-bold text-ad-primary flex items-center">
+                  ₹{calculatedSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </ModalBody>
+        <div className="flex flex-col-reverse gap-2 border-t border-ad-border bg-ad-card/50 px-5 py-3.5 sm:flex-row sm:justify-end">
+          <Button onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button type="submit" variant="primary" disabled={saving}>
+            {saving && <Spinner />} {isEdit ? 'Update Cart Item' : 'Add Cart Item'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 

@@ -298,6 +298,11 @@ BEGIN
                 ISNULL(u.full_name, 'Guest Patron') AS user_name,
                 ci.product_id,
                 p.title AS product_name,
+                p.purity,
+                p.[weight],
+                p.ideal_for,
+                cat.name AS category_name,
+                m.type AS make_type,
                 p.price AS unit_price,
                 ci.quantity,
                 CAST(p.price * ci.quantity AS DECIMAL(18,2)) AS subtotal,
@@ -312,6 +317,8 @@ BEGIN
             LEFT JOIN dbo.cart c ON ci.cart_id = c.cart_id
             LEFT JOIN dbo.[user] u ON c.user_id = u.user_id
             LEFT JOIN dbo.product p ON ci.product_id = p.product_id
+            LEFT JOIN dbo.category cat ON p.category_id = cat.category_id
+            LEFT JOIN dbo.make_master m ON p.m_id = m.m_id
             WHERE (@CIFilterCartId IS NOT NULL AND ci.cart_id = @CIFilterCartId)
                OR (@CIFilterUid IS NOT NULL AND c.user_id = @CIFilterUid)
                OR (@CIFilterGToken IS NOT NULL AND c.guest_token = @CIFilterGToken)
@@ -431,6 +438,11 @@ BEGIN
                 o.order_number,
                 oi.product_id,
                 p.title AS product_name,
+                p.purity,
+                p.[weight],
+                p.ideal_for,
+                c.name AS category_name,
+                m.type AS make_type,
                 oi.unit_price,
                 oi.discount_percent,
                 oi.quantity,
@@ -444,6 +456,8 @@ BEGIN
             FROM dbo.order_item oi
             LEFT JOIN dbo.orders o ON oi.order_id = o.order_id
             LEFT JOIN dbo.product p ON oi.product_id = p.product_id
+            LEFT JOIN dbo.category c ON p.category_id = c.category_id
+            LEFT JOIN dbo.make_master m ON p.m_id = m.m_id
             WHERE (@OIFilterOrderId IS NOT NULL AND oi.order_id = @OIFilterOrderId)
                OR (@OIFilterOrderId IS NULL)
             ORDER BY oi.order_item_id DESC;
