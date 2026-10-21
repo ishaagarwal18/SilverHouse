@@ -101,14 +101,16 @@ export default function CheckoutModal({
 
   // Load saved addresses when modal opens and user is logged in
   useEffect(() => {
-    if (isOpen && isAuthenticated && user && user.userId) {
+    const currentUserId = user?.userId || user?.user_id || user?.id;
+    if (isOpen && isAuthenticated && currentUserId) {
       setLoadingAddresses(true);
-      fetchUserAddresses(user.userId)
+      fetchUserAddresses(currentUserId)
         .then(list => {
           const addrs = Array.isArray(list) ? list : [];
           setSavedAddresses(addrs);
           if (addrs.length > 0) {
             setSelectedAddressId(addrs[0].address_id);
+            setIsAddingNewAddress(false);
           } else {
             setIsAddingNewAddress(true);
           }
@@ -176,7 +178,7 @@ export default function CheckoutModal({
       phone: formData.phone || user?.phone || '',
       email: formData.email || user?.email || '',
       fullAddress: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
-      addressId: null,
+      addressId: selectedAddressId || null,
       addressType: formData.addressType || 'Home'
     };
   };
@@ -250,22 +252,39 @@ export default function CheckoutModal({
       }
 
       // Automatically save address to user's database records for fast future checkout if logged in
-      if (isAuthenticated && user?.userId) {
+      const currentUserId = (isAuthenticated && user) ? (user.userId || user.user_id || user.id) : null;
+      if (currentUserId) {
         try {
+          let blockVal = '';
+          let streetVal = formData.address.trim();
+          if (streetVal.includes(',')) {
+            const parts = streetVal.split(',');
+            blockVal = parts[0].trim();
+            streetVal = parts.slice(1).join(',').trim() || blockVal;
+          } else {
+            blockVal = streetVal.slice(0, 50);
+          }
+
           const newAddr = await addUserAddress({
-            userId: user.userId,
+            userId: currentUserId,
             address_name: formData.addressType || 'Home',
-            recipient_name: formData.fullName.trim(),
-            Block: '',
-            street: formData.address.trim(),
-            area: formData.city.trim(),
-            city: formData.city.trim(),
-            state: formData.state,
+            recipient_name: formData.fullName.trim() || user?.fullName || 'Valued Customer',
+            Block: blockVal || 'Unit/House',
+            street: streetVal || 'Street Address',
+            area: formData.city.trim() || 'Locality',
+            city: formData.city.trim() || 'Ahmedabad',
+            state: formData.state || 'Gujarat',
             pincode: formData.pincode.trim(),
             country: 'India'
           });
-          if (newAddr && newAddr.success && newAddr.address_id) {
-            setSelectedAddressId(newAddr.address_id);
+          const addrId = newAddr?.address_id || (Array.isArray(newAddr?.data) ? newAddr.data[0]?.address_id : newAddr?.data?.address_id);
+          if (addrId) {
+            setSelectedAddressId(addrId);
+            setIsAddingNewAddress(false);
+            const refreshed = await fetchUserAddresses(currentUserId);
+            if (Array.isArray(refreshed) && refreshed.length > 0) {
+              setSavedAddresses(refreshed);
+            }
           }
         } catch (err) {
           console.warn('Could not auto-save new address to account:', err);
@@ -323,23 +342,34 @@ export default function CheckoutModal({
     const patronPhone = effective.phone?.trim() || user?.phone || '9999999999';
     const patronEmail = effective.email?.trim() || user?.email || null;
 
-    let finalAddressId = effective.addressId;
+    let finalAddressId = effective.addressId || selectedAddressId;
     if (!finalAddressId && effectiveUserId) {
       try {
+        let blockVal = '';
+        let streetVal = (formData.address?.trim() || effective.fullAddress || '').trim();
+        if (streetVal.includes(',')) {
+          const parts = streetVal.split(',');
+          blockVal = parts[0].trim();
+          streetVal = parts.slice(1).join(',').trim() || blockVal;
+        } else {
+          blockVal = streetVal.slice(0, 50);
+        }
+
         const newAddr = await addUserAddress({
           userId: effectiveUserId,
-          address_name: effective.addressType || 'Home',
+          address_name: effective.addressType || formData.addressType || 'Home',
           recipient_name: patronName,
-          Block: '',
-          street: formData.address?.trim() || effective.fullAddress,
-          area: formData.city?.trim() || 'Ahmedabad',
+          Block: blockVal || 'Unit/House',
+          street: streetVal || 'Street Address',
+          area: formData.city?.trim() || 'Locality',
           city: formData.city?.trim() || 'Ahmedabad',
           state: formData.state || 'Gujarat',
           pincode: formData.pincode?.trim() || '380001',
           country: 'India'
         });
-        if (newAddr && newAddr.success && newAddr.address_id) {
-          finalAddressId = newAddr.address_id;
+        const addrId = newAddr?.address_id || (Array.isArray(newAddr?.data) ? newAddr.data[0]?.address_id : newAddr?.data?.address_id);
+        if (addrId) {
+          finalAddressId = addrId;
           setSelectedAddressId(finalAddressId);
         }
       } catch (err) {
@@ -349,6 +379,7 @@ export default function CheckoutModal({
 
     if (!finalAddressId) {
       setErrorMessage('A delivery address is required to place an order. Please select or add an address.');
+      setStep(1);
       return;
     }
 

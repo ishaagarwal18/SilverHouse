@@ -372,18 +372,19 @@ export async function fetchUserAddresses(userId) {
  */
 export async function addUserAddress(addressData) {
   try {
+    const rawStreet = addressData.street || addressData.address || '';
     const payload = {
       proc_name: 'address',
       opr: 'ADD',
       table_values: {
         user_id: addressData.userId || addressData.user_id,
         address_name: addressData.address_name || addressData.addressName || 'Home',
-        recipient_name: addressData.recipient_name || addressData.recipientName,
-        Block: addressData.Block || addressData.block,
-        street: addressData.street,
-        area: addressData.area,
-        city: addressData.city,
-        state: addressData.state,
+        recipient_name: addressData.recipient_name || addressData.recipientName || 'Valued Customer',
+        Block: addressData.Block || addressData.block || (rawStreet ? rawStreet.slice(0, 50) : 'Unit/House'),
+        street: rawStreet,
+        area: addressData.area || addressData.city || 'Locality',
+        city: addressData.city || 'Ahmedabad',
+        state: addressData.state || 'Gujarat',
         pincode: addressData.pincode,
         country: addressData.country || 'India'
       }
@@ -409,6 +410,11 @@ export async function addUserAddress(addressData) {
       } catch (e) {
         console.warn('Could not dispatch silverhouse_address_updated:', e);
       }
+      return {
+        ...res,
+        address_id: newId,
+        success: Boolean(res && res.success)
+      };
     }
     return res;
   } catch (err) {

@@ -515,13 +515,17 @@ function DataManager({ entity }) {
     }
     if (h === 'items' && Array.isArray(raw)) {
       if (raw.length === 0) return <span className="text-ad-muted">-</span>;
+      const isExpanded = (entity === 'orders' && expandedOrders.has(String(idVal))) || (entity === 'cart' && expandedCarts.has(String(idVal)));
       return (
-        <span
-          className="font-semibold font-mono cursor-help"
-          title={raw.map(i => `${i.product_name || i.name} (${i.quantity}x)`).join(', ')}
+        <button
+          type="button"
+          onClick={() => (entity === 'orders' ? toggleExpandOrder(idVal) : toggleExpandCart(idVal))}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-ad-border bg-ad-card hover:bg-ad-hover hover:border-ad-primary/40 font-mono text-xs font-semibold text-ad-text transition-colors cursor-pointer"
+          title="Click to view and manage products in this order"
         >
-          {raw.length}
-        </span>
+          <span>{raw.length} {raw.length === 1 ? 'product' : 'products'}</span>
+          <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-ad-primary' : 'text-ad-muted'}`} />
+        </button>
       );
     }
     if (h === 'category_id' && val !== '-') {
