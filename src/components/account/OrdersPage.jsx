@@ -68,7 +68,7 @@ export default function OrdersPage({ onTriggerToast }) {
           final_payable: Number(o.final_payable || o.total_amount || 0),
           total_amount: Number(o.total_amount || 0),
           discount_amount: Number(o.discount_amount || 0),
-          payment_status: o.payment_status || 'PAID',
+          payment_status: o.payment_status || 'PENDING',
           created_at: o.created_at || new Date().toISOString(),
           delivery_address: o.delivery_address || (o.city ? `${o.recipient_name || ''}, ${o.city} - ${o.pincode || ''}` : 'Delivered to Registered Address'),
           items: Array.isArray(o.items) ? o.items : []

@@ -259,32 +259,40 @@ function DataManager({ entity }) {
 
   const handleUpdateDeliveredQty = async (orderId, item, newDeliveredQty) => {
     const qty = Math.max(0, Math.min(Number(item.quantity || 1), Number(newDeliveredQty)));
-    
-    // Immediate optimistic update of items
-    setOrderItemsMap(prev => {
-      const oid = String(orderId);
-      const items = (prev[oid] || []).map(it =>
-        String(it.order_item_id) === String(item.order_item_id)
-          ? { ...it, delivered_quantity: qty }
-          : it
-      );
-      return { ...prev, [oid]: items };
-    });
+    const oid = String(orderId);
 
-    // Check if entire order will be completed
-    const currentOrderItems = (orderItemsMap[String(orderId)] || []).map(it =>
+    // Compute updated items for this order directly to avoid stale state
+    const existingItems = orderItemsMap[oid] || (rows.find(r => String(r.order_id || r[PK_MAP[entity]]) === oid)?.items) || [];
+    const updatedItems = existingItems.map(it =>
       String(it.order_item_id) === String(item.order_item_id)
         ? { ...it, delivered_quantity: qty }
         : it
     );
-    const isCompleted = currentOrderItems.length > 0 && currentOrderItems.every(it => Number(it.delivered_quantity || 0) >= Number(it.quantity || 1));
+    const isCompleted = updatedItems.length > 0 && updatedItems.every(it => Number(it.delivered_quantity || 0) >= Number(it.quantity || 1));
 
-    // Immediate optimistic update of order row status in main table
+    // Immediate optimistic update of items
+    setOrderItemsMap(prev => ({
+      ...prev,
+      [oid]: (prev[oid] || existingItems).map(it =>
+        String(it.order_item_id) === String(item.order_item_id)
+          ? { ...it, delivered_quantity: qty }
+          : it
+      )
+    }));
+
+    // Immediate optimistic update of order row status and items in main table
     setRows(prevRows =>
       prevRows.map(r => {
         const rId = String(r.order_id || r[PK_MAP[entity]]);
-        if (rId !== String(orderId)) return r;
-        return { ...r, order_status: isCompleted ? 'COMPLETED' : 'PENDING' };
+        if (rId !== oid) return r;
+        const newItems = Array.isArray(r.items)
+          ? r.items.map(it => String(it.order_item_id) === String(item.order_item_id) ? { ...it, delivered_quantity: qty } : it)
+          : r.items;
+        return {
+          ...r,
+          order_status: isCompleted ? 'COMPLETED' : 'PENDING',
+          items: newItems
+        };
       })
     );
 
@@ -305,12 +313,12 @@ function DataManager({ entity }) {
       } else {
         showToast(`Delivered: ${qty}/${item.quantity} pcs for ${item.product_name || 'item'} (Order status: PENDING)`);
       }
-      refreshOrderItems();
-      loadData();
+      await refreshOrderItems();
+      await loadData();
     } catch (err) {
       showToast(err.message, true);
-      refreshOrderItems();
-      loadData();
+      await refreshOrderItems();
+      await loadData();
     }
   };
 
@@ -571,8 +579,13 @@ function DataManager({ entity }) {
     }
     if (h === 'payment_status' && val !== '-') return <PaymentBadge status={val} />;
     if (h === 'order_status' && val !== '-') {
-      const s = String(val).toUpperCase();
-      const isCompleted = s === 'COMPLETED';
+      let isCompleted = String(val).toUpperCase() === 'COMPLETED';
+      if (entity === 'orders') {
+        const oItems = orderItemsMap[String(idVal)] || (Array.isArray(row.items) ? row.items : []);
+        if (oItems.length > 0) {
+          isCompleted = oItems.every(it => Number(it.delivered_quantity || 0) >= Number(it.quantity || 1));
+        }
+      }
       return (
         <span
           className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide border ${
@@ -1316,6 +1329,7 @@ function DataManager({ entity }) {
           id={recordModal.id}
           rows={rows}
           lookups={lookups}
+          orderItemsMap={orderItemsMap}
           onClose={() => setRecordModal(null)}
           onSaved={() => { setRecordModal(null); loadData(); if (entity === 'custom_orders') refreshPendingCustomOrders(); }}
           onOpenImages={images => setLightbox({ images, index: 0 })}
@@ -1480,7 +1494,7 @@ function DeletePreview({ ids, rows, pkField, lookups }) {
 }
 
 /** Schema-driven add/edit dialog for tables without a dedicated form page. */
-function RecordModal({ entity, mode, id, rows, lookups = {}, onClose, onSaved, onOpenImages }) {
+function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {}, onClose, onSaved, onOpenImages }) {
   const { showToast } = useAdminUI();
   const [saving, setSaving] = useState(false);
   const cfg = getEntityConfig(entity);
@@ -1539,6 +1553,15 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, onClose, onSaved, o
       const keepText = ['phone', 'pincode', 'order_number', 'guest_token'].some(k => key.includes(k));
       tableValues[key] = !isNaN(trimmed) && !keepText ? Number(trimmed) : trimmed;
     });
+
+    // Ensure order_status strictly matches actual item fulfillment for orders
+    if (entity === 'orders' && id) {
+      const oItems = orderItemsMap[String(id)] || (Array.isArray(rowData?.items) ? rowData.items : []);
+      if (oItems.length > 0) {
+        const isDone = oItems.every(it => Number(it.delivered_quantity || 0) >= Number(it.quantity || 1));
+        tableValues.order_status = isDone ? 'COMPLETED' : 'PENDING';
+      }
+    }
 
     // Special handling for festival_category multi-select
     if (entity === 'festival_category') {
@@ -1723,6 +1746,42 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, onClose, onSaved, o
                         </option>
                       ))}
                     </select>
+                  ) : field.name === 'order_status' && entity === 'orders' ? (
+                    <div className="space-y-1 pt-0.5">
+                      {(() => {
+                        const oItems = (id && orderItemsMap[String(id)]) || (Array.isArray(rowData?.items) ? rowData.items : []);
+                        const totalQty = oItems.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
+                        const deliveredQty = oItems.reduce((sum, it) => sum + Math.min(Number(it.quantity || 0), Number(it.delivered_quantity || 0)), 0);
+                        const isDone = oItems.length > 0 && deliveredQty >= totalQty;
+                        const statusVal = oItems.length > 0 ? (isDone ? 'COMPLETED' : 'PENDING') : (value ? String(value).toUpperCase() : 'PENDING');
+                        const isDoneStatus = statusVal === 'COMPLETED';
+                        return (
+                          <div>
+                            <div className="rounded-xl border border-ad-border bg-ad-card/40 px-3.5 py-2.5 flex items-center justify-between gap-3 shadow-2xs">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide border ${
+                                    isDoneStatus
+                                      ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400 shadow-2xs'
+                                      : 'border-amber-500/40 bg-amber-500/15 text-amber-400'
+                                  }`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${isDoneStatus ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                                  {statusVal}
+                                </span>
+                                <span className="text-xs text-ad-muted">
+                                  {oItems.length > 0
+                                    ? `(${deliveredQty}/${totalQty} pcs delivered)`
+                                    : 'Initial status'}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-ad-muted font-medium">Automated via line items</span>
+                            </div>
+                            <input type="hidden" name="order_status" value={statusVal} />
+                          </div>
+                        );
+                      })()}
+                    </div>
                   ) : field.type === 'select' ? (
                     <select id={fieldId} name={field.name} className="ad-input cursor-pointer" defaultValue={String(value)} required={field.required}>
                       {(field.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}

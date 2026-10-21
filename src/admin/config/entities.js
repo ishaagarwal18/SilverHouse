@@ -90,7 +90,7 @@ export const ENTITY_FORM_SCHEMAS = {
     { name: 'customer_phone', label: 'Customer Phone', type: 'text', placeholder: 'e.g. 9876543210' },
     { name: 'customer_email', label: 'Customer Email', type: 'email', placeholder: 'e.g. radhika@example.com' },
     { name: 'payment_status', label: 'Payment Status', type: 'select', options: PAYMENT_STATUSES, default: 'PENDING' },
-    { name: 'order_status', label: 'Order Status', type: 'select', options: ORDER_STATUSES, default: 'PENDING' },
+    { name: 'order_status', label: 'Order Status', type: 'select', options: ORDER_STATUSES, default: 'PENDING', readOnly: true },
     { name: 'total_amount', label: 'Total Amount (₹)', type: 'number', step: '0.01', placeholder: 'e.g. 1599.00' },
     { name: 'discount_amount', label: 'Discount Amount (₹)', type: 'number', step: '0.01', default: 0 },
     { name: 'final_payable', label: 'Final Payable (₹)', type: 'number', step: '0.01', placeholder: 'e.g. 1599.00' },

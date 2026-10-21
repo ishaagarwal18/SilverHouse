@@ -1683,7 +1683,7 @@ BEGIN
             @TargetOrderId   = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.order_id') AS INT), @TargetOrderId),
             @UserId          = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.user_id') AS INT),
             @AddressId       = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.address_id') AS INT),
-            @PaymentStatus   = COALESCE(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.payment_status'))), 'PAID'),
+            @PaymentStatus   = COALESCE(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.payment_status'))), 'PENDING'),
             @OrderStatus     = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.order_status'))),
             @OrderNumber     = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.order_number'))),
             @CartId          = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.cart_id') AS INT),
@@ -1703,7 +1703,7 @@ BEGIN
             ELSE
                 SET @OrderStatus = 'PENDING';
         END
-        ELSE
+        ELSE IF @Opr IN ('ADD', 'INSERT')
         BEGIN
             SET @OrderStatus = 'PENDING';
         END
@@ -1967,6 +1967,12 @@ BEGIN
                    OR (guest_token = @GuestToken AND @GuestToken IS NOT NULL);
             END
 
+            -- Auto-sync order_status based on delivery fulfillment of line items
+            IF EXISTS (SELECT 1 FROM dbo.order_item WHERE order_id = @NewOrderId AND ISNULL(delivered_quantity, 0) < quantity)
+                UPDATE dbo.orders SET order_status = 'PENDING' WHERE order_id = @NewOrderId;
+            ELSE IF EXISTS (SELECT 1 FROM dbo.order_item WHERE order_id = @NewOrderId)
+                UPDATE dbo.orders SET order_status = 'COMPLETED' WHERE order_id = @NewOrderId;
+
             COMMIT TRANSACTION;
 
             SELECT @NewOrderId AS order_id, @OrderNumber AS order_number, @FinalPayable AS final_payable, 'Order placed successfully' AS [Message];
@@ -1996,6 +2002,12 @@ BEGIN
             final_payable   = COALESCE(@FinalPayable, final_payable),
             order_number    = COALESCE(@OrderNumber, order_number)
         WHERE order_id = @TargetOrderId;
+
+        -- Auto-sync order_status based on delivery fulfillment of line items
+        IF EXISTS (SELECT 1 FROM dbo.order_item WHERE order_id = @TargetOrderId AND ISNULL(delivered_quantity, 0) < quantity)
+            UPDATE dbo.orders SET order_status = 'PENDING' WHERE order_id = @TargetOrderId;
+        ELSE IF EXISTS (SELECT 1 FROM dbo.order_item WHERE order_id = @TargetOrderId)
+            UPDATE dbo.orders SET order_status = 'COMPLETED' WHERE order_id = @TargetOrderId;
 
         SELECT @TargetOrderId AS order_id, 'Order updated successfully' AS [Message];
         RETURN;
