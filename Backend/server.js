@@ -2546,6 +2546,12 @@ app.post('/api/data', async (req, res) => {
                             item.items = [];
                         }
                         delete item.items_json;
+                    } else if (typeof item.items === 'string') {
+                        try {
+                            item.items = JSON.parse(item.items);
+                        } catch (e) {
+                            item.items = [];
+                        }
                     }
                     if (!item.product_name && item.title) {
                         item.product_name = item.title;

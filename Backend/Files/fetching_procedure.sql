@@ -269,6 +269,32 @@ BEGIN
                 c.guest_token,
                 (SELECT COUNT(*) FROM dbo.cart_item ci WHERE ci.cart_id = c.cart_id) AS total_items,
                 (SELECT ISNULL(SUM(ci.quantity), 0) FROM dbo.cart_item ci WHERE ci.cart_id = c.cart_id) AS total_quantity,
+                (
+                    SELECT ISNULL(SUM(CAST(p.price * ci.quantity AS DECIMAL(18,2))), 0.00)
+                    FROM dbo.cart_item ci
+                    INNER JOIN dbo.product p ON ci.product_id = p.product_id
+                    WHERE ci.cart_id = c.cart_id
+                ) AS cart_total,
+                (
+                    SELECT 
+                        ci.cart_item_id,
+                        ci.cart_id,
+                        ci.product_id,
+                        p.title AS product_name,
+                        p.price AS unit_price,
+                        ci.quantity,
+                        CAST(p.price * ci.quantity AS DECIMAL(18,2)) AS subtotal,
+                        ISNULL((
+                            SELECT TOP 1 img.image_url
+                            FROM dbo.product_image pi
+                            INNER JOIN dbo.[image] img ON pi.image_id = img.image_id
+                            WHERE pi.product_id = ci.product_id
+                        ), '') AS image_url
+                    FROM dbo.cart_item ci
+                    LEFT JOIN dbo.product p ON ci.product_id = p.product_id
+                    WHERE ci.cart_id = c.cart_id
+                    FOR JSON PATH
+                ) AS items,
                 c.updated_at
             FROM dbo.cart c
             LEFT JOIN dbo.[user] u ON c.user_id = u.user_id

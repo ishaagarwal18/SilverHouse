@@ -11,6 +11,7 @@ import {
 } from '../components/ui';
 
 const HIDDEN_ORDER_COLUMNS = ['confirm', 'custom_category', 'is_custom', 'image', 'description'];
+const HIDDEN_CART_COLUMNS = ['total_items'];
 const VARCHAR_COLUMNS = [
   'name', 'title', 'product_name', 'category_name', 'category', 'description', 'purity', 'weight', 'image_url', 'url',
   'images', 'image', 'confirm', 'custom_category', 'is_custom', 'role', 'email', 'full_name', 'phone', 'address_line1',
@@ -287,7 +288,9 @@ function DataManager({ entity }) {
   const headers = useMemo(() => {
     if (rows.length === 0) return [];
     const keys = Object.keys(rows[0]);
-    return entity === 'orders' ? keys.filter(h => !HIDDEN_ORDER_COLUMNS.includes(h)) : keys;
+    if (entity === 'orders') return keys.filter(h => !HIDDEN_ORDER_COLUMNS.includes(h));
+    if (entity === 'cart') return keys.filter(h => !HIDDEN_CART_COLUMNS.includes(h));
+    return keys;
   }, [rows, entity]);
 
   const getSortValue = useCallback((row, col) => {
@@ -521,7 +524,7 @@ function DataManager({ entity }) {
           type="button"
           onClick={() => (entity === 'orders' ? toggleExpandOrder(idVal) : toggleExpandCart(idVal))}
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-ad-border bg-ad-card hover:bg-ad-hover hover:border-ad-primary/40 font-mono text-xs font-semibold text-ad-text transition-colors cursor-pointer"
-          title="Click to view and manage products in this order"
+          title={`Click to view and manage products in this ${entity === 'orders' ? 'order' : 'cart'}`}
         >
           <span>{raw.length} {raw.length === 1 ? 'product' : 'products'}</span>
           <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-ad-primary' : 'text-ad-muted'}`} />
@@ -560,6 +563,9 @@ function DataManager({ entity }) {
     if (h === 'birthday_date') return 'Birthday';
     if (h === 'anniversary_date') return 'Anniversary';
     if (h === 'gst_number') return 'GST Number';
+    if (h === 'cart_total') return 'Cart Total';
+    if (h === 'total_items') return 'Total Items';
+    if (h === 'total_quantity') return 'Total Qty';
     if (entity === 'product') {
       if (h === 'm_id') return 'Make Master';
       if (h === 'title') return 'Product Name';
