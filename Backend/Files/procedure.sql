@@ -1665,6 +1665,7 @@ BEGIN
     DECLARE @UserId         INT;
     DECLARE @AddressId      INT;
     DECLARE @PaymentStatus  NVARCHAR(20);
+    DECLARE @OrderStatus    NVARCHAR(50);
     DECLARE @OrderNumber    NVARCHAR(50);
     DECLARE @CartId         INT;
     DECLARE @GuestToken     NVARCHAR(100);
@@ -1683,6 +1684,7 @@ BEGIN
             @UserId          = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.user_id') AS INT),
             @AddressId       = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.address_id') AS INT),
             @PaymentStatus   = COALESCE(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.payment_status'))), 'PAID'),
+            @OrderStatus     = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.order_status'))),
             @OrderNumber     = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.order_number'))),
             @CartId          = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.cart_id') AS INT),
             @GuestToken      = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.guest_token'))),
@@ -1693,6 +1695,18 @@ BEGIN
             @TotalAmount     = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.total_amount') AS DECIMAL(18,2)),
             @DiscountAmount  = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.discount_amount') AS DECIMAL(18,2)),
             @FinalPayable    = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.final_payable') AS DECIMAL(18,2));
+
+        IF @OrderStatus IS NOT NULL
+        BEGIN
+            IF UPPER(@OrderStatus) = 'COMPLETED'
+                SET @OrderStatus = 'COMPLETED';
+            ELSE
+                SET @OrderStatus = 'PENDING';
+        END
+        ELSE
+        BEGIN
+            SET @OrderStatus = 'PENDING';
+        END
     END
 
     -- SELECT
@@ -1703,12 +1717,12 @@ BEGIN
             SELECT 
                 o.order_id, o.order_number, o.user_id, u.full_name AS customer_name, u.phone,
                 o.address_id, a.recipient_name, a.Block, a.street, a.area, a.city, a.[state], a.pincode, a.country,
-                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.created_at,
+                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.order_status, o.created_at,
                 o.[confirm], o.is_custom, o.custom_category, o.[description], o.[image],
                 (
                     SELECT 
                         oi.order_item_id, oi.product_id, p.title AS product_name,
-                        oi.unit_price, oi.discount_percent, oi.quantity, oi.subtotal
+                        oi.unit_price, oi.discount_percent, oi.quantity, ISNULL(oi.delivered_quantity, 0) AS delivered_quantity, oi.subtotal
                     FROM dbo.order_item oi
                     INNER JOIN dbo.product p ON oi.product_id = p.product_id
                     WHERE oi.order_id = o.order_id
@@ -1723,12 +1737,12 @@ BEGIN
         BEGIN
             SELECT 
                 o.order_id, o.order_number, o.user_id,
-                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.created_at,
+                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.order_status, o.created_at,
                 o.[confirm], o.is_custom, o.custom_category, o.[description], o.[image],
                 (
                     SELECT 
                         oi.order_item_id, oi.product_id, p.title AS product_name,
-                        oi.unit_price, oi.discount_percent, oi.quantity, oi.subtotal
+                        oi.unit_price, oi.discount_percent, oi.quantity, ISNULL(oi.delivered_quantity, 0) AS delivered_quantity, oi.subtotal
                     FROM dbo.order_item oi
                     INNER JOIN dbo.product p ON oi.product_id = p.product_id
                     WHERE oi.order_id = o.order_id
@@ -1742,7 +1756,7 @@ BEGIN
         BEGIN
             SELECT 
                 o.order_id, o.order_number, o.user_id, u.full_name AS customer_name, u.phone,
-                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.created_at,
+                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.order_status, o.created_at,
                 o.[confirm], o.is_custom, o.custom_category, o.[description], o.[image]
             FROM dbo.orders o
             LEFT JOIN dbo.[user] u ON o.user_id = u.user_id
@@ -1871,8 +1885,8 @@ BEGIN
         BEGIN TRANSACTION;
         BEGIN TRY
             -- 1. Insert into orders
-            INSERT INTO dbo.orders (order_number, user_id, address_id, total_amount, discount_amount, final_payable, payment_status, created_at)
-            VALUES (@OrderNumber, @UserId, @AddressId, @TotalAmount, @DiscountAmount, @FinalPayable, @PaymentStatus, DATEADD(minute, 330, SYSUTCDATETIME()));
+            INSERT INTO dbo.orders (order_number, user_id, address_id, total_amount, discount_amount, final_payable, payment_status, order_status, created_at)
+            VALUES (@OrderNumber, @UserId, @AddressId, @TotalAmount, @DiscountAmount, @FinalPayable, @PaymentStatus, COALESCE(@OrderStatus, 'PENDING'), DATEADD(minute, 330, SYSUTCDATETIME()));
 
             DECLARE @NewOrderId INT = SCOPE_IDENTITY();
 
@@ -1975,6 +1989,7 @@ BEGIN
 
         UPDATE dbo.orders
         SET payment_status  = ISNULL(@PaymentStatus, payment_status),
+            order_status    = ISNULL(@OrderStatus, order_status),
             address_id      = COALESCE(@AddressId, address_id),
             total_amount    = COALESCE(@TotalAmount, total_amount),
             discount_amount = COALESCE(@DiscountAmount, discount_amount),
@@ -2021,6 +2036,7 @@ BEGIN
     DECLARE @UnitPrice         DECIMAL(18,2);
     DECLARE @DiscountPercent   DECIMAL(18,2);
     DECLARE @Quantity          INT = 1;
+    DECLARE @DeliveredQuantity INT;
     DECLARE @Subtotal          DECIMAL(18,2);
 
     IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
@@ -2032,6 +2048,7 @@ BEGIN
             @UnitPrice         = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.unit_price') AS DECIMAL(18,2)),
             @DiscountPercent   = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.discount_percent') AS DECIMAL(18,2)), 0.00),
             @Quantity          = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.quantity') AS INT), 1),
+            @DeliveredQuantity = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.delivered_quantity') AS INT),
             @Subtotal          = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.subtotal') AS DECIMAL(18,2));
     END
 
@@ -2050,6 +2067,7 @@ BEGIN
             oi.unit_price,
             oi.discount_percent,
             oi.quantity,
+            ISNULL(oi.delivered_quantity, 0) AS delivered_quantity,
             oi.subtotal
         FROM dbo.order_item oi
         LEFT JOIN dbo.orders o ON oi.order_id = o.order_id
@@ -2075,8 +2093,8 @@ BEGIN
             SELECT TOP 1 @ProductId = product_id FROM dbo.product ORDER BY product_id ASC;
         END
 
-        INSERT INTO dbo.order_item (order_id, product_id, unit_price, discount_percent, quantity, subtotal)
-        VALUES (@OrderId, @ProductId, COALESCE(@UnitPrice, 0.00), COALESCE(@DiscountPercent, 0.00), @Quantity, COALESCE(@Subtotal, 0.00));
+        INSERT INTO dbo.order_item (order_id, product_id, unit_price, discount_percent, quantity, delivered_quantity, subtotal)
+        VALUES (@OrderId, @ProductId, COALESCE(@UnitPrice, 0.00), COALESCE(@DiscountPercent, 0.00), @Quantity, COALESCE(@DeliveredQuantity, 0), COALESCE(@Subtotal, 0.00));
 
         DECLARE @NewOIId INT = SCOPE_IDENTITY();
 
@@ -2092,6 +2110,12 @@ BEGIN
                     ELSE @NewTotalAdd - ISNULL(discount_amount, 0.00)
                 END
             WHERE order_id = @OrderId;
+
+            -- Auto-update order_status based on delivery fulfillment
+            IF EXISTS (SELECT 1 FROM dbo.order_item WHERE order_id = @OrderId AND ISNULL(delivered_quantity, 0) < quantity)
+                UPDATE dbo.orders SET order_status = 'PENDING' WHERE order_id = @OrderId;
+            ELSE IF EXISTS (SELECT 1 FROM dbo.order_item WHERE order_id = @OrderId)
+                UPDATE dbo.orders SET order_status = 'COMPLETED' WHERE order_id = @OrderId;
         END
 
         SELECT @NewOIId AS order_item_id, 'Order item added successfully' AS [Message];
@@ -2108,12 +2132,13 @@ BEGIN
         END
 
         UPDATE dbo.order_item
-        SET order_id         = COALESCE(@OrderId, order_id),
-            product_id       = COALESCE(@ProductId, product_id),
-            unit_price       = COALESCE(@UnitPrice, unit_price),
-            discount_percent = COALESCE(@DiscountPercent, discount_percent),
-            quantity         = COALESCE(@Quantity, quantity),
-            subtotal         = COALESCE(@Subtotal, subtotal)
+        SET order_id           = COALESCE(@OrderId, order_id),
+            product_id         = COALESCE(@ProductId, product_id),
+            unit_price         = COALESCE(@UnitPrice, unit_price),
+            discount_percent   = COALESCE(@DiscountPercent, discount_percent),
+            quantity           = COALESCE(@Quantity, quantity),
+            delivered_quantity = COALESCE(@DeliveredQuantity, delivered_quantity),
+            subtotal           = COALESCE(@Subtotal, subtotal)
         WHERE order_item_id = @TargetOrderItemId;
 
         DECLARE @ParentOrderIdEdit INT;
@@ -2131,6 +2156,12 @@ BEGIN
                     ELSE @NewTotalEdit - ISNULL(discount_amount, 0.00)
                 END
             WHERE order_id = @ParentOrderIdEdit;
+
+            -- Auto-update order_status based on delivery fulfillment
+            IF EXISTS (SELECT 1 FROM dbo.order_item WHERE order_id = @ParentOrderIdEdit AND ISNULL(delivered_quantity, 0) < quantity)
+                UPDATE dbo.orders SET order_status = 'PENDING' WHERE order_id = @ParentOrderIdEdit;
+            ELSE IF EXISTS (SELECT 1 FROM dbo.order_item WHERE order_id = @ParentOrderIdEdit)
+                UPDATE dbo.orders SET order_status = 'COMPLETED' WHERE order_id = @ParentOrderIdEdit;
         END
 
         SELECT @TargetOrderItemId AS order_item_id, 'Order item updated successfully' AS [Message];
@@ -2163,6 +2194,12 @@ BEGIN
                     ELSE @NewTotalDel - ISNULL(discount_amount, 0.00)
                 END
             WHERE order_id = @ParentOrderIdDel;
+
+            -- Auto-update order_status based on remaining items
+            IF EXISTS (SELECT 1 FROM dbo.order_item WHERE order_id = @ParentOrderIdDel AND ISNULL(delivered_quantity, 0) < quantity)
+                UPDATE dbo.orders SET order_status = 'PENDING' WHERE order_id = @ParentOrderIdDel;
+            ELSE IF EXISTS (SELECT 1 FROM dbo.order_item WHERE order_id = @ParentOrderIdDel)
+                UPDATE dbo.orders SET order_status = 'COMPLETED' WHERE order_id = @ParentOrderIdDel;
         END
 
         SELECT @TargetOrderItemId AS order_item_id, 'Order item deleted successfully' AS [Message];

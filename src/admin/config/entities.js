@@ -80,6 +80,7 @@ export function getEntityConfig(entity) {
 export const CUSTOM_CATEGORIES = ['Mukhut', 'Jhalar', 'Thakurji ka saman', 'Temple things'];
 export const ORDER_DECISIONS = ['processing', 'accepted', 'rejected'];
 export const PAYMENT_STATUSES = ['PENDING', 'PAID', 'CANCELLED', 'FAILED'];
+export const ORDER_STATUSES = ['PENDING', 'COMPLETED'];
 
 /** Field schemas for tables edited in the in-page record modal. */
 export const ENTITY_FORM_SCHEMAS = {
@@ -89,6 +90,7 @@ export const ENTITY_FORM_SCHEMAS = {
     { name: 'customer_phone', label: 'Customer Phone', type: 'text', placeholder: 'e.g. 9876543210' },
     { name: 'customer_email', label: 'Customer Email', type: 'email', placeholder: 'e.g. radhika@example.com' },
     { name: 'payment_status', label: 'Payment Status', type: 'select', options: PAYMENT_STATUSES, default: 'PENDING' },
+    { name: 'order_status', label: 'Order Status', type: 'select', options: ORDER_STATUSES, default: 'PENDING' },
     { name: 'total_amount', label: 'Total Amount (₹)', type: 'number', step: '0.01', placeholder: 'e.g. 1599.00' },
     { name: 'discount_amount', label: 'Discount Amount (₹)', type: 'number', step: '0.01', default: 0 },
     { name: 'final_payable', label: 'Final Payable (₹)', type: 'number', step: '0.01', placeholder: 'e.g. 1599.00' },
@@ -99,6 +101,7 @@ export const ENTITY_FORM_SCHEMAS = {
   custom_orders: [
     { name: 'order_number', label: 'Custom Order #', type: 'text', placeholder: 'e.g. CUST-...' },
     { name: 'confirm', label: 'Artisan Decision (Confirm Status)', type: 'select', options: ORDER_DECISIONS, default: 'processing' },
+    { name: 'order_status', label: 'Order Status', type: 'select', options: ORDER_STATUSES, default: 'PENDING' },
     { name: 'final_payable', label: 'Quoted Price / Final Payable (₹)', type: 'number', step: '0.01', placeholder: 'Decide and set quotation for customer' },
     { name: 'custom_category', label: 'Custom Category', type: 'select', options: CUSTOM_CATEGORIES, default: 'Mukhut' },
     { name: 'customer_name', label: 'Customer Name', type: 'text', placeholder: 'e.g. Radhika Sharma' },
@@ -112,7 +115,8 @@ export const ENTITY_FORM_SCHEMAS = {
     { name: 'product_id', label: 'Product ID', type: 'number', required: true, placeholder: 'e.g. 5' },
     { name: 'unit_price', label: 'Unit Price (₹)', type: 'number', step: '0.01', required: true, placeholder: 'e.g. 1439.00' },
     { name: 'discount_percent', label: 'Discount (%)', type: 'number', step: '0.01', default: 0 },
-    { name: 'quantity', label: 'Quantity', type: 'number', required: true, default: 1 },
+    { name: 'quantity', label: 'Quantity (Ordered)', type: 'number', required: true, default: 1 },
+    { name: 'delivered_quantity', label: 'Delivered Quantity', type: 'number', min: 0, default: 0, placeholder: '0' },
     { name: 'subtotal', label: 'Subtotal (₹)', type: 'number', step: '0.01', placeholder: 'e.g. 1439.00' }
   ],
   cart: [

@@ -375,6 +375,7 @@ BEGIN
                 o.discount_amount,
                 o.final_payable,
                 o.payment_status,
+                COALESCE(o.order_status, 'PENDING') AS order_status,
                 o.address_id,
                 a.recipient_name,
                 a.city,
@@ -394,6 +395,7 @@ BEGIN
                         oi.unit_price,
                         oi.discount_percent,
                         oi.quantity,
+                        ISNULL(oi.delivered_quantity, 0) AS delivered_quantity,
                         oi.subtotal,
                         ISNULL((
                             SELECT TOP 1 img.image_url
@@ -438,6 +440,7 @@ BEGIN
                 COALESCE(o.customer_phone, u.phone, '-') AS customer_phone,
                 COALESCE(o.customer_email, '-') AS customer_email,
                 o.payment_status,
+                COALESCE(o.order_status, 'PENDING') AS order_status,
                 o.description,
                 o.image,
                 o.total_amount,
@@ -475,6 +478,7 @@ BEGIN
                 oi.unit_price,
                 oi.discount_percent,
                 oi.quantity,
+                ISNULL(oi.delivered_quantity, 0) AS delivered_quantity,
                 oi.subtotal,
                 ISNULL((
                     SELECT TOP 1 img.image_url

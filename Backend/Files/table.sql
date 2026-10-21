@@ -184,6 +184,7 @@ BEGIN
         discount_amount DECIMAL(18,2) NOT NULL DEFAULT 0.00,
         final_payable DECIMAL(18,2) NOT NULL,
         payment_status NVARCHAR(20) NOT NULL DEFAULT 'PENDING',
+        order_status NVARCHAR(50) NOT NULL DEFAULT 'PENDING',
         created_at DATETIME2 NOT NULL DEFAULT DATEADD(minute, 330, SYSUTCDATETIME())
     );
 END;
@@ -199,6 +200,7 @@ BEGIN
         unit_price DECIMAL(18,2) NOT NULL,
         discount_percent DECIMAL(4,2) NOT NULL DEFAULT 0.00,
         quantity INT NOT NULL CHECK (quantity > 0),
+        delivered_quantity INT NOT NULL DEFAULT 0,
         subtotal DECIMAL(18,2) NOT NULL
     );
 END;

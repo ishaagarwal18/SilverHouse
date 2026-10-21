@@ -399,6 +399,7 @@ export default function CheckoutModal({
         final_payable: finalAmount,
         payment_status: paymentMethod === 'cod' ? 'PENDING' : 'PAID',
         payment_method: paymentMethod,
+        order_status: 'PENDING',
         items: formattedItems
       }
     };
@@ -478,6 +479,7 @@ export default function CheckoutModal({
               final_payable: finalAmount,
               payment_status: 'PAID',
               payment_method: 'razorpay',
+              order_status: 'PENDING',
               razorpay_payment_id: paymentResult.response.razorpay_payment_id,
               created_at: new Date().toISOString(),
               items: formattedItems
@@ -524,6 +526,7 @@ export default function CheckoutModal({
             final_payable: finalAmount,
             payment_status: 'PENDING',
             payment_method: 'cod',
+            order_status: 'PENDING',
             created_at: new Date().toISOString(),
             items: formattedItems
           };

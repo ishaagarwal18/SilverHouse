@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronRight, Image as ImageIcon, Pencil, Plus, Receipt, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Upload, Zap } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Clock, Image as ImageIcon, Minus, Package, Pencil, Plus, Receipt, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, Upload, Zap } from 'lucide-react';
 import { adminFetch, adminImageUrl, callProc, fetchRows, PLACEHOLDER_IMG, productImage } from '../api/adminApi';
 import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISIONS, PK_MAP } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
@@ -15,7 +15,7 @@ const HIDDEN_CART_COLUMNS = ['total_items'];
 const VARCHAR_COLUMNS = [
   'name', 'title', 'product_name', 'category_name', 'category', 'description', 'purity', 'weight', 'image_url', 'url',
   'images', 'image', 'confirm', 'custom_category', 'is_custom', 'role', 'email', 'full_name', 'phone', 'address_line1',
-  'address_line2', 'city', 'state', 'postal_code', 'country', 'order_number', 'payment_status', 'password_hash',
+  'address_line2', 'city', 'state', 'postal_code', 'country', 'order_number', 'payment_status', 'order_status', 'password_hash',
   'password', 'remark', 'status', 'created_at', 'updated_at', 'birthday_date', 'anniversary_date', 'gst_number'
 ];
 const VARCHAR_HINTS = ['url', 'name', 'desc', 'date', 'email', 'phone', 'address', 'status', 'text', 'hash', 'time', 'role', 'code', 'number', 'weight', 'purity'];
@@ -254,6 +254,63 @@ function DataManager({ entity }) {
       showToast(err.message, true);
     } finally {
       setDeletingOrderItem(false);
+    }
+  };
+
+  const handleUpdateDeliveredQty = async (orderId, item, newDeliveredQty) => {
+    const qty = Math.max(0, Math.min(Number(item.quantity || 1), Number(newDeliveredQty)));
+    
+    // Immediate optimistic update of items
+    setOrderItemsMap(prev => {
+      const oid = String(orderId);
+      const items = (prev[oid] || []).map(it =>
+        String(it.order_item_id) === String(item.order_item_id)
+          ? { ...it, delivered_quantity: qty }
+          : it
+      );
+      return { ...prev, [oid]: items };
+    });
+
+    // Check if entire order will be completed
+    const currentOrderItems = (orderItemsMap[String(orderId)] || []).map(it =>
+      String(it.order_item_id) === String(item.order_item_id)
+        ? { ...it, delivered_quantity: qty }
+        : it
+    );
+    const isCompleted = currentOrderItems.length > 0 && currentOrderItems.every(it => Number(it.delivered_quantity || 0) >= Number(it.quantity || 1));
+
+    // Immediate optimistic update of order row status in main table
+    setRows(prevRows =>
+      prevRows.map(r => {
+        const rId = String(r.order_id || r[PK_MAP[entity]]);
+        if (rId !== String(orderId)) return r;
+        return { ...r, order_status: isCompleted ? 'COMPLETED' : 'PENDING' };
+      })
+    );
+
+    try {
+      const res = await callProc(
+        'order_item',
+        'EDIT',
+        {
+          order_id: Number(orderId),
+          delivered_quantity: qty
+        },
+        String(item.order_item_id)
+      );
+      if (!res.success) throw new Error(res.status || res.error || 'Failed to update delivered quantity');
+
+      if (isCompleted) {
+        showToast('All items delivered! Order status marked as COMPLETED.');
+      } else {
+        showToast(`Delivered: ${qty}/${item.quantity} pcs for ${item.product_name || 'item'} (Order status: PENDING)`);
+      }
+      refreshOrderItems();
+      loadData();
+    } catch (err) {
+      showToast(err.message, true);
+      refreshOrderItems();
+      loadData();
     }
   };
 
@@ -513,22 +570,59 @@ function DataManager({ entity }) {
       );
     }
     if (h === 'payment_status' && val !== '-') return <PaymentBadge status={val} />;
+    if (h === 'order_status' && val !== '-') {
+      const s = String(val).toUpperCase();
+      const isCompleted = s === 'COMPLETED';
+      return (
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide border ${
+            isCompleted
+              ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400 shadow-2xs'
+              : 'border-amber-500/40 bg-amber-500/15 text-amber-400'
+          }`}
+        >
+          <span className={`w-1.5 h-1.5 rounded-full ${isCompleted ? 'bg-emerald-400 ring-2 ring-emerald-400/30' : 'bg-amber-400'}`} />
+          {isCompleted ? 'COMPLETED' : 'PENDING'}
+        </span>
+      );
+    }
     if (/amount|payable|price|subtotal/.test(h) && val !== '-' && !isNaN(Number(val))) {
       return <span className="font-mono font-semibold">₹{Number(val).toLocaleString('en-IN')}</span>;
     }
     if (h === 'items' && Array.isArray(raw)) {
       if (raw.length === 0) return <span className="text-ad-muted">-</span>;
       const isExpanded = (entity === 'orders' && expandedOrders.has(String(idVal))) || (entity === 'cart' && expandedCarts.has(String(idVal)));
+      const totalOrdered = raw.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
+      const totalDelivered = raw.reduce((sum, it) => sum + Math.min(Number(it.quantity || 0), Number(it.delivered_quantity || 0)), 0);
+      const isAllDelivered = totalOrdered > 0 && totalDelivered >= totalOrdered;
+
       return (
-        <button
-          type="button"
-          onClick={() => (entity === 'orders' ? toggleExpandOrder(idVal) : toggleExpandCart(idVal))}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-ad-border bg-ad-card hover:bg-ad-hover hover:border-ad-primary/40 font-mono text-xs font-semibold text-ad-text transition-colors cursor-pointer"
-          title={`Click to view and manage products in this ${entity === 'orders' ? 'order' : 'cart'}`}
-        >
-          <span>{raw.length} {raw.length === 1 ? 'product' : 'products'}</span>
-          <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-ad-primary' : 'text-ad-muted'}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => (entity === 'orders' ? toggleExpandOrder(idVal) : toggleExpandCart(idVal))}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-ad-border bg-ad-card hover:bg-ad-hover hover:border-ad-primary/40 font-mono text-xs font-semibold text-ad-text transition-colors cursor-pointer"
+            title={`Click to view and manage line items in this ${entity === 'orders' ? 'order' : 'cart'}`}
+          >
+            <span>{raw.length} {raw.length === 1 ? 'product' : 'products'}</span>
+            <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-ad-primary' : 'text-ad-muted'}`} />
+          </button>
+          {entity === 'orders' && (
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold border ${
+                isAllDelivered
+                  ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400'
+                  : totalDelivered > 0
+                  ? 'border-amber-500/30 bg-amber-500/15 text-amber-400'
+                  : 'border-ad-border bg-ad-card/60 text-ad-muted'
+              }`}
+              title={`${totalDelivered} of ${totalOrdered} items delivered`}
+            >
+              <Package className="w-3 h-3" />
+              {totalDelivered}/{totalOrdered} del.
+            </span>
+          )}
+        </div>
       );
     }
     if (h === 'category_id' && val !== '-') {
@@ -558,6 +652,7 @@ function DataManager({ entity }) {
   };
 
   const columnTitle = h => {
+    if (h === 'order_status') return 'Order Status';
     if (h === 'category_id') return 'Category Name';
     if (h === 'festival_id') return 'Festival Name';
     if (h === 'birthday_date') return 'Birthday';
@@ -806,10 +901,11 @@ function DataManager({ entity }) {
                                     <thead>
                                       <tr className="border-b border-ad-border text-[10.5px] font-bold uppercase tracking-wider text-ad-muted bg-ad-card/40">
                                         <th className="py-2.5 px-3 w-16">Item #</th>
-                                        <th className="py-2.5 px-3 min-w-[280px]">Product Details & Photo</th>
+                                        <th className="py-2.5 px-3 min-w-[260px]">Product Details & Photo</th>
                                         <th className="py-2.5 px-3 text-right">Unit Price</th>
                                         <th className="py-2.5 px-3 text-center">Discount</th>
-                                        <th className="py-2.5 px-3 text-center">Quantity</th>
+                                        <th className="py-2.5 px-3 text-center">Qty Ordered</th>
+                                        <th className="py-2.5 px-3 text-center min-w-[190px]">Delivered Progress</th>
                                         <th className="py-2.5 px-3 text-right">Subtotal</th>
                                         <th className="py-2.5 px-3 text-right">Actions</th>
                                       </tr>
@@ -908,6 +1004,47 @@ function DataManager({ entity }) {
                                               )}
                                             </td>
                                             <td className="py-3 px-3 text-center font-bold text-ad-text align-middle">{item.quantity}</td>
+                                            <td className="py-3 px-3 text-center align-middle">
+                                              <div className="inline-flex flex-col items-center gap-1">
+                                                <div className="inline-flex items-center rounded-lg border border-ad-border bg-ad-card p-0.5 shadow-2xs">
+                                                  <button
+                                                    type="button"
+                                                    disabled={Number(item.delivered_quantity || 0) <= 0}
+                                                    onClick={() => handleUpdateDeliveredQty(idVal, item, Math.max(0, Number(item.delivered_quantity || 0) - 1))}
+                                                    className="h-6 w-6 rounded flex items-center justify-center text-ad-muted hover:text-ad-text hover:bg-ad-hover disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                                                    title="Decrease delivered quantity"
+                                                  >
+                                                    <Minus className="w-3 h-3" />
+                                                  </button>
+                                                  <span className="w-10 text-center font-mono font-bold text-xs text-ad-text">
+                                                    {item.delivered_quantity || 0}
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    disabled={Number(item.delivered_quantity || 0) >= Number(item.quantity || 1)}
+                                                    onClick={() => handleUpdateDeliveredQty(idVal, item, Math.min(Number(item.quantity || 1), Number(item.delivered_quantity || 0) + 1))}
+                                                    className="h-6 w-6 rounded flex items-center justify-center text-ad-muted hover:text-ad-text hover:bg-ad-hover disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                                                    title="Increase delivered quantity"
+                                                  >
+                                                    <Plus className="w-3 h-3" />
+                                                  </button>
+                                                </div>
+                                                {Number(item.delivered_quantity || 0) >= Number(item.quantity || 1) ? (
+                                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded">
+                                                    <Check className="w-2.5 h-2.5" /> Fully Delivered
+                                                  </span>
+                                                ) : (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleUpdateDeliveredQty(idVal, item, Number(item.quantity || 1))}
+                                                    className="text-[10px] font-semibold text-ad-primary hover:underline cursor-pointer"
+                                                    title={`Mark all ${item.quantity} as delivered`}
+                                                  >
+                                                    Mark All Delivered ({item.quantity})
+                                                  </button>
+                                                )}
+                                              </div>
+                                            </td>
                                             <td className="py-3 px-3 text-right font-mono font-bold text-ad-text text-[13px] align-middle">
                                               ₹{lineSubtotal.toLocaleString('en-IN')}
                                             </td>
@@ -944,6 +1081,9 @@ function DataManager({ entity }) {
                                         </td>
                                         <td className="py-2 px-3 text-center text-ad-text font-bold">
                                           {orderItems.reduce((acc, it) => acc + Number(it.quantity || 0), 0)} pcs
+                                        </td>
+                                        <td className="py-2 px-3 text-center text-ad-text font-mono text-[11px]">
+                                          {orderItems.reduce((acc, it) => acc + Number(it.delivered_quantity || 0), 0)} pcs del.
                                         </td>
                                         <td className="py-2 px-3 text-right font-mono text-ad-text text-[13px] font-bold">
                                           ₹{orderItems.reduce((acc, it) => acc + Number(it.subtotal || (Number(it.unit_price || 0) * (1 - Number(it.discount_percent || 0) / 100) * Number(it.quantity || 1))), 0).toLocaleString('en-IN')}
@@ -1618,6 +1758,7 @@ function OrderItemModal({ mode, orderId, item, products = [], onClose, onSaved }
   const [unitPrice, setUnitPrice] = useState(() => item?.unit_price ?? '');
   const [discountPercent, setDiscountPercent] = useState(() => item?.discount_percent ?? 0);
   const [quantity, setQuantity] = useState(() => item?.quantity ?? 1);
+  const [deliveredQuantity, setDeliveredQuantity] = useState(() => item?.delivered_quantity ?? 0);
 
   const handleProductChange = e => {
     const pid = e.target.value;
@@ -1647,6 +1788,7 @@ function OrderItemModal({ mode, orderId, item, products = [], onClose, onSaved }
       unit_price: Number(unitPrice),
       discount_percent: Number(discountPercent) || 0,
       quantity: Number(quantity) || 1,
+      delivered_quantity: Math.max(0, Number(deliveredQuantity) || 0),
       subtotal: Number(calculatedSubtotal.toFixed(2))
     };
 
@@ -1756,7 +1898,7 @@ function OrderItemModal({ mode, orderId, item, products = [], onClose, onSaved }
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-ad-text mb-1">Quantity</label>
+                <label className="block text-xs font-semibold text-ad-text mb-1">Quantity (Ordered)</label>
                 <input
                   type="number"
                   min="1"
@@ -1767,10 +1909,47 @@ function OrderItemModal({ mode, orderId, item, products = [], onClose, onSaved }
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-ad-text mb-1">Calculated Line Subtotal</label>
-                <div className="ad-input w-full bg-ad-card font-mono font-bold text-ad-primary flex items-center">
-                  ₹{calculatedSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <label className="block text-xs font-semibold text-ad-text mb-1">Delivered Quantity (pcs)</label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min="0"
+                    max={quantity}
+                    value={deliveredQuantity}
+                    onChange={e => setDeliveredQuantity(e.target.value)}
+                    className="ad-input flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setDeliveredQuantity(quantity)}
+                    className="px-2.5 py-2 rounded-lg border border-ad-border bg-ad-card hover:bg-ad-hover text-xs font-semibold text-ad-text shrink-0 cursor-pointer"
+                    title={`Mark full quantity (${quantity}) as delivered`}
+                  >
+                    All ({quantity})
+                  </button>
                 </div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl border border-ad-border bg-ad-card/40 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-ad-muted font-medium">Calculated Line Subtotal:</span>
+                <span className="font-mono font-bold text-ad-primary text-sm">
+                  ₹{calculatedSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="pt-2 border-t border-ad-border/60 text-[11px] flex items-start gap-1.5">
+                {Number(deliveredQuantity) >= Number(quantity) ? (
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    Item fully delivered ({deliveredQuantity}/{quantity}). When all items in this order are delivered, Order Status automatically becomes COMPLETED.
+                  </span>
+                ) : (
+                  <span className="text-amber-400 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    Delivered {deliveredQuantity} of {quantity} pcs. Order Status will remain PENDING until all items are delivered.
+                  </span>
+                )}
               </div>
             </div>
           </div>
