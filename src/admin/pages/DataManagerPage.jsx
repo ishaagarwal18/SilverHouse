@@ -126,6 +126,7 @@ function DataManager({ entity }) {
   const [deleting, setDeleting] = useState(false);
   const [lightbox, setLightbox] = useState(null); // { images, index }
   const [textPreview, setTextPreview] = useState(null);
+  const [categoryPreviewCtx, setCategoryPreviewCtx] = useState(null); // { festivalId, festivalName, categories: [] }
   const [importMode, setImportMode] = useState('RESTOCK');
   const [importing, setImporting] = useState(false);
   const [orderStatusFilter, setOrderStatusFilter] = useState(() => (searchParams.get('status') || 'ALL').toUpperCase());
@@ -145,14 +146,15 @@ function DataManager({ entity }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [data, cats, makes, festList, itemsData, prodList, cartItemsData] = await Promise.all([
+      const [data, cats, makes, festList, itemsData, prodList, cartItemsData, festCatsData] = await Promise.all([
         fetchRows(entity),
         fetchRows('category'),
         fetchRows('make_master'),
         fetchRows('festival'),
         entity === 'orders' ? fetchRows('order_item') : Promise.resolve([]),
         (entity === 'orders' || entity === 'cart') ? fetchRows('product') : Promise.resolve([]),
-        entity === 'cart' ? fetchRows('cart_item') : Promise.resolve([])
+        entity === 'cart' ? fetchRows('cart_item') : Promise.resolve([]),
+        (entity === 'festival' || entity === 'festival_category') ? fetchRows('festival_category') : Promise.resolve([])
       ]);
       setRows(data);
       if (entity === 'orders' && Array.isArray(itemsData)) {
@@ -173,15 +175,38 @@ function DataManager({ entity }) {
         }
         setCartItemsMap(map);
       }
+
+      const catMap = Object.fromEntries(cats.map(c => [c.category_id, c.name]));
+      const festivalCategoryMap = {};
+      const festivalCategoryNamesMap = {};
+      const festivalCategoryRaw = {};
+      if (Array.isArray(festCatsData)) {
+        for (const fc of festCatsData) {
+          const fid = String(fc.festival_id || '');
+          const cid = Number(fc.category_id);
+          if (!festivalCategoryMap[fid]) {
+            festivalCategoryMap[fid] = [];
+            festivalCategoryNamesMap[fid] = [];
+            festivalCategoryRaw[fid] = [];
+          }
+          festivalCategoryMap[fid].push(cid);
+          if (catMap[cid]) festivalCategoryNamesMap[fid].push(catMap[cid]);
+          festivalCategoryRaw[fid].push(fc);
+        }
+      }
+
       setLookups({
-        categories: Object.fromEntries(cats.map(c => [c.category_id, c.name])),
+        categories: catMap,
         makes: Object.fromEntries(makes.map(m => [m.m_id, m.type])),
         festivals: Object.fromEntries((festList || []).map(f => [f.id, f.name || f.shortName || f.id])),
         products: Object.fromEntries((prodList || []).map(p => [p.product_id, p.title || p.name || `Product #${p.product_id}`])),
         productMap: Object.fromEntries((prodList || []).map(p => [String(p.product_id), p])),
         categoryList: cats || [],
         festivalList: festList || [],
-        productList: prodList || []
+        productList: prodList || [],
+        festivalCategoryMap,
+        festivalCategoryNamesMap,
+        festivalCategoryRaw
       });
     } catch (err) {
       showToast('Failed to load table: ' + err.message, true);
@@ -360,6 +385,9 @@ function DataManager({ entity }) {
     const keys = Object.keys(rows[0]);
     if (entity === 'orders') return keys.filter(h => !HIDDEN_ORDER_COLUMNS.includes(h));
     if (entity === 'cart') return keys.filter(h => !HIDDEN_CART_COLUMNS.includes(h));
+    if (entity === 'festival') {
+      return [...keys, 'linked_categories'];
+    }
     return keys;
   }, [rows, entity]);
 
@@ -829,6 +857,63 @@ function DataManager({ entity }) {
         </div>
       );
     }
+    if (h === 'linked_categories') {
+      const festId = String(row.id || idVal || '');
+      const catNames = lookups.festivalCategoryNamesMap?.[festId] || [];
+      const catIds = lookups.festivalCategoryMap?.[festId] || [];
+      if (catNames.length === 0) {
+        return (
+          <span className="inline-flex items-center gap-1.5 text-xs text-ad-muted/60 italic">
+            <span className="w-1.5 h-1.5 rounded-full bg-ad-border" />
+            None
+          </span>
+        );
+      }
+
+      const visible = catNames.slice(0, 2);
+      const remaining = catNames.length - visible.length;
+
+      const handleOpenCategoryPreview = (e) => {
+        e.stopPropagation();
+        setCategoryPreviewCtx({
+          festivalId: festId,
+          festivalName: row.name || row.shortName || `Festival (${festId})`,
+          categories: catNames.map((name, idx) => ({
+            name,
+            id: catIds[idx] || null
+          }))
+        });
+      };
+
+      return (
+        <div
+          className="inline-flex items-center gap-1.5 whitespace-nowrap"
+          title={`Click to view all ${catNames.length} linked categories:\n${catNames.map(c => `• ${c}`).join('\n')}`}
+        >
+          {visible.map((name, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={handleOpenCategoryPreview}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11.5px] font-medium bg-ad-card border border-ad-border/80 text-ad-text shadow-2xs hover:border-ad-primary/40 hover:bg-ad-hover transition-colors cursor-pointer"
+            >
+              <Tag className="w-2.5 h-2.5 text-ad-primary shrink-0 opacity-70" />
+              <span className="max-w-[120px] truncate">{name}</span>
+            </button>
+          ))}
+          {remaining > 0 && (
+            <button
+              type="button"
+              onClick={handleOpenCategoryPreview}
+              className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10.5px] font-bold bg-ad-primary/10 border border-ad-primary/25 text-ad-primary hover:bg-ad-primary hover:text-white transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+              title={`Click to view all ${catNames.length} linked categories`}
+            >
+              +{remaining}
+            </button>
+          )}
+        </div>
+      );
+    }
     if (h === 'category_id' && val !== '-') {
       return lookups.categories[val] ? `${lookups.categories[val]} (#${val})` : (row.category_name || val);
     }
@@ -856,6 +941,7 @@ function DataManager({ entity }) {
   };
 
   const columnTitle = h => {
+    if (h === 'linked_categories') return 'Linked Categories';
     if (h === 'order_status') return 'Order Status';
     if (h === 'category_id') return 'Category Name';
     if (h === 'festival_id') return 'Festival Name';
@@ -1074,7 +1160,7 @@ function DataManager({ entity }) {
                     <th className="w-12 border-b border-ad-border px-2 py-3" aria-label={`Expand ${entity === 'orders' ? 'order' : 'cart'}`} />
                   )}
                   {headers.map(h => {
-                    const sortable = !isImageColumn(h);
+                    const sortable = !isImageColumn(h) && h !== 'linked_categories';
                     const active = sort.col === h;
                     const SortIcon = !active ? ArrowUpDown : sort.dir === 'asc' ? ArrowUp : ArrowDown;
                     return (
@@ -1738,6 +1824,66 @@ function DataManager({ entity }) {
       <Modal open={textPreview !== null} onClose={() => setTextPreview(null)} size="md" title="Full Description">
         <ModalBody><p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ad-text">{textPreview}</p></ModalBody>
       </Modal>
+
+      <Modal
+        open={categoryPreviewCtx !== null}
+        onClose={() => setCategoryPreviewCtx(null)}
+        size="md"
+        title={`Linked Categories — ${categoryPreviewCtx?.festivalName || ''}`}
+        subtitle={`All ${categoryPreviewCtx?.categories?.length || 0} product categories currently linked to this festival in dbo.festival_category`}
+      >
+        <ModalBody>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {categoryPreviewCtx?.categories?.map((cat, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl border border-ad-border bg-ad-card/60 shadow-2xs hover:border-ad-primary/40 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-7 h-7 rounded-lg bg-ad-primary/10 text-ad-primary flex items-center justify-center shrink-0 border border-ad-primary/20">
+                      <Tag className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="font-semibold text-xs text-ad-text truncate">
+                      {cat.name}
+                    </span>
+                  </div>
+                  {cat.id && (
+                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-ad-surface border border-ad-border text-ad-muted shrink-0">
+                      ID: #{cat.id}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </ModalBody>
+        <div className="flex items-center justify-between border-t border-ad-border bg-ad-card/50 px-5 py-3">
+          <span className="text-xs text-ad-muted">
+            Total: <strong className="text-ad-text font-semibold">{categoryPreviewCtx?.categories?.length || 0}</strong> categories
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setCategoryPreviewCtx(null)}
+            >
+              Close
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                const fId = categoryPreviewCtx?.festivalId;
+                setCategoryPreviewCtx(null);
+                if (fId) openEdit(fId);
+              }}
+            >
+              <Pencil className="w-3.5 h-3.5" /> Manage Categories
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -1818,14 +1964,31 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
   const isEdit = mode === 'EDIT';
   const rowData = isEdit ? rows.find(r => String(r[pkField]) === String(id)) || {} : {};
 
-  // Multi-category checkbox state for festival_category
+  // Multi-category checkbox state for festival_category or festival
   const [selectedCategoryIds, setSelectedCategoryIds] = useState(() => {
     if (entity === 'festival_category' && rowData.category_id !== undefined && rowData.category_id !== null) {
       return [Number(rowData.category_id)];
     }
+    if (entity === 'festival' && id) {
+      return (lookups.festivalCategoryMap?.[String(id)] || []).map(Number);
+    }
     return [];
   });
   const [categorySearch, setCategorySearch] = useState('');
+
+  // Auto-suggest next festival ID (e.g. FEST-22) when creating a new festival
+  const suggestedNextFestId = useMemo(() => {
+    if (entity !== 'festival' || isEdit) return '';
+    let maxNum = 0;
+    for (const r of rows) {
+      const match = String(r.id || '').match(/FEST-(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+    return `FEST-${maxNum + 1}`;
+  }, [entity, isEdit, rows]);
 
   const toggleCategory = catId => {
     const numId = Number(catId);
@@ -1869,6 +2032,10 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
       const keepText = ['phone', 'pincode', 'order_number', 'guest_token'].some(k => key.includes(k));
       tableValues[key] = !isNaN(trimmed) && !keepText ? Number(trimmed) : trimmed;
     });
+
+    // Strip synthetic non-table field linked_categories before sending to database
+    const selectedCatsForFestival = [...selectedCategoryIds];
+    delete tableValues.linked_categories;
 
     // Ensure order_status strictly matches actual item fulfillment for orders
     if (entity === 'orders' && id) {
@@ -1928,6 +2095,37 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
     try {
       const res = await callProc(entity, isEdit ? 'EDIT' : 'ADD', tableValues, isEdit ? String(id) : null);
       if (!res.success) throw new Error(res.status || res.error || 'Failed to save');
+
+      // If saving a festival, synchronize its linked categories in dbo.festival_category
+      if (entity === 'festival') {
+        const festId = String(isEdit ? id : (tableValues.id || ''));
+        if (festId) {
+          const prevCats = isEdit ? (lookups.festivalCategoryMap?.[festId] || []) : [];
+          const toAdd = selectedCatsForFestival.filter(cid => !prevCats.includes(cid));
+          const toRemove = prevCats.filter(cid => !selectedCatsForFestival.includes(cid));
+
+          // Remove unlinked categories from dbo.festival_category
+          if (toRemove.length > 0) {
+            const rawRows = lookups.festivalCategoryRaw?.[festId] || [];
+            for (const catId of toRemove) {
+              const mappingRow = rawRows.find(r => Number(r.category_id) === Number(catId));
+              if (mappingRow && mappingRow.id) {
+                await callProc('festival_category', 'DELETE', { id: mappingRow.id }, String(mappingRow.id));
+              }
+            }
+          }
+
+          // Add newly linked categories to dbo.festival_category
+          if (toAdd.length > 0) {
+            await Promise.all(
+              toAdd.map(catId =>
+                callProc('festival_category', 'ADD', { festival_id: festId, category_id: Number(catId) })
+              )
+            );
+          }
+        }
+      }
+
       showToast(`${cfg.singular} ${isEdit ? 'updated' : 'created'} successfully!`);
       onSaved();
     } catch (err) {
@@ -1965,24 +2163,30 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {schema.map(field => {
-              const value = rowData[field.name] !== undefined && rowData[field.name] !== null ? rowData[field.name] : (field.default ?? '');
+              const value = rowData[field.name] !== undefined && rowData[field.name] !== null
+                ? rowData[field.name]
+                : (field.name === 'id' && entity === 'festival' && !isEdit ? suggestedNextFestId : (field.default ?? ''));
               const fieldId = `rec-${field.name}`;
+              const isFestCatPicker = (field.name === 'category_id' && entity === 'festival_category') || field.name === 'linked_categories' || field.type === 'category_multiselect';
+
               return (
                 <Field key={field.name} label={field.label} required={field.required} fullWidth={field.fullWidth} htmlFor={fieldId}>
-                  {field.name === 'category_id' && entity === 'festival_category' ? (
-                    <div className="space-y-2">
+                  {isFestCatPicker ? (
+                    <div className="space-y-2.5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-ad-muted">Select categories to associate with festival:</span>
+                          <span className="text-xs font-medium text-ad-muted">
+                            {entity === 'festival' ? 'Select product categories featured for this festival:' : 'Select categories to associate with festival:'}
+                          </span>
                           <span className="rounded-full bg-ad-primary/15 px-2 py-0.5 text-[11px] font-bold text-ad-primary">
                             {selectedCategoryIds.length} selected
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={handleSelectAllCategories}
-                            className="text-[11px] font-semibold text-ad-primary hover:underline cursor-pointer px-1 py-0.5"
+                            className="text-xs font-semibold text-ad-primary hover:underline cursor-pointer"
                           >
                             Select All
                           </button>
@@ -1990,7 +2194,7 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                           <button
                             type="button"
                             onClick={handleClearAllCategories}
-                            className="text-[11px] font-semibold text-ad-muted hover:text-ad-danger cursor-pointer px-1 py-0.5"
+                            className="text-xs font-semibold text-ad-muted hover:text-ad-danger cursor-pointer"
                           >
                             Clear
                           </button>
@@ -1998,48 +2202,87 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                       </div>
 
                       {(lookups.categoryList || []).length > 6 && (
-                        <input
-                          type="text"
-                          placeholder="Search / filter categories..."
-                          value={categorySearch}
-                          onChange={e => setCategorySearch(e.target.value)}
-                          className="ad-input py-1.5 px-3 text-xs"
-                        />
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search categories..."
+                            value={categorySearch}
+                            onChange={e => setCategorySearch(e.target.value)}
+                            className="ad-input py-1.5 pl-3 pr-8 text-xs"
+                          />
+                          {categorySearch && (
+                            <button
+                              type="button"
+                              onClick={() => setCategorySearch('')}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ad-muted hover:text-ad-text text-xs cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
                       )}
 
-                      <div className="max-h-60 overflow-y-auto ad-scroll rounded-xl border border-ad-border bg-ad-card/30 p-2 space-y-1.5">
+                      {selectedCategoryIds.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-ad-primary/5 border border-ad-primary/20 max-h-24 overflow-y-auto ad-scroll">
+                          <span className="text-[11px] font-bold text-ad-primary shrink-0 mr-1">Selected:</span>
+                          {selectedCategoryIds.map(catId => {
+                            const catObj = (lookups.categoryList || []).find(c => Number(c.category_id) === Number(catId));
+                            const name = catObj?.name || lookups.categories?.[catId] || `Category #${catId}`;
+                            return (
+                              <span
+                                key={catId}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-ad-surface border border-ad-primary/30 text-ad-text shadow-2xs"
+                              >
+                                <span className="max-w-[120px] truncate">{name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCategory(catId)}
+                                  className="text-ad-muted hover:text-ad-danger ml-0.5 cursor-pointer text-[12px] leading-none"
+                                  title={`Remove ${name}`}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      <div className="max-h-56 overflow-y-auto ad-scroll rounded-xl border border-ad-border bg-ad-card/30 p-2.5">
                         {filteredCategories.length === 0 ? (
                           <div className="p-4 text-center text-xs text-ad-muted">
                             No categories found matching "{categorySearch}"
                           </div>
                         ) : (
-                          filteredCategories.map(cat => {
-                            const isChecked = selectedCategoryIds.includes(Number(cat.category_id));
-                            return (
-                              <label
-                                key={cat.category_id}
-                                className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${isChecked
-                                    ? 'border-ad-primary/40 bg-ad-primary/10 text-ad-text shadow-2xs'
-                                    : 'border-ad-border/60 bg-ad-surface hover:bg-ad-hover text-ad-muted hover:text-ad-text'
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {filteredCategories.map(cat => {
+                              const isChecked = selectedCategoryIds.includes(Number(cat.category_id));
+                              return (
+                                <button
+                                  key={cat.category_id}
+                                  type="button"
+                                  onClick={() => toggleCategory(cat.category_id)}
+                                  className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${
+                                    isChecked
+                                      ? 'border-ad-primary/50 bg-ad-primary/10 text-ad-text shadow-2xs ring-1 ring-ad-primary/30 font-medium'
+                                      : 'border-ad-border/70 bg-ad-surface hover:bg-ad-hover hover:border-ad-border text-ad-muted hover:text-ad-text'
                                   }`}
-                              >
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={() => toggleCategory(cat.category_id)}
-                                    className="w-4 h-4 rounded border-ad-border text-ad-primary focus:ring-ad-primary accent-ad-primary cursor-pointer"
-                                  />
-                                  <span className="text-xs font-semibold truncate text-ad-text">
-                                    {cat.name}
-                                  </span>
-                                </div>
-                                <span className="shrink-0 font-mono text-[10px] px-1.5 py-0.5 rounded bg-ad-card border border-ad-border text-ad-muted">
-                                  ID: {cat.category_id}
-                                </span>
-                              </label>
-                            );
-                          })
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                      isChecked
+                                        ? 'bg-ad-primary border-ad-primary text-white shadow-2xs'
+                                        : 'border-ad-border bg-ad-card'
+                                    }`}>
+                                      {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                                    </div>
+                                    <span className="text-xs truncate text-ad-text">{cat.name}</span>
+                                  </div>
+                                  <span className="text-[10px] font-mono text-ad-muted shrink-0">#{cat.category_id}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -2103,7 +2346,17 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                   ) : field.type === 'textarea' ? (
                     <textarea id={fieldId} name={field.name} rows={3} className="ad-input" defaultValue={typeof value === 'object' ? JSON.stringify(value) : value} required={field.required} placeholder={field.placeholder} />
                   ) : (
-                    <input id={fieldId} name={field.name} type={field.type || 'text'} step={field.step} className="ad-input" defaultValue={typeof value === 'object' ? JSON.stringify(value) : value} required={field.required} placeholder={field.placeholder} />
+                    <input
+                      id={fieldId}
+                      name={field.name}
+                      type={field.type || 'text'}
+                      step={field.step}
+                      className={`ad-input ${field.name === 'id' && isEdit && entity === 'festival' ? 'opacity-70 bg-ad-card cursor-not-allowed' : ''}`}
+                      defaultValue={typeof value === 'object' ? JSON.stringify(value) : value}
+                      required={field.required}
+                      placeholder={field.placeholder}
+                      readOnly={field.readOnly || (field.name === 'id' && isEdit && entity === 'festival')}
+                    />
                   )}
                 </Field>
               );

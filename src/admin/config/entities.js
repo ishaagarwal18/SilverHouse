@@ -186,14 +186,15 @@ export const ENTITY_FORM_SCHEMAS = {
     { name: 'attempts', label: 'Attempts', type: 'number', default: 0 }
   ],
   festival: [
-    { name: 'id', label: 'Festival ID', type: 'text', required: true, placeholder: 'e.g. FEST-1' },
+    { name: 'id', label: 'Festival ID', type: 'text', required: true, placeholder: 'e.g. FEST-22' },
     { name: 'name', label: 'Festival Name', type: 'text', required: true, placeholder: 'e.g. Makar Sankranti' },
     { name: 'shortName', label: 'Short Name', type: 'text', placeholder: 'e.g. Uttarayan' },
     { name: 'timing_2026', label: 'Timing / Dates Info', type: 'text', placeholder: 'e.g. Oct 11 - 20' },
     { name: 'description', label: 'Description', type: 'textarea', fullWidth: true },
     { name: 'primary_website_category', label: 'Primary Website Category', type: 'text' },
     { name: 'start_date', label: 'Festival Start Date', type: 'date' },
-    { name: 'end_date', label: 'Festival End Date', type: 'date' }
+    { name: 'end_date', label: 'Festival End Date', type: 'date' },
+    { name: 'linked_categories', label: 'Linked Categories', type: 'category_multiselect', fullWidth: true }
   ],
   festival_category: [
     { name: 'festival_id', label: 'Festival Name', type: 'select', required: true, fullWidth: true },

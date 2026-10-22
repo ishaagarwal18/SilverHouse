@@ -677,6 +677,45 @@ BEGIN
                OR (@ReviewUserId IS NOT NULL AND r.userid = @ReviewUserId)
                OR (@ReviewFilterId IS NULL AND @ReviewProductId IS NULL AND @ReviewUserId IS NULL)
             ORDER BY r.reviewid DESC;
+        -- 18. Festival Entity Fetcher
+        ELSE IF @proc_name IN ('festival', 'festivals')
+        BEGIN
+            IF @Condition IS NOT NULL AND @Condition <> ''
+                SELECT * FROM dbo.festival WHERE id = @Condition;
+            ELSE
+                SELECT * FROM dbo.festival ORDER BY id ASC;
+        END
+
+        -- 19. Festival Category Mapping Fetcher
+        ELSE IF @proc_name IN ('festival_category', 'festival_categories')
+        BEGIN
+            IF @Condition IS NOT NULL AND @Condition <> ''
+                SELECT 
+                    fc.id,
+                    fc.category_id,
+                    c.name AS category_name,
+                    fc.festival_id,
+                    f.name AS festival_name,
+                    fc.created_at
+                FROM dbo.festival_category fc
+                LEFT JOIN dbo.category c ON fc.category_id = c.category_id
+                LEFT JOIN dbo.festival f ON fc.festival_id = f.id
+                WHERE fc.id = TRY_CAST(@Condition AS INT) 
+                   OR fc.festival_id = @Condition 
+                   OR fc.category_id = TRY_CAST(@Condition AS INT)
+                ORDER BY fc.id ASC;
+            ELSE
+                SELECT 
+                    fc.id,
+                    fc.category_id,
+                    c.name AS category_name,
+                    fc.festival_id,
+                    f.name AS festival_name,
+                    fc.created_at
+                FROM dbo.festival_category fc
+                LEFT JOIN dbo.category c ON fc.category_id = c.category_id
+                LEFT JOIN dbo.festival f ON fc.festival_id = f.id
+                ORDER BY fc.id ASC;
         END
 
         ELSE

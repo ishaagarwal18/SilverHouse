@@ -2514,6 +2514,23 @@ app.post('/api/data', async (req, res) => {
                 ? recordsets[0]
                 : (recordsets.length === 1 && !recordsets[0][0]?.Response_Status ? recordsets[0] : []);
 
+            // Fallback: If SP_Fetchdata returns "Unsupported proc_name", try SP_GETDATA SELECT
+            if ((!data || data.length === 0) && recordsets.length === 1 && recordsets[0][0]?.Response_Status?.includes('Unsupported proc_name')) {
+                try {
+                    const fallbackReq = pool.request();
+                    fallbackReq.input('proc_name', sql.NVarChar(50), normalizedProc);
+                    fallbackReq.input('Opr', sql.NVarChar(20), 'SELECT');
+                    fallbackReq.input('JSONstr', sql.NVarChar(sql.MAX), jsonStr);
+                    fallbackReq.input('Condition', sql.NVarChar(255), condition !== undefined && condition !== null ? String(condition) : null);
+                    const fallbackResult = await fallbackReq.execute('dbo.SP_GETDATA');
+                    if (fallbackResult.recordsets && fallbackResult.recordsets.length > 0 && Array.isArray(fallbackResult.recordsets[0])) {
+                        data = fallbackResult.recordsets[0];
+                    }
+                } catch (fallbackErr) {
+                    console.warn(`[Fallback Warn] SP_GETDATA SELECT for ${normalizedProc} failed:`, fallbackErr.message);
+                }
+            }
+
             if (Array.isArray(data)) {
                 // Strict isolation for customer queries: never leak orders/addresses/users belonging to others
                 if (!isAdmin && ORDER_TABLES.includes(normalizedProc)) {
