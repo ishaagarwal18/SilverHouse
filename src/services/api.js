@@ -30,7 +30,12 @@ export const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
  */
 export function getAuthToken() {
   if (typeof localStorage === 'undefined') return null;
-  return localStorage.getItem('silverhouse_token') || null;
+  return (
+    localStorage.getItem('silverhouse_token') ||
+    localStorage.getItem('silverhouse_admin_token') ||
+    localStorage.getItem('sh_admin_token') ||
+    null
+  );
 }
 
 // Helpful console info indicating active environment

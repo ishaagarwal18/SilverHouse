@@ -112,6 +112,15 @@ export default function TopSellerSection({
                     onClick={() => onSelectProduct && onSelectProduct(product)}
                   />
 
+                  {/* Out of Stock Overlay */}
+                  {product.quantity !== undefined && product.quantity !== null && Number(product.quantity) <= 0 && (
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center z-10 pointer-events-none">
+                      <span className="bg-rose-600 text-white font-extrabold text-[11px] px-3 py-1 rounded-full uppercase tracking-wider shadow-lg border border-white/20">
+                        Out of Stock
+                      </span>
+                    </div>
+                  )}
+
                   {/* Top Rank & Sold Ribbon Tag - constrained so it never overlaps the heart */}
                   <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 z-10 flex flex-col space-y-1 items-start max-w-[calc(100%-2.75rem)]">
                     <span className="bg-[var(--th-primary)] text-white text-[9px] sm:text-[10px] font-extrabold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center space-x-1 border border-white/20 truncate">
@@ -194,18 +203,43 @@ export default function TopSellerSection({
                           </span>
                         )}
                       </div>
+                      {product.quantity !== undefined && product.quantity !== null && (
+                        <span className={`text-[10px] block mt-0.5 font-semibold ${
+                          Number(product.quantity) <= 0
+                            ? 'text-rose-600 font-bold'
+                            : Number(product.quantity) <= 5
+                            ? 'text-amber-600 font-bold'
+                            : 'text-emerald-600'
+                        }`}>
+                          {Number(product.quantity) <= 0
+                            ? 'Out of Stock'
+                            : Number(product.quantity) <= 5
+                            ? `Only ${product.quantity} left!`
+                            : `In Stock (${product.quantity})`}
+                        </span>
+                      )}
                     </div>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAddToCart && onAddToCart(product, 1);
-                      }}
-                      className="w-9 h-9 rounded-full bg-[var(--th-primary)]/10 hover:bg-[var(--th-primary)] text-[var(--th-primary)] hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shrink-0 border border-[var(--th-primary)]/20 shadow-xs"
-                      title="Add to Shopping Cart"
-                    >
-                      <ShoppingBag className="w-4 h-4" />
-                    </button>
+                    {(() => {
+                      const isOutOfStock = product.quantity !== undefined && product.quantity !== null && Number(product.quantity) <= 0;
+                      return (
+                        <button
+                          disabled={isOutOfStock}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isOutOfStock) onAddToCart && onAddToCart(product, 1);
+                          }}
+                          className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 shrink-0 border shadow-xs ${
+                            isOutOfStock
+                              ? 'bg-neutral-200 text-neutral-400 border-neutral-300 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-500 dark:border-neutral-700'
+                              : 'bg-[var(--th-primary)]/10 hover:bg-[var(--th-primary)] text-[var(--th-primary)] hover:text-white border-[var(--th-primary)]/20 cursor-pointer'
+                          }`}
+                          title={isOutOfStock ? "Out of Stock" : "Add to Shopping Cart"}
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

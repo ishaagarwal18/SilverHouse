@@ -48,6 +48,19 @@ export default function CartDrawer({
   const progressPercentage = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100));
   const remainingForFreeShipping = FREE_SHIPPING_THRESHOLD - subtotal;
 
+  // Real-time stock validation across all cart items
+  const stockErrors = cartItems.map(item => {
+    const rawStock = item.product?.quantity ?? item.stock_quantity ?? item.product?.stock;
+    const stock = (rawStock !== undefined && rawStock !== null) ? Number(rawStock) : null;
+    const pName = item.product?.title || item.product?.name || 'Item';
+    if (stock !== null) {
+      if (stock <= 0) return `"${pName}" is currently Out of Stock`;
+      if (item.quantity > stock) return `"${pName}" only has ${stock} units available (in bag: ${item.quantity})`;
+    }
+    return null;
+  }).filter(Boolean);
+  const hasStockError = stockErrors.length > 0;
+
   const handleApplyCoupon = (codeToApply) => {
     setCouponError('');
     const code = (codeToApply || couponInput).trim().toUpperCase();
@@ -236,7 +249,7 @@ export default function CartDrawer({
                               </button>
                             </div>
 
-                            {/* Specifications Chips */}
+                            {/* Specifications Chips & Real-time Stock Indicator */}
                             <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[10px] sm:text-[11px]">
                               <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-[var(--th-surface-alt)] border border-[var(--th-border)] text-[var(--th-text-muted)] font-medium">
                                 <Scale className="w-3 h-3 text-[var(--th-accent)]" />
@@ -246,6 +259,28 @@ export default function CartDrawer({
                                 <ShieldCheck className="w-3 h-3 text-blue-600" />
                                 <span>BIS Certified</span>
                               </span>
+                              {(() => {
+                                const rawStock = item.product?.quantity ?? item.stock_quantity ?? item.product?.stock;
+                                const stock = (rawStock !== undefined && rawStock !== null) ? Number(rawStock) : null;
+                                if (stock === null) return null;
+                                if (stock <= 0) {
+                                  return (
+                                    <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-rose-50 border border-rose-300 text-rose-700 font-bold">
+                                      <AlertCircle className="w-3 h-3 text-rose-600" />
+                                      <span>Out of Stock</span>
+                                    </span>
+                                  );
+                                }
+                                if (item.quantity > stock) {
+                                  return (
+                                    <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-300 text-amber-800 font-bold">
+                                      <AlertCircle className="w-3 h-3 text-amber-600" />
+                                      <span>Only {stock} in stock</span>
+                                    </span>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
 
                             {/* Custom Yatra / Personalization Configuration Details */}
@@ -299,26 +334,36 @@ export default function CartDrawer({
                               )}
                             </div>
 
-                            {/* Tactile Stepper */}
-                            <div className="flex items-center space-x-1.5 bg-[var(--th-surface-alt)] border border-[var(--th-border)] rounded-xl p-1 shadow-2xs">
-                              <button
-                                onClick={() => onUpdateQty(idx, Math.max(1, item.quantity - 1))}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-card)] transition-all cursor-pointer shadow-2xs"
-                                title="Decrease quantity"
-                              >
-                                <Minus className="w-3.5 h-3.5" />
-                              </button>
-                              <span className="w-6 text-center font-bold text-xs text-[var(--th-text-main)] font-mono">
-                                {item.quantity}
-                              </span>
-                              <button
-                                onClick={() => onUpdateQty(idx, item.quantity + 1)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-card)] transition-all cursor-pointer shadow-2xs"
-                                title="Increase quantity"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                            {/* Tactile Stepper with Live Stock Limit */}
+                            {(() => {
+                              const rawStock = item.product?.quantity ?? item.stock_quantity ?? item.product?.stock;
+                              const stock = (rawStock !== undefined && rawStock !== null) ? Number(rawStock) : null;
+                              const isMaxStock = stock !== null && item.quantity >= stock;
+                              return (
+                                <div className="flex items-center space-x-1.5 bg-[var(--th-surface-alt)] border border-[var(--th-border)] rounded-xl p-1 shadow-2xs">
+                                  <button
+                                    onClick={() => onUpdateQty(idx, Math.max(1, item.quantity - 1))}
+                                    className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-card)] transition-all cursor-pointer shadow-2xs"
+                                    title="Decrease quantity"
+                                  >
+                                    <Minus className="w-3.5 h-3.5" />
+                                  </button>
+                                  <span className="w-6 text-center font-bold text-xs text-[var(--th-text-main)] font-mono">
+                                    {item.quantity}
+                                  </span>
+                                  <button
+                                    disabled={isMaxStock}
+                                    onClick={() => onUpdateQty(idx, item.quantity + 1)}
+                                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-[var(--th-text-muted)] hover:text-[var(--th-text-main)] hover:bg-[var(--th-card)] transition-all cursor-pointer shadow-2xs ${
+                                      isMaxStock ? 'opacity-25 cursor-not-allowed' : ''
+                                    }`}
+                                    title={isMaxStock ? `Stock limit reached (${stock} pcs available)` : "Increase quantity"}
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              );
+                            })()}
                           </div>
 
                         </div>
@@ -485,21 +530,40 @@ export default function CartDrawer({
               )}
             </div>
 
+            {/* Stock Error Banner if items exceed inventory */}
+            {hasStockError && (
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start space-x-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-bold block">Inventory Warning</span>
+                  <p className="text-[11px] leading-tight text-rose-600">{stockErrors.join(' • ')}</p>
+                </div>
+              </div>
+            )}
+
             {/* Checkout Action Button */}
             <button
+              disabled={hasStockError}
               onClick={() => {
+                if (hasStockError) return;
                 onClose();
                 onProceedCheckout(finalTotal, discountAmount, appliedCoupon);
               }}
-              className="w-full py-3 px-4 sm:py-3.5 sm:px-5 rounded-xl bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-widest shadow-md hover:shadow-lg transition-all flex items-center justify-between cursor-pointer group hover:scale-[1.005]"
+              className={`w-full py-3 px-4 sm:py-3.5 sm:px-5 rounded-xl text-white font-bold text-xs uppercase tracking-widest shadow-md transition-all flex items-center justify-between group ${
+                hasStockError
+                  ? 'bg-neutral-400 cursor-not-allowed opacity-60'
+                  : 'bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] hover:shadow-lg cursor-pointer hover:scale-[1.005]'
+              }`}
             >
               <div className="text-left flex items-center space-x-2">
                 <span className="font-sans text-xs font-extrabold tracking-wider">
-                  Proceed to Checkout
+                  {hasStockError ? 'Adjust Stock to Checkout' : 'Proceed to Checkout'}
                 </span>
-                <span className="hidden sm:inline-block text-[10px] text-white/80 font-normal border-l border-white/30 pl-2">
-                  100% Insured
-                </span>
+                {!hasStockError && (
+                  <span className="hidden sm:inline-block text-[10px] text-white/80 font-normal border-l border-white/30 pl-2">
+                    100% Insured
+                  </span>
+                )}
               </div>
               <div className="flex items-center space-x-2 bg-white/20 px-3 py-1 rounded-lg backdrop-blur-xs">
                 <span className="font-outfit font-black text-sm">₹{finalTotal.toLocaleString('en-IN')}</span>

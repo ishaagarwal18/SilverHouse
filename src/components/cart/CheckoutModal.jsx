@@ -226,6 +226,23 @@ export default function CheckoutModal({
     if (e && e.preventDefault) e.preventDefault();
     setErrorMessage('');
 
+    // Pre-flight Stock Availability Check
+    for (const item of cartItems) {
+      const rawStock = item.product?.quantity ?? item.stock_quantity ?? item.product?.stock;
+      const stock = (rawStock !== undefined && rawStock !== null) ? Number(rawStock) : null;
+      const pName = item.product?.title || item.product?.name || 'Item';
+      if (stock !== null) {
+        if (stock <= 0) {
+          setErrorMessage(`Product "${pName}" is currently Out of Stock. Please remove it from your bag to proceed.`);
+          return;
+        }
+        if (item.quantity > stock) {
+          setErrorMessage(`Product "${pName}" only has ${stock} units in stock (you requested ${item.quantity}). Please adjust quantity.`);
+          return;
+        }
+      }
+    }
+
     if (!isAuthenticated && !isGuestCheckout) {
       setErrorMessage('Please sign in or choose "Continue as Guest" to proceed.');
       return;
@@ -309,6 +326,23 @@ export default function CheckoutModal({
   const handleCompleteOrder = async () => {
     if (isPlacingOrder || isProcessingRazorpay) return;
     setErrorMessage('');
+
+    // Pre-flight Stock Availability Check
+    for (const item of cartItems) {
+      const rawStock = item.product?.quantity ?? item.stock_quantity ?? item.product?.stock;
+      const stock = (rawStock !== undefined && rawStock !== null) ? Number(rawStock) : null;
+      const pName = item.product?.title || item.product?.name || 'Item';
+      if (stock !== null) {
+        if (stock <= 0) {
+          setErrorMessage(`Product "${pName}" is currently Out of Stock. Please remove it from your bag to proceed.`);
+          return;
+        }
+        if (item.quantity > stock) {
+          setErrorMessage(`Product "${pName}" only has ${stock} units in stock (you requested ${item.quantity}). Please adjust quantity.`);
+          return;
+        }
+      }
+    }
 
     if (!isAuthenticated) {
       setErrorMessage('Please sign in or register to complete your order.');
@@ -511,11 +545,15 @@ export default function CheckoutModal({
     try {
       const res = await postApiData(orderPayload);
       if (res && res.success) {
+        const dbOrder = (res.data && Array.isArray(res.data) && res.data[0]) ? res.data[0] : null;
+        const finalOrderNum = dbOrder?.order_number || generatedID;
+        const finalOrderId = dbOrder?.order_id || Date.now();
+
         try {
           const existing = JSON.parse(localStorage.getItem('silverhouse_orders') || '[]');
           const localOrder = {
-            order_id: Date.now(),
-            order_number: generatedID,
+            order_id: finalOrderId,
+            order_number: finalOrderNum,
             user_id: effectiveUserId,
             customer_name: patronName,
             customer_email: patronEmail,
@@ -537,7 +575,6 @@ export default function CheckoutModal({
         }
 
         window.dispatchEvent(new Event('products_updated'));
-        const finalOrderNum = res.data?.[0]?.order_number || generatedID;
         setOrderId(finalOrderNum);
         setConfirmedPaymentId('');
         setStep(3);

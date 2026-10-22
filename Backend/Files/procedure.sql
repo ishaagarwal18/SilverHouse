@@ -1539,6 +1539,26 @@ BEGIN
             END
         END
 
+        -- Check available product stock
+        DECLARE @ProductStock INT = 0;
+        SELECT @ProductStock = quantity FROM dbo.product WHERE product_id = @ProductId;
+
+        IF @ProductStock <= 0
+        BEGIN
+            RAISERROR('Out of Stock: Product is currently out of stock.', 16, 1);
+            RETURN;
+        END
+
+        DECLARE @CurrentCartQty INT = 0;
+        SELECT @CurrentCartQty = ISNULL(quantity, 0) FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId;
+
+        IF (@CurrentCartQty + @Quantity) > @ProductStock
+        BEGIN
+            DECLARE @CartStockMsg NVARCHAR(255) = 'Insufficient Stock: Only ' + CAST(@ProductStock AS NVARCHAR(10)) + ' unit(s) available in stock.';
+            RAISERROR(@CartStockMsg, 16, 1);
+            RETURN;
+        END
+
         IF EXISTS (SELECT 1 FROM dbo.cart_item WHERE cart_id = @CartId AND product_id = @ProductId)
         BEGIN
             UPDATE dbo.cart_item
@@ -1582,6 +1602,22 @@ BEGIN
 
             SELECT 'Item removed from cart' AS [Message];
             RETURN;
+        END
+
+        DECLARE @ItemProdId INT = @ProductId;
+        IF @ItemProdId IS NULL AND @TargetCartItemId IS NOT NULL
+            SELECT @ItemProdId = product_id FROM dbo.cart_item WHERE cart_item_id = @TargetCartItemId;
+
+        IF @ItemProdId IS NOT NULL
+        BEGIN
+            DECLARE @ProdStockEdit INT = 0;
+            SELECT @ProdStockEdit = quantity FROM dbo.product WHERE product_id = @ItemProdId;
+            IF @Quantity > @ProdStockEdit
+            BEGIN
+                DECLARE @EditStockErrMsg NVARCHAR(255) = 'Insufficient Stock: Cannot exceed available stock of ' + CAST(@ProdStockEdit AS NVARCHAR(10)) + ' unit(s).';
+                RAISERROR(@EditStockErrMsg, 16, 1);
+                RETURN;
+            END
         END
 
         IF @TargetCartItemId IS NOT NULL
@@ -1736,7 +1772,8 @@ BEGIN
         ELSE IF @UserId IS NOT NULL AND @UserId > 0
         BEGIN
             SELECT 
-                o.order_id, o.order_number, o.user_id,
+                o.order_id, o.order_number, o.user_id, u.full_name AS customer_name, u.phone,
+                o.address_id, a.recipient_name, a.Block, a.street, a.area, a.city, a.[state], a.pincode, a.country,
                 o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.order_status, o.created_at,
                 o.[confirm], o.is_custom, o.custom_category, o.[description], o.[image],
                 (
@@ -1749,6 +1786,8 @@ BEGIN
                     FOR JSON PATH
                 ) AS items_json
             FROM dbo.orders o
+            LEFT JOIN dbo.[user] u ON o.user_id = u.user_id
+            LEFT JOIN dbo.address a ON o.address_id = a.address_id
             WHERE o.user_id = @UserId
             ORDER BY o.order_id DESC;
         END
@@ -1881,6 +1920,68 @@ BEGIN
 
         IF @FinalPayable IS NULL OR @FinalPayable = 0.00
             SET @FinalPayable = @TotalAmount - @DiscountAmount;
+
+        -- Strictly check stock availability before creating the order
+        DECLARE @RawItemsTemp TABLE (
+            product_id INT,
+            qty INT
+        );
+
+        IF @HasJsonItems = 1
+        BEGIN
+            INSERT INTO @RawItemsTemp (product_id, qty)
+            SELECT 
+                COALESCE(
+                    (SELECT TOP 1 p.product_id FROM dbo.product p WHERE p.product_id = TRY_CAST(COALESCE(j.product_id, j.id) AS INT)),
+                    (SELECT TOP 1 p.product_id FROM dbo.product p WHERE p.title = COALESCE(j.product_name, j.title, '') AND COALESCE(j.product_name, j.title, '') <> ''),
+                    (SELECT TOP 1 p.product_id FROM dbo.product p WHERE p.title LIKE '%' + COALESCE(j.product_name, j.title, '') + '%' AND COALESCE(j.product_name, j.title, '') <> ''),
+                    (SELECT TOP 1 product_id FROM dbo.product ORDER BY product_id ASC)
+                ),
+                COALESCE(j.quantity, j.qty, 1)
+            FROM OPENJSON(JSON_QUERY(@JSONstr, '$.table_values.items'))
+            WITH (
+                product_id   NVARCHAR(50)  '$.product_id',
+                id           NVARCHAR(50)  '$.id',
+                product_name NVARCHAR(255) '$.product_name',
+                title        NVARCHAR(255) '$.title',
+                quantity     INT           '$.quantity',
+                qty          INT           '$.qty'
+            ) j;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO @RawItemsTemp (product_id, qty)
+            SELECT ci.product_id, ci.quantity
+            FROM dbo.cart_item ci
+            WHERE ci.cart_id = @CartId;
+        END
+
+        DECLARE @StockViolatorTitle NVARCHAR(100) = NULL;
+        DECLARE @StockViolatorAvail INT = 0;
+        DECLARE @StockViolatorReq INT = 0;
+
+        SELECT TOP 1 
+            @StockViolatorTitle = p.title,
+            @StockViolatorAvail = p.quantity,
+            @StockViolatorReq = agg.total_requested
+        FROM (
+            SELECT product_id, SUM(qty) AS total_requested
+            FROM @RawItemsTemp
+            GROUP BY product_id
+        ) agg
+        INNER JOIN dbo.product p ON agg.product_id = p.product_id
+        WHERE p.quantity < agg.total_requested OR p.quantity <= 0;
+
+        IF @StockViolatorTitle IS NOT NULL
+        BEGIN
+            DECLARE @StockErrMsg NVARCHAR(500);
+            IF @StockViolatorAvail <= 0
+                SET @StockErrMsg = 'Out of Stock: Product "' + @StockViolatorTitle + '" is currently out of stock.';
+            ELSE
+                SET @StockErrMsg = 'Insufficient Stock: Product "' + @StockViolatorTitle + '" only has ' + CAST(@StockViolatorAvail AS NVARCHAR(10)) + ' unit(s) in stock (requested ' + CAST(@StockViolatorReq AS NVARCHAR(10)) + ').';
+            RAISERROR(@StockErrMsg, 16, 1);
+            RETURN;
+        END
 
         BEGIN TRANSACTION;
         BEGIN TRY
@@ -2047,7 +2148,7 @@ BEGIN
     DECLARE @ProductId         INT;
     DECLARE @UnitPrice         DECIMAL(18,2);
     DECLARE @DiscountPercent   DECIMAL(18,2);
-    DECLARE @Quantity          INT = 1;
+    DECLARE @Quantity          INT = NULL;
     DECLARE @DeliveredQuantity INT;
     DECLARE @Subtotal          DECIMAL(18,2);
 
@@ -2058,14 +2159,14 @@ BEGIN
             @OrderId           = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.order_id') AS INT),
             @ProductId         = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.product_id') AS INT), TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.id') AS INT)),
             @UnitPrice         = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.unit_price') AS DECIMAL(18,2)),
-            @DiscountPercent   = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.discount_percent') AS DECIMAL(18,2)), 0.00),
-            @Quantity          = COALESCE(TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.quantity') AS INT), 1),
+            @DiscountPercent   = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.discount_percent') AS DECIMAL(18,2)),
+            @Quantity          = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.quantity') AS INT),
             @DeliveredQuantity = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.delivered_quantity') AS INT),
             @Subtotal          = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.subtotal') AS DECIMAL(18,2));
     END
 
-    IF @Subtotal IS NULL AND @UnitPrice IS NOT NULL
-        SET @Subtotal = @UnitPrice * @Quantity;
+    IF @Subtotal IS NULL AND @UnitPrice IS NOT NULL AND @Quantity IS NOT NULL
+        SET @Subtotal = @UnitPrice * (1.00 - (COALESCE(@DiscountPercent, 0.00) / 100.00)) * @Quantity;
 
     -- SELECT
     IF @Opr = 'SELECT'
@@ -2105,8 +2206,14 @@ BEGIN
             SELECT TOP 1 @ProductId = product_id FROM dbo.product ORDER BY product_id ASC;
         END
 
+        SET @Quantity = COALESCE(@Quantity, 1);
+        SET @DiscountPercent = COALESCE(@DiscountPercent, 0.00);
+        SET @DeliveredQuantity = COALESCE(@DeliveredQuantity, 0);
+        IF @Subtotal IS NULL
+            SET @Subtotal = COALESCE(@UnitPrice, 0.00) * (1.00 - (@DiscountPercent / 100.00)) * @Quantity;
+
         INSERT INTO dbo.order_item (order_id, product_id, unit_price, discount_percent, quantity, delivered_quantity, subtotal)
-        VALUES (@OrderId, @ProductId, COALESCE(@UnitPrice, 0.00), COALESCE(@DiscountPercent, 0.00), @Quantity, COALESCE(@DeliveredQuantity, 0), COALESCE(@Subtotal, 0.00));
+        VALUES (@OrderId, @ProductId, COALESCE(@UnitPrice, 0.00), @DiscountPercent, @Quantity, @DeliveredQuantity, COALESCE(@Subtotal, 0.00));
 
         DECLARE @NewOIId INT = SCOPE_IDENTITY();
 
@@ -2142,6 +2249,15 @@ BEGIN
             RAISERROR('Not Found: Order item does not exist.', 16, 1);
             RETURN;
         END
+
+        DECLARE @ExistingOrderedQty INT;
+        SELECT @ExistingOrderedQty = quantity FROM dbo.order_item WHERE order_item_id = @TargetOrderItemId;
+
+        DECLARE @FinalOrderedQty INT = COALESCE(@Quantity, @ExistingOrderedQty, 1);
+        IF @DeliveredQuantity IS NOT NULL AND @DeliveredQuantity > @FinalOrderedQty
+            SET @DeliveredQuantity = @FinalOrderedQty;
+        IF @DeliveredQuantity IS NOT NULL AND @DeliveredQuantity < 0
+            SET @DeliveredQuantity = 0;
 
         UPDATE dbo.order_item
         SET order_id           = COALESCE(@OrderId, order_id),

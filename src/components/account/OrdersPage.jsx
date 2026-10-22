@@ -24,22 +24,32 @@ export default function OrdersPage({ onTriggerToast }) {
 
   const loadAllOrders = async () => {
     setRefreshing(true);
+    const effectiveUid = user ? (user.userId || user.user_id || user.id) : null;
+    const effectivePhone = user?.phone ? String(user.phone).trim() : '';
+
     try {
-      // 1. Fetch Ready Orders from DB via SP_orders
+      // 1. Fetch Ready Orders from DB via SP_orders / SP_Fetchdata
       let backendReady = [];
+      let backendSuccess = false;
       try {
         const payload = {
           proc_name: 'orders',
           opr: 'SELECT'
         };
-        const effectiveUid = user ? (user.userId || user.user_id || user.id) : null;
+        // In SP_Fetchdata/SP_orders, 'condition' is parsed strictly as order_id.
+        // User filtering is passed via table_values.user_id and phone.
         if (effectiveUid) {
-          payload.condition = String(effectiveUid);
-          payload.table_values = { user_id: effectiveUid };
+          payload.table_values = { 
+            user_id: effectiveUid,
+            ...(effectivePhone ? { phone: effectivePhone } : {})
+          };
         }
         const res = await postApiData(payload);
         if (res && res.data && Array.isArray(res.data)) {
           backendReady = res.data.filter(o => !o.is_custom);
+          backendSuccess = true;
+        } else if (res && !res.success) {
+          console.warn('[OrdersPage] Backend orders response notice:', res.error || res.message);
         }
       } catch (err) {
         console.warn('[OrdersPage] Backend fetch notice:', err.message);
@@ -84,12 +94,32 @@ export default function OrdersPage({ onTriggerToast }) {
             ...lo,
             items: (lo.items && lo.items.length > 0) ? lo.items : existing.items
           });
-        } else {
-          if (!effectiveUid || !lo.user_id || lo.user_id === effectiveUid) {
+        } else if (!backendSuccess) {
+          // Fallback only if backend request failed entirely (offline mode)
+          const loUid = lo.user_id ? String(lo.user_id) : '';
+          const loPhone = lo.customer_phone ? String(lo.customer_phone).trim() : '';
+          const matchesUser = effectiveUid && (
+            loUid === String(effectiveUid) || 
+            (effectivePhone && loPhone && (effectivePhone.slice(-10) === loPhone.slice(-10)))
+          );
+
+          if (matchesUser) {
             orderMap.set(key, lo);
           }
         }
       });
+
+      // Synchronize local storage to prune stale/deleted test orders
+      if (backendSuccess && typeof localStorage !== 'undefined') {
+        try {
+          const validKeys = new Set(Array.from(orderMap.keys()));
+          const cleanLocal = localOrders.filter(lo => {
+            const k = lo.order_number || String(lo.order_id);
+            return validKeys.has(k);
+          });
+          localStorage.setItem('silverhouse_orders', JSON.stringify(cleanLocal));
+        } catch { }
+      }
 
       const mergedReady = Array.from(orderMap.values()).sort((a, b) => {
         return new Date(b.created_at) - new Date(a.created_at);
@@ -99,8 +129,8 @@ export default function OrdersPage({ onTriggerToast }) {
       // 3. Fetch Bespoke Custom Orders
       try {
         const customRes = await fetchCustomerCustomOrdersApi({
-          userId: user?.userId,
-          phone: user?.phone
+          userId: effectiveUid,
+          phone: effectivePhone
         });
         if (customRes && customRes.success && Array.isArray(customRes.orders)) {
           setCustomOrders(customRes.orders);
@@ -126,7 +156,11 @@ export default function OrdersPage({ onTriggerToast }) {
       loadAllOrders();
       const handleUpdate = () => loadAllOrders();
       window.addEventListener('orders_updated', handleUpdate);
-      return () => window.removeEventListener('orders_updated', handleUpdate);
+      window.addEventListener('storage', handleUpdate);
+      return () => {
+        window.removeEventListener('orders_updated', handleUpdate);
+        window.removeEventListener('storage', handleUpdate);
+      };
     }
   }, [user, isAuthenticated, authLoading, navigate]);
 

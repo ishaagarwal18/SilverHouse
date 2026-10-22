@@ -331,6 +331,7 @@ BEGIN
                 m.type AS make_type,
                 p.price AS unit_price,
                 ci.quantity,
+                p.quantity AS stock_quantity,
                 CAST(p.price * ci.quantity AS DECIMAL(18,2)) AS subtotal,
                 ci.created_at,
                 ISNULL((

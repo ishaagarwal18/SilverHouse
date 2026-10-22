@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Clock, Image as ImageIcon, Minus, Package, Pencil, Plus, Receipt, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, Upload, Zap } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, Check, CheckCircle2, ChevronRight, Clock, Download, Image as ImageIcon, Minus, Package, Pencil, Plus, Receipt, RotateCcw, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, Upload, Zap } from 'lucide-react';
 import { adminFetch, adminImageUrl, callProc, fetchRows, PLACEHOLDER_IMG, productImage } from '../api/adminApi';
 import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISIONS, PK_MAP } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
 import { importRecordsFromFile } from '../lib/importRecords';
 import {
   Button, Card, ConfirmDeleteModal, DecisionBadge, EmptyState, Field, ImageLightbox, LoadingBlock,
-  Modal, ModalBody, PageHeader, PaymentBadge, Spinner
+  Modal, ModalBody, PageHeader, PaymentBadge, PillGroup, Spinner
 } from '../components/ui';
 
 const HIDDEN_ORDER_COLUMNS = ['confirm', 'custom_category', 'is_custom', 'image', 'description'];
@@ -128,6 +128,10 @@ function DataManager({ entity }) {
   const [textPreview, setTextPreview] = useState(null);
   const [importMode, setImportMode] = useState('RESTOCK');
   const [importing, setImporting] = useState(false);
+  const [orderStatusFilter, setOrderStatusFilter] = useState(() => (searchParams.get('status') || 'ALL').toUpperCase());
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [exportingExcel, setExportingExcel] = useState(false);
   const fileInputRef = useRef(null);
   const highlightedRowRef = useRef(null);
 
@@ -302,6 +306,7 @@ function DataManager({ entity }) {
         'EDIT',
         {
           order_id: Number(orderId),
+          quantity: Number(item.quantity),
           delivered_quantity: qty
         },
         String(item.order_item_id)
@@ -400,6 +405,194 @@ function DataManager({ entity }) {
     });
   }, [rows, sort, getSortValue]);
 
+  const getOrderStatus = useCallback((row) => {
+    if (!row) return 'PENDING';
+    const idVal = String(row.order_id || row[pkField] || '');
+    const oItems = orderItemsMap[idVal] || (Array.isArray(row.items) ? row.items : []);
+    if (oItems && oItems.length > 0) {
+      const isCompleted = oItems.every(it => Number(it.delivered_quantity || 0) >= Number(it.quantity || 1));
+      return isCompleted ? 'COMPLETED' : 'PENDING';
+    }
+    return String(row.order_status || '').toUpperCase() === 'COMPLETED' ? 'COMPLETED' : 'PENDING';
+  }, [orderItemsMap, pkField]);
+
+  const orderStatusCounts = useMemo(() => {
+    if (entity !== 'orders') return { all: 0, pending: 0, completed: 0 };
+    let dateFiltered = rows;
+    if (startDate) {
+      const startMs = new Date(startDate + 'T00:00:00').getTime();
+      dateFiltered = dateFiltered.filter(r => {
+        if (!r.created_at) return false;
+        const t = new Date(r.created_at).getTime();
+        return !isNaN(t) && t >= startMs;
+      });
+    }
+    if (endDate) {
+      const endMs = new Date(endDate + 'T23:59:59.999').getTime();
+      dateFiltered = dateFiltered.filter(r => {
+        if (!r.created_at) return false;
+        const t = new Date(r.created_at).getTime();
+        return !isNaN(t) && t <= endMs;
+      });
+    }
+    let pending = 0;
+    let completed = 0;
+    dateFiltered.forEach(r => {
+      const s = getOrderStatus(r);
+      if (s === 'COMPLETED') completed++;
+      else pending++;
+    });
+    return { all: dateFiltered.length, pending, completed };
+  }, [entity, rows, startDate, endDate, getOrderStatus]);
+
+  const displayedRows = useMemo(() => {
+    let list = sortedRows;
+    if (entity === 'orders') {
+      if (orderStatusFilter !== 'ALL') {
+        list = list.filter(r => getOrderStatus(r) === orderStatusFilter);
+      }
+      if (startDate) {
+        const startMs = new Date(startDate + 'T00:00:00').getTime();
+        list = list.filter(r => {
+          if (!r.created_at) return false;
+          const t = new Date(r.created_at).getTime();
+          return !isNaN(t) && t >= startMs;
+        });
+      }
+      if (endDate) {
+        const endMs = new Date(endDate + 'T23:59:59.999').getTime();
+        list = list.filter(r => {
+          if (!r.created_at) return false;
+          const t = new Date(r.created_at).getTime();
+          return !isNaN(t) && t <= endMs;
+        });
+      }
+    }
+    return list;
+  }, [sortedRows, entity, orderStatusFilter, startDate, endDate, getOrderStatus]);
+
+  const handleExportExcel = async () => {
+    if (displayedRows.length === 0) {
+      showToast('No orders match the selected filters to export.', true);
+      return;
+    }
+
+    setExportingExcel(true);
+    try {
+      const XLSX = await import('xlsx');
+
+      // Sheet 1: Orders Summary
+      const ordersSheetData = displayedRows.map(o => {
+        const idVal = String(o.order_id || o.id || '');
+        const items = orderItemsMap[idVal] || (Array.isArray(o.items) ? o.items : []);
+        const totalQty = items.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
+        const deliveredQty = items.reduce((sum, it) => sum + Math.min(Number(it.quantity || 0), Number(it.delivered_quantity || 0)), 0);
+        const effectiveStatus = getOrderStatus(o);
+
+        let formattedDate = '-';
+        if (o.created_at) {
+          try {
+            const d = new Date(o.created_at);
+            formattedDate = d.toLocaleString('en-IN', {
+              year: 'numeric', month: 'short', day: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            });
+          } catch {
+            formattedDate = String(o.created_at);
+          }
+        }
+
+        const itemsSummary = items.map(it => {
+          const pName = it.product_name || lookups.products?.[it.product_id] || `Product #${it.product_id}`;
+          return `${pName} (Qty: ${it.quantity}, Del: ${it.delivered_quantity || 0}, ₹${it.unit_price || 0})`;
+        }).join('; ');
+
+        return {
+          'Order ID': o.order_id,
+          'Order Number': o.order_number || `SH-${o.order_id}`,
+          'Order Date': formattedDate,
+          'Customer Name': o.customer_name || '-',
+          'Customer Phone': o.customer_phone || '-',
+          'Customer Email': o.customer_email || '-',
+          'Delivery Address': o.delivery_address || '-',
+          'City': o.city || '-',
+          'Payment Status': (o.payment_status || 'PENDING').toUpperCase(),
+          'Order Status': effectiveStatus,
+          'Total Ordered Qty': totalQty,
+          'Delivered Qty': deliveredQty,
+          'Total Amount (₹)': Number(o.total_amount || 0),
+          'Discount Amount (₹)': Number(o.discount_amount || 0),
+          'Final Payable (₹)': Number(o.final_payable || 0),
+          'Items Summary': itemsSummary || '-'
+        };
+      });
+
+      // Sheet 2: Detailed Line Items
+      const itemsSheetData = [];
+      displayedRows.forEach(o => {
+        const idVal = String(o.order_id || o.id || '');
+        const items = orderItemsMap[idVal] || (Array.isArray(o.items) ? o.items : []);
+        items.forEach((it, idx) => {
+          const pName = it.product_name || lookups.products?.[it.product_id] || `Product #${it.product_id}`;
+          const qOrdered = Number(it.quantity || 0);
+          const qDelivered = Number(it.delivered_quantity || 0);
+          const itemStatus = qDelivered >= qOrdered ? 'FULLY DELIVERED' : (qDelivered > 0 ? 'PARTIALLY DELIVERED' : 'PENDING');
+
+          itemsSheetData.push({
+            'Order ID': o.order_id,
+            'Order Number': o.order_number || `SH-${o.order_id}`,
+            'Customer Name': o.customer_name || '-',
+            'Customer Phone': o.customer_phone || '-',
+            'Item #': idx + 1,
+            'Product ID': it.product_id,
+            'Product Name': pName,
+            'Unit Price (₹)': Number(it.unit_price || 0),
+            'Ordered Quantity': qOrdered,
+            'Delivered Quantity': qDelivered,
+            'Pending Quantity': Math.max(0, qOrdered - qDelivered),
+            'Discount %': Number(it.discount_percent || 0),
+            'Subtotal (₹)': Number(it.subtotal || (Number(it.unit_price || 0) * qOrdered)),
+            'Fulfillment Status': itemStatus
+          });
+        });
+      });
+
+      const wb = XLSX.utils.book_new();
+      const wsOrders = XLSX.utils.json_to_sheet(ordersSheetData);
+      wsOrders['!cols'] = [
+        { wch: 10 }, { wch: 15 }, { wch: 20 }, { wch: 18 },
+        { wch: 16 }, { wch: 20 }, { wch: 30 }, { wch: 14 },
+        { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 14 },
+        { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 45 }
+      ];
+      XLSX.utils.book_append_sheet(wb, wsOrders, 'Orders');
+
+      if (itemsSheetData.length > 0) {
+        const wsItems = XLSX.utils.json_to_sheet(itemsSheetData);
+        wsItems['!cols'] = [
+          { wch: 10 }, { wch: 15 }, { wch: 18 }, { wch: 16 },
+          { wch: 8 }, { wch: 12 }, { wch: 25 }, { wch: 14 },
+          { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 12 },
+          { wch: 14 }, { wch: 18 }
+        ];
+        XLSX.utils.book_append_sheet(wb, wsItems, 'Order Line Items');
+      }
+
+      const datePart = new Date().toISOString().slice(0, 10);
+      const statusPart = orderStatusFilter.toLowerCase();
+      const rangePart = (startDate || endDate) ? `_${startDate || 'start'}_to_${endDate || 'today'}` : '';
+      const fileName = `SilverHouse_Orders_${statusPart}${rangePart}_${datePart}.xlsx`;
+
+      XLSX.writeFile(wb, fileName);
+      showToast(`Exported ${displayedRows.length} order(s) to ${fileName}`);
+    } catch (err) {
+      console.error('Failed to export orders to Excel:', err);
+      showToast('Export failed: ' + err.message, true);
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
   const handleSort = col => {
     if (isImageColumn(col)) return;
     setSort(prev => {
@@ -410,9 +603,9 @@ function DataManager({ entity }) {
   };
 
   // ---------- Selection ----------
-  const allSelected = rows.length > 0 && rows.every(r => selected.has(String(r[pkField])));
+  const allSelected = displayedRows.length > 0 && displayedRows.every(r => selected.has(String(r[pkField])));
   const someSelected = selected.size > 0 && !allSelected;
-  const toggleAll = checked => setSelected(checked ? new Set(rows.map(r => String(r[pkField]))) : new Set());
+  const toggleAll = checked => setSelected(checked ? new Set(displayedRows.map(r => String(r[pkField]))) : new Set());
   const toggleOne = (id, checked) => setSelected(prev => {
     const next = new Set(prev);
     if (checked) next.add(String(id)); else next.delete(String(id));
@@ -588,11 +781,10 @@ function DataManager({ entity }) {
       }
       return (
         <span
-          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide border ${
-            isCompleted
+          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide border ${isCompleted
               ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400 shadow-2xs'
               : 'border-amber-500/40 bg-amber-500/15 text-amber-400'
-          }`}
+            }`}
         >
           <span className={`w-1.5 h-1.5 rounded-full ${isCompleted ? 'bg-emerald-400 ring-2 ring-emerald-400/30' : 'bg-amber-400'}`} />
           {isCompleted ? 'COMPLETED' : 'PENDING'}
@@ -622,13 +814,12 @@ function DataManager({ entity }) {
           </button>
           {entity === 'orders' && (
             <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold border ${
-                isAllDelivered
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold border ${isAllDelivered
                   ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400'
                   : totalDelivered > 0
-                  ? 'border-amber-500/30 bg-amber-500/15 text-amber-400'
-                  : 'border-ad-border bg-ad-card/60 text-ad-muted'
-              }`}
+                    ? 'border-amber-500/30 bg-amber-500/15 text-amber-400'
+                    : 'border-ad-border bg-ad-card/60 text-ad-muted'
+                }`}
               title={`${totalDelivered} of ${totalOrdered} items delivered`}
             >
               <Package className="w-3 h-3" />
@@ -738,11 +929,133 @@ function DataManager({ entity }) {
         </div>
       )}
 
+      {entity === 'orders' && !loading && rows.length > 0 && (
+        <div className="mb-4 flex flex-col gap-3 rounded-xl border border-ad-border bg-ad-surface p-3.5 shadow-xs">
+          {/* Top row: Status filter & Export to Excel button */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-ad-muted mr-1">
+                Status:
+              </span>
+              <PillGroup
+                size="md"
+                value={orderStatusFilter}
+                onChange={setOrderStatusFilter}
+                options={[
+                  { value: 'ALL', label: 'All Orders', icon: Package, count: orderStatusCounts.all },
+                  { value: 'PENDING', label: 'Pending', icon: Clock, count: orderStatusCounts.pending },
+                  { value: 'COMPLETED', label: 'Completed', icon: CheckCircle2, count: orderStatusCounts.completed }
+                ]}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleExportExcel}
+                disabled={exportingExcel || displayedRows.length === 0}
+                className="!bg-emerald-600 hover:!bg-emerald-700 !text-white font-medium shadow-sm transition-all flex items-center gap-1.5"
+                title="Download filtered orders and item breakdown as an Excel (.xlsx) file"
+              >
+                {exportingExcel ? (
+                  <>
+                    <Spinner size="xs" /> Exporting…
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" /> Download Excel
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Bottom row: Date filter (From & To) + Clear button + Summary */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-ad-border/60 text-xs">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="font-semibold text-ad-text flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-ad-primary" /> Date Range:
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-ad-muted">From</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="rounded-lg border border-ad-border bg-ad-card px-2.5 py-1 text-xs text-ad-text shadow-xs focus:border-ad-primary focus:outline-hidden"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-ad-muted">To</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="rounded-lg border border-ad-border bg-ad-card px-2.5 py-1 text-xs text-ad-text shadow-xs focus:border-ad-primary focus:outline-hidden"
+                />
+              </div>
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={() => { setStartDate(''); setEndDate(''); }}
+                  className="inline-flex items-center gap-1 rounded-lg border border-ad-border bg-ad-card/60 px-2 py-1 text-xs text-ad-muted hover:text-ad-text hover:bg-ad-card transition-colors cursor-pointer"
+                  title="Clear date filter"
+                >
+                  <RotateCcw className="w-3 h-3" /> Clear Dates
+                </button>
+              )}
+            </div>
+
+            <div className="text-xs text-ad-muted">
+              Showing <strong className="text-ad-text font-bold">{displayedRows.length}</strong> of <strong className="text-ad-text font-bold">{rows.length}</strong> {rows.length === 1 ? 'order' : 'orders'}
+              {(startDate || endDate) && (
+                <span className="ml-1 text-ad-primary font-medium">
+                  ({startDate || 'earliest'} → {endDate || 'latest'})
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <Card className="overflow-hidden">
         {loading ? (
           <LoadingBlock label={`Loading ${cfg.plural.toLowerCase()}…`} />
         ) : rows.length === 0 ? (
           <EmptyState title={`No ${cfg.plural.toLowerCase()} yet`} description={`No records present in dbo.${entity}. Click "Add ${cfg.singular}" to create one.`} />
+        ) : displayedRows.length === 0 ? (
+          <EmptyState
+            icon={orderStatusFilter === 'COMPLETED' ? CheckCircle2 : Clock}
+            title={
+              startDate || endDate
+                ? 'No orders found for selected filters'
+                : `No ${orderStatusFilter.toLowerCase()} orders found`
+            }
+            description={
+              startDate || endDate
+                ? `No orders match ${orderStatusFilter === 'ALL' ? '' : orderStatusFilter + ' status'} between ${startDate || 'earliest'} and ${endDate || 'latest'}. Try adjusting or clearing filters.`
+                : `There are currently no orders with ${orderStatusFilter} status. Switch back to "All Orders" to view every recorded order.`
+            }
+          >
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {(startDate || endDate) && (
+                <Button variant="secondary" size="sm" onClick={() => { setStartDate(''); setEndDate(''); }}>
+                  Clear Date Filter
+                </Button>
+              )}
+              {orderStatusFilter !== 'ALL' && (
+                <Button variant="primary" size="sm" onClick={() => setOrderStatusFilter('ALL')}>
+                  Show All Orders ({rows.length})
+                </Button>
+              )}
+              {orderStatusFilter === 'ALL' && (startDate || endDate) && (
+                <Button variant="primary" size="sm" onClick={() => { setStartDate(''); setEndDate(''); }}>
+                  Show All ({rows.length})
+                </Button>
+              )}
+            </div>
+          </EmptyState>
         ) : (
           <div className="ad-scroll max-h-[calc(100vh-15rem)] overflow-auto">
             <table className="w-full border-collapse text-left text-[13px]">
@@ -778,7 +1091,7 @@ function DataManager({ entity }) {
                 </tr>
               </thead>
               <tbody>
-                {sortedRows.map((row, rowIdx) => {
+                {displayedRows.map((row, rowIdx) => {
                   const idVal = row[pkField];
                   const action = highlightMap[idVal] || highlightMap[String(idVal)];
                   const hl = HIGHLIGHT_STYLES[action];
@@ -807,8 +1120,8 @@ function DataManager({ entity }) {
                               type="button"
                               onClick={() => toggleExpandOrder(idVal)}
                               className={`inline-flex items-center justify-center w-7 h-7 rounded-lg border transition-all cursor-pointer ${isOrderExpanded
-                                  ? 'bg-ad-primary text-white border-ad-primary shadow-xs'
-                                  : 'bg-ad-card text-ad-muted hover:text-ad-text hover:bg-ad-hover border-ad-border'
+                                ? 'bg-ad-primary text-white border-ad-primary shadow-xs'
+                                : 'bg-ad-card text-ad-muted hover:text-ad-text hover:bg-ad-hover border-ad-border'
                                 }`}
                               title={isOrderExpanded ? 'Hide order items' : `View ${orderItems.length} order line item(s)`}
                               aria-label={`Toggle order items for order ${row.order_number || idVal}`}
@@ -823,8 +1136,8 @@ function DataManager({ entity }) {
                               type="button"
                               onClick={() => toggleExpandCart(idVal)}
                               className={`inline-flex items-center justify-center w-7 h-7 rounded-lg border transition-all cursor-pointer ${isCartExpanded
-                                  ? 'bg-ad-primary text-white border-ad-primary shadow-xs'
-                                  : 'bg-ad-card text-ad-muted hover:text-ad-text hover:bg-ad-hover border-ad-border'
+                                ? 'bg-ad-primary text-white border-ad-primary shadow-xs'
+                                : 'bg-ad-card text-ad-muted hover:text-ad-text hover:bg-ad-hover border-ad-border'
                                 }`}
                               title={isCartExpanded ? 'Hide cart items' : `View ${cartItems.length} cart line item(s)`}
                               aria-label={`Toggle cart items for cart #${idVal}`}
@@ -1317,7 +1630,10 @@ function DataManager({ entity }) {
 
       {!loading && rows.length > 0 && (
         <p className="mt-3 text-xs text-ad-muted">
-          {rows.length} record{rows.length === 1 ? '' : 's'} · Columns are sortable{cfg.hasFormPage ? '' : ' · Edits open in a dialog'}
+          {entity === 'orders' && orderStatusFilter !== 'ALL'
+            ? `${displayedRows.length} of ${rows.length} records (${orderStatusFilter.toLowerCase()}) · `
+            : `${rows.length} record${rows.length === 1 ? '' : 's'} · `}
+          Columns are sortable{cfg.hasFormPage ? '' : ' · Edits open in a dialog'}
           {entity === 'custom_orders' && <> · <Link to="/admin/custom-orders" className="font-semibold text-ad-primary hover:underline">Open the Custom Orders board →</Link></>}
         </p>
       )}
@@ -1702,11 +2018,10 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                             return (
                               <label
                                 key={cat.category_id}
-                                className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
-                                  isChecked
+                                className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${isChecked
                                     ? 'border-ad-primary/40 bg-ad-primary/10 text-ad-text shadow-2xs'
                                     : 'border-ad-border/60 bg-ad-surface hover:bg-ad-hover text-ad-muted hover:text-ad-text'
-                                }`}
+                                  }`}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <input
@@ -1760,11 +2075,10 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                             <div className="rounded-xl border border-ad-border bg-ad-card/40 px-3.5 py-2.5 flex items-center justify-between gap-3 shadow-2xs">
                               <div className="flex items-center gap-2">
                                 <span
-                                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide border ${
-                                    isDoneStatus
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide border ${isDoneStatus
                                       ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400 shadow-2xs'
                                       : 'border-amber-500/40 bg-amber-500/15 text-amber-400'
-                                  }`}
+                                    }`}
                                 >
                                   <span className={`w-1.5 h-1.5 rounded-full ${isDoneStatus ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                                   {statusVal}

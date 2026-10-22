@@ -1474,6 +1474,15 @@ export default function ProductListingPage({
                           />
                         )}
 
+                        {/* Out of Stock Overlay */}
+                        {product.quantity !== undefined && product.quantity !== null && Number(product.quantity) <= 0 && (
+                          <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center z-10 pointer-events-none">
+                            <span className="bg-rose-600 text-white font-extrabold text-[11px] sm:text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow-lg border border-white/20">
+                              Out of Stock
+                            </span>
+                          </div>
+                        )}
+
                         {/* Top Badges */}
                         <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col space-y-1 sm:space-y-1.5 z-10 items-start">
                           <span className="bg-black/95 text-white border border-amber-400 text-[8px] sm:text-[10px] font-black px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-lg uppercase tracking-wider inline-flex items-center gap-1 sm:gap-1.5">
@@ -1484,16 +1493,24 @@ export default function ProductListingPage({
                             <span className="text-white font-extrabold hidden xs:inline">SILVER</span>
                           </span>
 
-                          {product.color && product.color !== 'Silver' && (
-                            <span className="bg-[var(--th-card)] text-[var(--th-text-main)] border border-[var(--th-border)] text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full shadow-xs uppercase tracking-wider">
-                              {product.color}
+                          {product.quantity !== undefined && product.quantity !== null && Number(product.quantity) <= 0 ? (
+                            <span className="bg-rose-600 text-white text-[8.5px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full shadow-xs uppercase tracking-wider">
+                              Out of Stock
                             </span>
-                          )}
+                          ) : (
+                            <>
+                              {product.color && product.color !== 'Silver' && (
+                                <span className="bg-[var(--th-card)] text-[var(--th-text-main)] border border-[var(--th-border)] text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full shadow-xs uppercase tracking-wider">
+                                  {product.color}
+                                </span>
+                              )}
 
-                          {discountPct !== null && discountPct > 0 && (
-                            <span className="bg-[#DC2626] text-white text-[8.5px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full shadow-xs">
-                              {discountPct}% OFF
-                            </span>
+                              {discountPct !== null && discountPct > 0 && (
+                                <span className="bg-[#DC2626] text-white text-[8.5px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full shadow-xs">
+                                  {discountPct}% OFF
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
 
