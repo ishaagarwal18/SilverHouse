@@ -281,7 +281,7 @@ export default function App() {
         setFestivalCategories(festCatList);
 
         if (Array.isArray(backendProducts) && backendProducts.length > 0) {
-          const prioritized = prioritizeProductsByActiveFestivals(backendProducts, festList, festCatList);
+          const prioritized = prioritizeProductsByActiveFestivals(backendProducts, festList, festCatList, new Date(), backendCategories);
           setProducts(prioritized);
         }
         if (Array.isArray(backendCategories) && backendCategories.length > 0) {

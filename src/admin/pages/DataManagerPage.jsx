@@ -2253,14 +2253,14 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                                   type="button"
                                   onClick={() => toggleCategory(cat.category_id)}
                                   className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${isChecked
-                                      ? 'border-ad-primary/50 bg-ad-primary/10 text-ad-text shadow-2xs ring-1 ring-ad-primary/30 font-medium'
-                                      : 'border-ad-border/70 bg-ad-surface hover:bg-ad-hover hover:border-ad-border text-ad-muted hover:text-ad-text'
+                                    ? 'border-ad-primary/50 bg-ad-primary/10 text-ad-text shadow-2xs ring-1 ring-ad-primary/30 font-medium'
+                                    : 'border-ad-border/70 bg-ad-surface hover:bg-ad-hover hover:border-ad-border text-ad-muted hover:text-ad-text'
                                     }`}
                                 >
                                   <div className="flex items-center gap-2 min-w-0">
                                     <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isChecked
-                                        ? 'bg-ad-primary border-ad-primary text-white shadow-2xs'
-                                        : 'border-ad-border bg-ad-card'
+                                      ? 'bg-ad-primary border-ad-primary text-white shadow-2xs'
+                                      : 'border-ad-border bg-ad-card'
                                       }`}>
                                       {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                                     </div>

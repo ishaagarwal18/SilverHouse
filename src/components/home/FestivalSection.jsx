@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Calendar, Sparkles, ShoppingBag, ArrowRight, Star, Heart, Eye, Filter, Tag, CheckCircle2 } from 'lucide-react';
-import { getActiveCategoryIds, getDisplayedFestival, isFestivalActive } from '../../utils/festivalUtils';
+import { Calendar, Sparkles, ShoppingBag, ArrowRight, Star, Heart, Eye, Filter, Tag, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { getActiveCategoryIds, getDisplayedFestival, getActiveFestivals, isFestivalActive, formatFestivalDateRange } from '../../utils/festivalUtils';
 
 export default function FestivalSection({
   festivals = [],
@@ -14,76 +14,118 @@ export default function FestivalSection({
   onQuickView,
   onSelectProduct
 }) {
+  const [selectedFestivalId, setSelectedFestivalId] = useState(null);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
+  const [showAllProducts, setShowAllProducts] = useState(false);
 
-  // Determine active/displayed festival according to start_date and end_date columns
-  const displayedFestival = useMemo(() => {
+  // All festivals that are currently active today based on start_date and end_date
+  const activeFestivals = useMemo(() => {
+    return getActiveFestivals(festivals);
+  }, [festivals]);
+
+  // Primary festival to display: active festival today, or next upcoming
+  const defaultFestival = useMemo(() => {
     return getDisplayedFestival(festivals);
   }, [festivals]);
 
+  // Currently displayed festival (selected by user or defaulted)
+  const displayedFestival = useMemo(() => {
+    if (selectedFestivalId) {
+      const match = (festivals || []).find(
+        f => String(f.id || f.festival_id).toLowerCase() === String(selectedFestivalId).toLowerCase()
+      );
+      if (match) return match;
+    }
+    return defaultFestival;
+  }, [selectedFestivalId, festivals, defaultFestival]);
+
+  // Check if displayed festival is active on today's date
   const isCurrentDateActive = useMemo(() => {
     return displayedFestival ? isFestivalActive(displayedFestival) : false;
   }, [displayedFestival]);
 
-  // Find category IDs linked to that particular festival via festival_category junction
+  // Formatted start_date & end_date string (e.g. "20 – 22 Oct 2026")
+  const dateRangeBadge = useMemo(() => {
+    if (!displayedFestival) return '';
+    return formatFestivalDateRange(displayedFestival.start_date, displayedFestival.end_date);
+  }, [displayedFestival]);
+
+  // Category IDs strictly linked to this festival via festival_category junction table
   const activeCategoryIds = useMemo(() => {
     if (!displayedFestival) return new Set();
     return getActiveCategoryIds([displayedFestival], festivalCategories, categories);
   }, [displayedFestival, festivalCategories, categories]);
 
-  // Full category objects linked to this festival
+  // Category objects strictly linked to this festival
   const linkedCategoryObjects = useMemo(() => {
     if (!displayedFestival || activeCategoryIds.size === 0) return [];
     return categories.filter(c => activeCategoryIds.has(Number(c.category_id || c.id)));
   }, [displayedFestival, activeCategoryIds, categories]);
 
-  // Filter products matching the categories linked to that specific festival
-  const festivalProducts = useMemo(() => {
-    if (!displayedFestival) return [];
-    if (activeCategoryIds.size > 0) {
-      let matched = products.filter(p => {
-        const pCatId = Number(p.category_id || p.categoryId);
-        if (!isNaN(pCatId) && activeCategoryIds.has(pCatId)) return true;
+  // All products belonging strictly to the categories linked to this festival
+  const allFestivalProducts = useMemo(() => {
+    if (!displayedFestival || activeCategoryIds.size === 0) return [];
 
-        // String / category name fallback matching
-        const pCatStr = String(p.category_id || p.categoryId || p.category_name || p.category || '').toLowerCase().trim();
+    return products.filter(p => {
+      // 1. Numeric category_id match
+      const pCatId = Number(p.category_id || p.categoryId);
+      if (!isNaN(pCatId) && pCatId > 0 && activeCategoryIds.has(pCatId)) return true;
+
+      // 2. Slug / Name match to linked categories
+      const pCatStr = String(p.category_slug || p.slug || p.category || p.category_name || '').toLowerCase().trim();
+      if (pCatStr) {
         for (const catId of activeCategoryIds) {
           const matchingCat = categories.find(c => Number(c.category_id || c.id) === catId);
           if (matchingCat) {
-            if (String(matchingCat.name || '').toLowerCase().trim() === pCatStr) return true;
-            if (String(matchingCat.slug || '').toLowerCase().trim() === pCatStr) return true;
+            const cName = String(matchingCat.name || '').toLowerCase().trim();
+            const cSlug = String(matchingCat.slug || '').toLowerCase().trim();
+            if (cName === pCatStr || cSlug === pCatStr) return true;
           }
         }
-        return false;
-      });
-
-      // Filter further if user clicked a specific category pill inside the section
-      if (selectedCategoryFilter !== 'all') {
-        const targetId = Number(selectedCategoryFilter);
-        matched = matched.filter(p => Number(p.category_id || p.categoryId) === targetId);
       }
+      return false;
+    });
+  }, [products, displayedFestival, activeCategoryIds, categories]);
 
-      if (matched.length > 0) return matched;
-    }
-    // Fallback if no specific products linked yet: pick popular items
-    return products.slice(0, 8);
-  }, [products, displayedFestival, activeCategoryIds, categories, selectedCategoryFilter]);
+  // Product counts per linked category for exact pill counts
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    allFestivalProducts.forEach(p => {
+      const pCatId = Number(p.category_id || p.categoryId);
+      if (pCatId) {
+        counts[pCatId] = (counts[pCatId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [allFestivalProducts]);
+
+  // Products filtered by selected category pill (or all festival products)
+  const displayedProducts = useMemo(() => {
+    if (selectedCategoryFilter === 'all') return allFestivalProducts;
+    const targetId = Number(selectedCategoryFilter);
+    return allFestivalProducts.filter(p => {
+      const pCatId = Number(p.category_id || p.categoryId);
+      if (pCatId === targetId) return true;
+      const matchingCat = categories.find(c => Number(c.category_id || c.id) === targetId);
+      if (matchingCat) {
+        const pCatStr = String(p.category_slug || p.slug || p.category || p.category_name || '').toLowerCase().trim();
+        const cName = String(matchingCat.name || '').toLowerCase().trim();
+        const cSlug = String(matchingCat.slug || '').toLowerCase().trim();
+        return pCatStr && (pCatStr === cName || pCatStr === cSlug);
+      }
+      return false;
+    });
+  }, [allFestivalProducts, selectedCategoryFilter, categories]);
 
   if (!displayedFestival) return null;
 
-  const formatDateLabel = (dateStr) => {
-    if (!dateStr) return '';
-    try {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
-    } catch {
-      return dateStr;
-    }
-  };
+  const visibleProducts = showAllProducts ? displayedProducts : displayedProducts.slice(0, 8);
 
-  const startFormatted = formatDateLabel(displayedFestival.start_date);
-  const endFormatted = formatDateLabel(displayedFestival.end_date);
-  const dateRangeBadge = startFormatted && endFormatted ? `${startFormatted} – ${endFormatted}` : '';
+  const handleExploreFestival = () => {
+    if (!onNavigateCategory) return;
+    const target = displayedFestival.id || displayedFestival.slug || 'festive';
+    onNavigateCategory(target);
+  };
 
   return (
     <section className="relative w-full py-14 md:py-20 bg-gradient-to-b from-[var(--th-bg)] via-amber-500/5 to-[var(--th-bg)] border-y border-amber-500/20 overflow-hidden">
@@ -93,15 +135,62 @@ export default function FestivalSection({
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
+        {/* Multiple Active Festivals Switcher (When 2+ festivals are active today) */}
+        {activeFestivals.length > 1 && (
+          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-xs font-bold text-[var(--th-text-muted)] uppercase tracking-wider shrink-0 flex items-center gap-1.5 mr-1">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+              Active Festivals:
+            </span>
+            {activeFestivals.map(fest => {
+              const festId = fest.id || fest.festival_id;
+              const isSelected = String(festId).toLowerCase() === String(displayedFestival.id || displayedFestival.festival_id).toLowerCase();
+              const range = formatFestivalDateRange(fest.start_date, fest.end_date);
+              return (
+                <button
+                  key={festId}
+                  onClick={() => {
+                    setSelectedFestivalId(festId);
+                    setSelectedCategoryFilter('all');
+                    setShowAllProducts(false);
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 border inline-flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-sm ring-2 ring-amber-400/40'
+                      : 'bg-[var(--th-card)] text-[var(--th-text-sub)] border-[var(--th-border)] hover:border-amber-400'
+                  }`}
+                >
+                  <span>{fest.name}</span>
+                  {range && (
+                    <span className={`text-[10px] ${isSelected ? 'text-amber-100' : 'text-[var(--th-text-muted)]'}`}>
+                      ({range})
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Section Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-6">
           <div>
+            {/* Festival Date & Status Badge */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 mb-3 shadow-xs">
+              <Calendar className="w-3.5 h-3.5 text-amber-500" />
+              <span>
+                {isCurrentDateActive ? 'Celebrating Now' : 'Upcoming Festive Collection'}
+                {dateRangeBadge ? ` • ${dateRangeBadge}` : ''}
+              </span>
+            </div>
+
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[var(--th-text-main)] tracking-tight font-serif">
               {displayedFestival.name}{' '}
               <span className="bg-gradient-to-r from-amber-500 via-[var(--th-primary)] to-amber-600 bg-clip-text text-transparent">
                 Special Collection
               </span>
             </h2>
+
             <p className="mt-2 text-sm sm:text-base text-[var(--th-text-sub)] max-w-2xl font-sans">
               {displayedFestival.description || `Explore auspicious pure 925 sterling & 999 fine silver offerings curated specially for ${displayedFestival.name}.`}
             </p>
@@ -109,10 +198,10 @@ export default function FestivalSection({
 
           {onNavigateCategory && (
             <button
-              onClick={() => onNavigateCategory('all')}
+              onClick={handleExploreFestival}
               className="inline-flex items-center gap-2 self-start lg:self-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-[var(--th-primary)] text-white text-sm font-bold shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 group cursor-pointer"
             >
-              <span>Explore All {displayedFestival.name} Items</span>
+              <span>Explore All {displayedFestival.name} Items ({allFestivalProducts.length})</span>
               <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
             </button>
           )}
@@ -127,27 +216,30 @@ export default function FestivalSection({
             </span>
             <button
               onClick={() => setSelectedCategoryFilter('all')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 border ${selectedCategoryFilter === 'all'
-                ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                : 'bg-[var(--th-card)] text-[var(--th-text-sub)] border-[var(--th-border)] hover:border-amber-400'
-                }`}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 border ${
+                selectedCategoryFilter === 'all'
+                  ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                  : 'bg-[var(--th-card)] text-[var(--th-text-sub)] border-[var(--th-border)] hover:border-amber-400'
+              }`}
             >
-              All Festive Items ({festivalProducts.length})
+              All Festive Items ({allFestivalProducts.length})
             </button>
             {linkedCategoryObjects.map((cat) => {
               const catId = Number(cat.category_id || cat.id);
               const isSelected = selectedCategoryFilter === String(catId);
+              const count = categoryCounts[catId] || 0;
               return (
                 <button
                   key={catId}
                   onClick={() => setSelectedCategoryFilter(String(catId))}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 border inline-flex items-center gap-1.5 ${isSelected
-                    ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                    : 'bg-[var(--th-card)] text-[var(--th-text-sub)] border-[var(--th-border)] hover:border-amber-400'
-                    }`}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 border inline-flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                      : 'bg-[var(--th-card)] text-[var(--th-text-sub)] border-[var(--th-border)] hover:border-amber-400'
+                  }`}
                 >
                   <Tag className="w-3 h-3 opacity-70" />
-                  <span>{cat.name}</span>
+                  <span>{cat.name} ({count})</span>
                 </button>
               );
             })}
@@ -155,150 +247,187 @@ export default function FestivalSection({
         )}
 
         {/* Products Showcase Grid */}
-        {festivalProducts.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {festivalProducts.slice(0, 8).map((product) => {
-              const prodId = product.id || product.product_id;
-              const isWishlisted = (wishlistIds || []).some(id => String(id) === String(prodId));
+        {displayedProducts.length > 0 ? (
+          <div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              {visibleProducts.map((product) => {
+                const prodId = product.id || product.product_id;
+                const isWishlisted = (wishlistIds || []).some(id => String(id) === String(prodId));
 
-              const imgSrc = (Array.isArray(product.images) && product.images.length > 0 && product.images[0])
-                ? product.images[0]
-                : (product.image_url || product.image || '/images/hero_silver_coins.png');
+                const imgSrc = (Array.isArray(product.images) && product.images.length > 0 && product.images[0])
+                  ? product.images[0]
+                  : (product.image_url || product.image || '/images/hero_silver_coins.png');
 
-              const hasDiscount = product.originalPrice && product.originalPrice > product.price;
-              const discountPercent = hasDiscount
-                ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-                : 0;
+                const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+                const discountPercent = hasDiscount
+                  ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+                  : 0;
 
-              return (
-                <div
-                  key={prodId}
-                  className="group relative flex flex-col justify-between bg-[var(--th-card)] rounded-2xl border border-[var(--th-border)] overflow-hidden hover:shadow-2xl hover:border-amber-400/60 transition-all duration-300"
-                >
-                  {/* Image Container with Zoom & Ribbons */}
-                  <div className="relative aspect-square overflow-hidden bg-[var(--th-pedestal)]">
-                    <img
-                      src={imgSrc}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 cursor-pointer"
-                      onClick={() => onSelectProduct && onSelectProduct(product)}
-                    />
-
-                    {/* Festival Purity Ribbon */}
-                    <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 z-10 flex flex-col space-y-1 items-start max-w-[calc(100%-2.75rem)]">
-                      <span className="bg-gradient-to-r from-amber-600 to-amber-500 text-white text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-full shadow-md uppercase tracking-wider inline-flex items-center gap-1 truncate border border-amber-300/30">
-                        <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white fill-white shrink-0 animate-pulse" />
-                        <span className="truncate">
-                          {product.purityCode === '999' || (product.purity && String(product.purity).includes('999')) ? '999 PURE SILVER' : '925 STERLING'}
-                        </span>
-                      </span>
-
-                      {hasDiscount && (
-                        <span className="bg-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider">
-                          {discountPercent}% OFF
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Wishlist Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleWishlist && onToggleWishlist(product);
-                      }}
-                      className={`absolute top-2.5 sm:top-3 right-2.5 sm:right-3 z-10 w-8.5 h-8.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${isWishlisted
-                        ? 'bg-rose-100 text-rose-600 shadow-md border border-rose-300'
-                        : 'bg-[var(--th-card)]/90 text-[var(--th-text-muted)] hover:text-rose-600 hover:bg-[var(--th-card)] shadow-xs border border-[var(--th-border)]'
-                        }`}
-                      title="Save to Wishlist"
-                    >
-                      <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current text-rose-600' : ''}`} />
-                    </button>
-
-                    {/* Quick View Button on Hover */}
-                    <div className="absolute inset-x-3 bottom-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:block">
-                      <button
-                        onClick={() => onQuickView && onQuickView(product)}
-                        className="w-full py-2 bg-[var(--th-card)]/95 backdrop-blur-md text-[var(--th-primary)] text-xs font-bold rounded-xl shadow-lg hover:bg-amber-500 hover:text-white transition-colors uppercase tracking-wider border border-[var(--th-border)] cursor-pointer"
-                      >
-                        Quick View
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Product Meta Details */}
-                  <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between bg-[var(--th-card)]">
-                    <div>
-                      <div className="flex items-center justify-between text-[11px] text-[var(--th-text-muted)] mb-1.5">
-                        <span className="font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider truncate flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-amber-500 shrink-0" />
-                          {product.purity || '925 Fine Silver'}
-                        </span>
-                        <div className="flex items-center space-x-1 text-amber-500 shrink-0">
-                          <Star className="w-3.5 h-3.5 fill-current" />
-                          <span className="font-bold text-xs text-[var(--th-text-main)]">{product.rating || 4.9}</span>
-                        </div>
-                      </div>
-
-                      {/* Product Title */}
-                      <h3
+                return (
+                  <div
+                    key={prodId}
+                    className="group relative flex flex-col justify-between bg-[var(--th-card)] rounded-2xl border border-[var(--th-border)] overflow-hidden hover:shadow-2xl hover:border-amber-400/60 transition-all duration-300"
+                  >
+                    {/* Image Container with Zoom & Ribbons */}
+                    <div className="relative aspect-square overflow-hidden bg-[var(--th-pedestal)]">
+                      <img
+                        src={imgSrc}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 cursor-pointer"
                         onClick={() => onSelectProduct && onSelectProduct(product)}
-                        className="font-serif text-sm sm:text-base font-bold text-[var(--th-text-main)] group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1 cursor-pointer"
-                        title={product.name}
-                      >
-                        {product.name}
-                      </h3>
+                      />
 
-                      <p className="text-[11px] text-[var(--th-text-muted)] font-medium mt-0.5 line-clamp-1">
-                        {product.weightGrams ? `${product.weightGrams}g Pure Silver` : 'BIS Hallmark Certified'} • {product.recipient || product.idealFor || 'Auspicious Choice'}
-                      </p>
-                    </div>
-
-                    {/* Price & Action Row */}
-                    <div className="pt-3 mt-3 border-t border-[var(--th-border)]/60 flex items-center justify-between">
-                      <div>
-                        <div className="flex items-baseline space-x-1.5">
-                          <span className="font-outfit font-bold text-base sm:text-lg text-[var(--th-primary)] tracking-tight">
-                            ₹{Number(product.price || 0).toLocaleString('en-IN')}
+                      {/* Festival Purity Ribbon */}
+                      <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 z-10 flex flex-col space-y-1 items-start max-w-[calc(100%-2.75rem)]">
+                        <span className="bg-gradient-to-r from-amber-600 to-amber-500 text-white text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-full shadow-md uppercase tracking-wider inline-flex items-center gap-1 truncate border border-amber-300/30">
+                          <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white fill-white shrink-0 animate-pulse" />
+                          <span className="truncate">
+                            {product.purityCode === '999' || (product.purity && String(product.purity).includes('999')) ? '999 PURE SILVER' : '925 STERLING'}
                           </span>
-                          {hasDiscount && (
-                            <span className="text-xs text-[var(--th-text-muted)] line-through font-outfit font-medium">
-                              ₹{Number(product.originalPrice).toLocaleString('en-IN')}
-                            </span>
-                          )}
-                        </div>
+                        </span>
+
+                        {hasDiscount && (
+                          <span className="bg-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider">
+                            {discountPercent}% OFF
+                          </span>
+                        )}
                       </div>
 
+                      {/* Wishlist Button */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          onAddToCart && onAddToCart(product, 1);
+                          onToggleWishlist && onToggleWishlist(product);
                         }}
-                        className="w-9 h-9 rounded-full bg-amber-500/10 hover:bg-amber-500 text-amber-600 dark:text-amber-400 hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shrink-0 border border-amber-500/30 shadow-xs"
-                        title="Add to Shopping Cart"
+                        className={`absolute top-2.5 sm:top-3 right-2.5 sm:right-3 z-10 w-8.5 h-8.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                          isWishlisted
+                            ? 'bg-rose-100 text-rose-600 shadow-md border border-rose-300'
+                            : 'bg-[var(--th-card)]/90 text-[var(--th-text-muted)] hover:text-rose-600 hover:bg-[var(--th-card)] shadow-xs border border-[var(--th-border)]'
+                        }`}
+                        title="Save to Wishlist"
                       >
-                        <ShoppingBag className="w-4 h-4" />
+                        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current text-rose-600' : ''}`} />
                       </button>
+
+                      {/* Quick View Button on Hover */}
+                      <div className="absolute inset-x-3 bottom-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:block">
+                        <button
+                          onClick={() => onQuickView && onQuickView(product)}
+                          className="w-full py-2 bg-[var(--th-card)]/95 backdrop-blur-md text-[var(--th-primary)] text-xs font-bold rounded-xl shadow-lg hover:bg-amber-500 hover:text-white transition-colors uppercase tracking-wider border border-[var(--th-border)] cursor-pointer"
+                        >
+                          Quick View
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Product Meta Details */}
+                    <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between bg-[var(--th-card)]">
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] text-[var(--th-text-muted)] mb-1.5">
+                          <span className="font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider truncate flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-amber-500 shrink-0" />
+                            {product.purity || '925 Fine Silver'}
+                          </span>
+                          <div className="flex items-center space-x-1 text-amber-500 shrink-0">
+                            <Star className="w-3.5 h-3.5 fill-current" />
+                            <span className="font-bold text-xs text-[var(--th-text-main)]">{product.rating || 4.9}</span>
+                          </div>
+                        </div>
+
+                        {/* Product Title */}
+                        <h3
+                          onClick={() => onSelectProduct && onSelectProduct(product)}
+                          className="font-serif text-sm sm:text-base font-bold text-[var(--th-text-main)] group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1 cursor-pointer"
+                          title={product.name}
+                        >
+                          {product.name}
+                        </h3>
+
+                        <p className="text-[11px] text-[var(--th-text-muted)] font-medium mt-0.5 line-clamp-1">
+                          {product.weightGrams ? `${product.weightGrams}g Pure Silver` : 'BIS Hallmark Certified'} • {product.recipient || product.idealFor || 'Auspicious Choice'}
+                        </p>
+                      </div>
+
+                      {/* Price & Action Row */}
+                      <div className="pt-3 mt-3 border-t border-[var(--th-border)]/60 flex items-center justify-between">
+                        <div>
+                          <div className="flex items-baseline space-x-1.5">
+                            <span className="font-outfit font-bold text-base sm:text-lg text-[var(--th-primary)] tracking-tight">
+                              ₹{Number(product.price || 0).toLocaleString('en-IN')}
+                            </span>
+                            {hasDiscount && (
+                              <span className="text-xs text-[var(--th-text-muted)] line-through font-outfit font-medium">
+                                ₹{Number(product.originalPrice).toLocaleString('en-IN')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddToCart && onAddToCart(product, 1);
+                          }}
+                          className="w-9 h-9 rounded-full bg-amber-500/10 hover:bg-amber-500 text-amber-600 dark:text-amber-400 hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shrink-0 border border-amber-500/30 shadow-xs"
+                          title="Add to Shopping Cart"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            {/* View More / View Less Toggle when products > 8 */}
+            {displayedProducts.length > 8 && (
+              <div className="mt-8 text-center">
+                <button
+                  onClick={() => setShowAllProducts(prev => !prev)}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[var(--th-card)] border border-amber-500/40 text-amber-600 dark:text-amber-400 text-xs sm:text-sm font-bold shadow-sm hover:bg-amber-500 hover:text-white transition-all cursor-pointer"
+                >
+                  {showAllProducts ? (
+                    <>
+                      <span>Show Less</span>
+                      <ChevronUp className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span>View All {displayedProducts.length} Items</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-14 rounded-2xl border border-dashed border-amber-500/30 bg-[var(--th-card)]/40 backdrop-blur-xs">
             <ShoppingBag className="w-12 h-12 mx-auto text-amber-500 opacity-70 mb-3 animate-bounce" />
             <p className="text-base font-bold text-[var(--th-text-main)] font-serif">
-              Discover sacred silver items for {displayedFestival.name}
+              Sacred silver offerings for {displayedFestival.name}
             </p>
-            <p className="text-xs text-[var(--th-text-sub)] mt-1">
-              Check back soon as new pure silver items are added to this collection.
+            <p className="text-xs text-[var(--th-text-sub)] mt-1 max-w-md mx-auto">
+              {selectedCategoryFilter !== 'all'
+                ? 'No pure silver products currently listed under this category for this festival.'
+                : 'No products are currently linked to this festival collection. Check back soon as new pure silver items are added.'}
             </p>
+            {selectedCategoryFilter !== 'all' && (
+              <button
+                onClick={() => setSelectedCategoryFilter('all')}
+                className="mt-4 px-4 py-1.5 rounded-full text-xs font-bold bg-amber-500 text-white shadow-xs hover:bg-amber-600 transition-colors cursor-pointer"
+              >
+                View All {displayedFestival.name} Items ({allFestivalProducts.length})
+              </button>
+            )}
           </div>
         )}
       </div>
     </section>
   );
 }
+
+
 
 

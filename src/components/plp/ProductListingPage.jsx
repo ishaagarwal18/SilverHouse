@@ -335,9 +335,20 @@ export default function ProductListingPage({
     ) || VIRTUAL_CATEGORIES[selectedCategory];
     
     if (!resolved) {
-      const fMatch = festivals?.find(f => String(f.id).toLowerCase() === String(selectedCategory).toLowerCase() || String(f.slug).toLowerCase() === String(selectedCategory).toLowerCase());
+      const fMatch = festivals?.find(f =>
+        String(f.id || '').toLowerCase() === String(selectedCategory).toLowerCase() ||
+        String(f.slug || '').toLowerCase() === String(selectedCategory).toLowerCase() ||
+        String(f.shortName || '').toLowerCase() === String(selectedCategory).toLowerCase() ||
+        String(f.name || '').toLowerCase() === String(selectedCategory).toLowerCase() ||
+        (f.name && f.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === String(selectedCategory).toLowerCase())
+      );
       if (fMatch) {
-        resolved = fMatch;
+        resolved = {
+          id: fMatch.id,
+          name: fMatch.name || fMatch.shortName,
+          description: fMatch.description || `Special curated pure silver collection for ${fMatch.name}`,
+          heroBanner: fMatch.heroBanner || '/images/hero_silver_coins.png'
+        };
       }
     }
     
@@ -456,7 +467,8 @@ export default function ProductListingPage({
         String(f.id || '').toLowerCase() === String(selectedCategory).toLowerCase() ||
         String(f.slug || '').toLowerCase() === String(selectedCategory).toLowerCase() ||
         String(f.shortName || '').toLowerCase() === String(selectedCategory).toLowerCase() ||
-        String(f.name || '').toLowerCase() === String(selectedCategory).toLowerCase()
+        String(f.name || '').toLowerCase() === String(selectedCategory).toLowerCase() ||
+        (f.name && f.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === String(selectedCategory).toLowerCase())
       );
 
       if (matchedFestival) {
