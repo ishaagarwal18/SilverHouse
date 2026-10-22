@@ -1133,10 +1133,10 @@ function DataManager({ entity }) {
           </EmptyState>
         ) : (
           <div className="ad-scroll max-h-[calc(100vh-15rem)] overflow-auto">
-            <table className="w-full border-collapse text-left text-[13px]">
+            <table className="w-full border-collapse text-left text-[12.5px]">
               <thead className="sticky top-0 z-10 bg-ad-card">
                 <tr>
-                  <th className="w-10 border-b border-ad-border px-3 py-3">
+                  <th className="w-8 border-b border-ad-border px-2 py-2">
                     <input
                       type="checkbox"
                       checked={allSelected}
@@ -1146,14 +1146,14 @@ function DataManager({ entity }) {
                     />
                   </th>
                   {(entity === 'orders' || entity === 'cart') && (
-                    <th className="w-12 border-b border-ad-border px-2 py-3" aria-label={`Expand ${entity === 'orders' ? 'order' : 'cart'}`} />
+                    <th className="w-10 border-b border-ad-border px-1.5 py-2 text-center" aria-label={`Expand ${entity === 'orders' ? 'order' : 'cart'}`} />
                   )}
                   {headers.map(h => {
                     const sortable = !isImageColumn(h) && h !== 'linked_categories';
                     const active = sort.col === h;
                     const SortIcon = !active ? ArrowUpDown : sort.dir === 'asc' ? ArrowUp : ArrowDown;
                     return (
-                      <th key={h} className="whitespace-nowrap border-b border-ad-border px-3 py-3 text-[11px] font-bold uppercase tracking-wide text-ad-muted">
+                      <th key={h} className="whitespace-nowrap border-b border-ad-border px-2.5 py-2 text-[11px] font-bold uppercase tracking-wide text-ad-muted">
                         {sortable ? (
                           <button type="button" onClick={() => handleSort(h)} className={`inline-flex items-center gap-1 uppercase cursor-pointer hover:text-ad-text ${active ? 'text-ad-primary font-bold' : ''}`}>
                             {columnTitle(h)} <SortIcon className="w-3.5 h-3.5" />
@@ -1162,7 +1162,7 @@ function DataManager({ entity }) {
                       </th>
                     );
                   })}
-                  <th className="sticky right-0 border-b border-ad-border bg-ad-card px-3 py-3 text-right text-[11px] font-bold uppercase tracking-wide text-ad-muted">Actions</th>
+                  <th className="sticky right-0 border-b border-ad-border bg-ad-card px-2.5 py-2 text-right text-[11px] font-bold uppercase tracking-wide text-ad-muted">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1186,44 +1186,44 @@ function DataManager({ entity }) {
                         className={`border-b border-ad-border last:border-0 hover:bg-ad-card/60 transition-colors ${hl ? 'ad-row-flash' : ''} ${checked ? 'bg-ad-primary/5' : ''} ${isExpanded ? 'bg-ad-card/30' : ''}`}
                         style={hl ? { '--ad-flash': hl.color, boxShadow: `inset 3px 0 0 ${hl.color}` } : undefined}
                       >
-                        <td className="px-3 py-2.5">
+                        <td className="px-2 py-2">
                           <input type="checkbox" checked={checked} onChange={e => toggleOne(idVal, e.target.checked)} aria-label={`Select record ${idVal}`} />
                         </td>
                         {entity === 'orders' && (
-                          <td className="w-12 px-2 py-2.5 text-center">
+                          <td className="w-10 px-1.5 py-2 text-center">
                             <button
                               type="button"
                               onClick={() => toggleExpandOrder(idVal)}
-                              className={`inline-flex items-center justify-center w-7 h-7 rounded-lg border transition-all cursor-pointer ${isOrderExpanded
+                              className={`inline-flex items-center justify-center w-6.5 h-6.5 rounded-lg border transition-all cursor-pointer ${isOrderExpanded
                                 ? 'bg-ad-primary text-white border-ad-primary shadow-xs'
                                 : 'bg-ad-card text-ad-muted hover:text-ad-text hover:bg-ad-hover border-ad-border'
                                 }`}
                               title={isOrderExpanded ? 'Hide order items' : `View ${orderItems.length} order line item(s)`}
                               aria-label={`Toggle order items for order ${row.order_number || idVal}`}
                             >
-                              <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isOrderExpanded ? 'rotate-90' : ''}`} />
+                              <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isOrderExpanded ? 'rotate-90' : ''}`} />
                             </button>
                           </td>
                         )}
                         {entity === 'cart' && (
-                          <td className="w-12 px-2 py-2.5 text-center">
+                          <td className="w-10 px-1.5 py-2 text-center">
                             <button
                               type="button"
                               onClick={() => toggleExpandCart(idVal)}
-                              className={`inline-flex items-center justify-center w-7 h-7 rounded-lg border transition-all cursor-pointer ${isCartExpanded
+                              className={`inline-flex items-center justify-center w-6.5 h-6.5 rounded-lg border transition-all cursor-pointer ${isCartExpanded
                                 ? 'bg-ad-primary text-white border-ad-primary shadow-xs'
                                 : 'bg-ad-card text-ad-muted hover:text-ad-text hover:bg-ad-hover border-ad-border'
                                 }`}
                               title={isCartExpanded ? 'Hide cart items' : `View ${cartItems.length} cart line item(s)`}
                               aria-label={`Toggle cart items for cart #${idVal}`}
                             >
-                              <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isCartExpanded ? 'rotate-90' : ''}`} />
+                              <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isCartExpanded ? 'rotate-90' : ''}`} />
                             </button>
                           </td>
                         )}
                         {headers.map((h, idx) => (
-                          <td key={h} className="max-w-72 px-3 py-2.5 align-middle text-ad-text">
-                            <div className="flex items-center gap-2">
+                          <td key={h} className="max-w-64 px-2.5 py-2 align-middle text-ad-text">
+                            <div className="flex items-center gap-1.5">
                               <span className="min-w-0 truncate">{renderCell(h, row, idVal)}</span>
                               {idx === 0 && hl && (
                                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase text-white" style={{ background: hl.color }}>
@@ -1233,10 +1233,10 @@ function DataManager({ entity }) {
                             </div>
                           </td>
                         ))}
-                        <td className="sticky right-0 whitespace-nowrap bg-ad-surface px-3 py-2.5 text-right">
+                        <td className="sticky right-0 whitespace-nowrap bg-ad-surface px-2.5 py-2 text-right">
                           <div className="inline-flex gap-1.5">
                             {entity !== 'product_image' && (
-                              <button type="button" onClick={() => openEdit(idVal)} className="inline-flex items-center gap-1 rounded-md border border-ad-primary/30 bg-ad-primary/10 px-2.5 py-1.5 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white cursor-pointer" aria-label={`Edit record ${idVal}`}>
+                              <button type="button" onClick={() => openEdit(idVal)} className="inline-flex items-center gap-1 rounded-md border border-ad-primary/30 bg-ad-primary/10 px-2 py-1 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white cursor-pointer" aria-label={`Edit record ${idVal}`}>
                                 <Pencil className="w-3.5 h-3.5" />
                               </button>
                             )}
@@ -1248,7 +1248,7 @@ function DataManager({ entity }) {
                                 imageId: row.image_id || null,
                                 productId: row.product_id || null
                               })}
-                              className="inline-flex items-center gap-1 rounded-md border border-ad-danger/30 bg-ad-danger/10 px-2.5 py-1.5 text-xs font-semibold text-ad-danger hover:bg-ad-danger hover:text-white cursor-pointer"
+                              className="inline-flex items-center gap-1 rounded-md border border-ad-danger/30 bg-ad-danger/10 px-2 py-1 text-xs font-semibold text-ad-danger hover:bg-ad-danger hover:text-white cursor-pointer"
                               aria-label={`Delete record ${idVal}`}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1260,17 +1260,17 @@ function DataManager({ entity }) {
                       {/* Expandable Order Line Items Row */}
                       {entity === 'orders' && isOrderExpanded && (
                         <tr className="border-b border-ad-border bg-ad-card/25">
-                          <td colSpan={headers.length + 3} className="px-3 py-3 sm:px-6 sm:py-4">
-                            <div className="rounded-xl border border-ad-border bg-ad-surface p-4 shadow-sm animate-in fade-in-50 duration-200">
-                              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-ad-border">
+                          <td colSpan={headers.length + 3} className="px-2.5 py-2.5 sm:px-4 sm:py-3">
+                            <div className="max-w-5xl rounded-xl border border-ad-border bg-ad-surface p-3.5 shadow-sm animate-in fade-in-50 duration-200">
+                              <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-ad-border">
                                 <div className="flex items-center gap-2.5">
-                                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ad-primary/15 text-ad-primary">
-                                    <Receipt className="w-4 h-4" />
+                                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-ad-primary/15 text-ad-primary">
+                                    <Receipt className="w-3.5 h-3.5" />
                                   </span>
                                   <div>
                                     <h4 className="text-xs font-bold text-ad-text uppercase tracking-wider flex items-center gap-2">
                                       <span>Order Line Items</span>
-                                      <span className="rounded-md bg-ad-card px-2 py-0.5 font-mono text-[11px] border border-ad-border">
+                                      <span className="rounded-md bg-ad-card px-1.5 py-0.5 font-mono text-[11px] border border-ad-border">
                                         {row.order_number ? `#${row.order_number}` : `Order #${idVal}`}
                                       </span>
                                     </h4>
@@ -1286,30 +1286,30 @@ function DataManager({ entity }) {
                                   <button
                                     type="button"
                                     onClick={() => setOrderItemModal({ mode: 'ADD', orderId: idVal })}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-ad-primary/40 bg-ad-primary/10 px-3 py-1.5 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white transition-colors cursor-pointer"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-ad-primary/40 bg-ad-primary/10 px-2.5 py-1 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white transition-colors cursor-pointer"
                                   >
-                                    <Plus className="w-3.5 h-3.5" /> Add Order Item
+                                    <Plus className="w-3 h-3" /> Add Order Item
                                   </button>
                                 </div>
                               </div>
 
                               {orderItems.length === 0 ? (
-                                <div className="py-6 text-center text-xs text-ad-muted">
+                                <div className="py-4 text-center text-xs text-ad-muted">
                                   No items currently recorded for this order. Click "Add Order Item" to attach products.
                                 </div>
                               ) : (
-                                <div className="mt-3 overflow-x-auto">
+                                <div className="mt-2.5 overflow-x-auto">
                                   <table className="w-full text-left text-xs">
                                     <thead>
                                       <tr className="border-b border-ad-border text-[10.5px] font-bold uppercase tracking-wider text-ad-muted bg-ad-card/40">
-                                        <th className="py-2.5 px-3 w-16">Item #</th>
-                                        <th className="py-2.5 px-3 min-w-[260px]">Product Details & Photo</th>
-                                        <th className="py-2.5 px-3 text-right">Unit Price</th>
-                                        <th className="py-2.5 px-3 text-center">Discount</th>
-                                        <th className="py-2.5 px-3 text-center">Qty Ordered</th>
-                                        <th className="py-2.5 px-3 text-center min-w-[190px]">Delivered Progress</th>
-                                        <th className="py-2.5 px-3 text-right">Subtotal</th>
-                                        <th className="py-2.5 px-3 text-right">Actions</th>
+                                        <th className="py-2 px-2 w-12 text-center">#</th>
+                                        <th className="py-2 px-2.5">Product Details & Photo</th>
+                                        <th className="py-2 px-2.5 text-right w-24 whitespace-nowrap">Unit Price</th>
+                                        <th className="py-2 px-2 text-center w-20 whitespace-nowrap">Discount</th>
+                                        <th className="py-2 px-2 text-center w-16 whitespace-nowrap">Qty</th>
+                                        <th className="py-2 px-2.5 text-center w-44 whitespace-nowrap">Delivered Progress</th>
+                                        <th className="py-2 px-2.5 text-right w-24 whitespace-nowrap">Subtotal</th>
+                                        <th className="py-2 px-2 text-right w-16 whitespace-nowrap">Actions</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-ad-border">
@@ -1326,68 +1326,68 @@ function DataManager({ entity }) {
                                         const lineSubtotal = Number(item.subtotal || (Number(item.unit_price || 0) * (1 - Number(item.discount_percent || 0) / 100) * Number(item.quantity || 1)));
                                         return (
                                           <tr key={item.order_item_id} className="hover:bg-ad-card/50 transition-colors">
-                                            <td className="py-3 px-3 font-mono text-ad-muted align-middle">#{item.order_item_id}</td>
-                                            <td className="py-3 px-3 align-middle">
-                                              <div className="flex items-center gap-3">
+                                            <td className="py-2 px-2 font-mono text-ad-muted text-center align-middle">#{item.order_item_id}</td>
+                                            <td className="py-2 px-2.5 align-middle">
+                                              <div className="flex items-center gap-2.5">
                                                 {/* Product Photo with hover-zoom & click to enlarge */}
                                                 <div className="relative group shrink-0">
                                                   <img
                                                     src={imgUrl}
                                                     alt={prodTitle}
-                                                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border border-ad-border bg-ad-card object-cover shadow-2xs transition-transform group-hover:scale-105"
+                                                    className="w-11 h-11 rounded-lg border border-ad-border bg-ad-card object-cover shadow-2xs transition-transform group-hover:scale-105"
                                                     onError={e => { e.currentTarget.src = PLACEHOLDER_IMG; }}
                                                   />
                                                   {imgUrl && imgUrl !== PLACEHOLDER_IMG && (
                                                     <button
                                                       type="button"
                                                       onClick={() => setLightbox({ images: [imgUrl], index: 0 })}
-                                                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl text-white transition-opacity cursor-pointer"
+                                                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-lg text-white transition-opacity cursor-pointer"
                                                       title="Click to view photo"
                                                     >
-                                                      <ImageIcon className="w-4 h-4" />
+                                                      <ImageIcon className="w-3.5 h-3.5" />
                                                     </button>
                                                   )}
                                                 </div>
 
                                                 {/* Product Details & Specification Badges */}
-                                                <div className="min-w-0 flex-1 space-y-1">
+                                                <div className="min-w-0 flex-1">
                                                   <div className="flex flex-wrap items-center gap-1.5">
-                                                    <span className="font-bold text-[13px] text-ad-text">
+                                                    <span className="font-bold text-xs text-ad-text">
                                                       {prodTitle}
                                                     </span>
-                                                    <span className="rounded-md bg-ad-card px-1.5 py-0.5 text-[10px] font-mono text-ad-muted border border-ad-border">
+                                                    <span className="rounded bg-ad-card px-1 py-0.2 text-[9.5px] font-mono text-ad-muted border border-ad-border">
                                                       ID: #{item.product_id}
                                                     </span>
                                                     {categoryName && (
-                                                      <span className="inline-flex items-center gap-1 rounded-md bg-ad-accent/10 border border-ad-accent/25 px-1.5 py-0.5 text-[10.5px] font-semibold text-ad-accent">
+                                                      <span className="inline-flex items-center gap-1 rounded bg-ad-accent/10 border border-ad-accent/25 px-1.5 py-0.2 text-[9.5px] font-semibold text-ad-accent">
                                                         <Tag className="w-2.5 h-2.5" /> {categoryName}
                                                       </span>
                                                     )}
                                                   </div>
 
-                                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                                  <div className="flex flex-wrap items-center gap-1 pt-1">
                                                     {purity && (
-                                                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                        <ShieldCheck className="w-3 h-3 text-emerald-500" /> {purity}
+                                                      <span className="inline-flex items-center gap-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 px-1 py-0.2 text-[9.5px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                        <ShieldCheck className="w-2.5 h-2.5 text-emerald-500" /> {purity}
                                                       </span>
                                                     )}
                                                     {weight && (
-                                                      <span className="inline-flex items-center gap-1 rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] font-mono text-ad-text">
-                                                        <Scale className="w-3 h-3 text-ad-muted" /> {weight}
+                                                      <span className="inline-flex items-center gap-0.5 rounded bg-ad-card border border-ad-border px-1 py-0.2 text-[9.5px] font-mono text-ad-text">
+                                                        <Scale className="w-2.5 h-2.5 text-ad-muted" /> {weight}
                                                       </span>
                                                     )}
                                                     {idealFor && (
-                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted">
+                                                      <span className="rounded bg-ad-card border border-ad-border px-1 py-0.2 text-[9.5px] text-ad-muted">
                                                         Ideal For: <strong className="text-ad-text font-medium">{idealFor}</strong>
                                                       </span>
                                                     )}
                                                     {makeType && (
-                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted">
+                                                      <span className="rounded bg-ad-card border border-ad-border px-1 py-0.2 text-[9.5px] text-ad-muted">
                                                         Make: <strong className="text-ad-text font-medium">{makeType}</strong>
                                                       </span>
                                                     )}
                                                     {packaging && (
-                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted hidden lg:inline-flex">
+                                                      <span className="rounded bg-ad-card border border-ad-border px-1 py-0.2 text-[9.5px] text-ad-muted hidden lg:inline-flex">
                                                         📦 {packaging}
                                                       </span>
                                                     )}
@@ -1395,51 +1395,51 @@ function DataManager({ entity }) {
                                                 </div>
                                               </div>
                                             </td>
-                                            <td className="py-3 px-3 text-right font-mono font-medium align-middle">₹{Number(item.unit_price || 0).toLocaleString('en-IN')}</td>
-                                            <td className="py-3 px-3 text-center align-middle">
+                                            <td className="py-2 px-2.5 text-right font-mono font-medium align-middle whitespace-nowrap">₹{Number(item.unit_price || 0).toLocaleString('en-IN')}</td>
+                                            <td className="py-2 px-2 text-center align-middle whitespace-nowrap">
                                               {Number(item.discount_percent || 0) > 0 ? (
-                                                <span className="rounded-md bg-ad-success/15 px-1.5 py-0.5 text-[10.5px] font-bold text-ad-success">
+                                                <span className="rounded bg-ad-success/15 px-1.5 py-0.5 text-[10px] font-bold text-ad-success">
                                                   {Number(item.discount_percent)}% OFF
                                                 </span>
                                               ) : (
                                                 <span className="text-ad-muted">-</span>
                                               )}
                                             </td>
-                                            <td className="py-3 px-3 text-center font-bold text-ad-text align-middle">{item.quantity}</td>
-                                            <td className="py-3 px-3 text-center align-middle">
-                                              <div className="inline-flex flex-col items-center gap-1">
+                                            <td className="py-2 px-2 text-center font-bold text-ad-text align-middle whitespace-nowrap">{item.quantity}</td>
+                                            <td className="py-2 px-2.5 text-center align-middle whitespace-nowrap">
+                                              <div className="inline-flex flex-col items-center gap-0.5">
                                                 <div className="inline-flex items-center rounded-lg border border-ad-border bg-ad-card p-0.5 shadow-2xs">
                                                   <button
                                                     type="button"
                                                     disabled={Number(item.delivered_quantity || 0) <= 0}
                                                     onClick={() => handleUpdateDeliveredQty(idVal, item, Math.max(0, Number(item.delivered_quantity || 0) - 1))}
-                                                    className="h-6 w-6 rounded flex items-center justify-center text-ad-muted hover:text-ad-text hover:bg-ad-hover disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                                                    className="h-5 w-5 rounded flex items-center justify-center text-ad-muted hover:text-ad-text hover:bg-ad-hover disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
                                                     title="Decrease delivered quantity"
                                                   >
-                                                    <Minus className="w-3 h-3" />
+                                                    <Minus className="w-2.5 h-2.5" />
                                                   </button>
-                                                  <span className="w-10 text-center font-mono font-bold text-xs text-ad-text">
+                                                  <span className="w-8 text-center font-mono font-bold text-xs text-ad-text">
                                                     {item.delivered_quantity || 0}
                                                   </span>
                                                   <button
                                                     type="button"
                                                     disabled={Number(item.delivered_quantity || 0) >= Number(item.quantity || 1)}
                                                     onClick={() => handleUpdateDeliveredQty(idVal, item, Math.min(Number(item.quantity || 1), Number(item.delivered_quantity || 0) + 1))}
-                                                    className="h-6 w-6 rounded flex items-center justify-center text-ad-muted hover:text-ad-text hover:bg-ad-hover disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                                                    className="h-5 w-5 rounded flex items-center justify-center text-ad-muted hover:text-ad-text hover:bg-ad-hover disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
                                                     title="Increase delivered quantity"
                                                   >
-                                                    <Plus className="w-3 h-3" />
+                                                    <Plus className="w-2.5 h-2.5" />
                                                   </button>
                                                 </div>
                                                 {Number(item.delivered_quantity || 0) >= Number(item.quantity || 1) ? (
-                                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded">
+                                                  <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-1 py-0.2 rounded">
                                                     <Check className="w-2.5 h-2.5" /> Fully Delivered
                                                   </span>
                                                 ) : (
                                                   <button
                                                     type="button"
                                                     onClick={() => handleUpdateDeliveredQty(idVal, item, Number(item.quantity || 1))}
-                                                    className="text-[10px] font-semibold text-ad-primary hover:underline cursor-pointer"
+                                                    className="text-[9.5px] font-semibold text-ad-primary hover:underline cursor-pointer"
                                                     title={`Mark all ${item.quantity} as delivered`}
                                                   >
                                                     Mark All Delivered ({item.quantity})
@@ -1447,15 +1447,15 @@ function DataManager({ entity }) {
                                                 )}
                                               </div>
                                             </td>
-                                            <td className="py-3 px-3 text-right font-mono font-bold text-ad-text text-[13px] align-middle">
+                                            <td className="py-2 px-2.5 text-right font-mono font-bold text-ad-text text-xs align-middle whitespace-nowrap">
                                               ₹{lineSubtotal.toLocaleString('en-IN')}
                                             </td>
-                                            <td className="py-3 px-3 text-right whitespace-nowrap align-middle">
+                                            <td className="py-2 px-2 text-right whitespace-nowrap align-middle">
                                               <div className="inline-flex gap-1">
                                                 <button
                                                   type="button"
                                                   onClick={() => setOrderItemModal({ mode: 'EDIT', orderId: idVal, item })}
-                                                  className="p-1.5 rounded-lg text-ad-primary hover:bg-ad-primary/15 transition-colors cursor-pointer"
+                                                  className="p-1 rounded text-ad-primary hover:bg-ad-primary/15 transition-colors cursor-pointer"
                                                   title="Edit item"
                                                   aria-label={`Edit item ${item.order_item_id}`}
                                                 >
@@ -1464,7 +1464,7 @@ function DataManager({ entity }) {
                                                 <button
                                                   type="button"
                                                   onClick={() => setDeleteOrderItemCtx(item)}
-                                                  className="p-1.5 rounded-lg text-ad-danger hover:bg-ad-danger/15 transition-colors cursor-pointer"
+                                                  className="p-1 rounded text-ad-danger hover:bg-ad-danger/15 transition-colors cursor-pointer"
                                                   title="Delete item"
                                                   aria-label={`Delete item ${item.order_item_id}`}
                                                 >
@@ -1478,16 +1478,16 @@ function DataManager({ entity }) {
                                     </tbody>
                                     <tfoot>
                                       <tr className="border-t-2 border-ad-border bg-ad-card/30 font-bold">
-                                        <td colSpan={4} className="py-2 px-3 text-right text-ad-muted uppercase tracking-wider text-[11px]">
+                                        <td colSpan={4} className="py-2 px-2.5 text-right text-ad-muted uppercase tracking-wider text-[10.5px]">
                                           Total Order Line Items:
                                         </td>
-                                        <td className="py-2 px-3 text-center text-ad-text font-bold">
+                                        <td className="py-2 px-2 text-center text-ad-text font-bold">
                                           {orderItems.reduce((acc, it) => acc + Number(it.quantity || 0), 0)} pcs
                                         </td>
-                                        <td className="py-2 px-3 text-center text-ad-text font-mono text-[11px]">
+                                        <td className="py-2 px-2.5 text-center text-ad-text font-mono text-[10.5px]">
                                           {orderItems.reduce((acc, it) => acc + Number(it.delivered_quantity || 0), 0)} pcs del.
                                         </td>
-                                        <td className="py-2 px-3 text-right font-mono text-ad-text text-[13px] font-bold">
+                                        <td className="py-2 px-2.5 text-right font-mono text-ad-text text-xs font-bold whitespace-nowrap">
                                           ₹{orderItems.reduce((acc, it) => acc + Number(it.subtotal || (Number(it.unit_price || 0) * (1 - Number(it.discount_percent || 0) / 100) * Number(it.quantity || 1))), 0).toLocaleString('en-IN')}
                                         </td>
                                         <td></td>
@@ -1504,17 +1504,17 @@ function DataManager({ entity }) {
                       {/* Expandable Cart Line Items Row */}
                       {entity === 'cart' && isCartExpanded && (
                         <tr className="border-b border-ad-border bg-ad-card/25">
-                          <td colSpan={headers.length + 3} className="px-3 py-3 sm:px-6 sm:py-4">
-                            <div className="rounded-xl border border-ad-border bg-ad-surface p-4 shadow-sm animate-in fade-in-50 duration-200">
-                              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-ad-border">
+                          <td colSpan={headers.length + 3} className="px-2.5 py-2.5 sm:px-4 sm:py-3">
+                            <div className="max-w-4xl rounded-xl border border-ad-border bg-ad-surface p-3.5 shadow-sm animate-in fade-in-50 duration-200">
+                              <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-ad-border">
                                 <div className="flex items-center gap-2.5">
-                                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ad-primary/15 text-ad-primary">
-                                    <ShoppingCart className="w-4 h-4" />
+                                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-ad-primary/15 text-ad-primary">
+                                    <ShoppingCart className="w-3.5 h-3.5" />
                                   </span>
                                   <div>
                                     <h4 className="text-xs font-bold text-ad-text uppercase tracking-wider flex items-center gap-2">
                                       <span>Cart Line Items</span>
-                                      <span className="rounded-md bg-ad-card px-2 py-0.5 font-mono text-[11px] border border-ad-border">
+                                      <span className="rounded-md bg-ad-card px-1.5 py-0.5 font-mono text-[11px] border border-ad-border">
                                         Cart #{idVal}
                                       </span>
                                     </h4>
@@ -1530,28 +1530,28 @@ function DataManager({ entity }) {
                                   <button
                                     type="button"
                                     onClick={() => setCartItemModal({ mode: 'ADD', cartId: idVal })}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-ad-primary/40 bg-ad-primary/10 px-3 py-1.5 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white transition-colors cursor-pointer"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-ad-primary/40 bg-ad-primary/10 px-2.5 py-1 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white transition-colors cursor-pointer"
                                   >
-                                    <Plus className="w-3.5 h-3.5" /> Add Cart Item
+                                    <Plus className="w-3 h-3" /> Add Cart Item
                                   </button>
                                 </div>
                               </div>
 
                               {cartItems.length === 0 ? (
-                                <div className="py-6 text-center text-xs text-ad-muted">
+                                <div className="py-4 text-center text-xs text-ad-muted">
                                   No items currently recorded in this cart. Click "Add Cart Item" to attach products.
                                 </div>
                               ) : (
-                                <div className="mt-3 overflow-x-auto">
+                                <div className="mt-2.5 overflow-x-auto">
                                   <table className="w-full text-left text-xs">
                                     <thead>
                                       <tr className="border-b border-ad-border text-[10.5px] font-bold uppercase tracking-wider text-ad-muted bg-ad-card/40">
-                                        <th className="py-2.5 px-3 w-16">Item #</th>
-                                        <th className="py-2.5 px-3 min-w-[280px]">Product Details & Photo</th>
-                                        <th className="py-2.5 px-3 text-right">Unit Price</th>
-                                        <th className="py-2.5 px-3 text-center">Quantity</th>
-                                        <th className="py-2.5 px-3 text-right">Subtotal</th>
-                                        <th className="py-2.5 px-3 text-right">Actions</th>
+                                        <th className="py-2 px-2 w-12 text-center">#</th>
+                                        <th className="py-2 px-2.5">Product Details & Photo</th>
+                                        <th className="py-2 px-2.5 text-right w-24 whitespace-nowrap">Unit Price</th>
+                                        <th className="py-2 px-2 text-center w-16 whitespace-nowrap">Qty</th>
+                                        <th className="py-2 px-2.5 text-right w-24 whitespace-nowrap">Subtotal</th>
+                                        <th className="py-2 px-2 text-right w-16 whitespace-nowrap">Actions</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-ad-border">
@@ -1570,68 +1570,68 @@ function DataManager({ entity }) {
 
                                         return (
                                           <tr key={item.cart_item_id} className="hover:bg-ad-card/50 transition-colors">
-                                            <td className="py-3 px-3 font-mono text-ad-muted align-middle">#{item.cart_item_id}</td>
-                                            <td className="py-3 px-3 align-middle">
-                                              <div className="flex items-center gap-3">
+                                            <td className="py-2 px-2 font-mono text-ad-muted text-center align-middle">#{item.cart_item_id}</td>
+                                            <td className="py-2 px-2.5 align-middle">
+                                              <div className="flex items-center gap-2.5">
                                                 {/* Product Photo with hover-zoom & click to enlarge */}
                                                 <div className="relative group shrink-0">
                                                   <img
                                                     src={imgUrl}
                                                     alt={prodTitle}
-                                                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border border-ad-border bg-ad-card object-cover shadow-2xs transition-transform group-hover:scale-105"
+                                                    className="w-11 h-11 rounded-lg border border-ad-border bg-ad-card object-cover shadow-2xs transition-transform group-hover:scale-105"
                                                     onError={e => { e.currentTarget.src = PLACEHOLDER_IMG; }}
                                                   />
                                                   {imgUrl && imgUrl !== PLACEHOLDER_IMG && (
                                                     <button
                                                       type="button"
                                                       onClick={() => setLightbox({ images: [imgUrl], index: 0 })}
-                                                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl text-white transition-opacity cursor-pointer"
+                                                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-lg text-white transition-opacity cursor-pointer"
                                                       title="Click to view photo"
                                                     >
-                                                      <ImageIcon className="w-4 h-4" />
+                                                      <ImageIcon className="w-3.5 h-3.5" />
                                                     </button>
                                                   )}
                                                 </div>
 
                                                 {/* Product Details & Specification Badges */}
-                                                <div className="min-w-0 flex-1 space-y-1">
+                                                <div className="min-w-0 flex-1">
                                                   <div className="flex flex-wrap items-center gap-1.5">
-                                                    <span className="font-bold text-[13px] text-ad-text">
+                                                    <span className="font-bold text-xs text-ad-text">
                                                       {prodTitle}
                                                     </span>
-                                                    <span className="rounded-md bg-ad-card px-1.5 py-0.5 text-[10px] font-mono text-ad-muted border border-ad-border">
+                                                    <span className="rounded bg-ad-card px-1 py-0.2 text-[9.5px] font-mono text-ad-muted border border-ad-border">
                                                       ID: #{item.product_id}
                                                     </span>
                                                     {categoryName && (
-                                                      <span className="inline-flex items-center gap-1 rounded-md bg-ad-accent/10 border border-ad-accent/25 px-1.5 py-0.5 text-[10.5px] font-semibold text-ad-accent">
+                                                      <span className="inline-flex items-center gap-1 rounded bg-ad-accent/10 border border-ad-accent/25 px-1.5 py-0.2 text-[9.5px] font-semibold text-ad-accent">
                                                         <Tag className="w-2.5 h-2.5" /> {categoryName}
                                                       </span>
                                                     )}
                                                   </div>
 
-                                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                                  <div className="flex flex-wrap items-center gap-1 pt-1">
                                                     {purity && (
-                                                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                        <ShieldCheck className="w-3 h-3 text-emerald-500" /> {purity}
+                                                      <span className="inline-flex items-center gap-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 px-1 py-0.2 text-[9.5px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                        <ShieldCheck className="w-2.5 h-2.5 text-emerald-500" /> {purity}
                                                       </span>
                                                     )}
                                                     {weight && (
-                                                      <span className="inline-flex items-center gap-1 rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] font-mono text-ad-text">
-                                                        <Scale className="w-3 h-3 text-ad-muted" /> {weight}
+                                                      <span className="inline-flex items-center gap-0.5 rounded bg-ad-card border border-ad-border px-1 py-0.2 text-[9.5px] font-mono text-ad-text">
+                                                        <Scale className="w-2.5 h-2.5 text-ad-muted" /> {weight}
                                                       </span>
                                                     )}
                                                     {idealFor && (
-                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted">
+                                                      <span className="rounded bg-ad-card border border-ad-border px-1 py-0.2 text-[9.5px] text-ad-muted">
                                                         Ideal For: <strong className="text-ad-text font-medium">{idealFor}</strong>
                                                       </span>
                                                     )}
                                                     {makeType && (
-                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted">
+                                                      <span className="rounded bg-ad-card border border-ad-border px-1 py-0.2 text-[9.5px] text-ad-muted">
                                                         Make: <strong className="text-ad-text font-medium">{makeType}</strong>
                                                       </span>
                                                     )}
                                                     {packaging && (
-                                                      <span className="rounded-md bg-ad-card border border-ad-border px-1.5 py-0.5 text-[10px] text-ad-muted hidden lg:inline-flex">
+                                                      <span className="rounded bg-ad-card border border-ad-border px-1 py-0.2 text-[9.5px] text-ad-muted hidden lg:inline-flex">
                                                         📦 {packaging}
                                                       </span>
                                                     )}
@@ -1639,17 +1639,17 @@ function DataManager({ entity }) {
                                                 </div>
                                               </div>
                                             </td>
-                                            <td className="py-3 px-3 text-right font-mono font-medium align-middle">₹{unitPrice.toLocaleString('en-IN')}</td>
-                                            <td className="py-3 px-3 text-center font-bold text-ad-text align-middle">{item.quantity}</td>
-                                            <td className="py-3 px-3 text-right font-mono font-bold text-ad-text text-[13px] align-middle">
+                                            <td className="py-2 px-2.5 text-right font-mono font-medium align-middle whitespace-nowrap">₹{unitPrice.toLocaleString('en-IN')}</td>
+                                            <td className="py-2 px-2 text-center font-bold text-ad-text align-middle whitespace-nowrap">{item.quantity}</td>
+                                            <td className="py-2 px-2.5 text-right font-mono font-bold text-ad-text text-xs align-middle whitespace-nowrap">
                                               ₹{lineSubtotal.toLocaleString('en-IN')}
                                             </td>
-                                            <td className="py-3 px-3 text-right whitespace-nowrap align-middle">
+                                            <td className="py-2 px-2 text-right whitespace-nowrap align-middle">
                                               <div className="inline-flex gap-1">
                                                 <button
                                                   type="button"
                                                   onClick={() => setCartItemModal({ mode: 'EDIT', cartId: idVal, item })}
-                                                  className="p-1.5 rounded-lg text-ad-primary hover:bg-ad-primary/15 transition-colors cursor-pointer"
+                                                  className="p-1 rounded text-ad-primary hover:bg-ad-primary/15 transition-colors cursor-pointer"
                                                   title="Edit cart item"
                                                   aria-label={`Edit cart item ${item.cart_item_id}`}
                                                 >
@@ -1658,7 +1658,7 @@ function DataManager({ entity }) {
                                                 <button
                                                   type="button"
                                                   onClick={() => setDeleteCartItemCtx(item)}
-                                                  className="p-1.5 rounded-lg text-ad-danger hover:bg-ad-danger/15 transition-colors cursor-pointer"
+                                                  className="p-1 rounded text-ad-danger hover:bg-ad-danger/15 transition-colors cursor-pointer"
                                                   title="Delete cart item"
                                                   aria-label={`Delete cart item ${item.cart_item_id}`}
                                                 >
@@ -1672,13 +1672,13 @@ function DataManager({ entity }) {
                                     </tbody>
                                     <tfoot>
                                       <tr className="border-t-2 border-ad-border bg-ad-card/30 font-bold">
-                                        <td colSpan={3} className="py-2 px-3 text-right text-ad-muted uppercase tracking-wider text-[11px]">
+                                        <td colSpan={3} className="py-2 px-2.5 text-right text-ad-muted uppercase tracking-wider text-[10.5px]">
                                           Total Cart Items:
                                         </td>
-                                        <td className="py-2 px-3 text-center text-ad-text font-bold">
+                                        <td className="py-2 px-2 text-center text-ad-text font-bold">
                                           {cartItems.reduce((acc, it) => acc + Number(it.quantity || 0), 0)} pcs
                                         </td>
-                                        <td className="py-2 px-3 text-right font-mono text-ad-text text-[13px] font-bold">
+                                        <td className="py-2 px-2.5 text-right font-mono text-ad-text text-xs font-bold whitespace-nowrap">
                                           ₹{cartItems.reduce((acc, it) => {
                                             const prod = lookups.productMap?.[String(it.product_id)] || {};
                                             const up = Number(it.unit_price || prod.price || 0);
