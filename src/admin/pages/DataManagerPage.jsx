@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, Check, CheckCircle2, ChevronRight, Clock, Download, Image as ImageIcon, Minus, Package, Pencil, Plus, Receipt, RotateCcw, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, Upload, Zap } from 'lucide-react';
-import { adminFetch, adminImageUrl, callProc, fetchRows, PLACEHOLDER_IMG, productImage } from '../api/adminApi';
+import { adminFetch, adminImageUrl, callProc, fetchRows, formatAdminDate, formatAdminDateOrTime, isDateLikeColumnOrValue, PLACEHOLDER_IMG, productImage } from '../api/adminApi';
 import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISIONS, PK_MAP } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
 import { importRecordsFromFile } from '../lib/importRecords';
@@ -517,18 +517,7 @@ function DataManager({ entity }) {
         const deliveredQty = items.reduce((sum, it) => sum + Math.min(Number(it.quantity || 0), Number(it.delivered_quantity || 0)), 0);
         const effectiveStatus = getOrderStatus(o);
 
-        let formattedDate = '-';
-        if (o.created_at) {
-          try {
-            const d = new Date(o.created_at);
-            formattedDate = d.toLocaleString('en-IN', {
-              year: 'numeric', month: 'short', day: 'numeric',
-              hour: '2-digit', minute: '2-digit'
-            });
-          } catch {
-            formattedDate = String(o.created_at);
-          }
-        }
+        const formattedDate = o.created_at ? formatAdminDateOrTime(o.created_at, 'created_at') : '-';
 
         const itemsSummary = items.map(it => {
           const pName = it.product_name || lookups.products?.[it.product_id] || `Product #${it.product_id}`;
@@ -810,8 +799,8 @@ function DataManager({ entity }) {
       return (
         <span
           className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide border ${isCompleted
-              ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400 shadow-2xs'
-              : 'border-amber-500/40 bg-amber-500/15 text-amber-400'
+            ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400 shadow-2xs'
+            : 'border-amber-500/40 bg-amber-500/15 text-amber-400'
             }`}
         >
           <span className={`w-1.5 h-1.5 rounded-full ${isCompleted ? 'bg-emerald-400 ring-2 ring-emerald-400/30' : 'bg-amber-400'}`} />
@@ -843,10 +832,10 @@ function DataManager({ entity }) {
           {entity === 'orders' && (
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold border ${isAllDelivered
-                  ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400'
-                  : totalDelivered > 0
-                    ? 'border-amber-500/30 bg-amber-500/15 text-amber-400'
-                    : 'border-ad-border bg-ad-card/60 text-ad-muted'
+                ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-400'
+                : totalDelivered > 0
+                  ? 'border-amber-500/30 bg-amber-500/15 text-amber-400'
+                  : 'border-ad-border bg-ad-card/60 text-ad-muted'
                 }`}
               title={`${totalDelivered} of ${totalOrdered} items delivered`}
             >
@@ -920,17 +909,12 @@ function DataManager({ entity }) {
     if (h === 'festival_id' && val !== '-') {
       return lookups.festivals[val] ? `${lookups.festivals[val]} (${val})` : (row.festival_name || val);
     }
-    if ((h === 'birthday_date' || h === 'anniversary_date') && val !== '-') {
-      try {
-        const d = new Date(val);
-        if (!isNaN(d.getTime())) {
-          return (
-            <span className="font-mono text-xs text-ad-text">
-              {d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-            </span>
-          );
-        }
-      } catch { /* fallback to string */ }
+    if (isDateLikeColumnOrValue(h, val)) {
+      return (
+        <span className="font-mono text-xs text-ad-text whitespace-nowrap" title={String(val)}>
+          {formatAdminDateOrTime(val, h)}
+        </span>
+      );
     }
     if (h === 'gst_number' && val !== '-') {
       return <span className="font-mono text-xs font-semibold tracking-wider text-ad-text uppercase">{val}</span>;
@@ -947,6 +931,11 @@ function DataManager({ entity }) {
     if (h === 'festival_id') return 'Festival Name';
     if (h === 'birthday_date') return 'Birthday';
     if (h === 'anniversary_date') return 'Anniversary';
+    if (h === 'created_at') return 'Created At';
+    if (h === 'updated_at') return 'Updated At';
+    if (h === 'start_date') return 'Start Date';
+    if (h === 'end_date') return 'End Date';
+    if (h === 'order_date') return 'Order Date';
     if (h === 'gst_number') return 'GST Number';
     if (h === 'cart_total') return 'Cart Total';
     if (h === 'total_items') return 'Total Items';
@@ -1097,7 +1086,7 @@ function DataManager({ entity }) {
               Showing <strong className="text-ad-text font-bold">{displayedRows.length}</strong> of <strong className="text-ad-text font-bold">{rows.length}</strong> {rows.length === 1 ? 'order' : 'orders'}
               {(startDate || endDate) && (
                 <span className="ml-1 text-ad-primary font-medium">
-                  ({startDate || 'earliest'} → {endDate || 'latest'})
+                  ({startDate ? formatAdminDate(startDate) : 'earliest'} → {endDate ? formatAdminDate(endDate) : 'latest'})
                 </span>
               )}
             </div>
@@ -1120,7 +1109,7 @@ function DataManager({ entity }) {
             }
             description={
               startDate || endDate
-                ? `No orders match ${orderStatusFilter === 'ALL' ? '' : orderStatusFilter + ' status'} between ${startDate || 'earliest'} and ${endDate || 'latest'}. Try adjusting or clearing filters.`
+                ? `No orders match ${orderStatusFilter === 'ALL' ? '' : orderStatusFilter + ' status'} between ${startDate ? formatAdminDate(startDate) : 'earliest'} and ${endDate ? formatAdminDate(endDate) : 'latest'}. Try adjusting or clearing filters.`
                 : `There are currently no orders with ${orderStatusFilter} status. Switch back to "All Orders" to view every recorded order.`
             }
           >
@@ -1248,7 +1237,7 @@ function DataManager({ entity }) {
                           <div className="inline-flex gap-1.5">
                             {entity !== 'product_image' && (
                               <button type="button" onClick={() => openEdit(idVal)} className="inline-flex items-center gap-1 rounded-md border border-ad-primary/30 bg-ad-primary/10 px-2.5 py-1.5 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white cursor-pointer" aria-label={`Edit record ${idVal}`}>
-                                <Pencil className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Edit</span>
+                                <Pencil className="w-3.5 h-3.5" />
                               </button>
                             )}
                             <button
@@ -1262,7 +1251,7 @@ function DataManager({ entity }) {
                               className="inline-flex items-center gap-1 rounded-md border border-ad-danger/30 bg-ad-danger/10 px-2.5 py-1.5 text-xs font-semibold text-ad-danger hover:bg-ad-danger hover:text-white cursor-pointer"
                               aria-label={`Delete record ${idVal}`}
                             >
-                              <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Delete</span>
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>
@@ -1289,6 +1278,7 @@ function DataManager({ entity }) {
                                       {orderItems.length} {orderItems.length === 1 ? 'item' : 'items'} in this order
                                       {row.customer_name ? ` · Customer: ${row.customer_name}` : ''}
                                       {row.phone ? ` (${row.phone})` : ''}
+                                      {row.created_at ? ` · Placed: ${formatAdminDateOrTime(row.created_at, 'created_at')}` : ''}
                                     </p>
                                   </div>
                                 </div>
@@ -2262,18 +2252,16 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                                   key={cat.category_id}
                                   type="button"
                                   onClick={() => toggleCategory(cat.category_id)}
-                                  className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${
-                                    isChecked
+                                  className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${isChecked
                                       ? 'border-ad-primary/50 bg-ad-primary/10 text-ad-text shadow-2xs ring-1 ring-ad-primary/30 font-medium'
                                       : 'border-ad-border/70 bg-ad-surface hover:bg-ad-hover hover:border-ad-border text-ad-muted hover:text-ad-text'
-                                  }`}
+                                    }`}
                                 >
                                   <div className="flex items-center gap-2 min-w-0">
-                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                                      isChecked
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isChecked
                                         ? 'bg-ad-primary border-ad-primary text-white shadow-2xs'
                                         : 'border-ad-border bg-ad-card'
-                                    }`}>
+                                      }`}>
                                       {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                                     </div>
                                     <span className="text-xs truncate text-ad-text">{cat.name}</span>
@@ -2319,8 +2307,8 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                               <div className="flex items-center gap-2">
                                 <span
                                   className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide border ${isDoneStatus
-                                      ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400 shadow-2xs'
-                                      : 'border-amber-500/40 bg-amber-500/15 text-amber-400'
+                                    ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400 shadow-2xs'
+                                    : 'border-amber-500/40 bg-amber-500/15 text-amber-400'
                                     }`}
                                 >
                                   <span className={`w-1.5 h-1.5 rounded-full ${isDoneStatus ? 'bg-emerald-400' : 'bg-amber-400'}`} />

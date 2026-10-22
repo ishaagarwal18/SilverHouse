@@ -3,7 +3,7 @@ import {
   Church, CircleCheck, CircleX, Clock, Compass, Crown, Gem, HandHeart, Images, List, Mail, MessageCircle,
   Paintbrush, Phone, Receipt, RefreshCw, Search, Send, Sparkles, User
 } from 'lucide-react';
-import { adminFetch, adminImageUrl, PLACEHOLDER_IMG } from '../api/adminApi';
+import { adminFetch, adminImageUrl, formatAdminDateOrTime, PLACEHOLDER_IMG } from '../api/adminApi';
 import { ORDER_DECISIONS } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
 import { Button, Card, DecisionBadge, EmptyState, ImageLightbox, LoadingBlock, PageHeader, PillGroup, Spinner } from '../components/ui';
@@ -141,7 +141,7 @@ function OrderCard({ order: o, onSaved, onOpenImage }) {
   const CategoryIcon = categoryIcon(o.custom_category);
   const phoneDigits = String(o.customer_phone || '').replace(/[^0-9]/g, '');
   const dateStr = o.created_at
-    ? new Date(o.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    ? formatAdminDateOrTime(o.created_at, 'created_at')
     : 'Recently';
 
   const save = async () => {

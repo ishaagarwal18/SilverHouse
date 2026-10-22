@@ -140,3 +140,66 @@ export function productImage(p) {
 export function formatINR(val) {
   return '₹' + (Number(val) || 0).toLocaleString('en-IN');
 }
+
+/** Formats any date / ISO timestamp into clear, unambiguous format: "22 Oct 2026, 04:36 PM" or "22 Oct 2026" */
+export function formatAdminDateOrTime(val, colName = '') {
+  if (val === null || val === undefined || val === '' || val === '-') return '-';
+  try {
+    const col = String(colName || '').toLowerCase();
+    const str = String(val).trim();
+
+    // Check if column is designated for date-only (or string is YYYY-MM-DD)
+    const isDateOnlyCol = ['birthday', 'anniversary', 'birth', 'start_date', 'end_date', 'date'].some(k => col.includes(k)) || /^\d{4}-\d{2}-\d{2}$/.test(str);
+
+    // If string is YYYY-MM-DD, parse year, month, day directly to avoid UTC day-shift
+    const ymd = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isDateOnlyCol && ymd) {
+      const d = new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return str;
+
+    const day = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); // "22 Oct 2026"
+    if (isDateOnlyCol) return day;
+
+    const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }); // "04:36 PM"
+    return `${day}, ${time}`;
+  } catch {
+    return String(val);
+  }
+}
+
+/** Formats a date value as date-only (e.g. "22 Oct 2026") */
+export function formatAdminDate(val) {
+  if (val === null || val === undefined || val === '' || val === '-') return '-';
+  try {
+    const str = String(val).trim();
+    const ymd = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (ymd) {
+      const d = new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return str;
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch {
+    return String(val);
+  }
+}
+
+/** Check if column name or cell value represents a date or timestamp */
+export function isDateLikeColumnOrValue(colName, val) {
+  if (val === null || val === undefined || val === '' || val === '-') return false;
+  const col = String(colName || '').toLowerCase();
+  const dateColKeywords = ['date', '_at', 'time', 'created', 'updated', 'birthday', 'anniversary'];
+  if (dateColKeywords.some(k => col.includes(k))) return true;
+
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (/^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}/.test(trimmed)) return true;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return true;
+  }
+  return false;
+}

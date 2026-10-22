@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Chart, registerables } from 'chart.js';
 import { Banknote, BarChart3, ChartBar, ChartPie, Crown, History, IndianRupee, Paintbrush, RefreshCw, Scale, TrendingUp } from 'lucide-react';
-import { adminFetch, formatINR } from '../api/adminApi';
+import { adminFetch, formatAdminDateOrTime, formatINR } from '../api/adminApi';
 import { useAdminUI } from '../context/AdminUIContext';
 import { Button, Card, DecisionBadge, PageHeader } from '../components/ui';
 
@@ -189,7 +189,7 @@ export default function AnalyticsPage() {
                   <td className="px-4 py-3">{o.customer_phone || '-'}</td>
                   <td className="px-4 py-3 font-bold">{formatINR(o.final_payable)}</td>
                   <td className="px-4 py-3"><DecisionBadge status={o.confirm} /></td>
-                  <td className="px-4 py-3 whitespace-nowrap">{o.created_at ? new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '-'}</td>
+                  <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-ad-text">{o.created_at ? formatAdminDateOrTime(o.created_at, 'created_at') : '-'}</td>
                 </tr>
               ))}
             </tbody>
