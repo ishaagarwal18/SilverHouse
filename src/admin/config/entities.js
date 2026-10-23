@@ -28,6 +28,7 @@ export const PK_MAP = {
   category: 'category_id',
   image: 'image_id',
   make_master: 'm_id',
+  purity: 'id',
   product_image: 'image_id',
   festival: 'id',
   festival_category: 'id',
@@ -51,6 +52,7 @@ export const ENTITY_CONFIG = {
   category: { singular: 'Category', plural: 'Categories', icon: LayoutGrid, hasFormPage: true },
   image: { singular: 'Image', plural: 'Images', icon: Image, hasFormPage: true },
   make_master: { singular: 'Make Master', plural: 'Make Master', icon: Wrench, hasFormPage: true },
+  purity: { singular: 'Purity', plural: 'Purities', icon: ShieldCheck, hasFormPage: true },
   product_image: { singular: 'Product Image', plural: 'Product Images', icon: Link, hasFormPage: true },
   festival: { singular: 'Festival', plural: 'Festivals', icon: Calendar },
   festival_category: { singular: 'Festival Category Mapping', plural: 'Festival Categories', icon: Sparkles },
@@ -70,7 +72,7 @@ export const ENTITY_CONFIG = {
 };
 
 /** Tables whose rows can be bulk-imported from CSV / Excel / Word files. */
-export const IMPORTABLE_ENTITIES = ['product', 'category', 'image', 'make_master', 'product_image'];
+export const IMPORTABLE_ENTITIES = ['product', 'category', 'image', 'make_master', 'purity', 'product_image'];
 
 export function getEntityConfig(entity) {
   const label = String(entity || '').replace(/_/g, ' ');
@@ -199,6 +201,9 @@ export const ENTITY_FORM_SCHEMAS = {
   festival_category: [
     { name: 'festival_id', label: 'Festival Name', type: 'select', required: true, fullWidth: true },
     { name: 'category_id', label: 'Categories', type: 'select', required: true, fullWidth: true }
+  ],
+  purity: [
+    { name: 'purity', label: 'Silver Purity Name', type: 'text', required: true, placeholder: 'e.g. 92.5 Sterling Silver (Standard 925)' }
   ]
 };
 
@@ -214,7 +219,7 @@ export const ADMIN_NAV = [
   },
   {
     label: 'Database Schemas',
-    items: ['product', 'category', 'image', 'make_master'].map(entityNavItem)
+    items: ['product', 'category', 'image', 'make_master', 'purity'].map(entityNavItem)
   },
   {
     label: 'Festivals & Collections',
@@ -244,8 +249,8 @@ function entityNavItem(entity) {
 
 /** Product form option lists shared by the catalog modal and the product form page. */
 export const PURITY_OPTIONS = [
-  { value: '92.5 Sterling Silver', label: '92.5 Sterling Silver (Standard 925)' },
-  { value: '99.9 Pure Silver', label: '99.9 Pure Silver (Fine 999)' }
+  { value: '92.5 Sterling Silver (Standard 925)', label: '92.5 Sterling Silver (Standard 925)' },
+  { value: '99.9 Pure Silver (Fine 999)', label: '99.9 Pure Silver (Fine 999)' }
 ];
 
 export const FINISH_OPTIONS = [

@@ -2346,6 +2346,7 @@ app.post('/api/data', async (req, res) => {
             'image', 'images',
             'product_image', 'product_images',
             'make_master', 'makes',
+            'purity', 'purities',
             'company',
             'store_parameter'
         ];

@@ -170,7 +170,9 @@ function normalizeRowData(rawRow) {
 
     if (key === 'purity' && typeof val === 'string') {
       const s = val.toLowerCase();
-      clean[key] = (s.includes('99') || s.includes('pure') || s.includes('fine')) ? '99.9 Pure Silver' : '92.5 Sterling Silver';
+      clean[key] = (s.includes('99') || s.includes('pure') || s.includes('fine'))
+        ? '99.9 Pure Silver (Fine 999)'
+        : '92.5 Sterling Silver (Standard 925)';
     } else if (key === 'ideal_for' && typeof val === 'string') {
       const s = val.toLowerCase();
       if (s.startsWith('all')) clean[key] = 'ALL';
@@ -307,10 +309,10 @@ export async function importRecordsFromFile({ file, fileHandle = null, entity, m
     // eslint-disable-next-line eqeqeq
     let exists = !isBlank(idVal) && existingRows.some(r => r[pkField] == idVal);
 
-    // Avoid duplicates when the id column is omitted: match by product title / category name
-    if (!exists && (entity === 'product' || entity === 'category')) {
-      const label = String((entity === 'product' ? (values.title || values.name) : values.name) || '').trim().toLowerCase();
-      const match = label && existingRows.find(r => String((entity === 'product' ? (r.title || r.name) : r.name) || '').trim().toLowerCase() === label);
+    // Avoid duplicates when the id column is omitted: match by product title / category name / purity name
+    if (!exists && (entity === 'product' || entity === 'category' || entity === 'purity')) {
+      const label = String((entity === 'product' ? (values.title || values.name) : (values.name || values.purity)) || '').trim().toLowerCase();
+      const match = label && existingRows.find(r => String((entity === 'product' ? (r.title || r.name) : (r.name || r.purity)) || '').trim().toLowerCase() === label);
       if (match) {
         idVal = match[pkField];
         values[pkField] = idVal;

@@ -15,12 +15,19 @@ CREATE TABLE make_master (
 );
 GO
 
+-- 2b. Silver Purity Master Table
+CREATE TABLE purity (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    purity NVARCHAR(100) NOT NULL
+);
+GO
+
 -- 3. Product Table
 CREATE TABLE product (
     product_id INT PRIMARY KEY,
     category_id INT NOT NULL,
     m_id INT,                                 
-    purity VARCHAR(30) NOT NULL,
+    purity NVARCHAR(100) NOT NULL,
     weight VARCHAR(30) NOT NULL,
     title VARCHAR(50) NOT NULL,
     description VARCHAR(200) NOT NULL,

@@ -621,6 +621,93 @@ END;
 GO
 
 -- =========================================================================
+-- PROCEDURE 4b: SP_purity
+-- =========================================================================
+CREATE OR ALTER PROCEDURE dbo.SP_purity
+    @Opr       NVARCHAR(10),
+    @JSONstr   NVARCHAR(MAX) = NULL,
+    @Condition NVARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @TargetId INT = TRY_CAST(@Condition AS INT);
+    DECLARE @PurityVal NVARCHAR(100);
+
+    IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
+    BEGIN
+        SELECT
+            @PurityVal = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.purity')));
+    END
+
+    IF @Opr IN ('EDIT', 'DELETE')
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM dbo.purity WHERE id = @TargetId)
+        BEGIN
+            RAISERROR('Not Found: Purity entry with ID %d does not exist.', 16, 1, @TargetId);
+            RETURN;
+        END
+    END
+
+    IF @Opr = 'SELECT'
+    BEGIN
+        IF @TargetId IS NOT NULL AND @TargetId > 0
+            SELECT id, purity FROM dbo.purity WHERE id = @TargetId;
+        ELSE
+            SELECT id, purity FROM dbo.purity ORDER BY id ASC;
+    END
+
+    ELSE IF @Opr = 'ADD'
+    BEGIN
+        IF @PurityVal IS NULL OR LEN(@PurityVal) = 0
+        BEGIN
+            RAISERROR('Validation Error: purity cannot be blank.', 16, 1);
+            RETURN;
+        END
+
+        IF EXISTS (SELECT 1 FROM dbo.purity WHERE purity = @PurityVal)
+        BEGIN
+            RAISERROR('Validation Error: Purity "%s" already exists.', 16, 1, @PurityVal);
+            RETURN;
+        END
+
+        INSERT INTO dbo.purity (purity)
+        VALUES (@PurityVal);
+
+        DECLARE @NewId INT = SCOPE_IDENTITY();
+        SELECT @NewId AS id, @NewId AS NewPurityId, 'Purity entry added successfully' AS [Message];
+    END
+
+    ELSE IF @Opr = 'EDIT'
+    BEGIN
+        IF @PurityVal IS NULL OR LEN(@PurityVal) = 0
+        BEGIN
+            RAISERROR('Validation Error: purity cannot be blank on update.', 16, 1);
+            RETURN;
+        END
+
+        IF EXISTS (SELECT 1 FROM dbo.purity WHERE purity = @PurityVal AND id <> @TargetId)
+        BEGIN
+            RAISERROR('Validation Error: Purity "%s" already exists.', 16, 1, @PurityVal);
+            RETURN;
+        END
+
+        UPDATE dbo.purity
+        SET purity = @PurityVal
+        WHERE id = @TargetId;
+
+        SELECT @TargetId AS id, 'Purity entry updated successfully' AS [Message];
+    END
+
+    ELSE IF @Opr = 'DELETE'
+    BEGIN
+        DELETE FROM dbo.purity WHERE id = @TargetId;
+        SELECT @TargetId AS id, 'Purity entry deleted successfully' AS [Message];
+    END
+END;
+GO
+
+-- =========================================================================
 -- PROCEDURE 5: SP_product_image
 -- =========================================================================
 CREATE OR ALTER PROCEDURE dbo.SP_product_image
@@ -2938,7 +3025,7 @@ BEGIN
     END
 
     -- Whitelist includes catalog entities, e-commerce entities, company, viewed, store_parameter, phone_otp, review
-    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'product_image', 'user', 'address', 'cart', 'cart_item', 'orders', 'order', 'order_item', 'wishlist', 'company', 'viewed', 'store_parameter', 'phone_otp', 'review', 'reviews')
+    IF @proc_name NOT IN ('product', 'category', 'image', 'make_master', 'purity', 'purities', 'product_image', 'user', 'address', 'cart', 'cart_item', 'orders', 'order', 'order_item', 'wishlist', 'company', 'viewed', 'store_parameter', 'phone_otp', 'review', 'reviews')
     BEGIN
         SET @Response = 'SECURITY ERROR: Unauthorized or unsupported proc_name "' + @proc_name + '".';
         SELECT @Response AS [Response_Status];
@@ -2979,6 +3066,8 @@ BEGIN
             EXEC dbo.SP_image @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
         ELSE IF @proc_name = 'make_master'
             EXEC dbo.SP_make_master @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
+        ELSE IF @proc_name IN ('purity', 'purities')
+            EXEC dbo.SP_purity @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
         ELSE IF @proc_name = 'product_image'
             EXEC dbo.SP_product_image @Opr = @Opr, @JSONstr = @JSONstr, @Condition = @Condition;
         ELSE IF @proc_name = 'user'

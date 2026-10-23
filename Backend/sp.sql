@@ -80,6 +80,15 @@ BEGIN
                 SELECT * FROM dbo.make_master ORDER BY m_id ASC;
         END
 
+        -- 4b. Purity Entity Fetcher
+        ELSE IF @proc_name IN ('purity', 'purities')
+        BEGIN
+            IF @Condition IS NOT NULL AND @Condition <> ''
+                SELECT id, purity FROM dbo.purity WHERE id = TRY_CAST(@Condition AS INT);
+            ELSE
+                SELECT id, purity FROM dbo.purity ORDER BY id ASC;
+        END
+
         -- 5. Product-Image Mapping Fetcher
         ELSE IF @proc_name IN ('product_image', 'product_images')
         BEGIN

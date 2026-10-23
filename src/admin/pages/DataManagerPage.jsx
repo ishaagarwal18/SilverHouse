@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, Check, CheckCircle2, ChevronRight, Clock, Download, Image as ImageIcon, Minus, Package, Pencil, Plus, Receipt, RotateCcw, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, Upload, Zap } from 'lucide-react';
 import { adminFetch, adminImageUrl, callProc, fetchRows, formatAdminDate, formatAdminDateOrTime, isDateLikeColumnOrValue, PLACEHOLDER_IMG, productImage } from '../api/adminApi';
-import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISIONS, PK_MAP } from '../config/entities';
+import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISIONS, PK_MAP, PURITY_OPTIONS } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
 import { importRecordsFromFile } from '../lib/importRecords';
 import {
@@ -148,7 +148,7 @@ function DataManager({ entity }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [data, cats, makes, festList, itemsData, prodList, cartItemsData, festCatsData, userList] = await Promise.all([
+      const [data, cats, makes, festList, itemsData, prodList, cartItemsData, festCatsData, userList, purList] = await Promise.all([
         fetchRows(entity),
         fetchRows('category'),
         fetchRows('make_master'),
@@ -157,7 +157,8 @@ function DataManager({ entity }) {
         (entity === 'orders' || entity === 'cart' || entity === 'wishlist') ? fetchRows('product') : Promise.resolve([]),
         entity === 'cart' ? fetchRows('cart_item') : Promise.resolve([]),
         (entity === 'festival' || entity === 'festival_category') ? fetchRows('festival_category') : Promise.resolve([]),
-        (entity === 'wishlist' || entity === 'orders' || entity === 'cart' || entity === 'address') ? fetchRows('user') : Promise.resolve([])
+        (entity === 'wishlist' || entity === 'orders' || entity === 'cart' || entity === 'address') ? fetchRows('user') : Promise.resolve([]),
+        fetchRows('purity')
       ]);
       setRows(data);
       if (entity === 'orders' && Array.isArray(itemsData)) {
@@ -210,6 +211,7 @@ function DataManager({ entity }) {
         festivalList: festList || [],
         productList: prodList || [],
         userList: userList || [],
+        purityList: purList || [],
         festivalCategoryMap,
         festivalCategoryNamesMap,
         festivalCategoryRaw
@@ -2383,6 +2385,17 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                         )}
                       </div>
                     </div>
+                  ) : field.name === 'purity' && entity !== 'purity' ? (
+                    <select id={fieldId} name={field.name} className="ad-input cursor-pointer" defaultValue={String(value || (lookups.purityList?.[0]?.purity || '92.5 Sterling Silver (Standard 925)'))} required={field.required}>
+                      {(lookups.purityList && lookups.purityList.length > 0
+                        ? lookups.purityList
+                        : PURITY_OPTIONS.map(o => ({ id: o.value, purity: o.value }))
+                      ).map(p => (
+                        <option key={p.id || p.purity} value={p.purity}>
+                          {p.purity}
+                        </option>
+                      ))}
+                    </select>
                   ) : field.name === 'category_id' ? (
                     <select id={fieldId} name={field.name} className="ad-input cursor-pointer" defaultValue={String(value)} required={field.required}>
                       <option value="">-- Select Category --</option>

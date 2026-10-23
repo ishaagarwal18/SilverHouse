@@ -30,6 +30,13 @@ const SIMPLE_FORMS = {
     addDescription: 'Register a new craft or make type',
     saveLabel: 'Save Make Type'
   },
+  purity: {
+    initial: { purity: '' },
+    newIdKeys: ['NewPurityId', 'id'],
+    editDescription: 'Update silver purity specification',
+    addDescription: 'Register a new standard silver purity option',
+    saveLabel: 'Save Purity'
+  },
   product_image: {
     initial: { product_id: '', image_id: '' },
     addOnly: true,
@@ -193,6 +200,12 @@ function SimpleEntityForm({ entity, id, isEdit, spec, onSaved, onCancel }) {
         {entity === 'make_master' && (
           <Field label="Make / Craft Type" required htmlFor="mf-type">
             <input id="mf-type" className="ad-input" required placeholder="e.g. Handmade, Laser Cut, Filigree" value={values.type} onChange={set('type')} />
+          </Field>
+        )}
+
+        {entity === 'purity' && (
+          <Field label="Silver Purity Name" required htmlFor="pf-purity-name" hint="e.g. 92.5 Sterling Silver (Standard 925)">
+            <input id="pf-purity-name" className="ad-input" required placeholder="e.g. 92.5 Sterling Silver (Standard 925)" value={values.purity} onChange={set('purity')} />
           </Field>
         )}
 

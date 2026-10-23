@@ -85,6 +85,7 @@ export default function CatalogPage() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [makes, setMakes] = useState([]);
+  const [purities, setPurities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
@@ -127,8 +128,8 @@ export default function CatalogPage() {
   }, []);
 
   useEffect(() => {
-    Promise.all([fetchRows('category'), fetchRows('make_master')])
-      .then(([cats, mks]) => { setCategories(cats); setMakes(mks); })
+    Promise.all([fetchRows('category'), fetchRows('make_master'), fetchRows('purity')])
+      .then(([cats, mks, purs]) => { setCategories(cats); setMakes(mks); setPurities(purs); })
       .catch(err => showToast('Failed to initialise catalog data: ' + err.message, true));
     fetchProducts();
   }, [fetchProducts, showToast]);
@@ -151,7 +152,7 @@ export default function CatalogPage() {
         && (!filters.category || String(p.category_id) === filters.category)
         && (!filters.make || String(p.make_id || p.m_id) === filters.make)
         && (!filters.color || String(p.color || 'Silver').toLowerCase() === filters.color.toLowerCase())
-        && (!filters.purity || String(p.purity || '').includes(filters.purity))
+        && (!filters.purity || String(p.purity || '') === filters.purity || String(p.purity || '').includes(filters.purity) || (filters.purity.includes('925') && (String(p.purity || '').includes('925') || String(p.purity || '').includes('92.5'))) || (filters.purity.includes('999') && (String(p.purity || '').includes('999') || String(p.purity || '').includes('99.9'))))
         && m.finalPrice >= filters.minPrice && m.finalPrice <= effectiveMaxPrice;
     });
 
@@ -290,6 +291,7 @@ export default function CatalogPage() {
               products={products}
               categories={categories}
               makes={makes}
+              purities={purities}
               maxProductPrice={maxProductPrice}
               onClose={() => setFiltersOpen(false)}
             />
@@ -414,6 +416,7 @@ export default function CatalogPage() {
               initialRow={productModal.product}
               categories={categories}
               makes={makes}
+              purities={purities}
               onCancel={() => setProductModal(null)}
               onSaved={() => { setProductModal(null); fetchProducts(); }}
             />
@@ -587,7 +590,7 @@ function FilterSection({ title, children, aside }) {
   );
 }
 
-function CatalogFilters({ filters, setFilters, products, categories, makes, maxProductPrice = 10000, onClose }) {
+function CatalogFilters({ filters, setFilters, products, categories, makes, purities = [], maxProductPrice = 10000, onClose }) {
   const set = (key, value) => setFilters(f => ({ ...f, [key]: value }));
 
   const currentMaxPrice = filters.maxPrice !== undefined && filters.maxPrice !== null ? filters.maxPrice : maxProductPrice;
@@ -614,11 +617,24 @@ function CatalogFilters({ filters, setFilters, products, categories, makes, maxP
     label: f.label,
     count: f.id ? products.filter(p => String(p.color || 'Silver').toLowerCase() === f.id.toLowerCase()).length : products.length
   }));
-  const purityOptions = PURITY_FILTERS.map(g => ({
-    value: g.id,
-    label: g.label,
-    count: g.id ? products.filter(p => String(p.purity || '').includes(g.id)).length : products.length
-  }));
+  const purityOptions = [
+    { value: '', label: 'All Purities', count: products.length },
+    ...(purities.length > 0
+      ? purities.map(p => ({
+          value: p.purity,
+          label: p.purity,
+          count: products.filter(prod => {
+            const s = String(prod.purity || '');
+            return s === p.purity || (p.purity.includes('925') && (s.includes('925') || s.includes('92.5'))) || (p.purity.includes('999') && (s.includes('999') || s.includes('99.9')));
+          }).length
+        }))
+      : PURITY_FILTERS.slice(1).map(g => ({
+          value: g.id,
+          label: g.label,
+          count: products.filter(p => String(p.purity || '').includes(g.id)).length
+        }))
+    )
+  ];
 
   const minPct = Math.min(100, Math.max(0, (filters.minPrice / maxProductPrice) * 100));
   const maxPct = Math.min(100, Math.max(0, (currentMaxPrice / maxProductPrice) * 100));

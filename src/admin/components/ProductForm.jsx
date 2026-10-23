@@ -11,7 +11,7 @@ const EMPTY_PRODUCT = {
   category_id: '',
   m_id: '',
   title: '',
-  purity: '92.5 Sterling Silver',
+  purity: '92.5 Sterling Silver (Standard 925)',
   weight: '',
   color: 'Silver',
   ideal_for: 'ALL',
@@ -32,7 +32,16 @@ function rowToValues(row) {
   });
   if (!row.title && row.product_name) values.title = row.product_name;
   if (row.make_id && !row.m_id) values.m_id = String(row.make_id);
-  values.purity = String(row.purity || '').includes('99') ? '99.9 Pure Silver' : '92.5 Sterling Silver';
+  const rawPurity = String(row.purity || '').trim();
+  if (rawPurity.includes('99') || rawPurity.includes('Fine')) {
+    values.purity = '99.9 Pure Silver (Fine 999)';
+  } else if (rawPurity.includes('925') || rawPurity.includes('92.5')) {
+    values.purity = '92.5 Sterling Silver (Standard 925)';
+  } else if (rawPurity) {
+    values.purity = rawPurity;
+  } else {
+    values.purity = '92.5 Sterling Silver (Standard 925)';
+  }
   return values;
 }
 
@@ -52,7 +61,7 @@ function computePricing({ price, discount, labour_cost, actual_cost }) {
  * Add / edit form for dbo.product. Used by the catalog modal and the standalone form page.
  * `onSaved(productId, isEdit)` fires after a successful save.
  */
-export default function ProductForm({ productId, initialRow, categories: categoriesProp, makes: makesProp, onSaved, onCancel, inModal = false }) {
+export default function ProductForm({ productId, initialRow, categories: categoriesProp, makes: makesProp, purities: puritiesProp, onSaved, onCancel, inModal = false }) {
   const { showToast } = useAdminUI();
   const isEdit = Boolean(productId);
   const [values, setValues] = useState(() => (initialRow ? rowToValues(initialRow) : EMPTY_PRODUCT));
@@ -63,6 +72,7 @@ export default function ProductForm({ productId, initialRow, categories: categor
   const [stats, setStats] = useState(() => ({ sold: initialRow?.sold || 0, review: initialRow?.review || 0 }));
   const [categories, setCategories] = useState(categoriesProp || []);
   const [makes, setMakes] = useState(makesProp || []);
+  const [purities, setPurities] = useState(puritiesProp || []);
   const [loading, setLoading] = useState(isEdit && !initialRow);
   const [saving, setSaving] = useState(false);
 
@@ -71,15 +81,19 @@ export default function ProductForm({ productId, initialRow, categories: categor
     let cancelled = false;
     (async () => {
       try {
-        const [cats, mks, rows, imgs] = await Promise.all([
+        const [cats, mks, purs, rows, imgs] = await Promise.all([
           categoriesProp ? categoriesProp : fetchRows('category'),
           makesProp ? makesProp : fetchRows('make_master'),
+          puritiesProp ? puritiesProp : fetchRows('purity'),
           isEdit && !initialRow ? fetchRows('product', productId) : null,
           isEdit ? fetchRows('product_image', productId) : Promise.resolve([])
         ]);
         if (cancelled) return;
         setCategories(cats);
         setMakes(mks);
+        if (Array.isArray(purs) && purs.length > 0) {
+          setPurities(purs);
+        }
         if (Array.isArray(imgs)) {
           setImageList(imgs);
         }
@@ -99,7 +113,7 @@ export default function ProductForm({ productId, initialRow, categories: categor
       }
     })();
     return () => { cancelled = true; };
-  }, [productId, isEdit, initialRow, categoriesProp, makesProp, showToast]);
+  }, [productId, isEdit, initialRow, categoriesProp, makesProp, puritiesProp, showToast]);
 
   const handleRemoveImage = async (imgId) => {
     if (!window.confirm(`Are you sure you want to remove Image #${imgId} from this product?`)) return;
@@ -178,7 +192,10 @@ export default function ProductForm({ productId, initialRow, categories: categor
 
         <Field label="Silver Purity" required htmlFor="pf-purity">
           <select id="pf-purity" className="ad-input" required value={values.purity} onChange={set('purity')}>
-            {PURITY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {(purities.length > 0
+              ? purities.map(p => ({ value: p.purity, label: p.purity }))
+              : PURITY_OPTIONS
+            ).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </Field>
 
