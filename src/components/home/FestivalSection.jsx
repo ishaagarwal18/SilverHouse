@@ -154,11 +154,10 @@ export default function FestivalSection({
                     setSelectedCategoryFilter('all');
                     setShowAllProducts(false);
                   }}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 border inline-flex items-center gap-1.5 ${
-                    isSelected
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 border inline-flex items-center gap-1.5 ${isSelected
                       ? 'bg-amber-500 text-white border-amber-500 shadow-sm ring-2 ring-amber-400/40'
                       : 'bg-[var(--th-card)] text-[var(--th-text-sub)] border-[var(--th-border)] hover:border-amber-400'
-                  }`}
+                    }`}
                 >
                   <span>{fest.name}</span>
                   {range && (
@@ -216,11 +215,10 @@ export default function FestivalSection({
             </span>
             <button
               onClick={() => setSelectedCategoryFilter('all')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 border ${
-                selectedCategoryFilter === 'all'
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 border ${selectedCategoryFilter === 'all'
                   ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
                   : 'bg-[var(--th-card)] text-[var(--th-text-sub)] border-[var(--th-border)] hover:border-amber-400'
-              }`}
+                }`}
             >
               All Festive Items ({allFestivalProducts.length})
             </button>
@@ -232,11 +230,10 @@ export default function FestivalSection({
                 <button
                   key={catId}
                   onClick={() => setSelectedCategoryFilter(String(catId))}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 border inline-flex items-center gap-1.5 ${
-                    isSelected
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 border inline-flex items-center gap-1.5 ${isSelected
                       ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
                       : 'bg-[var(--th-card)] text-[var(--th-text-sub)] border-[var(--th-border)] hover:border-amber-400'
-                  }`}
+                    }`}
                 >
                   <Tag className="w-3 h-3 opacity-70" />
                   <span>{cat.name} ({count})</span>
@@ -299,11 +296,10 @@ export default function FestivalSection({
                           e.stopPropagation();
                           onToggleWishlist && onToggleWishlist(product);
                         }}
-                        className={`absolute top-2.5 sm:top-3 right-2.5 sm:right-3 z-10 w-8.5 h-8.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                          isWishlisted
+                        className={`absolute top-2.5 sm:top-3 right-2.5 sm:right-3 z-10 w-8.5 h-8.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${isWishlisted
                             ? 'bg-rose-100 text-rose-600 shadow-md border border-rose-300'
                             : 'bg-[var(--th-card)]/90 text-[var(--th-text-muted)] hover:text-rose-600 hover:bg-[var(--th-card)] shadow-xs border border-[var(--th-border)]'
-                        }`}
+                          }`}
                         title="Save to Wishlist"
                       >
                         <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current text-rose-600' : ''}`} />
@@ -427,7 +423,3 @@ export default function FestivalSection({
     </section>
   );
 }
-
-
-
-

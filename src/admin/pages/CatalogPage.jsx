@@ -73,7 +73,7 @@ function productMetrics(p) {
 
 function stockStatus(stock) {
   if (stock === 0) return { label: 'Out of Stock', icon: CircleX, cls: 'bg-ad-danger text-white' };
-  if (stock <= 5) return { label: `Low Stock (${stock})`, icon: TriangleAlert, cls: 'bg-ad-warning text-slate-900' };
+  if (stock < 5) return { label: `Low Stock (${stock})`, icon: TriangleAlert, cls: 'bg-ad-warning text-slate-900' };
   return { label: `${stock} In Stock`, icon: CircleCheck, cls: 'bg-ad-success text-white' };
 }
 
@@ -95,6 +95,24 @@ export default function CatalogPage() {
   const [deleteIds, setDeleteIds] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  const maxProductPrice = useMemo(() => {
+    if (!products || products.length === 0) return 10000;
+    const highest = Math.max(...products.map(p => productMetrics(p).finalPrice || 0));
+    return Math.max(Math.ceil(highest / 500) * 500, 1000);
+  }, [products]);
+
+  // Adjust maxPrice when products load if it was set to initial default or exceeds current catalog max
+  useEffect(() => {
+    if (products.length > 0) {
+      setFilters(prev => {
+        if (prev.maxPrice === PRICE_MAX || prev.maxPrice > maxProductPrice) {
+          return { ...prev, maxPrice: maxProductPrice };
+        }
+        return prev;
+      });
+    }
+  }, [products, maxProductPrice]);
+
   const fetchProducts = useCallback(async () => {
     try {
       const res = await callProc('product', 'SELECT');
@@ -115,6 +133,8 @@ export default function CatalogPage() {
     fetchProducts();
   }, [fetchProducts, showToast]);
 
+  const effectiveMaxPrice = filters.maxPrice !== undefined && filters.maxPrice !== null ? filters.maxPrice : maxProductPrice;
+
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     const list = products.filter(p => {
@@ -124,7 +144,7 @@ export default function CatalogPage() {
         || [p.product_name, p.title, p.description, p.category_name].some(v => v && String(v).toLowerCase().includes(q));
       const matchesStock = !filters.stock
         || (filters.stock === 'in_stock' && m.stock > 0)
-        || (filters.stock === 'low_stock' && m.stock > 0 && m.stock <= 5)
+        || (filters.stock === 'low_stock' && m.stock > 0 && m.stock < 5)
         || (filters.stock === 'out_of_stock' && m.stock === 0);
       return matchesSearch && matchesStock
         && (!filters.audience || String(p.ideal_for || '').toLowerCase() === filters.audience.toLowerCase())
@@ -132,7 +152,7 @@ export default function CatalogPage() {
         && (!filters.make || String(p.make_id || p.m_id) === filters.make)
         && (!filters.color || String(p.color || 'Silver').toLowerCase() === filters.color.toLowerCase())
         && (!filters.purity || String(p.purity || '').includes(filters.purity))
-        && m.finalPrice >= filters.minPrice && m.finalPrice <= filters.maxPrice;
+        && m.finalPrice >= filters.minPrice && m.finalPrice <= effectiveMaxPrice;
     });
 
     const byPrice = p => productMetrics(p).finalPrice;
@@ -146,7 +166,7 @@ export default function CatalogPage() {
       id_desc: (a, b) => b.product_id - a.product_id
     };
     return list.sort(sorters[filters.sort] || sorters.id_desc);
-  }, [products, filters]);
+  }, [products, filters, effectiveMaxPrice]);
 
   const kpis = useMemo(() => {
     let units = 0;
@@ -159,7 +179,7 @@ export default function CatalogPage() {
       units += qty;
       retail += price * qty;
       cost += (Number(p.actual_cost) || 0) * qty;
-      if (qty <= 5) alerts++;
+      if (qty < 5) alerts++;
     });
     return { units, retail, cost, alerts };
   }, [products]);
@@ -217,7 +237,9 @@ export default function CatalogPage() {
     fetchProducts();
   };
 
-  const activeFilterCount = Object.keys(DEFAULT_FILTERS).filter(k => k !== 'sort' && filters[k] !== DEFAULT_FILTERS[k]).length;
+  const activeFilterCount = Object.keys(DEFAULT_FILTERS).filter(
+    k => k !== 'sort' && filters[k] !== DEFAULT_FILTERS[k] && !(k === 'maxPrice' && (filters[k] === maxProductPrice || filters[k] === PRICE_MAX))
+  ).length;
   const deleteTarget = deleteIds?.length === 1 ? products.find(p => p.product_id === deleteIds[0]) : null;
 
   return (
@@ -268,6 +290,7 @@ export default function CatalogPage() {
               products={products}
               categories={categories}
               makes={makes}
+              maxProductPrice={maxProductPrice}
               onClose={() => setFiltersOpen(false)}
             />
           </Card>
@@ -304,7 +327,7 @@ export default function CatalogPage() {
           ) : filtered.length === 0 ? (
             <Card>
               <EmptyState icon={Search} title="No Inventory Records Found" description="No products match the selected criteria. Try resetting or broadening your filters.">
-                <Button onClick={() => setFilters(DEFAULT_FILTERS)}><RotateCcw className="w-4 h-4" /> Reset Filters</Button>
+                <Button onClick={() => setFilters({ ...DEFAULT_FILTERS, maxPrice: maxProductPrice })}><RotateCcw className="w-4 h-4" /> Reset Filters</Button>
               </EmptyState>
             </Card>
           ) : view === 'grid' ? (
@@ -564,8 +587,11 @@ function FilterSection({ title, children, aside }) {
   );
 }
 
-function CatalogFilters({ filters, setFilters, products, categories, makes, onClose }) {
+function CatalogFilters({ filters, setFilters, products, categories, makes, maxProductPrice = 10000, onClose }) {
   const set = (key, value) => setFilters(f => ({ ...f, [key]: value }));
+
+  const currentMaxPrice = filters.maxPrice !== undefined && filters.maxPrice !== null ? filters.maxPrice : maxProductPrice;
+  const priceStep = Math.max(100, Math.min(500, Math.floor(maxProductPrice / 50)));
 
   const categoryOptions = [
     { value: '', label: 'All Categories', count: products.length },
@@ -594,8 +620,8 @@ function CatalogFilters({ filters, setFilters, products, categories, makes, onCl
     count: g.id ? products.filter(p => String(p.purity || '').includes(g.id)).length : products.length
   }));
 
-  const minPct = (filters.minPrice / PRICE_MAX) * 100;
-  const maxPct = (filters.maxPrice / PRICE_MAX) * 100;
+  const minPct = Math.min(100, Math.max(0, (filters.minPrice / maxProductPrice) * 100));
+  const maxPct = Math.min(100, Math.max(0, (currentMaxPrice / maxProductPrice) * 100));
 
   return (
     <div className="flex flex-col gap-4 p-4 lg:grid lg:grid-cols-4 xl:grid-cols-5 lg:items-end lg:gap-5">
@@ -626,16 +652,20 @@ function CatalogFilters({ filters, setFilters, products, categories, makes, onCl
       <FilterSection title="Signature Finish"><RadioList name="color_filter" options={finishOptions} value={filters.color} onChange={v => set('color', v)} /></FilterSection>
       <FilterSection title="Silver Purity"><RadioList name="purity_filter" options={purityOptions} value={filters.purity} onChange={v => set('purity', v)} /></FilterSection>
 
-      <FilterSection title="Price Range" aside={<span className="normal-case text-ad-primary">{formatINR(filters.minPrice)} – {formatINR(filters.maxPrice)}</span>}>
+      <FilterSection title="Price Range" aside={<span className="normal-case text-ad-primary">{formatINR(filters.minPrice)} – {formatINR(currentMaxPrice)}</span>}>
         <div className="relative h-6">
           <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-ad-hover" />
-          <div className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-ad-primary" style={{ left: `${minPct}%`, width: `${maxPct - minPct}%` }} />
-          <input type="range" className="ad-range" min="0" max={PRICE_MAX} step={PRICE_STEP} value={filters.minPrice} aria-label="Minimum price"
-            onChange={e => set('minPrice', Math.min(Number(e.target.value), filters.maxPrice - PRICE_STEP))} />
-          <input type="range" className="ad-range" min="0" max={PRICE_MAX} step={PRICE_STEP} value={filters.maxPrice} aria-label="Maximum price"
-            onChange={e => set('maxPrice', Math.max(Number(e.target.value), filters.minPrice + PRICE_STEP))} />
+          <div className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-ad-primary" style={{ left: `${minPct}%`, width: `${Math.max(0, maxPct - minPct)}%` }} />
+          <input type="range" className="ad-range" min="0" max={maxProductPrice} step={priceStep} value={filters.minPrice} aria-label="Minimum price"
+            onChange={e => set('minPrice', Math.min(Number(e.target.value), currentMaxPrice - priceStep))} />
+          <input type="range" className="ad-range" min="0" max={maxProductPrice} step={priceStep} value={currentMaxPrice} aria-label="Maximum price"
+            onChange={e => set('maxPrice', Math.max(Number(e.target.value), filters.minPrice + priceStep))} />
         </div>
-        <div className="flex justify-between text-[10.5px] text-ad-muted"><span>₹0</span><span>₹50,000</span><span>₹1,00,000</span></div>
+        <div className="flex justify-between text-[10.5px] text-ad-muted">
+          <span>₹0</span>
+          <span>{formatINR(Math.round(maxProductPrice / 2))}</span>
+          <span>{formatINR(maxProductPrice)}</span>
+        </div>
       </FilterSection>
 
       <FilterSection title="Sort Order">
@@ -645,7 +675,7 @@ function CatalogFilters({ filters, setFilters, products, categories, makes, onCl
       </FilterSection>
 
       <div className="flex gap-2 lg:col-span-full xl:col-span-1 lg:mt-2">
-        <Button className="flex-1" onClick={() => setFilters(DEFAULT_FILTERS)}><RotateCcw className="w-4 h-4" /> Reset</Button>
+        <Button className="flex-1" onClick={() => setFilters({ ...DEFAULT_FILTERS, maxPrice: maxProductPrice })}><RotateCcw className="w-4 h-4" /> Reset</Button>
         <Button variant="primary" className="flex-1 lg:hidden" onClick={onClose}>Show results</Button>
       </div>
     </div>

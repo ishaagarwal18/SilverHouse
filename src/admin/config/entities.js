@@ -129,8 +129,8 @@ export const ENTITY_FORM_SCHEMAS = {
     { name: 'quantity', label: 'Quantity', type: 'number', required: true, default: 1 }
   ],
   wishlist: [
-    { name: 'user_id', label: 'User ID', type: 'number', required: true, placeholder: 'e.g. 1' },
-    { name: 'product_id', label: 'Product ID', type: 'number', required: true, placeholder: 'e.g. 5' }
+    { name: 'user_id', label: 'Customer / User', type: 'select', required: true, fullWidth: true },
+    { name: 'product_id', label: 'Product', type: 'select', required: true, fullWidth: true }
   ],
   user: [
     { name: 'full_name', label: 'Full Name', type: 'text', required: true, placeholder: 'e.g. Isha Agarwal' },
@@ -214,13 +214,13 @@ export const ADMIN_NAV = [
   },
   {
     label: 'Database Schemas',
-    items: ['product', 'category', 'image', 'make_master', 'product_image'].map(entityNavItem)
+    items: ['product', 'category', 'image', 'make_master'].map(entityNavItem)
   },
   {
     label: 'Festivals & Collections',
     items: [
       { to: '/admin/festival-themes', label: 'Festival Theme Manager', icon: Sparkles },
-      ...['festival', 'festival_category'].map(entityNavItem)
+      ...['festival'].map(entityNavItem)
     ]
   },
   {

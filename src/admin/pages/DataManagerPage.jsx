@@ -90,6 +90,8 @@ export default function DataManagerPage() {
   const { entity } = useParams();
   if (entity === 'order_item') return <Navigate to="/admin/data/orders" replace />;
   if (entity === 'cart_item') return <Navigate to="/admin/data/cart" replace />;
+  if (entity === 'product_image') return <Navigate to="/admin/data/product" replace />;
+  if (entity === 'festival_category') return <Navigate to="/admin/data/festival" replace />;
   if (!PK_MAP[entity]) return <Navigate to="/admin/data/product" replace />;
   return <DataManager key={entity} entity={entity} />;
 }
@@ -146,15 +148,16 @@ function DataManager({ entity }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [data, cats, makes, festList, itemsData, prodList, cartItemsData, festCatsData] = await Promise.all([
+      const [data, cats, makes, festList, itemsData, prodList, cartItemsData, festCatsData, userList] = await Promise.all([
         fetchRows(entity),
         fetchRows('category'),
         fetchRows('make_master'),
         fetchRows('festival'),
         entity === 'orders' ? fetchRows('order_item') : Promise.resolve([]),
-        (entity === 'orders' || entity === 'cart') ? fetchRows('product') : Promise.resolve([]),
+        (entity === 'orders' || entity === 'cart' || entity === 'wishlist') ? fetchRows('product') : Promise.resolve([]),
         entity === 'cart' ? fetchRows('cart_item') : Promise.resolve([]),
-        (entity === 'festival' || entity === 'festival_category') ? fetchRows('festival_category') : Promise.resolve([])
+        (entity === 'festival' || entity === 'festival_category') ? fetchRows('festival_category') : Promise.resolve([]),
+        (entity === 'wishlist' || entity === 'orders' || entity === 'cart' || entity === 'address') ? fetchRows('user') : Promise.resolve([])
       ]);
       setRows(data);
       if (entity === 'orders' && Array.isArray(itemsData)) {
@@ -201,9 +204,12 @@ function DataManager({ entity }) {
         festivals: Object.fromEntries((festList || []).map(f => [f.id, f.name || f.shortName || f.id])),
         products: Object.fromEntries((prodList || []).map(p => [p.product_id, p.title || p.name || `Product #${p.product_id}`])),
         productMap: Object.fromEntries((prodList || []).map(p => [String(p.product_id), p])),
+        userMap: Object.fromEntries((userList || []).map(u => [String(u.user_id), u])),
+        users: Object.fromEntries((userList || []).map(u => [u.user_id, u.full_name || u.phone || `User #${u.user_id}`])),
         categoryList: cats || [],
         festivalList: festList || [],
         productList: prodList || [],
+        userList: userList || [],
         festivalCategoryMap,
         festivalCategoryNamesMap,
         festivalCategoryRaw
@@ -385,6 +391,14 @@ function DataManager({ entity }) {
     const keys = Object.keys(rows[0]);
     if (entity === 'orders') return keys.filter(h => !HIDDEN_ORDER_COLUMNS.includes(h));
     if (entity === 'cart') return keys.filter(h => !HIDDEN_CART_COLUMNS.includes(h));
+    if (entity === 'product') {
+      // In product table, category_name and make_type already display the readable names.
+      // Filter out redundant raw numeric foreign keys (category_id and m_id) to avoid duplicate columns.
+      return keys.filter(h => h !== 'category_id' && h !== 'm_id');
+    }
+    if (entity === 'wishlist') {
+      return keys.map(h => (h === 'user_id' ? 'user_name' : h === 'product_id' ? 'product_name' : h));
+    }
     if (entity === 'festival') {
       return [...keys, 'linked_categories'];
     }
@@ -394,8 +408,30 @@ function DataManager({ entity }) {
   const getSortValue = useCallback((row, col) => {
     if (!row) return null;
     const val = row[col];
-    if (val === null || val === undefined || val === '' || val === '-') return null;
+    if (val === null || val === undefined || val === '' || val === '-') {
+      if (entity === 'wishlist') {
+        if (col === 'user_name') {
+          const u = lookups.userMap?.[String(row.user_id)];
+          return u?.full_name || u?.phone || String(row.user_id || '');
+        }
+        if (col === 'product_name') {
+          const p = lookups.productMap?.[String(row.product_id)];
+          return p?.title || p?.product_name || String(row.product_id || '');
+        }
+      }
+      return null;
+    }
 
+    if (entity === 'wishlist') {
+      if (col === 'user_name') {
+        const u = lookups.userMap?.[String(row.user_id)];
+        return u?.full_name || u?.phone || String(row.user_id || '');
+      }
+      if (col === 'product_name') {
+        const p = lookups.productMap?.[String(row.product_id)];
+        return p?.title || p?.product_name || String(row.product_id || '');
+      }
+    }
     if (col === 'category_id') {
       return lookups.categories?.[val] || row.category_name || String(val);
     }
@@ -903,7 +939,37 @@ function DataManager({ entity }) {
         </div>
       );
     }
+    if (entity === 'wishlist') {
+      if (h === 'user_name') {
+        const u = lookups.userMap?.[String(row.user_id)];
+        return (
+          <div>
+            <div className="font-bold text-ad-text">{u?.full_name || u?.name || (row.user_id ? `User #${row.user_id}` : '-')}</div>
+            {u?.phone && <div className="text-[11px] text-ad-muted">{u.phone}</div>}
+          </div>
+        );
+      }
+      if (h === 'product_name') {
+        const p = lookups.productMap?.[String(row.product_id)];
+        const pName = p?.title || p?.product_name || (row.product_id ? `Product #${row.product_id}` : '-');
+        const pImg = p ? adminImageUrl(productImage(p)) : null;
+        return (
+          <div className="flex items-center gap-2.5">
+            {pImg && (
+              <img src={pImg} alt="" className="h-8 w-8 rounded-md border border-ad-border object-cover shrink-0" onError={e => { e.currentTarget.src = PLACEHOLDER_IMG; }} />
+            )}
+            <div className="min-w-0">
+              <div className="font-semibold text-ad-text truncate max-w-[240px]" title={pName}>{pName}</div>
+              {(p?.final_price || p?.price) && <div className="text-[11px] text-ad-muted">₹{Number(p.final_price || p.price).toLocaleString('en-IN')}</div>}
+            </div>
+          </div>
+        );
+      }
+    }
     if (h === 'category_id' && val !== '-') {
+      if (entity === 'category') {
+        return <span className="font-mono text-xs font-semibold text-ad-muted">#{val}</span>;
+      }
       return lookups.categories[val] ? `${lookups.categories[val]} (#${val})` : (row.category_name || val);
     }
     if (h === 'festival_id' && val !== '-') {
@@ -925,10 +991,14 @@ function DataManager({ entity }) {
   };
 
   const columnTitle = h => {
+    if (h === 'user_name') return 'Customer Name';
+    if (h === 'product_name') return 'Product Name';
     if (h === 'linked_categories') return 'Linked Categories';
     if (h === 'order_status') return 'Order Status';
-    if (h === 'category_id') return 'Category Name';
-    if (h === 'festival_id') return 'Festival Name';
+    if (h === 'category_id') return entity === 'category' ? 'Category ID' : 'Category';
+    if (h === 'category_name') return 'Category Name';
+    if (entity === 'category' && h === 'name') return 'Category Name';
+    if (h === 'festival_id') return entity === 'festival' ? 'Festival ID' : 'Festival Name';
     if (h === 'birthday_date') return 'Birthday';
     if (h === 'anniversary_date') return 'Anniversary';
     if (h === 'created_at') return 'Created At';
@@ -941,7 +1011,8 @@ function DataManager({ entity }) {
     if (h === 'total_items') return 'Total Items';
     if (h === 'total_quantity') return 'Total Qty';
     if (entity === 'product') {
-      if (h === 'm_id') return 'Make Master';
+      if (h === 'm_id') return 'Make ID';
+      if (h === 'make_type') return 'Make / Craft';
       if (h === 'title') return 'Product Name';
     }
     return h.replace(/_/g, ' ');
@@ -1716,6 +1787,7 @@ function DataManager({ entity }) {
 
       {recordModal && (
         <RecordModal
+          key={`${entity}-${recordModal.mode}-${recordModal.id || 'new'}`}
           entity={entity}
           mode={recordModal.mode}
           id={recordModal.id}
@@ -2007,7 +2079,11 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
     if (ENTITY_FORM_SCHEMAS[entity]) return ENTITY_FORM_SCHEMAS[entity];
     return Object.keys(rows[0] || {})
       .filter(k => k !== pkField && k !== 'created_at' && k !== 'updated_at')
-      .map(k => ({ name: k, label: k.replace(/_/g, ' ').toUpperCase(), type: 'text' }));
+      .map(k => ({
+        name: k,
+        label: k.replace(/_/g, ' ').toUpperCase(),
+        type: (k.includes('date') || isDateLikeColumnOrValue(k, rows[0]?.[k])) ? 'date' : 'text'
+      }));
   }, [entity, rows, pkField]);
 
   const inspirationImages = entity === 'custom_orders' && rowData.image ? parseImageList(rowData.image) : [];
@@ -2153,9 +2229,42 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {schema.map(field => {
-              const value = rowData[field.name] !== undefined && rowData[field.name] !== null
-                ? rowData[field.name]
+              const rawValue = rowData[field.name];
+              const isDateType = field.type === 'date'
+                || field.name.endsWith('_date')
+                || (field.name.includes('date') && field.name !== 'created_at' && field.name !== 'updated_at');
+
+              let value = rawValue !== undefined && rawValue !== null
+                ? rawValue
                 : (field.name === 'id' && entity === 'festival' && !isEdit ? suggestedNextFestId : (field.default ?? ''));
+
+              // Format date values to YYYY-MM-DD for HTML5 date inputs
+              if (isDateType && value) {
+                if (value instanceof Date) {
+                  value = value.toISOString().slice(0, 10);
+                } else {
+                  const str = String(value).trim();
+                  const match = str.match(/^(\d{4}-\d{2}-\d{2})/);
+                  if (match) {
+                    value = match[1];
+                  } else {
+                    const parsed = new Date(str);
+                    if (!isNaN(parsed.getTime())) {
+                      value = parsed.toISOString().slice(0, 10);
+                    }
+                  }
+                }
+              }
+
+              // Format datetime-local values to YYYY-MM-DDTHH:mm
+              if (field.type === 'datetime-local' && value) {
+                const parsed = new Date(value);
+                if (!isNaN(parsed.getTime())) {
+                  const pad = n => String(n).padStart(2, '0');
+                  value = `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+                }
+              }
+
               const fieldId = `rec-${field.name}`;
               const isFestCatPicker = (field.name === 'category_id' && entity === 'festival_category') || field.name === 'linked_categories' || field.type === 'category_multiselect';
 
@@ -2331,13 +2440,31 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                     <select id={fieldId} name={field.name} className="ad-input cursor-pointer" defaultValue={String(value)} required={field.required}>
                       {(field.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </select>
+                  ) : field.name === 'user_id' && (entity === 'wishlist' || entity === 'cart' || entity === 'address') && (lookups.userList || []).length > 0 ? (
+                    <select id={fieldId} name={field.name} className="ad-input cursor-pointer" defaultValue={String(value)} required={field.required}>
+                      <option value="">-- Select Customer / User --</option>
+                      {(lookups.userList || []).map(u => (
+                        <option key={u.user_id} value={u.user_id}>
+                          {u.full_name || u.phone || `User #${u.user_id}`} (ID: #{u.user_id})
+                        </option>
+                      ))}
+                    </select>
+                  ) : field.name === 'product_id' && (entity === 'wishlist' || entity === 'cart_item' || entity === 'order_item') && (lookups.productList || []).length > 0 ? (
+                    <select id={fieldId} name={field.name} className="ad-input cursor-pointer" defaultValue={String(value)} required={field.required}>
+                      <option value="">-- Select Product --</option>
+                      {(lookups.productList || []).map(p => (
+                        <option key={p.product_id} value={p.product_id}>
+                          {p.title || p.product_name || `Product #${p.product_id}`} (ID: #{p.product_id})
+                        </option>
+                      ))}
+                    </select>
                   ) : field.type === 'textarea' ? (
                     <textarea id={fieldId} name={field.name} rows={3} className="ad-input" defaultValue={typeof value === 'object' ? JSON.stringify(value) : value} required={field.required} placeholder={field.placeholder} />
                   ) : (
                     <input
                       id={fieldId}
                       name={field.name}
-                      type={field.type || 'text'}
+                      type={isDateType ? 'date' : (field.type || 'text')}
                       step={field.step}
                       className={`ad-input ${field.name === 'id' && isEdit && entity === 'festival' ? 'opacity-70 bg-ad-card cursor-not-allowed' : ''}`}
                       defaultValue={typeof value === 'object' ? JSON.stringify(value) : value}
