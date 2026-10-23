@@ -56,8 +56,8 @@ export default function ProductForm({ productId, initialRow, categories: categor
   const { showToast } = useAdminUI();
   const isEdit = Boolean(productId);
   const [values, setValues] = useState(() => (initialRow ? rowToValues(initialRow) : EMPTY_PRODUCT));
-  const [imageUrl, setImageUrl] = useState(() => (initialRow ? productImage(initialRow) : ''));
-  const [originalImage, setOriginalImage] = useState(() => (initialRow ? productImage(initialRow) : ''));
+  const [imageUrl, setImageUrl] = useState('');
+  const [originalImage, setOriginalImage] = useState('');
   const [imageList, setImageList] = useState([]);
   const [deletingImageId, setDeletingImageId] = useState(null);
   const [stats, setStats] = useState(() => ({ sold: initialRow?.sold || 0, review: initialRow?.review || 0 }));
@@ -137,7 +137,7 @@ export default function ProductForm({ productId, initialRow, categories: categor
 
       const targetId = isEdit ? productId : (result.data?.[0]?.NewProductId || result.data?.[0]?.product_id || result.data?.product_id);
       const trimmedImage = imageUrl.trim();
-      if (trimmedImage && trimmedImage !== originalImage) {
+      if (trimmedImage) {
         await linkProductImage(targetId, trimmedImage);
       }
 
