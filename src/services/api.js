@@ -146,6 +146,7 @@ export function normalizeProduct(rawItem) {
     isBestSeller: Boolean(rawItem.is_bestseller || rawItem.isBestSeller || false),
     isCustomizable: Boolean(rawItem.is_customizable || rawItem.isCustomizable || false),
     recipient: rawItem.ideal_for || rawItem.recipient || 'Gifting, Puja',
+    ideal_for: rawItem.ideal_for || rawItem.recipient || 'All',
     images: images,
     color: rawItem.color || 'Silver',
     occasions: Array.isArray(rawItem.occasions) ? rawItem.occasions : (rawItem.ideal_for ? [rawItem.ideal_for] : []),
@@ -216,6 +217,25 @@ export async function fetchCategories() {
     }
   } catch (err) {
     console.warn('[API Service] Category fetch warning:', err);
+  }
+  return [];
+}
+
+/**
+ * Fetches target audience / ideal_for list from Backend Database API (/api/data with proc_name: 'ideal_for').
+ */
+export async function fetchTargetAudiences() {
+  try {
+    const json = await postApiData({
+      proc_name: 'ideal_for',
+      opr: 'SELECT'
+    });
+
+    if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
+      return json.data;
+    }
+  } catch (err) {
+    console.warn('[API Service] Target audience fetch warning:', err);
   }
   return [];
 }

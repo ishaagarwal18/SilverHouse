@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES, PRODUCTS } from '../../data/products';
-import { fetchProducts } from '../../services/api';
+import { fetchProducts, fetchTargetAudiences } from '../../services/api';
 import { getActiveCategoryIds } from '../../utils/festivalUtils';
 import {
   Filter, Grid3X3, Grid2X2, LayoutGrid, ChevronRight, SlidersHorizontal,
@@ -54,6 +54,19 @@ export default function ProductListingPage({
   }); // 2, 3, 4
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [backendItems, setBackendItems] = useState(null);
+  const [targetAudiences, setTargetAudiences] = useState([]);
+
+  // Compute maximum product price dynamically from active catalog items
+  const catalogMaxPrice = useMemo(() => {
+    const list = (products && products.length > 0) ? products : (backendItems || []);
+    if (!list || list.length === 0) return 100000;
+    const highest = Math.max(...list.map(p => Number(p.price || 0)));
+    return Math.max(Math.ceil(highest / 500) * 500, 1000);
+  }, [products, backendItems]);
+
+  const priceStep = useMemo(() => {
+    return Math.max(100, Math.min(500, Math.floor(catalogMaxPrice / 50)));
+  }, [catalogMaxPrice]);
 
   // Sync search keyword with URL param if present
   useEffect(() => {
@@ -72,7 +85,6 @@ export default function ProductListingPage({
     document.title = title;
   }, [selectedCategory, categoryList]);
 
-
   // Sync state if categoryId / subcategoryId route params change
   useEffect(() => {
     setSelectedCategory(categoryId || 'all');
@@ -86,7 +98,7 @@ export default function ProductListingPage({
     }
   }, [colorQueryParam]);
 
-  // Sync budget/price filters with URL search params if present
+  // Sync budget/price filters with URL search params or active catalog dynamic max
   useEffect(() => {
     if (minPriceQuery !== null && !isNaN(Number(minPriceQuery))) {
       setMinPrice(Number(minPriceQuery));
@@ -96,9 +108,16 @@ export default function ProductListingPage({
     if (maxPriceQuery !== null && !isNaN(Number(maxPriceQuery))) {
       setMaxPrice(Number(maxPriceQuery));
     } else if (maxPriceQuery === null) {
-      setMaxPrice(100000);
+      setMaxPrice(catalogMaxPrice);
     }
-  }, [minPriceQuery, maxPriceQuery]);
+  }, [minPriceQuery, maxPriceQuery, catalogMaxPrice]);
+
+  // Adjust maxPrice when products load if it was set to initial fallback or exceeds catalog max
+  useEffect(() => {
+    if (maxPriceQuery === null && catalogMaxPrice > 0) {
+      setMaxPrice(prev => (prev === 100000 || prev > catalogMaxPrice ? catalogMaxPrice : prev));
+    }
+  }, [catalogMaxPrice, maxPriceQuery]);
 
   // Sync weight filters with URL search params if present
   useEffect(() => {
@@ -128,6 +147,41 @@ export default function ProductListingPage({
     loadFilteredData();
     return () => { isMounted = false; };
   }, [products]);
+
+  // Fetch live target audiences from target audience table (dbo.ideal_for)
+  useEffect(() => {
+    let isMounted = true;
+    fetchTargetAudiences().then((rows) => {
+      if (isMounted && Array.isArray(rows) && rows.length > 0) {
+        setTargetAudiences(rows);
+      }
+    });
+    return () => { isMounted = false; };
+  }, []);
+
+  // Format dynamic target audience filter options
+  const audienceList = useMemo(() => {
+    if (targetAudiences && targetAudiences.length > 0) {
+      const list = [{ id: 'all', label: 'All Items' }];
+      targetAudiences.forEach((t) => {
+        const name = String(t.ideal_for || '').trim();
+        if (!name || name.toLowerCase() === 'all') return;
+        let label = name;
+        if (name.toLowerCase() === 'puja') label = 'Puja & Devotion';
+        else if (name.toLowerCase() === 'kids') label = 'Baby & Kids';
+        list.push({ id: name, label });
+      });
+      return list;
+    }
+    return [
+      { id: 'all', label: 'All Items' },
+      { id: 'Puja', label: 'Puja & Devotion' },
+      { id: 'Men', label: 'Men' },
+      { id: 'Women', label: 'Women' },
+      { id: 'Kids', label: 'Baby & Kids' },
+      { id: 'Unisex', label: 'Unisex' }
+    ];
+  }, [targetAudiences]);
 
   const VIRTUAL_CATEGORIES = {
     women: {
@@ -380,6 +434,11 @@ export default function ProductListingPage({
     if (!filter || filter === 'all') return true;
     const f = filter.toLowerCase().trim();
 
+    // Direct match against p.ideal_for or recipient from database
+    const pAudience = String(p.ideal_for || p.recipient || p.idealFor || '').toLowerCase().trim();
+    if (pAudience === 'all') return true;
+    if (pAudience === f) return true;
+
     if (f === 'puja' || f === 'pooja') {
       const occs = Array.isArray(p.occasions) ? p.occasions.map(o => o.toLowerCase()) : [];
       const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
@@ -412,6 +471,11 @@ export default function ProductListingPage({
         recipient.includes('baby') || recipient.includes('kids') || recipient.includes('child') ||
         name.includes('nazariya') || name.includes('baby')
       );
+    }
+
+    if (f === 'unisex') {
+      const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+      return recipient.includes('unisex') || recipient.includes('all');
     }
 
     if (f === 'gifting' || f === 'gift') {
@@ -759,7 +823,7 @@ export default function ProductListingPage({
     setSelectedRecipient('all');
     setSelectedColor('all');
     setMinPrice(0);
-    setMaxPrice(100000);
+    setMaxPrice(catalogMaxPrice);
     setMinWeight(0);
     setMaxWeight(10000);
     setInStockOnly(false);
@@ -887,7 +951,7 @@ export default function ProductListingPage({
             </span>
 
             {/* Active Filter Badges */}
-            {(selectedCategory !== 'all' || selectedPurity !== 'all' || selectedColor !== 'all' || selectedRecipient !== 'all' || searchQuery || inStockOnly || minPrice > 0 || maxPrice < 100000 || minWeight > 0 || maxWeight < 10000) && (
+            {(selectedCategory !== 'all' || selectedPurity !== 'all' || selectedColor !== 'all' || selectedRecipient !== 'all' || searchQuery || inStockOnly || minPrice > 0 || maxPrice < catalogMaxPrice || minWeight > 0 || maxWeight < 10000) && (
               <div className="flex items-center space-x-1.5 flex-wrap">
                 {selectedCategory !== 'all' && (
                   <span className="bg-[var(--th-accent-light)] border border-[var(--th-accent)]/40 text-[var(--th-accent)] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs">
@@ -907,10 +971,10 @@ export default function ProductListingPage({
                     <button onClick={() => setSelectedPurity('all')} className="hover:opacity-75 ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
-                {(minPrice > 0 || maxPrice < 100000) && (
+                {(minPrice > 0 || maxPrice < catalogMaxPrice) && (
                   <span className="bg-[var(--th-primary-light)] border border-[var(--th-border)] text-[var(--th-primary)] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs font-outfit">
                     <span>₹{minPrice.toLocaleString('en-IN')} - ₹{maxPrice.toLocaleString('en-IN')}</span>
-                    <button onClick={() => { setMinPrice(0); setMaxPrice(100000); }} className="hover:opacity-75 ml-1"><X className="w-3 h-3" /></button>
+                    <button onClick={() => { setMinPrice(0); setMaxPrice(catalogMaxPrice); }} className="hover:opacity-75 ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
                 {(minWeight > 0 || maxWeight < 10000) && (
@@ -922,7 +986,7 @@ export default function ProductListingPage({
                 )}
                 {selectedRecipient !== 'all' && (
                   <span className="bg-[var(--th-primary-light)] border border-[var(--th-border)] text-[var(--th-primary)] text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-xs">
-                    <span>Occasion: {selectedRecipient}</span>
+                    <span>Target Audience: {selectedRecipient}</span>
                     <button onClick={() => setSelectedRecipient('all')} className="hover:opacity-75 ml-1"><X className="w-3 h-3" /></button>
                   </span>
                 )}
@@ -1253,19 +1317,19 @@ export default function ProductListingPage({
                 <div
                   className="absolute h-1.5 bg-[var(--th-primary)] rounded-full transition-all"
                   style={{
-                    left: `${(minPrice / 100000) * 100}%`,
-                    width: `${Math.max(0, ((maxPrice - minPrice) / 100000) * 100)}%`
+                    left: `${Math.min(100, Math.max(0, (minPrice / catalogMaxPrice) * 100))}%`,
+                    width: `${Math.min(100, Math.max(0, ((maxPrice - minPrice) / catalogMaxPrice) * 100))}%`
                   }}
                 />
                 {/* From (Min) Thumb */}
                 <input
                   type="range"
                   min="0"
-                  max="100000"
-                  step="500"
+                  max={catalogMaxPrice}
+                  step={priceStep}
                   value={minPrice}
                   onChange={(e) => {
-                    const val = Math.min(Number(e.target.value), maxPrice - 500);
+                    const val = Math.min(Number(e.target.value), maxPrice - priceStep);
                     setMinPrice(val >= 0 ? val : 0);
                   }}
                   className="absolute w-full h-1.5 bg-transparent pointer-events-none appearance-none z-10 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:h-4.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--th-primary)] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4.5 [&::-moz-range-thumb]:h-4.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--th-primary)] [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:cursor-pointer"
@@ -1275,12 +1339,12 @@ export default function ProductListingPage({
                 <input
                   type="range"
                   min="0"
-                  max="100000"
-                  step="500"
+                  max={catalogMaxPrice}
+                  step={priceStep}
                   value={maxPrice}
                   onChange={(e) => {
-                    const val = Math.max(Number(e.target.value), minPrice + 500);
-                    setMaxPrice(val <= 100000 ? val : 100000);
+                    const val = Math.max(Number(e.target.value), minPrice + priceStep);
+                    setMaxPrice(val <= catalogMaxPrice ? val : catalogMaxPrice);
                   }}
                   className="absolute w-full h-1.5 bg-transparent pointer-events-none appearance-none z-20 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:h-4.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--th-accent)] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4.5 [&::-moz-range-thumb]:h-4.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--th-accent)] [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:cursor-pointer"
                   title={`To: ₹${maxPrice.toLocaleString('en-IN')}`}
@@ -1288,27 +1352,19 @@ export default function ProductListingPage({
               </div>
 
               <div className="flex justify-between text-[10px] text-[var(--th-text-muted)] mt-1 font-outfit">
-                <span>₹{minPrice.toLocaleString('en-IN')}</span>
-                <span>₹50k</span>
-                <span>₹{maxPrice.toLocaleString('en-IN')}</span>
+                <span>₹0</span>
+                <span>₹{Math.round(catalogMaxPrice / 2).toLocaleString('en-IN')}</span>
+                <span>₹{catalogMaxPrice.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
-            {/* Requirement 5: Target Audience / Occasion Filter */}
+            {/* Target Audience Filter (sourced dynamically from target audience table) */}
             <div className="border-t border-[var(--th-border-subtle)] pt-4">
               <label className="text-[11px] font-bold text-[var(--th-text-muted)] uppercase tracking-wider block mb-2.5">
-                Target Audience / Occasion
+                Target Audience
               </label>
               <div className="flex flex-wrap gap-1.5 text-xs">
-                {[
-                  { id: 'all', label: 'All Items' },
-                  { id: 'Puja', label: 'Puja & Devotion' },
-                  { id: 'Men', label: 'Men' },
-                  { id: 'Women', label: 'Women' },
-                  { id: 'Baby', label: 'Baby & Kids' },
-                  { id: 'Gifting', label: 'Luxury Gifting' },
-                  { id: 'Investment', label: 'Silver Coins' }
-                ].map((tag) => {
+                {audienceList.map((tag) => {
                   const isSelected = selectedRecipient.toLowerCase() === tag.id.toLowerCase();
                   return (
                     <button
