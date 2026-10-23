@@ -61,7 +61,7 @@ function computePricing({ price, discount, labour_cost, actual_cost }) {
  * Add / edit form for dbo.product. Used by the catalog modal and the standalone form page.
  * `onSaved(productId, isEdit)` fires after a successful save.
  */
-export default function ProductForm({ productId, initialRow, categories: categoriesProp, makes: makesProp, purities: puritiesProp, onSaved, onCancel, inModal = false }) {
+export default function ProductForm({ productId, initialRow, categories: categoriesProp, makes: makesProp, purities: puritiesProp, colors: colorsProp, onSaved, onCancel, inModal = false }) {
   const { showToast } = useAdminUI();
   const isEdit = Boolean(productId);
   const [values, setValues] = useState(() => (initialRow ? rowToValues(initialRow) : EMPTY_PRODUCT));
@@ -73,6 +73,7 @@ export default function ProductForm({ productId, initialRow, categories: categor
   const [categories, setCategories] = useState(categoriesProp || []);
   const [makes, setMakes] = useState(makesProp || []);
   const [purities, setPurities] = useState(puritiesProp || []);
+  const [colors, setColors] = useState(colorsProp || []);
   const [loading, setLoading] = useState(isEdit && !initialRow);
   const [saving, setSaving] = useState(false);
 
@@ -81,10 +82,11 @@ export default function ProductForm({ productId, initialRow, categories: categor
     let cancelled = false;
     (async () => {
       try {
-        const [cats, mks, purs, rows, imgs] = await Promise.all([
+        const [cats, mks, purs, cols, rows, imgs] = await Promise.all([
           categoriesProp ? categoriesProp : fetchRows('category'),
           makesProp ? makesProp : fetchRows('make_master'),
           puritiesProp ? puritiesProp : fetchRows('purity'),
+          colorsProp ? colorsProp : fetchRows('color'),
           isEdit && !initialRow ? fetchRows('product', productId) : null,
           isEdit ? fetchRows('product_image', productId) : Promise.resolve([])
         ]);
@@ -93,6 +95,9 @@ export default function ProductForm({ productId, initialRow, categories: categor
         setMakes(mks);
         if (Array.isArray(purs) && purs.length > 0) {
           setPurities(purs);
+        }
+        if (Array.isArray(cols) && cols.length > 0) {
+          setColors(cols);
         }
         if (Array.isArray(imgs)) {
           setImageList(imgs);
@@ -113,7 +118,7 @@ export default function ProductForm({ productId, initialRow, categories: categor
       }
     })();
     return () => { cancelled = true; };
-  }, [productId, isEdit, initialRow, categoriesProp, makesProp, puritiesProp, showToast]);
+  }, [productId, isEdit, initialRow, categoriesProp, makesProp, puritiesProp, colorsProp, showToast]);
 
   const handleRemoveImage = async (imgId) => {
     if (!window.confirm(`Are you sure you want to remove Image #${imgId} from this product?`)) return;
@@ -205,7 +210,10 @@ export default function ProductForm({ productId, initialRow, categories: categor
 
         <Field label="Signature Finish / Color" htmlFor="pf-color">
           <select id="pf-color" className="ad-input" value={values.color} onChange={set('color')}>
-            {FINISH_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {(colors.length > 0
+              ? colors.map(c => ({ value: c.color, label: c.color }))
+              : FINISH_OPTIONS
+            ).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </Field>
 

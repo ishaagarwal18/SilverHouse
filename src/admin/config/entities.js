@@ -11,6 +11,7 @@ import {
   MapPin,
   Package,
   Paintbrush,
+  Palette,
   Receipt,
   ShieldCheck,
   ShoppingBag,
@@ -29,6 +30,7 @@ export const PK_MAP = {
   image: 'image_id',
   make_master: 'm_id',
   purity: 'id',
+  color: 'id',
   product_image: 'image_id',
   festival: 'id',
   festival_category: 'id',
@@ -53,6 +55,7 @@ export const ENTITY_CONFIG = {
   image: { singular: 'Image', plural: 'Images', icon: Image, hasFormPage: true },
   make_master: { singular: 'Make Master', plural: 'Make Master', icon: Wrench, hasFormPage: true },
   purity: { singular: 'Purity', plural: 'Purities', icon: ShieldCheck, hasFormPage: true },
+  color: { singular: 'Color / Finish', plural: 'Colors', icon: Palette, hasFormPage: true },
   product_image: { singular: 'Product Image', plural: 'Product Images', icon: Link, hasFormPage: true },
   festival: { singular: 'Festival', plural: 'Festivals', icon: Calendar },
   festival_category: { singular: 'Festival Category Mapping', plural: 'Festival Categories', icon: Sparkles },
@@ -72,7 +75,7 @@ export const ENTITY_CONFIG = {
 };
 
 /** Tables whose rows can be bulk-imported from CSV / Excel / Word files. */
-export const IMPORTABLE_ENTITIES = ['product', 'category', 'image', 'make_master', 'purity', 'product_image'];
+export const IMPORTABLE_ENTITIES = ['product', 'category', 'image', 'make_master', 'purity', 'color', 'product_image'];
 
 export function getEntityConfig(entity) {
   const label = String(entity || '').replace(/_/g, ' ');
@@ -204,6 +207,9 @@ export const ENTITY_FORM_SCHEMAS = {
   ],
   purity: [
     { name: 'purity', label: 'Silver Purity Name', type: 'text', required: true, placeholder: 'e.g. 92.5 Sterling Silver (Standard 925)' }
+  ],
+  color: [
+    { name: 'color', label: 'Color / Finish Name', type: 'text', required: true, placeholder: 'e.g. Silver, Rose Gold, Oxidised' }
   ]
 };
 
@@ -219,7 +225,7 @@ export const ADMIN_NAV = [
   },
   {
     label: 'Database Schemas',
-    items: ['product', 'category', 'image', 'make_master', 'purity'].map(entityNavItem)
+    items: ['product', 'category', 'image', 'make_master', 'purity', 'color'].map(entityNavItem)
   },
   {
     label: 'Festivals & Collections',
@@ -254,11 +260,9 @@ export const PURITY_OPTIONS = [
 ];
 
 export const FINISH_OPTIONS = [
-  { value: 'Silver', label: 'Fine Silver' },
-  { value: 'Rose Gold', label: 'Rose Gold Plated' },
-  { value: 'Oxidised', label: 'Bold Oxidised' },
-  { value: 'Gold Plated', label: 'Gold Plated' },
-  { value: 'Two-Tone Silver', label: 'Two-Tone Silver' }
+  { value: 'Silver', label: 'Silver' },
+  { value: 'Rose Gold', label: 'Rose Gold' },
+  { value: 'Oxidised', label: 'Oxidised' }
 ];
 
 export const AUDIENCE_OPTIONS = ['ALL', 'Women', 'Men', 'Unisex', 'Puja'];

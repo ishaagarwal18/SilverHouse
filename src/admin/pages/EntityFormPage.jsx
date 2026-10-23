@@ -37,6 +37,13 @@ const SIMPLE_FORMS = {
     addDescription: 'Register a new standard silver purity option',
     saveLabel: 'Save Purity'
   },
+  color: {
+    initial: { color: '' },
+    newIdKeys: ['NewColorId', 'id'],
+    editDescription: 'Update signature finish / color',
+    addDescription: 'Register a new signature color or finish option',
+    saveLabel: 'Save Color'
+  },
   product_image: {
     initial: { product_id: '', image_id: '' },
     addOnly: true,
@@ -206,6 +213,12 @@ function SimpleEntityForm({ entity, id, isEdit, spec, onSaved, onCancel }) {
         {entity === 'purity' && (
           <Field label="Silver Purity Name" required htmlFor="pf-purity-name" hint="e.g. 92.5 Sterling Silver (Standard 925)">
             <input id="pf-purity-name" className="ad-input" required placeholder="e.g. 92.5 Sterling Silver (Standard 925)" value={values.purity} onChange={set('purity')} />
+          </Field>
+        )}
+
+        {entity === 'color' && (
+          <Field label="Color / Finish Name" required htmlFor="cf-color-name" hint="e.g. Silver, Rose Gold, Oxidised">
+            <input id="cf-color-name" className="ad-input" required placeholder="e.g. Silver, Rose Gold, Oxidised" value={values.color} onChange={set('color')} />
           </Field>
         )}
 

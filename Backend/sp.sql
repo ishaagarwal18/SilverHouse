@@ -89,6 +89,25 @@ BEGIN
                 SELECT id, purity FROM dbo.purity ORDER BY id ASC;
         END
 
+        
+        -- 4d. Ideal For Entity Fetcher
+        ELSE IF @proc_name IN ('ideal_for', 'idealfor')
+        BEGIN
+            IF @Condition IS NOT NULL AND @Condition <> ''
+                SELECT id, ideal_for FROM dbo.ideal_for WHERE id = TRY_CAST(@Condition AS INT);
+            ELSE
+                SELECT id, ideal_for FROM dbo.ideal_for ORDER BY id ASC;
+        END
+
+        -- 4c. Color / Finish Entity Fetcher
+        ELSE IF @proc_name IN ('color', 'colors')
+        BEGIN
+            IF @Condition IS NOT NULL AND @Condition <> ''
+                SELECT id, color FROM dbo.color WHERE id = TRY_CAST(@Condition AS INT);
+            ELSE
+                SELECT id, color FROM dbo.color ORDER BY id ASC;
+        END
+
         -- 5. Product-Image Mapping Fetcher
         ELSE IF @proc_name IN ('product_image', 'product_images')
         BEGIN

@@ -86,6 +86,7 @@ export default function CatalogPage() {
   const [categories, setCategories] = useState([]);
   const [makes, setMakes] = useState([]);
   const [purities, setPurities] = useState([]);
+  const [colors, setColors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
@@ -128,8 +129,8 @@ export default function CatalogPage() {
   }, []);
 
   useEffect(() => {
-    Promise.all([fetchRows('category'), fetchRows('make_master'), fetchRows('purity')])
-      .then(([cats, mks, purs]) => { setCategories(cats); setMakes(mks); setPurities(purs); })
+    Promise.all([fetchRows('category'), fetchRows('make_master'), fetchRows('purity'), fetchRows('color')])
+      .then(([cats, mks, purs, cols]) => { setCategories(cats); setMakes(mks); setPurities(purs); setColors(cols); })
       .catch(err => showToast('Failed to initialise catalog data: ' + err.message, true));
     fetchProducts();
   }, [fetchProducts, showToast]);
@@ -292,6 +293,7 @@ export default function CatalogPage() {
               categories={categories}
               makes={makes}
               purities={purities}
+              colors={colors}
               maxProductPrice={maxProductPrice}
               onClose={() => setFiltersOpen(false)}
             />
@@ -417,6 +419,7 @@ export default function CatalogPage() {
               categories={categories}
               makes={makes}
               purities={purities}
+              colors={colors}
               onCancel={() => setProductModal(null)}
               onSaved={() => { setProductModal(null); fetchProducts(); }}
             />
@@ -590,7 +593,7 @@ function FilterSection({ title, children, aside }) {
   );
 }
 
-function CatalogFilters({ filters, setFilters, products, categories, makes, purities = [], maxProductPrice = 10000, onClose }) {
+function CatalogFilters({ filters, setFilters, products, categories, makes, purities = [], colors = [], maxProductPrice = 10000, onClose }) {
   const set = (key, value) => setFilters(f => ({ ...f, [key]: value }));
 
   const currentMaxPrice = filters.maxPrice !== undefined && filters.maxPrice !== null ? filters.maxPrice : maxProductPrice;
@@ -612,11 +615,21 @@ function CatalogFilters({ filters, setFilters, products, categories, makes, puri
       count: products.filter(p => p.make_id === m.m_id || p.m_id === m.m_id || p.make_type === m.type).length
     }))
   ];
-  const finishOptions = FINISH_FILTERS.map(f => ({
-    value: f.id,
-    label: f.label,
-    count: f.id ? products.filter(p => String(p.color || 'Silver').toLowerCase() === f.id.toLowerCase()).length : products.length
-  }));
+  const finishOptions = [
+    { value: '', label: 'All Finishes', count: products.length },
+    ...(colors.length > 0
+      ? colors.map(c => ({
+          value: c.color,
+          label: c.color,
+          count: products.filter(p => String(p.color || 'Silver').toLowerCase() === c.color.toLowerCase()).length
+        }))
+      : FINISH_FILTERS.slice(1).map(f => ({
+          value: f.id,
+          label: f.label,
+          count: products.filter(p => String(p.color || 'Silver').toLowerCase() === f.id.toLowerCase()).length
+        }))
+    )
+  ];
   const purityOptions = [
     { value: '', label: 'All Purities', count: products.length },
     ...(purities.length > 0

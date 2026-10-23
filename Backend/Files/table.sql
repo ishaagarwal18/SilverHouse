@@ -22,6 +22,13 @@ CREATE TABLE purity (
 );
 GO
 
+-- 2c. Signature Color / Finish Master Table
+CREATE TABLE color (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    color NVARCHAR(100) NOT NULL
+);
+GO
+
 -- 3. Product Table
 CREATE TABLE product (
     product_id INT PRIMARY KEY,

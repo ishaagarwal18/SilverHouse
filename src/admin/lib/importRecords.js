@@ -20,7 +20,7 @@ const FIELD_ALIASES = {
   labour_cost: ['labour_cost', 'labourcost', 'labour cost', 'making_charge', 'making_cost', 'making charges'],
   actual_cost: ['actual_cost', 'actualcost', 'actual cost', 'cost_price', 'cost'],
   priority: ['priority', 'display_priority', 'prio'],
-  color: ['color', 'colour', 'shade'],
+  color: ['color', 'colour', 'shade', 'finish'],
   review: ['review', 'rating', 'stars', 'reviews'],
   sold: ['sold', 'sales', 'units_sold', 'items_sold'],
   image_id: ['image_id', 'imageid', 'image id', 'img_id'],
@@ -173,6 +173,11 @@ function normalizeRowData(rawRow) {
       clean[key] = (s.includes('99') || s.includes('pure') || s.includes('fine'))
         ? '99.9 Pure Silver (Fine 999)'
         : '92.5 Sterling Silver (Standard 925)';
+    } else if (key === 'color' && typeof val === 'string') {
+      const s = val.toLowerCase();
+      if (s.includes('rose')) clean[key] = 'Rose Gold';
+      else if (s.includes('oxid') || s.includes('black') || s.includes('antique')) clean[key] = 'Oxidised';
+      else clean[key] = 'Silver';
     } else if (key === 'ideal_for' && typeof val === 'string') {
       const s = val.toLowerCase();
       if (s.startsWith('all')) clean[key] = 'ALL';
@@ -309,10 +314,10 @@ export async function importRecordsFromFile({ file, fileHandle = null, entity, m
     // eslint-disable-next-line eqeqeq
     let exists = !isBlank(idVal) && existingRows.some(r => r[pkField] == idVal);
 
-    // Avoid duplicates when the id column is omitted: match by product title / category name / purity name
-    if (!exists && (entity === 'product' || entity === 'category' || entity === 'purity')) {
-      const label = String((entity === 'product' ? (values.title || values.name) : (values.name || values.purity)) || '').trim().toLowerCase();
-      const match = label && existingRows.find(r => String((entity === 'product' ? (r.title || r.name) : (r.name || r.purity)) || '').trim().toLowerCase() === label);
+    // Avoid duplicates when the id column is omitted: match by product title / category name / purity name / color name
+    if (!exists && (entity === 'product' || entity === 'category' || entity === 'purity' || entity === 'color')) {
+      const label = String((entity === 'product' ? (values.title || values.name) : (values.name || values.purity || values.color)) || '').trim().toLowerCase();
+      const match = label && existingRows.find(r => String((entity === 'product' ? (r.title || r.name) : (r.name || r.purity || r.color)) || '').trim().toLowerCase() === label);
       if (match) {
         idVal = match[pkField];
         values[pkField] = idVal;
