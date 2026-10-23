@@ -795,6 +795,98 @@ END;
 GO
 
 -- =========================================================================
+-- PROCEDURE 4d: SP_ideal_for
+-- =========================================================================
+CREATE OR ALTER PROCEDURE dbo.SP_ideal_for
+    @Opr       NVARCHAR(10),
+    @JSONstr   NVARCHAR(MAX) = NULL,
+    @Condition NVARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @TargetId INT = TRY_CAST(@Condition AS INT);
+    DECLARE @IdealForVal NVARCHAR(100);
+
+    IF @JSONstr IS NOT NULL AND ISJSON(@JSONstr) > 0
+    BEGIN
+        SELECT
+            @IdealForVal = LTRIM(RTRIM(COALESCE(
+                JSON_VALUE(@JSONstr, '$.table_values.ideal_for'),
+                JSON_VALUE(@JSONstr, '$.table_values.name'),
+                JSON_VALUE(@JSONstr, '$.table_values.value'),
+                JSON_VALUE(@JSONstr, '$.ideal_for')
+            )));
+    END
+
+    IF @Opr IN ('EDIT', 'DELETE')
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM dbo.ideal_for WHERE id = @TargetId)
+        BEGIN
+            RAISERROR('Not Found: Ideal For entry with ID %d does not exist.', 16, 1, @TargetId);
+            RETURN;
+        END
+    END
+
+    IF @Opr = 'SELECT'
+    BEGIN
+        IF @TargetId IS NOT NULL AND @TargetId > 0
+            SELECT id, ideal_for FROM dbo.ideal_for WHERE id = @TargetId;
+        ELSE
+            SELECT id, ideal_for FROM dbo.ideal_for ORDER BY id ASC;
+    END
+
+    ELSE IF @Opr = 'ADD'
+    BEGIN
+        IF @IdealForVal IS NULL OR LEN(@IdealForVal) = 0
+        BEGIN
+            RAISERROR('Validation Error: ideal_for cannot be blank.', 16, 1);
+            RETURN;
+        END
+
+        IF EXISTS (SELECT 1 FROM dbo.ideal_for WHERE LOWER(ideal_for) = LOWER(@IdealForVal))
+        BEGIN
+            SELECT id, ideal_for FROM dbo.ideal_for WHERE LOWER(ideal_for) = LOWER(@IdealForVal);
+            RETURN;
+        END
+
+        INSERT INTO dbo.ideal_for (ideal_for)
+        VALUES (@IdealForVal);
+
+        DECLARE @NewId INT = SCOPE_IDENTITY();
+        SELECT @NewId AS id, @NewId AS NewIdealForId, 'Ideal For entry added successfully' AS [Message];
+    END
+
+    ELSE IF @Opr = 'EDIT'
+    BEGIN
+        IF @IdealForVal IS NULL OR LEN(@IdealForVal) = 0
+        BEGIN
+            RAISERROR('Validation Error: ideal_for cannot be blank on update.', 16, 1);
+            RETURN;
+        END
+
+        IF EXISTS (SELECT 1 FROM dbo.ideal_for WHERE LOWER(ideal_for) = LOWER(@IdealForVal) AND id <> @TargetId)
+        BEGIN
+            RAISERROR('Validation Error: Ideal For "%s" already exists.', 16, 1, @IdealForVal);
+            RETURN;
+        END
+
+        UPDATE dbo.ideal_for
+        SET ideal_for = @IdealForVal
+        WHERE id = @TargetId;
+
+        SELECT @TargetId AS id, 'Ideal For entry updated successfully' AS [Message];
+    END
+
+    ELSE IF @Opr = 'DELETE'
+    BEGIN
+        DELETE FROM dbo.ideal_for WHERE id = @TargetId;
+        SELECT @TargetId AS id, 'Ideal For entry deleted successfully' AS [Message];
+    END
+END;
+GO
+
+-- =========================================================================
 -- PROCEDURE 5: SP_product_image
 -- =========================================================================
 CREATE OR ALTER PROCEDURE dbo.SP_product_image

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, Check, CheckCircle2, ChevronRight, Clock, Download, Image as ImageIcon, Minus, Package, Pencil, Plus, Receipt, RotateCcw, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, Upload, Zap } from 'lucide-react';
 import { adminFetch, adminImageUrl, callProc, fetchRows, formatAdminDate, formatAdminDateOrTime, isDateLikeColumnOrValue, PLACEHOLDER_IMG, productImage } from '../api/adminApi';
-import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISIONS, PK_MAP, PURITY_OPTIONS, FINISH_OPTIONS } from '../config/entities';
+import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISIONS, PK_MAP, PURITY_OPTIONS, FINISH_OPTIONS, AUDIENCE_OPTIONS } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
 import { importRecordsFromFile } from '../lib/importRecords';
 import {
@@ -13,12 +13,12 @@ import {
 const HIDDEN_ORDER_COLUMNS = ['confirm', 'custom_category', 'is_custom', 'image', 'description'];
 const HIDDEN_CART_COLUMNS = ['total_items'];
 const VARCHAR_COLUMNS = [
-  'name', 'title', 'product_name', 'category_name', 'category', 'description', 'purity', 'color', 'weight', 'image_url', 'url',
+  'name', 'title', 'product_name', 'category_name', 'category', 'description', 'purity', 'color', 'ideal_for', 'weight', 'image_url', 'url',
   'images', 'image', 'confirm', 'custom_category', 'is_custom', 'role', 'email', 'full_name', 'phone', 'address_line1',
   'address_line2', 'city', 'state', 'postal_code', 'country', 'order_number', 'payment_status', 'order_status', 'password_hash',
   'password', 'remark', 'status', 'created_at', 'updated_at', 'birthday_date', 'anniversary_date', 'gst_number'
 ];
-const VARCHAR_HINTS = ['url', 'name', 'desc', 'date', 'email', 'phone', 'address', 'status', 'text', 'hash', 'time', 'role', 'code', 'number', 'weight', 'purity', 'color'];
+const VARCHAR_HINTS = ['url', 'name', 'desc', 'date', 'email', 'phone', 'address', 'status', 'text', 'hash', 'time', 'role', 'code', 'number', 'weight', 'purity', 'color', 'ideal'];
 const NUMERIC_COLUMNS = ['quantity', 'qty', 'stock', 'stock_available', 'stock_qty', 'price', 'discount', 'discount_percent', 'final_price', 'unit_price', 'subtotal', 'total_amount', 'discount_amount', 'final_payable'];
 const HIGHLIGHT_STYLES = {
   edit: { color: 'var(--ad-primary)', icon: Pencil, label: 'Edited' },
@@ -148,7 +148,7 @@ function DataManager({ entity }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [data, cats, makes, festList, itemsData, prodList, cartItemsData, festCatsData, userList, purList, colList] = await Promise.all([
+      const [data, cats, makes, festList, itemsData, prodList, cartItemsData, festCatsData, userList, purList, colList, idlList] = await Promise.all([
         fetchRows(entity),
         fetchRows('category'),
         fetchRows('make_master'),
@@ -159,7 +159,8 @@ function DataManager({ entity }) {
         (entity === 'festival' || entity === 'festival_category') ? fetchRows('festival_category') : Promise.resolve([]),
         (entity === 'wishlist' || entity === 'orders' || entity === 'cart' || entity === 'address') ? fetchRows('user') : Promise.resolve([]),
         fetchRows('purity'),
-        fetchRows('color')
+        fetchRows('color'),
+        fetchRows('ideal_for')
       ]);
       setRows(data);
       if (entity === 'orders' && Array.isArray(itemsData)) {
@@ -215,6 +216,7 @@ function DataManager({ entity }) {
         purityList: purList || [],
         colorList: colList || [],
         colors: Object.fromEntries((colList || []).map(c => [c.id, c.color])),
+        idealForList: idlList || [],
         festivalCategoryMap,
         festivalCategoryNamesMap,
         festivalCategoryRaw
@@ -998,6 +1000,14 @@ function DataManager({ entity }) {
         </span>
       );
     }
+    if (h === 'ideal_for' && val !== '-') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-ad-card border border-ad-border text-ad-text shadow-2xs">
+          <Users className="w-3 h-3 text-ad-primary shrink-0 opacity-80" />
+          {val}
+        </span>
+      );
+    }
     if (entity === 'product' && h === 'm_id' && val !== '-') return lookups.makes[val] || val;
     if (typeof val === 'object') return JSON.stringify(val);
     return String(val);
@@ -1007,6 +1017,7 @@ function DataManager({ entity }) {
     if (h === 'user_name') return 'Customer Name';
     if (h === 'product_name') return 'Product Name';
     if (h === 'color') return 'Color / Finish';
+    if (h === 'ideal_for') return 'Target Audience / Ideal For';
     if (h === 'linked_categories') return 'Linked Categories';
     if (h === 'order_status') return 'Order Status';
     if (h === 'category_id') return entity === 'category' ? 'Category ID' : 'Category';
@@ -2416,6 +2427,17 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                       ).map(c => (
                         <option key={c.id || c.color} value={c.color}>
                           {c.color}
+                        </option>
+                      ))}
+                    </select>
+                  ) : field.name === 'ideal_for' && entity !== 'ideal_for' ? (
+                    <select id={fieldId} name={field.name} className="ad-input cursor-pointer" defaultValue={String(value || (lookups.idealForList?.[0]?.ideal_for || 'All'))} required={field.required}>
+                      {(lookups.idealForList && lookups.idealForList.length > 0
+                        ? lookups.idealForList
+                        : AUDIENCE_OPTIONS.map(o => ({ id: o, ideal_for: o }))
+                      ).map(item => (
+                        <option key={item.id || item.ideal_for} value={item.ideal_for}>
+                          {item.ideal_for}
                         </option>
                       ))}
                     </select>

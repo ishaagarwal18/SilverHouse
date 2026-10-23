@@ -61,7 +61,7 @@ function computePricing({ price, discount, labour_cost, actual_cost }) {
  * Add / edit form for dbo.product. Used by the catalog modal and the standalone form page.
  * `onSaved(productId, isEdit)` fires after a successful save.
  */
-export default function ProductForm({ productId, initialRow, categories: categoriesProp, makes: makesProp, purities: puritiesProp, colors: colorsProp, onSaved, onCancel, inModal = false }) {
+export default function ProductForm({ productId, initialRow, categories: categoriesProp, makes: makesProp, purities: puritiesProp, colors: colorsProp, idealFor: idealForProp, onSaved, onCancel, inModal = false }) {
   const { showToast } = useAdminUI();
   const isEdit = Boolean(productId);
   const [values, setValues] = useState(() => (initialRow ? rowToValues(initialRow) : EMPTY_PRODUCT));
@@ -74,6 +74,7 @@ export default function ProductForm({ productId, initialRow, categories: categor
   const [makes, setMakes] = useState(makesProp || []);
   const [purities, setPurities] = useState(puritiesProp || []);
   const [colors, setColors] = useState(colorsProp || []);
+  const [idealForList, setIdealForList] = useState(idealForProp || []);
   const [loading, setLoading] = useState(isEdit && !initialRow);
   const [saving, setSaving] = useState(false);
 
@@ -82,11 +83,12 @@ export default function ProductForm({ productId, initialRow, categories: categor
     let cancelled = false;
     (async () => {
       try {
-        const [cats, mks, purs, cols, rows, imgs] = await Promise.all([
+        const [cats, mks, purs, cols, idls, rows, imgs] = await Promise.all([
           categoriesProp ? categoriesProp : fetchRows('category'),
           makesProp ? makesProp : fetchRows('make_master'),
           puritiesProp ? puritiesProp : fetchRows('purity'),
           colorsProp ? colorsProp : fetchRows('color'),
+          idealForProp ? idealForProp : fetchRows('ideal_for'),
           isEdit && !initialRow ? fetchRows('product', productId) : null,
           isEdit ? fetchRows('product_image', productId) : Promise.resolve([])
         ]);
@@ -98,6 +100,9 @@ export default function ProductForm({ productId, initialRow, categories: categor
         }
         if (Array.isArray(cols) && cols.length > 0) {
           setColors(cols);
+        }
+        if (Array.isArray(idls) && idls.length > 0) {
+          setIdealForList(idls);
         }
         if (Array.isArray(imgs)) {
           setImageList(imgs);
@@ -219,7 +224,10 @@ export default function ProductForm({ productId, initialRow, categories: categor
 
         <Field label="Ideal For (Target Audience)" required htmlFor="pf-ideal">
           <select id="pf-ideal" className="ad-input" required value={values.ideal_for} onChange={set('ideal_for')}>
-            {AUDIENCE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+            {(idealForList.length > 0
+              ? idealForList.map(item => ({ value: item.ideal_for, label: item.ideal_for }))
+              : AUDIENCE_OPTIONS.map(o => ({ value: o, label: o }))
+            ).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </Field>
 

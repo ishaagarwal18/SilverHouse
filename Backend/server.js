@@ -2348,6 +2348,7 @@ app.post('/api/data', async (req, res) => {
             'make_master', 'makes',
             'purity', 'purities',
             'color', 'colors',
+            'ideal_for', 'idealfor',
             'company',
             'store_parameter'
         ];

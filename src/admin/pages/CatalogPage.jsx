@@ -87,6 +87,7 @@ export default function CatalogPage() {
   const [makes, setMakes] = useState([]);
   const [purities, setPurities] = useState([]);
   const [colors, setColors] = useState([]);
+  const [idealForList, setIdealForList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
@@ -129,8 +130,8 @@ export default function CatalogPage() {
   }, []);
 
   useEffect(() => {
-    Promise.all([fetchRows('category'), fetchRows('make_master'), fetchRows('purity'), fetchRows('color')])
-      .then(([cats, mks, purs, cols]) => { setCategories(cats); setMakes(mks); setPurities(purs); setColors(cols); })
+    Promise.all([fetchRows('category'), fetchRows('make_master'), fetchRows('purity'), fetchRows('color'), fetchRows('ideal_for')])
+      .then(([cats, mks, purs, cols, idls]) => { setCategories(cats); setMakes(mks); setPurities(purs); setColors(cols); setIdealForList(idls); })
       .catch(err => showToast('Failed to initialise catalog data: ' + err.message, true));
     fetchProducts();
   }, [fetchProducts, showToast]);
@@ -294,6 +295,7 @@ export default function CatalogPage() {
               makes={makes}
               purities={purities}
               colors={colors}
+              idealForList={idealForList}
               maxProductPrice={maxProductPrice}
               onClose={() => setFiltersOpen(false)}
             />
@@ -420,6 +422,7 @@ export default function CatalogPage() {
               makes={makes}
               purities={purities}
               colors={colors}
+              idealFor={idealForList}
               onCancel={() => setProductModal(null)}
               onSaved={() => { setProductModal(null); fetchProducts(); }}
             />
@@ -593,7 +596,7 @@ function FilterSection({ title, children, aside }) {
   );
 }
 
-function CatalogFilters({ filters, setFilters, products, categories, makes, purities = [], colors = [], maxProductPrice = 10000, onClose }) {
+function CatalogFilters({ filters, setFilters, products, categories, makes, purities = [], colors = [], idealForList = [], maxProductPrice = 10000, onClose }) {
   const set = (key, value) => setFilters(f => ({ ...f, [key]: value }));
 
   const currentMaxPrice = filters.maxPrice !== undefined && filters.maxPrice !== null ? filters.maxPrice : maxProductPrice;
@@ -673,7 +676,17 @@ function CatalogFilters({ filters, setFilters, products, categories, makes, puri
       </FilterSection>
 
       <FilterSection title="Target Audience">
-        <PillGroup value={filters.audience} onChange={v => set('audience', v)} options={['', 'Women', 'Men', 'Unisex', 'Puja'].map(v => ({ value: v, label: v || 'All' }))} />
+        <PillGroup
+          value={filters.audience}
+          onChange={v => set('audience', v)}
+          options={[
+            { value: '', label: 'All' },
+            ...(idealForList.length > 0
+              ? idealForList.filter(item => item.ideal_for.toLowerCase() !== 'all').map(item => ({ value: item.ideal_for, label: item.ideal_for }))
+              : ['Women', 'Men', 'Kids', 'Unisex', 'Puja'].map(v => ({ value: v, label: v }))
+            )
+          ]}
+        />
       </FilterSection>
 
       <FilterSection title="Category"><RadioList name="cat_filter" options={categoryOptions} value={filters.category} onChange={v => set('category', v)} /></FilterSection>

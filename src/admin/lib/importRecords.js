@@ -15,7 +15,7 @@ const FIELD_ALIASES = {
   price: ['price', 'unit_price', 'mrp', 'rate', 'product_price'],
   discount: ['discount', 'disc', 'discount_percent', 'discount_%'],
   quantity: ['quantity', 'qty', 'stock', 'stock_qty', 'count'],
-  ideal_for: ['ideal_for', 'idealfor', 'ideal for', 'gender', 'target_audience'],
+  ideal_for: ['ideal_for', 'idealfor', 'ideal for', 'gender', 'target_audience', 'audience', 'for'],
   packaging: ['packaging', 'package', 'pack_type', 'box_type'],
   labour_cost: ['labour_cost', 'labourcost', 'labour cost', 'making_charge', 'making_cost', 'making charges'],
   actual_cost: ['actual_cost', 'actualcost', 'actual cost', 'cost_price', 'cost'],
@@ -180,9 +180,10 @@ function normalizeRowData(rawRow) {
       else clean[key] = 'Silver';
     } else if (key === 'ideal_for' && typeof val === 'string') {
       const s = val.toLowerCase();
-      if (s.startsWith('all')) clean[key] = 'ALL';
-      else if (s.includes('women') || s.includes('female')) clean[key] = 'Women';
-      else if (s.includes('men') || s.includes('male')) clean[key] = 'Men';
+      if (s.startsWith('all')) clean[key] = 'All';
+      else if (s.includes('women') || s.includes('female') || s.includes('lady') || s.includes('ladies')) clean[key] = 'Women';
+      else if (s.includes('men') || s.includes('male') || s.includes('gent')) clean[key] = 'Men';
+      else if (s.includes('kid') || s.includes('child') || s.includes('baby')) clean[key] = 'Kids';
       else if (['puja', 'pooja', 'home', 'mandir', 'temple', 'idol'].some(w => s.includes(w))) clean[key] = 'Puja';
       else clean[key] = 'Unisex';
     } else {
@@ -314,10 +315,10 @@ export async function importRecordsFromFile({ file, fileHandle = null, entity, m
     // eslint-disable-next-line eqeqeq
     let exists = !isBlank(idVal) && existingRows.some(r => r[pkField] == idVal);
 
-    // Avoid duplicates when the id column is omitted: match by product title / category name / purity name / color name
-    if (!exists && (entity === 'product' || entity === 'category' || entity === 'purity' || entity === 'color')) {
-      const label = String((entity === 'product' ? (values.title || values.name) : (values.name || values.purity || values.color)) || '').trim().toLowerCase();
-      const match = label && existingRows.find(r => String((entity === 'product' ? (r.title || r.name) : (r.name || r.purity || r.color)) || '').trim().toLowerCase() === label);
+    // Avoid duplicates when the id column is omitted: match by product title / category name / purity name / color name / ideal_for name
+    if (!exists && (entity === 'product' || entity === 'category' || entity === 'purity' || entity === 'color' || entity === 'ideal_for')) {
+      const label = String((entity === 'product' ? (values.title || values.name) : (values.name || values.purity || values.color || values.ideal_for)) || '').trim().toLowerCase();
+      const match = label && existingRows.find(r => String((entity === 'product' ? (r.title || r.name) : (r.name || r.purity || r.color || r.ideal_for)) || '').trim().toLowerCase() === label);
       if (match) {
         idVal = match[pkField];
         values[pkField] = idVal;

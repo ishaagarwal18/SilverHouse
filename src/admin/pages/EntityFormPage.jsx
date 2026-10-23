@@ -10,7 +10,7 @@ import { Button, Card, Field, FormGrid, ImageUrlField, LoadingBlock, PageHeader,
 /** Field definitions + messages for the small catalog-table forms. */
 const SIMPLE_FORMS = {
   category: {
-    initial: { name: '', slug: '', description: '', ideal_for: 'ALL', image_id: '' },
+    initial: { name: '', slug: '', description: '', ideal_for: 'All', image_id: '' },
     newIdKeys: ['NewCategoryId', 'category_id'],
     editDescription: 'Update category details',
     addDescription: 'Enter category details to save into the database',
@@ -43,6 +43,13 @@ const SIMPLE_FORMS = {
     editDescription: 'Update signature finish / color',
     addDescription: 'Register a new signature color or finish option',
     saveLabel: 'Save Color'
+  },
+  ideal_for: {
+    initial: { ideal_for: '' },
+    newIdKeys: ['NewIdealForId', 'id'],
+    editDescription: 'Update target audience / ideal for option',
+    addDescription: 'Register a new target audience option',
+    saveLabel: 'Save Target Audience'
   },
   product_image: {
     initial: { product_id: '', image_id: '' },
@@ -99,8 +106,21 @@ function SimpleEntityForm({ entity, id, isEdit, spec, onSaved, onCancel }) {
   const [values, setValues] = useState(() => (
     entity === 'product_image' && id ? { ...spec.initial, product_id: id } : spec.initial
   ));
+  const [audienceOptions, setAudienceOptions] = useState(AUDIENCE_OPTIONS);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (entity === 'category') {
+      fetchRows('ideal_for')
+        .then(list => {
+          if (Array.isArray(list) && list.length > 0) {
+            setAudienceOptions(list.map(i => i.ideal_for));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [entity]);
 
   useEffect(() => {
     if (!isEdit) return undefined;
@@ -185,7 +205,7 @@ function SimpleEntityForm({ entity, id, isEdit, spec, onSaved, onCancel }) {
             </Field>
             <Field label="Ideal For" htmlFor="cf-ideal">
               <select id="cf-ideal" className="ad-input" value={values.ideal_for} onChange={set('ideal_for')}>
-                {AUDIENCE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                {audienceOptions.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </Field>
             <Field label="Image ID (Optional)" htmlFor="cf-image" hint="Enter the Image ID from the Images table (dbo.image) to map this category to an image.">
@@ -219,6 +239,12 @@ function SimpleEntityForm({ entity, id, isEdit, spec, onSaved, onCancel }) {
         {entity === 'color' && (
           <Field label="Color / Finish Name" required htmlFor="cf-color-name" hint="e.g. Silver, Rose Gold, Oxidised">
             <input id="cf-color-name" className="ad-input" required placeholder="e.g. Silver, Rose Gold, Oxidised" value={values.color} onChange={set('color')} />
+          </Field>
+        )}
+
+        {entity === 'ideal_for' && (
+          <Field label="Target Audience / Ideal For Name" required htmlFor="if-ideal-name" hint="e.g. All, Women, Men, Kids, Unisex, Puja">
+            <input id="if-ideal-name" className="ad-input" required placeholder="e.g. All, Women, Men, Kids, Unisex, Puja" value={values.ideal_for} onChange={set('ideal_for')} />
           </Field>
         )}
 

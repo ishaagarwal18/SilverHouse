@@ -29,6 +29,13 @@ CREATE TABLE color (
 );
 GO
 
+-- 2d. Target Audience / Ideal For Master Table
+CREATE TABLE ideal_for (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    ideal_for NVARCHAR(100) NOT NULL UNIQUE
+);
+GO
+
 -- 3. Product Table
 CREATE TABLE product (
     product_id INT PRIMARY KEY,

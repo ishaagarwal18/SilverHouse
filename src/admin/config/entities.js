@@ -31,6 +31,7 @@ export const PK_MAP = {
   make_master: 'm_id',
   purity: 'id',
   color: 'id',
+  ideal_for: 'id',
   product_image: 'image_id',
   festival: 'id',
   festival_category: 'id',
@@ -56,6 +57,7 @@ export const ENTITY_CONFIG = {
   make_master: { singular: 'Make Master', plural: 'Make Master', icon: Wrench, hasFormPage: true },
   purity: { singular: 'Purity', plural: 'Purities', icon: ShieldCheck, hasFormPage: true },
   color: { singular: 'Color / Finish', plural: 'Colors', icon: Palette, hasFormPage: true },
+  ideal_for: { singular: 'Target Audience', plural: 'Target Audiences', icon: Users, hasFormPage: true },
   product_image: { singular: 'Product Image', plural: 'Product Images', icon: Link, hasFormPage: true },
   festival: { singular: 'Festival', plural: 'Festivals', icon: Calendar },
   festival_category: { singular: 'Festival Category Mapping', plural: 'Festival Categories', icon: Sparkles },
@@ -75,7 +77,7 @@ export const ENTITY_CONFIG = {
 };
 
 /** Tables whose rows can be bulk-imported from CSV / Excel / Word files. */
-export const IMPORTABLE_ENTITIES = ['product', 'category', 'image', 'make_master', 'purity', 'color', 'product_image'];
+export const IMPORTABLE_ENTITIES = ['product', 'category', 'image', 'make_master', 'purity', 'color', 'ideal_for', 'product_image'];
 
 export function getEntityConfig(entity) {
   const label = String(entity || '').replace(/_/g, ' ');
@@ -210,6 +212,9 @@ export const ENTITY_FORM_SCHEMAS = {
   ],
   color: [
     { name: 'color', label: 'Color / Finish Name', type: 'text', required: true, placeholder: 'e.g. Silver, Rose Gold, Oxidised' }
+  ],
+  ideal_for: [
+    { name: 'ideal_for', label: 'Target Audience / Ideal For', type: 'text', required: true, placeholder: 'e.g. All, Women, Men, Kids, Unisex, Puja' }
   ]
 };
 
@@ -225,7 +230,7 @@ export const ADMIN_NAV = [
   },
   {
     label: 'Database Schemas',
-    items: ['product', 'category', 'image', 'make_master', 'purity', 'color'].map(entityNavItem)
+    items: ['product', 'category', 'image', 'make_master', 'purity', 'color', 'ideal_for'].map(entityNavItem)
   },
   {
     label: 'Festivals & Collections',
@@ -265,4 +270,4 @@ export const FINISH_OPTIONS = [
   { value: 'Oxidised', label: 'Oxidised' }
 ];
 
-export const AUDIENCE_OPTIONS = ['ALL', 'Women', 'Men', 'Unisex', 'Puja'];
+export const AUDIENCE_OPTIONS = ['All', 'Women', 'Men', 'Kids', 'Unisex', 'Puja'];
