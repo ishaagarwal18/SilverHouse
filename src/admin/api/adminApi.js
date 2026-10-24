@@ -1,4 +1,4 @@
-import { API_BASE_URL, resolveImageUrl } from '../../services/api';
+import { API_BASE_URL, resolveImageUrl } from '../../services/api.js';
 
 export const ADMIN_TOKEN_KEY = 'silverhouse_admin_token';
 export const ADMIN_USER_KEY = 'silverhouse_admin_user';

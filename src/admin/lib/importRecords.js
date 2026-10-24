@@ -1,5 +1,5 @@
-import { callProc, cleanErrorMessage, fetchRows } from '../api/adminApi';
-import { PK_MAP } from '../config/entities';
+import { callProc, cleanErrorMessage, fetchRows } from '../api/adminApi.js';
+import { PK_MAP } from '../config/entities.js';
 
 /** Header aliases accepted in import files, mapped to their database column. */
 const FIELD_ALIASES = {
@@ -33,6 +33,100 @@ const FIELD_ALIASES = {
   image_id: ['image_id', 'imageid', 'image id', 'img_id'],
   image_url: ['image_url', 'imageurl', 'image url', 'url', 'image', 'link']
 };
+
+/** Valid database columns accepted in Row 1 for each entity. */
+export const ENTITY_VALID_COLUMNS = {
+  product: [
+    'product_id', 'productid', 'p_id', 'pid',
+    'title', 'product_name', 'name', 'product title', 'title_name',
+    'category_name', 'category_id', 'category', 'categoryid', 'cat_id', 'catid', 'cat_name',
+    'make_type', 'm_id', 'mid', 'make_id', 'make', 'make_name', 'craft', 'craft_type', 'maketype',
+    'purity', 'silver_purity', 'purity_grade',
+    'color', 'colour', 'shade', 'finish', 'finish_color', 'color_finish',
+    'ideal_for', 'idealfor', 'gender', 'target_audience', 'audience',
+    'weight', 'item_weight', 'wt', 'weight_gm', 'weight_g', 'weight_grams',
+    'quantity', 'qty', 'stock', 'stock_qty', 'stock_units', 'count',
+    'stock_status',
+    'price', 'unit_price', 'mrp', 'rate', 'product_price', 'retail_mrp',
+    'discount', 'disc', 'discount_percent',
+    'final_price', 'selling_price',
+    'actual_cost', 'cost_price', 'cost',
+    'labour_cost', 'labourcost', 'making_charge', 'making_cost', 'making_charges',
+    'margin', 'gross_margin',
+    'margin_pct', 'margin_percent',
+    'total_cost_val', 'inventory_cost_val',
+    'total_retail_val', 'inventory_retail_val',
+    'sold', 'sales', 'units_sold', 'items_sold',
+    'priority', 'display_priority', 'prio', 'catalog_priority',
+    'packaging', 'package', 'pack_type', 'box_type',
+    'description', 'desc', 'details', 'item_description',
+    'review', 'rating', 'stars', 'reviews',
+    'image_id', 'img_id',
+    'image_url', 'imageurl', 'url', 'image', 'link',
+    'remark'
+  ],
+  category: [
+    'category_id', 'categoryid', 'cat_id',
+    'name', 'category_name', 'category_name_val',
+    'description', 'desc',
+    'slug',
+    'ideal_for', 'idealfor', 'target_audience', 'audience',
+    'image_id', 'image_url', 'url', 'image',
+    'remark'
+  ],
+  image: [
+    'image_id', 'imageid',
+    'image_url', 'imageurl', 'url', 'image', 'link',
+    'remark'
+  ],
+  make_master: [
+    'm_id', 'mid', 'make_id',
+    'type', 'make_type', 'make', 'maketype', 'craft',
+    'remark'
+  ],
+  purity: [
+    'id', 'purity_id',
+    'purity', 'silver_purity', 'purity_code',
+    'remark'
+  ],
+  color: [
+    'id', 'color_id',
+    'color', 'colour', 'shade', 'finish',
+    'remark'
+  ],
+  ideal_for: [
+    'id',
+    'ideal_for', 'idealfor', 'target_audience', 'audience',
+    'remark'
+  ],
+  product_image: [
+    'product_id', 'productid',
+    'image_id', 'imageid',
+    'image_url', 'url', 'image',
+    'remark'
+  ]
+};
+
+export function isColumnValidForEntity(rawStr, entity = 'product') {
+  if (!rawStr) return true;
+  const lowerKey = normalizeKey(String(rawStr).trim());
+  if (lowerKey === 'remark') return true;
+
+  const allowedList = ENTITY_VALID_COLUMNS[entity] || ENTITY_VALID_COLUMNS.product;
+  if (!allowedList) return true;
+
+  // Direct match
+  if (allowedList.some(col => normalizeKey(col) === lowerKey)) return true;
+
+  // Check if mapped via FIELD_ALIASES
+  const standard = Object.entries(FIELD_ALIASES).find(([canonical, aliases]) => 
+    canonical === lowerKey || aliases.some(a => normalizeKey(a) === lowerKey)
+  )?.[0];
+
+  if (standard && allowedList.some(col => normalizeKey(col) === standard)) return true;
+
+  return false;
+}
 
 /** Admin display labels used when writing 2-row standard files. */
 const DB_ADMIN_LABELS = {
@@ -239,25 +333,46 @@ function normalizeRowData(rawRow) {
  *   If it is an admin display label row, it is skipped and data rows begin from Row 3.
  *   If it contains actual product data (single-header file), data rows begin from Row 2.
  */
-export function parseMatrixToObjects(rawMatrix) {
-  if (!Array.isArray(rawMatrix) || rawMatrix.length === 0) return [];
+export function parseMatrixToObjects(rawMatrix, entity = 'product') {
+  if (!Array.isArray(rawMatrix) || rawMatrix.length === 0) {
+    const empty = [];
+    empty.invalidCols = [];
+    empty.colMap = {};
+    return empty;
+  }
 
   // 1. Locate Row 1: the first non-empty row containing database column names
   const headerRowIdx = rawMatrix.findIndex(row => 
     Array.isArray(row) && row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== '')
   );
 
-  if (headerRowIdx === -1) return [];
+  if (headerRowIdx === -1) {
+    const empty = [];
+    empty.invalidCols = [];
+    empty.colMap = {};
+    return empty;
+  }
 
   const row1 = rawMatrix[headerRowIdx];
 
   // 2. Map every column index to its canonical DB column name using Row 1!
-  // Column checking is done using this 1st row. Column order does NOT matter.
+  // Column checking is done strictly using this 1st row. Column order does NOT matter.
   const colMap = {};
+  const invalidCols = [];
+
   row1.forEach((cell, idx) => {
     const rawStr = String(cell ?? '').trim();
     if (!rawStr) return;
     const lowerKey = normalizeKey(rawStr);
+
+    if (lowerKey === 'remark') {
+      colMap[idx] = 'Remark';
+      return;
+    }
+
+    if (!isColumnValidForEntity(rawStr, entity)) {
+      invalidCols.push(rawStr);
+    }
 
     const standard = Object.entries(FIELD_ALIASES).find(([canonical, aliases]) => 
       canonical === lowerKey || aliases.some(a => normalizeKey(a) === lowerKey)
@@ -272,7 +387,7 @@ export function parseMatrixToObjects(rawMatrix) {
     const row2 = rawMatrix[dataStartIdx];
     if (Array.isArray(row2)) {
       let looksLikeAdminHeader = false;
-      const numericCols = ['product_id', 'price', 'quantity', 'category_id', 'm_id', 'actual_cost', 'labour_cost', 'priority', 'sold', 'review', 'discount'];
+      const numericCols = ['product_id', 'price', 'quantity', 'category_id', 'm_id', 'actual_cost', 'labour_cost', 'priority', 'sold', 'review', 'discount', 'weight'];
 
       for (let i = 0; i < row2.length; i++) {
         const dbCol = colMap[i];
@@ -280,17 +395,33 @@ export function parseMatrixToObjects(rawMatrix) {
         if (!dbCol || val === undefined || val === null || String(val).trim() === '') continue;
 
         const valStr = String(val).trim();
-        // If a numeric database column has text like "Product ID" or "Retail MRP (₹)" or "Stock Units" in row 2:
+        // If a numeric database column has text like "Product ID" or "Retail MRP (₹)" or any string label in row 2:
         if (numericCols.includes(dbCol) && isNaN(Number(valStr))) {
           looksLikeAdminHeader = true;
           break;
         }
 
-        // If string column matches an admin alias in FIELD_ALIASES or common header keywords:
+        // If string column matches an admin alias in FIELD_ALIASES:
         const lowerVal = normalizeKey(valStr);
         if (FIELD_ALIASES[dbCol] && FIELD_ALIASES[dbCol].some(a => normalizeKey(a) === lowerVal)) {
           looksLikeAdminHeader = true;
           break;
+        }
+      }
+
+      // If rawMatrix has at least 3 rows: if Row 3 has data where Row 2 has text labels
+      if (!looksLikeAdminHeader && rawMatrix.length > dataStartIdx + 1) {
+        const row3 = rawMatrix[dataStartIdx + 1];
+        if (Array.isArray(row3)) {
+          for (let i = 0; i < row2.length; i++) {
+            const dbCol = colMap[i];
+            const v2 = String(row2[i] ?? '').trim();
+            const v3 = String(row3[i] ?? '').trim();
+            if (numericCols.includes(dbCol) && isNaN(Number(v2)) && !isNaN(Number(v3)) && v3 !== '') {
+              looksLikeAdminHeader = true;
+              break;
+            }
+          }
         }
       }
 
@@ -328,18 +459,21 @@ export function parseMatrixToObjects(rawMatrix) {
     }
   }
 
+  resultRows.invalidCols = invalidCols;
+  resultRows.colMap = colMap;
+  resultRows.headerRow1 = row1;
   return resultRows;
 }
 
 /** Reads rows from a CSV, Excel or Word (first table) file using 2-row header parsing. */
-async function parseFile(file) {
+async function parseFile(file, entity = 'product') {
   const fileName = file.name.toLowerCase();
   if (/\.(csv|xlsx|xls)$/.test(fileName)) {
     const XLSX = await import('xlsx');
     const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rawMatrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-    return parseMatrixToObjects(rawMatrix);
+    return parseMatrixToObjects(rawMatrix, entity);
   }
   if (fileName.endsWith('.docx')) {
     const mammoth = (await import('mammoth')).default;
@@ -352,7 +486,7 @@ async function parseFile(file) {
     const rawMatrix = trs.map(tr => 
       Array.from(tr.querySelectorAll('th, td')).map(c => c.textContent.trim())
     );
-    return parseMatrixToObjects(rawMatrix);
+    return parseMatrixToObjects(rawMatrix, entity);
   }
   throw new Error('Unsupported file type. Use .csv, .xlsx, .xls or .docx');
 }
@@ -423,8 +557,25 @@ async function writeResults(file, fileHandle, rows) {
  * saved back to the file. Returns { summary, highlightMap, savedInPlace, outputName }.
  */
 export async function importRecordsFromFile({ file, fileHandle = null, entity, mode = 'EDIT' }) {
-  const rows = await parseFile(file);
+  const rows = await parseFile(file, entity);
   if (rows.length === 0) throw new Error('No valid data rows found in file.');
+
+  // Validate 1st Row: Column checking is compared strictly to Row 1
+  if (rows.invalidCols && rows.invalidCols.length > 0) {
+    const invalidList = rows.invalidCols.map(c => `'${c}'`).join(', ');
+    const errMsg = `Validation Error: Column ${invalidList} in Row 1 does not exist in the '${entity}' table. ` +
+      `The 1st row must strictly match valid database column names (e.g. category_name, title, price, quantity, etc.). ` +
+      `The 2nd row can have any custom admin name according to the admin.`;
+
+    rows.forEach(r => {
+      r.Remark = errMsg;
+    });
+    try {
+      await writeResults(file, fileHandle, rows);
+    } catch { /* ignore */ }
+
+    throw new Error(errMsg);
+  }
 
   const pkField = PK_MAP[entity];
   const selectedMode = entity === 'product' ? mode : 'EDIT';
