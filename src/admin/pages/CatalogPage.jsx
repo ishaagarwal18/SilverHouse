@@ -2,11 +2,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CircleCheck, CircleX, Crown, Filter, Flame, Hammer, IndianRupee, Layers, LayoutGrid, Package, Pencil, Plus,
   RotateCcw, Scale, BadgeCheck, Search, Sparkles, SquareCheck, Table2, Trash2, TrendingDown, TrendingUp,
-  TriangleAlert, OctagonAlert, X, ChartLine
+  TriangleAlert, OctagonAlert, X, ChartLine, FileSpreadsheet
 } from 'lucide-react';
 import { adminImageUrl, callProc, fetchRows, formatINR, PLACEHOLDER_IMG, productImage } from '../api/adminApi';
 import { useAdminUI } from '../context/AdminUIContext';
 import ProductForm from '../components/ProductForm';
+import ProductExportModal from '../components/ProductExportModal';
+import { exportProductsToExcel } from '../lib/exportProductsExcel';
 import { Button, Card, ConfirmDeleteModal, EmptyState, LoadingBlock, Modal, ModalBody, PageHeader, PillGroup } from '../components/ui';
 
 const PRICE_MAX = 100000;
@@ -97,6 +99,8 @@ export default function CatalogPage() {
   const [productModal, setProductModal] = useState(null); // { product?: row }
   const [deleteIds, setDeleteIds] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const maxProductPrice = useMemo(() => {
     if (!products || products.length === 0) return 10000;
@@ -240,6 +244,61 @@ export default function CatalogPage() {
     fetchProducts();
   };
 
+  const handleExportExcel = async (targetScope = 'filtered', options = {}) => {
+    let prodsToExport = [];
+    if (targetScope === 'selected') {
+      prodsToExport = products.filter(p => selected.has(p.product_id));
+    } else if (targetScope === 'all') {
+      prodsToExport = products;
+    } else if (targetScope === 'restock') {
+      prodsToExport = products.filter(p => Number(p.quantity ?? 0) < 5);
+    } else {
+      prodsToExport = filtered;
+    }
+
+    if (prodsToExport.length === 0) {
+      showToast('No products match the selected criteria to export.', true);
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const catObj = categories.find(c => String(c.category_id) === String(filters.category));
+      const makeObj = makes.find(m => String(m.m_id) === String(filters.make));
+
+      const filterInfo = {
+        search: filters.search.trim() || 'All Items',
+        stock: filters.stock === 'in_stock' ? 'In Stock (>=1)' : filters.stock === 'low_stock' ? 'Low Stock (<5)' : filters.stock === 'out_of_stock' ? 'Out of Stock (0)' : 'All Stock Statuses',
+        categoryName: catObj ? catObj.name : 'All Categories',
+        makeType: makeObj ? makeObj.type : 'All Crafts',
+        audience: filters.audience || 'All Audiences',
+        color: filters.color || 'All Finishes',
+        purity: filters.purity || 'All Purities',
+        priceRange: `${formatINR(filters.minPrice)} – ${formatINR(effectiveMaxPrice)}`,
+        sort: SORT_OPTIONS.find(s => s.value === filters.sort)?.label || filters.sort
+      };
+
+      const res = await exportProductsToExcel({
+        products: prodsToExport,
+        allProducts: products,
+        categories,
+        makes,
+        filterInfo,
+        scope: targetScope,
+        includeSummary: options.includeSummary ?? true,
+        includeReorderSheet: options.includeReorderSheet ?? true
+      });
+
+      showToast(`Exported ${res.count} product(s) to ${res.filename}`);
+      setExportModalOpen(false);
+    } catch (err) {
+      console.error('Failed to export products to Excel:', err);
+      showToast('Export failed: ' + err.message, true);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const activeFilterCount = Object.keys(DEFAULT_FILTERS).filter(
     k => k !== 'sort' && filters[k] !== DEFAULT_FILTERS[k] && !(k === 'maxPrice' && (filters[k] === maxProductPrice || filters[k] === PRICE_MAX))
   ).length;
@@ -272,6 +331,14 @@ export default function CatalogPage() {
                 </button>
               ))}
             </div>
+            <Button
+              className="!bg-emerald-600 hover:!bg-emerald-700 !text-white font-medium shadow-sm transition-all flex items-center gap-1.5"
+              onClick={() => setExportModalOpen(true)}
+              disabled={products.length === 0}
+              title="Download products and inventory reports as an Excel (.xlsx) file"
+            >
+              <FileSpreadsheet className="w-4 h-4" /> Export Excel
+            </Button>
             <Button variant="primary" onClick={() => setProductModal({})}>
               <Plus className="w-4 h-4" /> Add Product
             </Button>
@@ -320,6 +387,15 @@ export default function CatalogPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" onClick={toggleAllInView}><SquareCheck className="w-4 h-4" /> {allInView ? 'Deselect All In View' : 'Select All In View'}</Button>
+                <Button
+                  size="sm"
+                  className="!bg-emerald-600 hover:!bg-emerald-700 !text-white font-medium flex items-center gap-1.5"
+                  onClick={() => handleExportExcel('selected')}
+                  disabled={exporting}
+                  title="Download only the selected products to Excel"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" /> Export Selected ({selected.size})
+                </Button>
                 <Button size="sm" variant="danger" onClick={() => setDeleteIds(Array.from(selected))}><Trash2 className="w-4 h-4" /> Delete Selected</Button>
                 <Button size="sm" onClick={() => setSelected(new Set())}><X className="w-4 h-4" /> Clear</Button>
               </div>
@@ -444,6 +520,20 @@ export default function CatalogPage() {
             <div className="mt-1 text-xs text-ad-muted">IDs: {deleteIds.slice(0, 8).join(', ')}{deleteIds.length > 8 ? '…' : ''}</div>
           </div>
         ))}
+      />
+
+      <ProductExportModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        products={products}
+        filtered={filtered}
+        selectedIds={selected}
+        categories={categories}
+        makes={makes}
+        filters={filters}
+        effectiveMaxPrice={effectiveMaxPrice}
+        onExport={handleExportExcel}
+        exporting={exporting}
       />
     </div>
   );
@@ -716,8 +806,16 @@ function CatalogFilters({ filters, setFilters, products, categories, makes, puri
         </select>
       </FilterSection>
 
-      <div className="flex gap-2 lg:col-span-full xl:col-span-1 lg:mt-2">
+      <div className="flex flex-wrap gap-2 lg:col-span-full xl:col-span-2 lg:mt-2">
         <Button className="flex-1" onClick={() => setFilters({ ...DEFAULT_FILTERS, maxPrice: maxProductPrice })}><RotateCcw className="w-4 h-4" /> Reset</Button>
+        <Button
+          className="flex-1 !bg-emerald-600 hover:!bg-emerald-700 !text-white font-medium shadow-sm flex items-center justify-center gap-1.5"
+          onClick={() => setExportModalOpen(true)}
+          disabled={products.length === 0 || filtered.length === 0}
+          title="Download filtered products as an Excel spreadsheet"
+        >
+          <FileSpreadsheet className="w-4 h-4" /> Export Excel ({filtered.length})
+        </Button>
         <Button variant="primary" className="flex-1 lg:hidden" onClick={onClose}>Show results</Button>
       </div>
     </div>

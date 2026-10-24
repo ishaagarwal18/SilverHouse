@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, Check, CheckCircle2, ChevronRight, Clock, Download, Image as ImageIcon, Minus, Package, Pencil, Plus, Receipt, RotateCcw, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, Upload, Users, Zap } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, Check, CheckCircle2, ChevronRight, Clock, Download, FileSpreadsheet, Filter, Image as ImageIcon, Minus, Package, Pencil, Plus, Receipt, RotateCcw, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, Upload, Users, Zap } from 'lucide-react';
 import { adminFetch, adminImageUrl, callProc, fetchRows, formatAdminDate, formatAdminDateOrTime, isDateLikeColumnOrValue, PLACEHOLDER_IMG, productImage } from '../api/adminApi';
 import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISIONS, PK_MAP, PURITY_OPTIONS, FINISH_OPTIONS, AUDIENCE_OPTIONS } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
 import { importRecordsFromFile } from '../lib/importRecords';
+import { exportProductsToExcel } from '../lib/exportProductsExcel';
 import {
   Button, Card, ConfirmDeleteModal, DecisionBadge, EmptyState, Field, ImageLightbox, LoadingBlock,
   Modal, ModalBody, PageHeader, PaymentBadge, PillGroup, Spinner
@@ -134,6 +135,9 @@ function DataManager({ entity }) {
   const [orderStatusFilter, setOrderStatusFilter] = useState(() => (searchParams.get('status') || 'ALL').toUpperCase());
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [productStockFilter, setProductStockFilter] = useState('ALL');
+  const [productCategoryFilter, setProductCategoryFilter] = useState('');
+  const [productAudienceFilter, setProductAudienceFilter] = useState('');
   const [exportingExcel, setExportingExcel] = useState(false);
   const fileInputRef = useRef(null);
   const highlightedRowRef = useRef(null);
@@ -396,20 +400,27 @@ function DataManager({ entity }) {
   const headers = useMemo(() => {
     if (rows.length === 0) return [];
     const keys = Object.keys(rows[0]);
-    if (entity === 'orders') return keys.filter(h => !HIDDEN_ORDER_COLUMNS.includes(h));
-    if (entity === 'cart') return keys.filter(h => !HIDDEN_CART_COLUMNS.includes(h));
+    if (entity === 'orders') return Array.from(new Set(keys.filter(h => !HIDDEN_ORDER_COLUMNS.includes(h))));
+    if (entity === 'cart') return Array.from(new Set(keys.filter(h => !HIDDEN_CART_COLUMNS.includes(h))));
     if (entity === 'product') {
       // In product table, category_name and make_type already display the readable names.
       // Filter out redundant raw numeric foreign keys (category_id and m_id) to avoid duplicate columns.
-      return keys.filter(h => h !== 'category_id' && h !== 'm_id');
+      return Array.from(new Set(keys.filter(h => h !== 'category_id' && h !== 'm_id')));
     }
     if (entity === 'wishlist') {
-      return keys.map(h => (h === 'user_id' ? 'user_name' : h === 'product_id' ? 'product_name' : h));
+      // Filter out redundant raw product_id and raw image_url since product_name already renders product details + image.
+      // Map user_id to user_name to show customer name cleanly without duplicate columns.
+      const hasProdName = keys.includes('product_name');
+      return Array.from(new Set(
+        keys
+          .filter(h => (hasProdName ? h !== 'product_id' : true) && h !== 'image_url')
+          .map(h => (h === 'user_id' ? 'user_name' : (!hasProdName && h === 'product_id') ? 'product_name' : h))
+      ));
     }
     if (entity === 'festival') {
-      return [...keys, 'linked_categories'];
+      return Array.from(new Set([...keys, 'linked_categories']));
     }
-    return keys;
+    return Array.from(new Set(keys));
   }, [rows, entity]);
 
   const getSortValue = useCallback((row, col) => {
@@ -516,8 +527,39 @@ function DataManager({ entity }) {
     return { all: dateFiltered.length, pending, completed };
   }, [entity, rows, startDate, endDate, getOrderStatus]);
 
+  const productStatusCounts = useMemo(() => {
+    if (entity !== 'product') return { all: 0, inStock: 0, lowStock: 0, outOfStock: 0 };
+    let inStock = 0;
+    let lowStock = 0;
+    let outOfStock = 0;
+    rows.forEach(r => {
+      const q = Number(r.quantity ?? 0);
+      if (q === 0) outOfStock++;
+      else if (q < 5) lowStock++;
+      else inStock++;
+    });
+    return { all: rows.length, inStock, lowStock, outOfStock };
+  }, [entity, rows]);
+
   const displayedRows = useMemo(() => {
     let list = sortedRows;
+    if (entity === 'product') {
+      if (productStockFilter === 'IN_STOCK') {
+        list = list.filter(r => Number(r.quantity ?? 0) > 0);
+      } else if (productStockFilter === 'LOW_STOCK') {
+        list = list.filter(r => Number(r.quantity ?? 0) > 0 && Number(r.quantity ?? 0) < 5);
+      } else if (productStockFilter === 'OUT_OF_STOCK') {
+        list = list.filter(r => Number(r.quantity ?? 0) === 0);
+      }
+
+      if (productCategoryFilter) {
+        list = list.filter(r => String(r.category_id) === productCategoryFilter || String(r.category_name) === productCategoryFilter);
+      }
+
+      if (productAudienceFilter) {
+        list = list.filter(r => String(r.ideal_for || '').toLowerCase() === productAudienceFilter.toLowerCase());
+      }
+    }
     if (entity === 'orders') {
       if (orderStatusFilter !== 'ALL') {
         list = list.filter(r => getOrderStatus(r) === orderStatusFilter);
@@ -540,7 +582,42 @@ function DataManager({ entity }) {
       }
     }
     return list;
-  }, [sortedRows, entity, orderStatusFilter, startDate, endDate, getOrderStatus]);
+  }, [sortedRows, entity, orderStatusFilter, startDate, endDate, getOrderStatus, productStockFilter, productCategoryFilter, productAudienceFilter]);
+
+  const handleExportProductsExcel = async () => {
+    if (displayedRows.length === 0) {
+      showToast('No products match the selected filters to export.', true);
+      return;
+    }
+
+    setExportingExcel(true);
+    try {
+      const cats = Object.entries(lookups.categories || {}).map(([id, name]) => ({ category_id: id, name }));
+      const mks = Object.entries(lookups.makes || {}).map(([id, type]) => ({ m_id: id, type }));
+
+      const res = await exportProductsToExcel({
+        products: displayedRows,
+        allProducts: rows,
+        categories: cats,
+        makes: mks,
+        filterInfo: {
+          stock: productStockFilter !== 'ALL' ? productStockFilter : 'All Stock Statuses',
+          categoryName: productCategoryFilter ? (lookups.categories?.[productCategoryFilter] || productCategoryFilter) : 'All Categories',
+          audience: productAudienceFilter || 'All Audiences'
+        },
+        scope: productStockFilter === 'LOW_STOCK' || productStockFilter === 'OUT_OF_STOCK' ? 'restock' : 'filtered',
+        includeSummary: true,
+        includeReorderSheet: true
+      });
+
+      showToast(`Exported ${res.count} product(s) to ${res.filename}`);
+    } catch (err) {
+      console.error('Failed to export products to Excel:', err);
+      showToast('Export failed: ' + err.message, true);
+    } finally {
+      setExportingExcel(false);
+    }
+  };
 
   const handleExportExcel = async () => {
     if (displayedRows.length === 0) {
@@ -958,16 +1035,19 @@ function DataManager({ entity }) {
       }
       if (h === 'product_name') {
         const p = lookups.productMap?.[String(row.product_id)];
-        const pName = p?.title || p?.product_name || (row.product_id ? `Product #${row.product_id}` : '-');
-        const pImg = p ? adminImageUrl(productImage(p)) : null;
+        const pName = row.product_name || p?.title || p?.product_name || (row.product_id ? `Product #${row.product_id}` : '-');
+        const pImg = row.image_url ? row.image_url : (p ? productImage(p) : null);
+        const pPrice = row.final_price !== undefined && row.final_price !== null ? row.final_price : (p?.final_price || row.price || p?.price);
         return (
           <div className="flex items-center gap-2.5">
             {pImg && (
-              <img src={pImg} alt="" className="h-8 w-8 rounded-md border border-ad-border object-cover shrink-0" onError={e => { e.currentTarget.src = PLACEHOLDER_IMG; }} />
+              <img src={adminImageUrl(pImg)} alt="" className="h-8 w-8 rounded-md border border-ad-border object-cover shrink-0" onError={e => { e.currentTarget.src = PLACEHOLDER_IMG; }} />
             )}
             <div className="min-w-0">
               <div className="font-semibold text-ad-text truncate max-w-[240px]" title={pName}>{pName}</div>
-              {(p?.final_price || p?.price) && <div className="text-[11px] text-ad-muted">₹{Number(p.final_price || p.price).toLocaleString('en-IN')}</div>}
+              {pPrice !== undefined && pPrice !== null && (
+                <div className="text-[11px] text-ad-muted">₹{Number(pPrice).toLocaleString('en-IN')}</div>
+              )}
             </div>
           </div>
         );
@@ -1054,10 +1134,20 @@ function DataManager({ entity }) {
         actions={
           <>
             {entity === 'product' && (
-              <select value={importMode} onChange={e => setImportMode(e.target.value)} className="ad-input w-auto! py-2.5" aria-label="Import mode">
-                <option value="RESTOCK">⚡ Inward Stock Mode</option>
-                <option value="EDIT">✏️ Overwrite Mode</option>
-              </select>
+              <>
+                <Button
+                  onClick={handleExportProductsExcel}
+                  disabled={exportingExcel || rows.length === 0}
+                  className="!bg-emerald-600 hover:!bg-emerald-700 !text-white font-medium shadow-sm transition-all flex items-center gap-1.5"
+                  title="Download products inventory as Excel (.xlsx)"
+                >
+                  {exportingExcel ? <Spinner size="xs" /> : <FileSpreadsheet className="w-4 h-4" />} Export Excel
+                </Button>
+                <select value={importMode} onChange={e => setImportMode(e.target.value)} className="ad-input w-auto! py-2.5" aria-label="Import mode">
+                  <option value="RESTOCK">⚡ Inward Stock Mode</option>
+                  <option value="EDIT">✏️ Overwrite Mode</option>
+                </select>
+              </>
             )}
             {isCatalogTable && (
               <>
@@ -1190,6 +1280,102 @@ function DataManager({ entity }) {
         </div>
       )}
 
+      {entity === 'product' && !loading && rows.length > 0 && (
+        <div className="mb-4 flex flex-col gap-3 rounded-xl border border-ad-border bg-ad-surface p-3.5 shadow-xs">
+          {/* Top row: Stock status pills & Export Excel button */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-ad-muted mr-1">
+                Stock Status:
+              </span>
+              <PillGroup
+                size="md"
+                value={productStockFilter}
+                onChange={setProductStockFilter}
+                options={[
+                  { value: 'ALL', label: 'All Products', icon: Package, count: productStatusCounts.all },
+                  { value: 'IN_STOCK', label: 'In Stock', count: productStatusCounts.inStock },
+                  { value: 'LOW_STOCK', label: 'Low Stock (<5)', count: productStatusCounts.lowStock },
+                  { value: 'OUT_OF_STOCK', label: 'Out of Stock', count: productStatusCounts.outOfStock }
+                ]}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleExportProductsExcel}
+                disabled={exportingExcel || displayedRows.length === 0}
+                className="!bg-emerald-600 hover:!bg-emerald-700 !text-white font-medium shadow-sm transition-all flex items-center gap-1.5"
+                title="Download filtered products as an Excel (.xlsx) file"
+              >
+                {exportingExcel ? (
+                  <>
+                    <Spinner size="xs" /> Exporting…
+                  </>
+                ) : (
+                  <>
+                    <FileSpreadsheet className="w-4 h-4" /> Download Excel ({displayedRows.length})
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Bottom row: Category & Audience filters + Results count */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-ad-border/60 text-xs">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="text-ad-muted font-medium">Category:</span>
+                <select
+                  value={productCategoryFilter}
+                  onChange={e => setProductCategoryFilter(e.target.value)}
+                  className="rounded-lg border border-ad-border bg-ad-card px-2.5 py-1 text-xs text-ad-text shadow-xs focus:border-ad-primary focus:outline-hidden"
+                >
+                  <option value="">All Categories ({rows.length})</option>
+                  {Object.entries(lookups.categories || {}).map(([id, name]) => (
+                    <option key={id} value={id}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-ad-muted font-medium">Audience:</span>
+                <select
+                  value={productAudienceFilter}
+                  onChange={e => setProductAudienceFilter(e.target.value)}
+                  className="rounded-lg border border-ad-border bg-ad-card px-2.5 py-1 text-xs text-ad-text shadow-xs focus:border-ad-primary focus:outline-hidden"
+                >
+                  <option value="">All Audiences</option>
+                  {(lookups.idealForList || []).map((item, idx) => {
+                    const val = typeof item === 'string' ? item : item.ideal_for;
+                    return <option key={idx} value={val}>{val}</option>;
+                  })}
+                </select>
+              </div>
+
+              {(productStockFilter !== 'ALL' || productCategoryFilter || productAudienceFilter) && (
+                <button
+                  type="button"
+                  onClick={() => { setProductStockFilter('ALL'); setProductCategoryFilter(''); setProductAudienceFilter(''); }}
+                  className="inline-flex items-center gap-1 rounded-lg border border-ad-border bg-ad-card/60 px-2 py-1 text-xs text-ad-muted hover:text-ad-text hover:bg-ad-card transition-colors cursor-pointer"
+                  title="Clear product filters"
+                >
+                  <RotateCcw className="w-3 h-3" /> Clear Filters
+                </button>
+              )}
+            </div>
+
+            <div className="text-xs text-ad-muted">
+              Showing <strong className="text-ad-text font-bold">{displayedRows.length}</strong> of <strong className="text-ad-text font-bold">{rows.length}</strong> products
+            </div>
+          </div>
+        </div>
+      )}
+
       <Card className="overflow-hidden">
         {loading ? (
           <LoadingBlock label={`Loading ${cfg.plural.toLowerCase()}…`} />
@@ -1197,33 +1383,49 @@ function DataManager({ entity }) {
           <EmptyState title={`No ${cfg.plural.toLowerCase()} yet`} description={`No records present in dbo.${entity}. Click "Add ${cfg.singular}" to create one.`} />
         ) : displayedRows.length === 0 ? (
           <EmptyState
-            icon={orderStatusFilter === 'COMPLETED' ? CheckCircle2 : Clock}
+            icon={entity === 'product' ? Package : orderStatusFilter === 'COMPLETED' ? CheckCircle2 : Clock}
             title={
-              startDate || endDate
-                ? 'No orders found for selected filters'
-                : `No ${orderStatusFilter.toLowerCase()} orders found`
+              entity === 'product'
+                ? 'No products match selected filters'
+                : startDate || endDate
+                  ? 'No orders found for selected filters'
+                  : `No ${orderStatusFilter.toLowerCase()} orders found`
             }
             description={
-              startDate || endDate
-                ? `No orders match ${orderStatusFilter === 'ALL' ? '' : orderStatusFilter + ' status'} between ${startDate ? formatAdminDate(startDate) : 'earliest'} and ${endDate ? formatAdminDate(endDate) : 'latest'}. Try adjusting or clearing filters.`
-                : `There are currently no orders with ${orderStatusFilter} status. Switch back to "All Orders" to view every recorded order.`
+              entity === 'product'
+                ? `No products found with ${productStockFilter !== 'ALL' ? productStockFilter.replace('_', ' ') : ''} stock ${productCategoryFilter ? 'in category #' + productCategoryFilter : ''}. Try resetting your filters.`
+                : startDate || endDate
+                  ? `No orders match ${orderStatusFilter === 'ALL' ? '' : orderStatusFilter + ' status'} between ${startDate ? formatAdminDate(startDate) : 'earliest'} and ${endDate ? formatAdminDate(endDate) : 'latest'}. Try adjusting or clearing filters.`
+                  : `There are currently no orders with ${orderStatusFilter} status. Switch back to "All Orders" to view every recorded order.`
             }
           >
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {(startDate || endDate) && (
-                <Button variant="secondary" size="sm" onClick={() => { setStartDate(''); setEndDate(''); }}>
-                  Clear Date Filter
+              {entity === 'product' ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => { setProductStockFilter('ALL'); setProductCategoryFilter(''); setProductAudienceFilter(''); }}
+                >
+                  <RotateCcw className="w-4 h-4 mr-1.5" /> Show All Products ({rows.length})
                 </Button>
-              )}
-              {orderStatusFilter !== 'ALL' && (
-                <Button variant="primary" size="sm" onClick={() => setOrderStatusFilter('ALL')}>
-                  Show All Orders ({rows.length})
-                </Button>
-              )}
-              {orderStatusFilter === 'ALL' && (startDate || endDate) && (
-                <Button variant="primary" size="sm" onClick={() => { setStartDate(''); setEndDate(''); }}>
-                  Show All ({rows.length})
-                </Button>
+              ) : (
+                <>
+                  {(startDate || endDate) && (
+                    <Button variant="secondary" size="sm" onClick={() => { setStartDate(''); setEndDate(''); }}>
+                      Clear Date Filter
+                    </Button>
+                  )}
+                  {orderStatusFilter !== 'ALL' && (
+                    <Button variant="primary" size="sm" onClick={() => setOrderStatusFilter('ALL')}>
+                      Show All Orders ({rows.length})
+                    </Button>
+                  )}
+                  {orderStatusFilter === 'ALL' && (startDate || endDate) && (
+                    <Button variant="primary" size="sm" onClick={() => { setStartDate(''); setEndDate(''); }}>
+                      Show All ({rows.length})
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </EmptyState>

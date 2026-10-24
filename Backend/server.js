@@ -1724,7 +1724,10 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 
         const userObj = {
             userId: user.user_id,
+            user_id: user.user_id,
             fullName: user.full_name,
+            full_name: user.full_name,
+            name: user.full_name,
             email: '',
             phone: user.phone || cleanedPhone,
             role: roleStr,
@@ -1769,7 +1772,10 @@ app.get('/api/auth/me', requireCustomerAuth, async (req, res) => {
         success: true,
         user: {
             userId: req.user.user_id,
+            user_id: req.user.user_id,
             fullName: req.user.fullName,
+            full_name: req.user.fullName,
+            name: req.user.fullName,
             phone: req.user.phone,
             role: req.user.role,
             birthdayDate: req.user.birthdayDate,
@@ -2181,7 +2187,7 @@ app.post(['/api/reviews', '/api/review'], optionalCustomerAuth, async (req, res)
         }
 
         // Enforce verified caller user ID if signed in; guest reviews are anonymous
-        const parsedUserId = req.user ? req.user.user_id : null;
+        const parsedUserId = req.user ? req.user.user_id : (parseInt(req.body.userId || req.body.userid, 10) || null);
 
         const description = (req.body.description || req.body.comment || '').trim();
         let star = parseInt(req.body.star || req.body.rating || 5, 10);

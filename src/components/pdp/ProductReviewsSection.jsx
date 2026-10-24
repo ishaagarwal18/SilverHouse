@@ -627,7 +627,7 @@ export default function ProductReviewsSection({
                   <div className="flex items-center space-x-2 text-emerald-800">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     <span>
-                      Posting as <strong>{user.full_name || user.name || 'Patron'}</strong> ({user.phone || 'Verified Customer'})
+                      Posting as <strong>{user.fullName || user.full_name || user.name || 'Patron'}</strong> ({user.phone || 'Verified Customer'})
                     </span>
                   </div>
                 ) : (

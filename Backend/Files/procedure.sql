@@ -3176,6 +3176,31 @@ END;
 GO
 
 -- =========================================================================
+-- TRIGGER: TR_review_sync_product_count
+-- Keeps dbo.product.review count automatically in sync with dbo.review table
+-- =========================================================================
+CREATE OR ALTER TRIGGER dbo.TR_review_sync_product_count
+ON dbo.review
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @AffectedProducts TABLE (product_id INT);
+
+    INSERT INTO @AffectedProducts (product_id)
+    SELECT DISTINCT productid FROM inserted WHERE productid IS NOT NULL
+    UNION
+    SELECT DISTINCT productid FROM deleted WHERE productid IS NOT NULL;
+
+    UPDATE p
+    SET p.review = ISNULL((SELECT COUNT(*) FROM dbo.review r WHERE r.productid = p.product_id), 0)
+    FROM dbo.product p
+    INNER JOIN @AffectedProducts a ON p.product_id = a.product_id;
+END;
+GO
+
+-- =========================================================================
 -- PROCEDURE 15: SP_GETDATA
 -- =========================================================================
 IF OBJECT_ID('dbo.SP_GETDATA', 'P') IS NOT NULL 
