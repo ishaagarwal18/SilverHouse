@@ -2640,20 +2640,7 @@ app.post('/api/data', async (req, res) => {
                         item.sold = item.sold !== undefined ? Number(item.sold) : 0;
                     }
                     if (normalizedProc === 'review' || normalizedProc === 'reviews') {
-                        if (item.photo) {
-                            try {
-                                const parsed = JSON.parse(item.photo);
-                                item.photos = Array.isArray(parsed)
-                                    ? parsed.map(p => typeof p === 'string' ? p : (p.value || p.url || ''))
-                                    : [item.photo];
-                            } catch {
-                                item.photos = typeof item.photo === 'string' && item.photo.includes(',')
-                                    ? item.photo.split(',').map(s => s.trim())
-                                    : [item.photo];
-                            }
-                        } else {
-                            item.photos = [];
-                        }
+                        // Keep DB column 'photo' clean without injecting duplicate 'photos' property
                     }
                     return item;
                 });

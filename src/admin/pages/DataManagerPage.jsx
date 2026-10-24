@@ -430,6 +430,10 @@ function DataManager({ entity }) {
           .map(h => (h === 'user_id' ? 'user_name' : (!hasProdName && h === 'product_id') ? 'product_name' : h))
       ));
     }
+    if (entity === 'review') {
+      // Filter out redundant 'photos' property so only a single 'photo' column is shown in the review table
+      return Array.from(new Set(keys.filter(h => h !== 'photos')));
+    }
     if (entity === 'festival') {
       return Array.from(new Set([...keys, 'linked_categories']));
     }
@@ -1118,6 +1122,9 @@ function DataManager({ entity }) {
   const columnTitle = h => {
     if (h === 'user_name') return 'Customer Name';
     if (h === 'product_name') return 'Product Name';
+    if (h === 'product_image') return 'Product Image';
+    if (h === 'photo' || h === 'photos') return 'Customer Photo';
+    if (h === 'star') return 'Rating';
     if (h === 'color') return 'Color / Finish';
     if (h === 'ideal_for') return 'Target Audience / Ideal For';
     if (h === 'linked_categories') return 'Linked Categories';
