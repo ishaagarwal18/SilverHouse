@@ -387,9 +387,25 @@ export default function ProductReviewsSection({
                   })
                 : 'Recent';
 
-              const photos = Array.isArray(rev.photos)
-                ? rev.photos
-                : (rev.photo ? [rev.photo] : []);
+              let photos = [];
+              if (Array.isArray(rev.photos)) {
+                photos = rev.photos;
+              } else if (Array.isArray(rev.photo)) {
+                photos = rev.photo;
+              } else if (typeof rev.photo === 'string' && rev.photo.trim() && rev.photo !== '-') {
+                const trimmed = rev.photo.trim();
+                if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                  try {
+                    const parsed = JSON.parse(trimmed);
+                    photos = Array.isArray(parsed) ? parsed : [parsed];
+                  } catch {
+                    photos = [trimmed];
+                  }
+                } else {
+                  photos = [trimmed];
+                }
+              }
+              photos = photos.map(p => typeof p === 'string' ? p : (p?.value || p?.url || p?.image_url || '')).filter(Boolean);
 
               const isHelpful = !!helpfulMap[rev.reviewid];
 

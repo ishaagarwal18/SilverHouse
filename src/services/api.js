@@ -48,7 +48,7 @@ if (typeof window !== 'undefined') {
  */
 export function resolveImageUrl(img) {
   if (!img) return '';
-  const val = typeof img === 'object' ? (img.image_url || img.url || '') : String(img);
+  const val = typeof img === 'object' ? (img.image_url || img.url || img.value || '') : String(img);
   const trimmed = String(val).trim();
   if (!trimmed) return '';
   // Already an absolute HTTP/HTTPS or data URL
@@ -59,10 +59,13 @@ export function resolveImageUrl(img) {
   if (trimmed.startsWith('/images/') || trimmed.startsWith('images/')) {
     return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   }
-  // Uploaded images from the deployed admin panel (/product_image/... or img-...)
-  if (trimmed.startsWith('/product_image/') || trimmed.startsWith('product_image/') || trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/') || trimmed.startsWith('img-')) {
+  // Uploaded images from the deployed admin panel or reviews (/product_image/... or img-... or review-...)
+  if (trimmed.startsWith('/product_image/') || trimmed.startsWith('product_image/') || trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/') || trimmed.startsWith('img-') || trimmed.startsWith('review-')) {
     let filename = trimmed.replace(/^\/?(product_image|uploads)\//, '');
     const backendBase = API_BASE_URL.replace(/\/api\/?$/, '');
+    if (filename.startsWith('review-') && !filename.includes('/')) {
+      return `${backendBase}/product_image/Reviews/${filename}`;
+    }
     return `${backendBase}/product_image/${filename}`;
   }
   return trimmed;
@@ -998,11 +1001,19 @@ export async function uploadReviewPhotos(files) {
     const token = getAuthToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${API_BASE_URL}/upload-multiple`, {
+    let res = await fetch(`${API_BASE_URL}/upload-reviews`, {
       method: 'POST',
       headers,
       body: formData
     });
+    if (!res.ok) {
+      // Fallback to upload-multiple with type=review
+      res = await fetch(`${API_BASE_URL}/upload-multiple?type=review`, {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+    }
     if (res.ok) {
       const json = await res.json();
       if (json.success && Array.isArray(json.imageUrls)) {

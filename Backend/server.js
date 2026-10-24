@@ -31,10 +31,14 @@ app.use((req, res, next) => {
     next();
 });
 
-// Ensure product_image directory exists
+// Ensure product_image and product_image/Reviews directories exist
 const uploadsDir = path.join(__dirname, 'product_image');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
+}
+const reviewsUploadsDir = path.join(uploadsDir, 'Reviews');
+if (!fs.existsSync(reviewsUploadsDir)) {
+    fs.mkdirSync(reviewsUploadsDir, { recursive: true });
 }
 
 // =========================================================================
@@ -76,6 +80,28 @@ const upload = multer({
     storage,
     fileFilter,
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB per file
+});
+
+// Dedicated storage for Customer Reviews: Stored inside Backend/product_image/Reviews/
+const reviewStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        if (!fs.existsSync(reviewsUploadsDir)) {
+            fs.mkdirSync(reviewsUploadsDir, { recursive: true });
+        }
+        cb(null, reviewsUploadsDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        let ext = (path.extname(file.originalname || '') || '').toLowerCase();
+        if (!ALLOWED_EXTENSIONS.has(ext)) ext = '.jpg';
+        cb(null, 'review-' + uniqueSuffix + ext);
+    }
+});
+
+const uploadReviews = multer({
+    storage: reviewStorage,
+    fileFilter,
+    limits: { fileSize: 15 * 1024 * 1024 } // 15MB per file for high-res review photos
 });
 
 // =========================================================================
@@ -304,13 +330,14 @@ app.post('/api/upload', requireAdminAuth, upload.single('imageFile'), (req, res)
     }
 });
 
-// MULTI-IMAGE UPLOAD ENDPOINT FOR INSPIRATION / CUSTOM ORDERS & REVIEWS
-app.post('/api/upload-multiple', optionalCustomerAuth, upload.array('images', 10), (req, res) => {
+// DEDICATED REVIEW PHOTO UPLOAD ENDPOINT
+// Stores all customer review photos strictly inside C:\E drive\SilverHouse\Backend\product_image\Reviews
+app.post(['/api/upload-reviews', '/api/upload-review-photos'], optionalCustomerAuth, uploadReviews.array('images', 10), (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ success: false, error: 'No image files uploaded.' });
+            return res.status(400).json({ success: false, error: 'No review image files uploaded.' });
         }
-        const urls = req.files.map(f => `/product_image/${f.filename}`);
+        const urls = req.files.map(f => `/product_image/Reviews/${f.filename}`);
         return res.status(200).json({
             success: true,
             imageUrls: urls
@@ -318,6 +345,28 @@ app.post('/api/upload-multiple', optionalCustomerAuth, upload.array('images', 10
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
     }
+});
+
+// MULTI-IMAGE UPLOAD ENDPOINT FOR INSPIRATION / CUSTOM ORDERS & GENERAL MULTI-UPLOADS
+app.post('/api/upload-multiple', optionalCustomerAuth, (req, res) => {
+    // If request indicates review upload, store into Reviews folder
+    const isReview = req.query.type === 'review' || req.query.folder === 'Reviews' || req.headers['x-upload-type'] === 'review';
+    const handler = isReview ? uploadReviews.array('images', 10) : upload.array('images', 10);
+    const folderPrefix = isReview ? '/product_image/Reviews' : '/product_image';
+
+    handler(req, res, (err) => {
+        if (err) {
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, error: 'No image files uploaded.' });
+        }
+        const urls = req.files.map(f => `${folderPrefix}/${f.filename}`);
+        return res.status(200).json({
+            success: true,
+            imageUrls: urls
+        });
+    });
 });
 
 // =========================================================================

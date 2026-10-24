@@ -15,11 +15,11 @@ const HIDDEN_ORDER_COLUMNS = ['confirm', 'custom_category', 'is_custom', 'image'
 const HIDDEN_CART_COLUMNS = ['total_items'];
 const VARCHAR_COLUMNS = [
   'name', 'title', 'product_name', 'category_name', 'category', 'description', 'purity', 'color', 'ideal_for', 'weight', 'image_url', 'url',
-  'images', 'image', 'confirm', 'custom_category', 'is_custom', 'role', 'email', 'full_name', 'phone', 'address_line1',
+  'images', 'image', 'photo', 'photos', 'confirm', 'custom_category', 'is_custom', 'role', 'email', 'full_name', 'phone', 'address_line1',
   'address_line2', 'city', 'state', 'postal_code', 'country', 'order_number', 'payment_status', 'order_status', 'password_hash',
   'password', 'remark', 'status', 'created_at', 'updated_at', 'birthday_date', 'anniversary_date', 'gst_number'
 ];
-const VARCHAR_HINTS = ['url', 'name', 'desc', 'date', 'email', 'phone', 'address', 'status', 'text', 'hash', 'time', 'role', 'code', 'number', 'weight', 'purity', 'color', 'ideal'];
+const VARCHAR_HINTS = ['url', 'name', 'desc', 'date', 'email', 'phone', 'address', 'status', 'text', 'hash', 'time', 'role', 'code', 'number', 'weight', 'purity', 'color', 'ideal', 'photo'];
 const NUMERIC_COLUMNS = ['quantity', 'qty', 'stock', 'stock_available', 'stock_qty', 'price', 'discount', 'discount_percent', 'final_price', 'unit_price', 'subtotal', 'total_amount', 'discount_amount', 'final_payable'];
 const HIGHLIGHT_STYLES = {
   edit: { color: 'var(--ad-primary)', icon: Pencil, label: 'Edited' },
@@ -47,17 +47,30 @@ function isNumericCol(col, rows) {
 function isImageColumn(h) {
   const l = h.toLowerCase();
   const isId = l.endsWith('_id') || l.endsWith('id') || l === 'id';
-  return !isId && (l === 'image' || l === 'images' || l.includes('image') || l.includes('img_url') || l.includes('url'));
+  return !isId && (
+    l === 'image' || l === 'images' || l === 'photo' || l === 'photos' ||
+    l.includes('image') || l.includes('photo') || l.includes('img_url') || l.includes('url')
+  );
 }
 
 function parseImageList(val) {
-  if (Array.isArray(val)) return val.map(x => (typeof x === 'string' ? x : x?.url || x?.image_url || '')).filter(Boolean);
+  if (Array.isArray(val)) {
+    return val.map(x => {
+      if (typeof x === 'string') return x;
+      if (x && typeof x === 'object') return x.url || x.image_url || x.value || x.photo || '';
+      return '';
+    }).filter(Boolean);
+  }
   if (typeof val !== 'string' || !val.trim() || val === '-') return [];
   const trimmed = val.trim();
-  if (trimmed.startsWith('[')) {
+  if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
     try {
       const parsed = JSON.parse(trimmed);
       if (Array.isArray(parsed)) return parseImageList(parsed);
+      if (parsed && typeof parsed === 'object') {
+        const single = parsed.url || parsed.image_url || parsed.value || parsed.photo;
+        if (single) return [single];
+      }
     } catch { /* plain string */ }
   }
   return [trimmed];
@@ -862,6 +875,15 @@ function DataManager({ entity }) {
 
     if (h === 'password_hash' || h === 'password') {
       return <span className="font-mono tracking-widest text-ad-muted">••••••••</span>;
+    }
+    if (h === 'star' && val !== '-' && !isNaN(Number(val))) {
+      const numStars = Math.max(1, Math.min(5, Math.round(Number(val))));
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 font-semibold text-xs" title={`Customer Rating: ${val} / 5 stars`}>
+          <span>{'★'.repeat(numStars)}{'☆'.repeat(5 - numStars)}</span>
+          <span className="text-[11px] text-amber-300 font-bold">({Number(val)})</span>
+        </span>
+      );
     }
     if (isImageColumn(h) && val !== '-') {
       const list = parseImageList(val);
