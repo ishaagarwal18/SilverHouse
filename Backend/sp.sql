@@ -40,7 +40,8 @@ BEGIN
                     c.slug,
                     c.ideal_for,
                     c.image_id,
-                    i.image_url
+                    i.image_url,
+                    ISNULL(c.custom, 0) AS custom
                 FROM dbo.category c
                 LEFT JOIN dbo.[image] i ON c.image_id = i.image_id
                 WHERE c.category_id = TRY_CAST(@Condition AS INT)
@@ -55,7 +56,8 @@ BEGIN
                     c.slug,
                     c.ideal_for,
                     c.image_id,
-                    i.image_url
+                    i.image_url,
+                    ISNULL(c.custom, 0) AS custom
                 FROM dbo.category c
                 LEFT JOIN dbo.[image] i ON c.image_id = i.image_id
                 ORDER BY c.category_id ASC;

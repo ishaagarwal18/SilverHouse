@@ -476,6 +476,9 @@ function DataManager({ entity }) {
     if (entity === 'product' && col === 'm_id') {
       return lookups.makes?.[val] || String(val);
     }
+    if (col === 'custom') {
+      return (val === 1 || val === true || String(val) === '1' || String(val).toLowerCase() === 'true') ? 1 : 0;
+    }
 
     if (typeof val === 'number') return val;
     const str = String(val).trim();
@@ -795,6 +798,22 @@ function DataManager({ entity }) {
     }
   };
 
+  const handleToggleCategoryCustom = async (row, currentVal) => {
+    const nextVal = !currentVal;
+    try {
+      const res = await callProc('category', 'EDIT', { custom: nextVal ? 1 : 0 }, String(row.category_id));
+      if (!res.success) throw new Error(res.status || res.error || 'Update failed');
+      setRows(prev => prev.map(r => r.category_id === row.category_id ? { ...r, custom: nextVal ? 1 : 0 } : r));
+      showToast(
+        nextVal
+          ? `"${row.name}" is now included in Custom Orders!`
+          : `"${row.name}" removed from Custom Orders.`
+      );
+    } catch (err) {
+      showToast(`Failed to update category: ${err.message}`, true);
+    }
+  };
+
   // ---------- Delete ----------
   const executeDelete = async () => {
     if (!deleteCtx?.ids?.length) return setDeleteCtx(null);
@@ -914,6 +933,32 @@ function DataManager({ entity }) {
             {ORDER_DECISIONS.map(s => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
           </select>
         </div>
+      );
+    }
+    if (entity === 'category' && h === 'custom') {
+      const isCustom = raw === 1 || raw === true || String(raw) === '1' || String(raw).toLowerCase() === 'true';
+      return (
+        <label
+          className="inline-flex items-center gap-2 cursor-pointer select-none group"
+          onClick={e => e.stopPropagation()}
+          title={isCustom ? 'Active in Custom Orders. Click to disable.' : 'Click to include in Custom Orders.'}
+        >
+          <input
+            type="checkbox"
+            checked={isCustom}
+            onChange={() => handleToggleCategoryCustom(row, isCustom)}
+            className="w-4 h-4 rounded border-ad-border text-ad-primary focus:ring-ad-primary/30 cursor-pointer accent-ad-primary transition-all"
+          />
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold border transition-all ${
+              isCustom
+                ? 'bg-ad-primary/15 text-ad-primary border-ad-primary/30 shadow-2xs'
+                : 'bg-ad-card text-ad-muted border-ad-border group-hover:text-ad-text group-hover:border-ad-muted'
+            }`}
+          >
+            {isCustom ? 'Yes' : 'No'}
+          </span>
+        </label>
       );
     }
     if (h === 'is_custom') {
@@ -1132,6 +1177,7 @@ function DataManager({ entity }) {
     if (h === 'category_id') return entity === 'category' ? 'Category ID' : 'Category';
     if (h === 'category_name') return 'Category Name';
     if (entity === 'category' && h === 'name') return 'Category Name';
+    if (h === 'custom') return 'Custom Order';
     if (h === 'festival_id') return entity === 'festival' ? 'Festival ID' : 'Festival Name';
     if (h === 'birthday_date') return 'Birthday';
     if (h === 'anniversary_date') return 'Anniversary';

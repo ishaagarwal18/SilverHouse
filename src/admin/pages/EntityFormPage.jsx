@@ -10,7 +10,7 @@ import { Button, Card, Field, FormGrid, ImageUrlField, LoadingBlock, Modal, Page
 /** Field definitions + messages for the small catalog-table forms. */
 const SIMPLE_FORMS = {
   category: {
-    initial: { name: '', slug: '', description: '', ideal_for: 'All', image_id: '', image_url: '' },
+    initial: { name: '', slug: '', description: '', ideal_for: 'All', image_id: '', image_url: '', custom: false },
     newIdKeys: ['NewCategoryId', 'category_id'],
     editDescription: 'Update category details',
     addDescription: 'Enter category details to save into the database',
@@ -136,6 +136,9 @@ function SimpleEntityForm({ entity, id, isEdit, spec, onSaved, onCancel }) {
         setValues(prev => {
           const next = { ...prev };
           Object.keys(prev).forEach(k => { if (row[k] !== null && row[k] !== undefined) next[k] = String(row[k]); });
+          if (entity === 'category' && row.custom !== undefined && row.custom !== null) {
+            next.custom = row.custom === 1 || row.custom === true || String(row.custom) === '1' || String(row.custom).toLowerCase() === 'true';
+          }
           return next;
         });
 
@@ -162,6 +165,10 @@ function SimpleEntityForm({ entity, id, isEdit, spec, onSaved, onCancel }) {
     const tableValues = {};
     Object.entries(values).forEach(([key, raw]) => {
       if (entity === 'category' && key === 'image_url') return; // internal UI preview only
+      if (entity === 'category' && key === 'custom') {
+        tableValues.custom = Boolean(raw) ? 1 : 0;
+        return;
+      }
       const trimmed = String(raw ?? '').trim();
       if (trimmed !== '') tableValues[key] = !isNaN(trimmed) ? Number(trimmed) : trimmed;
     });
@@ -226,6 +233,34 @@ function SimpleEntityForm({ entity, id, isEdit, spec, onSaved, onCancel }) {
                 setValues(v => ({ ...v, image_id: imageId, image_url: imageUrl }));
               }}
             />
+            <Field label="Custom Order Category" fullWidth htmlFor="cf-custom" hint="Select 'Yes' to include this category in Custom & Bespoke Orders.">
+              <label className="flex items-center gap-3 p-3 rounded-xl border border-ad-border bg-ad-card/50 hover:bg-ad-card cursor-pointer select-none transition-colors">
+                <input
+                  id="cf-custom"
+                  type="checkbox"
+                  checked={Boolean(values.custom)}
+                  onChange={e => setValues(v => ({ ...v, custom: e.target.checked }))}
+                  className="w-5 h-5 rounded border-ad-border text-ad-primary focus:ring-ad-primary/30 cursor-pointer"
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-ad-text flex items-center gap-2">
+                    <span>Include in Custom Order Category</span>
+                    {values.custom ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-ad-primary/15 text-ad-primary border border-ad-primary/30">
+                        ✓ Yes (Active in Custom Orders)
+                      </span>
+                    ) : (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-ad-surface text-ad-muted border border-ad-border">
+                        No (Standard Catalog Only)
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-xs text-ad-muted mt-0.5">
+                    When checked (Yes), customers will be able to select &quot;{values.name || 'this category'}&quot; when submitting custom / bespoke order commissions.
+                  </span>
+                </div>
+              </label>
+            </Field>
           </>
         )}
 

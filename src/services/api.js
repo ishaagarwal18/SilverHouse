@@ -211,6 +211,7 @@ export async function fetchCategories() {
           shortName: cat.name || 'Category',
           description: cat.description || 'Sacred 925 & 999 Pure Silver Items',
           idealFor: cat.ideal_for || 'All',
+          custom: Boolean(cat.custom),
           image_id: cat.image_id || null,
           image_url: resolvedImg || (cat.image_url || cat.image || ''),
           image: resolvedImg || (cat.image_url || cat.image || ''),

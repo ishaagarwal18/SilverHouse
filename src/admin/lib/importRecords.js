@@ -72,6 +72,7 @@ export const ENTITY_VALID_COLUMNS = {
     'slug',
     'ideal_for', 'idealfor', 'target_audience', 'audience',
     'image_id', 'image_url', 'url', 'image',
+    'custom',
     'remark'
   ],
   image: [

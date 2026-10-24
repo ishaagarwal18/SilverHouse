@@ -364,6 +364,8 @@ export default function CatalogPage() {
               colors={colors}
               idealForList={idealForList}
               maxProductPrice={maxProductPrice}
+              filteredCount={filtered.length}
+              onExportExcel={() => setExportModalOpen(true)}
               onClose={() => setFiltersOpen(false)}
             />
           </Card>
@@ -686,7 +688,20 @@ function FilterSection({ title, children, aside }) {
   );
 }
 
-function CatalogFilters({ filters, setFilters, products, categories, makes, purities = [], colors = [], idealForList = [], maxProductPrice = 10000, onClose }) {
+function CatalogFilters({
+  filters,
+  setFilters,
+  products,
+  categories,
+  makes,
+  purities = [],
+  colors = [],
+  idealForList = [],
+  maxProductPrice = 10000,
+  filteredCount = 0,
+  onExportExcel,
+  onClose
+}) {
   const set = (key, value) => setFilters(f => ({ ...f, [key]: value }));
 
   const currentMaxPrice = filters.maxPrice !== undefined && filters.maxPrice !== null ? filters.maxPrice : maxProductPrice;
@@ -808,14 +823,16 @@ function CatalogFilters({ filters, setFilters, products, categories, makes, puri
 
       <div className="flex flex-wrap gap-2 lg:col-span-full xl:col-span-2 lg:mt-2">
         <Button className="flex-1" onClick={() => setFilters({ ...DEFAULT_FILTERS, maxPrice: maxProductPrice })}><RotateCcw className="w-4 h-4" /> Reset</Button>
-        <Button
-          className="flex-1 !bg-emerald-600 hover:!bg-emerald-700 !text-white font-medium shadow-sm flex items-center justify-center gap-1.5"
-          onClick={() => setExportModalOpen(true)}
-          disabled={products.length === 0 || filtered.length === 0}
-          title="Download filtered products as an Excel spreadsheet"
-        >
-          <FileSpreadsheet className="w-4 h-4" /> Export Excel ({filtered.length})
-        </Button>
+        {onExportExcel && (
+          <Button
+            className="flex-1 !bg-emerald-600 hover:!bg-emerald-700 !text-white font-medium shadow-sm flex items-center justify-center gap-1.5"
+            onClick={onExportExcel}
+            disabled={products.length === 0 || filteredCount === 0}
+            title="Download filtered products as an Excel spreadsheet"
+          >
+            <FileSpreadsheet className="w-4 h-4" /> Export Excel ({filteredCount})
+          </Button>
+        )}
         <Button variant="primary" className="flex-1 lg:hidden" onClick={onClose}>Show results</Button>
       </div>
     </div>

@@ -6,7 +6,7 @@ import {
   AlertCircle, ChevronRight, Copy, CheckCircle2, ArrowRight, Layers, Eye,
   Search, CheckCircle, Lock
 } from 'lucide-react';
-import { submitCustomOrderApi } from '../../services/api';
+import { submitCustomOrderApi, fetchCategories } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import {
   PREDEFINED_SHRINE_DESIGNS,
@@ -16,7 +16,7 @@ import {
   POPULAR_MANTRAS
 } from '../../data/predefinedYatraDesigns';
 
-const CUSTOM_CATEGORIES = [
+const DEFAULT_CUSTOM_CATEGORIES = [
   {
     id: 'Yatra Lockets',
     name: 'Yatra Lockets & Shrines',
@@ -88,8 +88,51 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
     }
   }, [authLoading, isAuthenticated, navigate, location, onTriggerToast]);
 
-  // Selected Category
-  const [selectedCategory, setSelectedCategory] = useState(CUSTOM_CATEGORIES[0].id);
+  // Available Custom Categories (dynamically loaded from database where custom === true)
+  const [customCategories, setCustomCategories] = useState(DEFAULT_CUSTOM_CATEGORIES);
+  const [selectedCategory, setSelectedCategory] = useState(DEFAULT_CUSTOM_CATEGORIES[0].id);
+
+  // Load custom categories from DB (where custom === true)
+  useEffect(() => {
+    let cancelled = false;
+    fetchCategories()
+      .then(cats => {
+        if (cancelled || !Array.isArray(cats) || cats.length === 0) return;
+        const activeCustomDbCats = cats.filter(c => c.custom);
+        if (activeCustomDbCats.length > 0) {
+          const merged = activeCustomDbCats.map(dbCat => {
+            const predefined = DEFAULT_CUSTOM_CATEGORIES.find(
+              dc => dc.id.toLowerCase() === dbCat.name.toLowerCase() ||
+                    dc.name.toLowerCase() === dbCat.name.toLowerCase() ||
+                    dc.id.toLowerCase() === (dbCat.slug || '').toLowerCase()
+            );
+            if (predefined) {
+              return {
+                ...predefined,
+                name: dbCat.name,
+                description: dbCat.description || predefined.description
+              };
+            }
+            return {
+              id: dbCat.name,
+              name: dbCat.name,
+              hindi: dbCat.idealFor || 'विशेष',
+              icon: Crown,
+              tagline: `Custom ${dbCat.name} Commissions`,
+              description: dbCat.description || `Handcrafted pure 925 hallmarked silver ${dbCat.name} made to your exact measurements and design specifications.`,
+              popularMotifs: ['Artisan Handcrafted', 'Hallmarked 925 Silver', 'Custom Dimensions', 'Hand-Engraved Details'],
+              presetSpecs: `Bespoke ${dbCat.name}: Hand-forged in 92.5 Sterling Silver according to customer specifications.`,
+              isYatra: (dbCat.slug || '').includes('yatra') || dbCat.name.toLowerCase().includes('yatra')
+            };
+          });
+
+          setCustomCategories(merged);
+          setSelectedCategory(prev => (merged.some(c => c.id === prev) ? prev : merged[0].id));
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   // Common Customizer State
   const [purity, setPurity] = useState('92.5 Sterling Silver');
@@ -136,17 +179,17 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
     const params = new URLSearchParams(location.search);
     const catParam = params.get('category');
     if (catParam) {
-      const match = CUSTOM_CATEGORIES.find(
+      const match = customCategories.find(
         c => c.id.toLowerCase() === catParam.toLowerCase() || c.name.toLowerCase().includes(catParam.toLowerCase())
       );
       if (match) setSelectedCategory(match.id);
     } else if (location.pathname.includes('yatra')) {
       setSelectedCategory('Yatra Lockets');
     }
-  }, [location]);
+  }, [location, customCategories]);
 
   // Active category object
-  const activeCategoryObj = CUSTOM_CATEGORIES.find(c => c.id === selectedCategory) || CUSTOM_CATEGORIES[0];
+  const activeCategoryObj = customCategories.find(c => c.id === selectedCategory) || customCategories[0];
   const isYatraActive = activeCategoryObj.id === 'Yatra Lockets';
 
   // Predefined shrine filter
@@ -356,12 +399,12 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-[var(--th-text-main)] flex items-center gap-2">
               <span>1. Choose Custom Creation Category</span>
-              <span className="text-xs text-[var(--th-text-muted)] font-semibold">({CUSTOM_CATEGORIES.length} Sacred Specialties)</span>
+              <span className="text-xs text-[var(--th-text-muted)] font-semibold">({customCategories.length} Custom Categories)</span>
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-            {CUSTOM_CATEGORIES.map((cat) => {
+            {customCategories.map((cat) => {
               const Icon = cat.icon;
               const isSelected = selectedCategory === cat.id;
 
