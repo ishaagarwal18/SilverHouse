@@ -582,7 +582,7 @@ export function getGuestToken() {
  */
 export async function addToCartApi({ userId, guestToken, productId, quantity = 1 }) {
   try {
-    const token = guestToken || getGuestToken();
+    const token = userId ? null : (guestToken || getGuestToken());
     return await postApiData({
       proc_name: 'cart_item',
       opr: 'ADD',
@@ -604,7 +604,7 @@ export async function addToCartApi({ userId, guestToken, productId, quantity = 1
  */
 export async function updateCartQtyApi({ userId, guestToken, productId, quantity }) {
   try {
-    const token = guestToken || getGuestToken();
+    const token = userId ? null : (guestToken || getGuestToken());
     return await postApiData({
       proc_name: 'cart_item',
       opr: 'UPDATE_QTY',
@@ -626,7 +626,7 @@ export async function updateCartQtyApi({ userId, guestToken, productId, quantity
  */
 export async function removeCartItemApi({ userId, guestToken, productId }) {
   try {
-    const token = guestToken || getGuestToken();
+    const token = userId ? null : (guestToken || getGuestToken());
     return await postApiData({
       proc_name: 'cart_item',
       opr: 'DELETE',
@@ -647,7 +647,7 @@ export async function removeCartItemApi({ userId, guestToken, productId }) {
  */
 export async function clearCartApi({ userId, guestToken }) {
   try {
-    const token = guestToken || getGuestToken();
+    const token = userId ? null : (guestToken || getGuestToken());
     return await postApiData({
       proc_name: 'cart_item',
       opr: 'DELETE',
@@ -683,7 +683,7 @@ export async function createOrderApi(orderPayload) {
  */
 export async function fetchUserCartApi({ userId, guestToken }) {
   try {
-    const token = guestToken || getGuestToken();
+    const token = userId ? null : (guestToken || getGuestToken());
     const json = await postApiData({
       proc_name: 'cart_item',
       opr: 'SELECT',

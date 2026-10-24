@@ -7,24 +7,61 @@ const FIELD_ALIASES = {
   category_id: ['category_id', 'categoryid', 'category id', 'cat_id', 'catid'],
   category_name: ['category_name', 'category name', 'categoryname', 'category_i', 'category', 'cat_name', 'catname'],
   m_id: ['m_id', 'mid', 'make_id', 'make id', 'make_master', 'makemaster', 'make', 'make_name', 'makename', 'make name', 'making_type', 'making type'],
+  make_type: ['make_type', 'maketype', 'craft', 'craft_make', 'craft / make', 'craft_type'],
   name: ['name', 'category_name_val'],
-  title: ['title', 'product_name', 'product name', 'productname', 'title_name'],
+  title: ['title', 'product_name', 'product name', 'productname', 'title_name', 'product title'],
   purity: ['purity', 'silver_purity', 'purity_grade'],
-  weight: ['weight', 'item_weight', 'wt', 'weight_gm', 'weight_g'],
+  weight: ['weight', 'item_weight', 'wt', 'weight_gm', 'weight_g', 'weight (grams)', 'weight_grams'],
   description: ['description', 'desc', 'details', 'item_description'],
-  price: ['price', 'unit_price', 'mrp', 'rate', 'product_price'],
-  discount: ['discount', 'disc', 'discount_percent', 'discount_%'],
-  quantity: ['quantity', 'qty', 'stock', 'stock_qty', 'count'],
-  ideal_for: ['ideal_for', 'idealfor', 'ideal for', 'gender', 'target_audience', 'audience', 'for'],
+  price: ['price', 'unit_price', 'mrp', 'rate', 'product_price', 'retail mrp', 'retail mrp (₹)', 'retail mrp (inr)'],
+  discount: ['discount', 'disc', 'discount_percent', 'discount_%', 'discount (%)'],
+  final_price: ['final_price', 'selling_price', 'selling price', 'selling price (₹)'],
+  quantity: ['quantity', 'qty', 'stock', 'stock_qty', 'count', 'stock units', 'stock_units'],
+  stock_status: ['stock_status', 'stock status'],
+  ideal_for: ['ideal_for', 'idealfor', 'ideal for', 'gender', 'target_audience', 'audience', 'for', 'target audience'],
   packaging: ['packaging', 'package', 'pack_type', 'box_type'],
-  labour_cost: ['labour_cost', 'labourcost', 'labour cost', 'making_charge', 'making_cost', 'making charges'],
-  actual_cost: ['actual_cost', 'actualcost', 'actual cost', 'cost_price', 'cost'],
-  priority: ['priority', 'display_priority', 'prio'],
-  color: ['color', 'colour', 'shade', 'finish'],
+  labour_cost: ['labour_cost', 'labourcost', 'labour cost', 'making_charge', 'making_cost', 'making charges', 'labour cost (₹)'],
+  actual_cost: ['actual_cost', 'actualcost', 'actual cost', 'cost_price', 'cost', 'actual cost (₹)'],
+  margin: ['margin', 'gross_margin', 'gross margin', 'gross margin (₹)'],
+  margin_pct: ['margin_pct', 'margin (%)', 'margin percent'],
+  total_cost_val: ['total_cost_val', 'inventory cost val', 'inventory cost val (₹)'],
+  total_retail_val: ['total_retail_val', 'inventory retail val', 'inventory retail val (₹)'],
+  priority: ['priority', 'display_priority', 'prio', 'catalog priority'],
+  color: ['color', 'colour', 'shade', 'finish', 'finish / color', 'color / finish'],
   review: ['review', 'rating', 'stars', 'reviews'],
-  sold: ['sold', 'sales', 'units_sold', 'items_sold'],
+  sold: ['sold', 'sales', 'units_sold', 'items_sold', 'units sold'],
   image_id: ['image_id', 'imageid', 'image id', 'img_id'],
   image_url: ['image_url', 'imageurl', 'image url', 'url', 'image', 'link']
+};
+
+/** Admin display labels used when writing 2-row standard files. */
+const DB_ADMIN_LABELS = {
+  product_id: 'Product ID',
+  title: 'Product Title',
+  category_name: 'Category Name',
+  category_id: 'Category ID',
+  make_type: 'Craft / Make',
+  m_id: 'Make ID',
+  purity: 'Purity',
+  color: 'Finish / Color',
+  ideal_for: 'Target Audience',
+  weight: 'Weight (Grams)',
+  quantity: 'Stock Units',
+  stock_status: 'Stock Status',
+  price: 'Retail MRP (₹)',
+  discount: 'Discount (%)',
+  final_price: 'Selling Price (₹)',
+  actual_cost: 'Actual Cost (₹)',
+  labour_cost: 'Labour Cost (₹)',
+  margin: 'Gross Margin (₹)',
+  margin_pct: 'Margin (%)',
+  total_cost_val: 'Inventory Cost Val (₹)',
+  total_retail_val: 'Inventory Retail Val (₹)',
+  sold: 'Units Sold',
+  priority: 'Catalog Priority',
+  packaging: 'Packaging',
+  description: 'Description',
+  Remark: 'Import Remark / Status'
 };
 
 /** Category name synonyms used to match loosely-named import rows. */
@@ -193,13 +230,116 @@ function normalizeRowData(rawRow) {
   return clean;
 }
 
-/** Reads rows from a CSV, Excel or Word (first table) file. */
+/**
+ * Converts a 2D sheet matrix into structured row objects:
+ * - Row 1 (headerRowIdx): Contains the DATABASE COLUMN NAMES (e.g. product_id, title, price, etc.)
+ *   Column checking is done against this 1st row.
+ *   The column order DOES NOT matter (e.g. product_id can be in column 0, middle, or last column).
+ * - Row 2 (headerRowIdx + 1): Checked to see if it contains admin display names / friendly labels.
+ *   If it is an admin display label row, it is skipped and data rows begin from Row 3.
+ *   If it contains actual product data (single-header file), data rows begin from Row 2.
+ */
+export function parseMatrixToObjects(rawMatrix) {
+  if (!Array.isArray(rawMatrix) || rawMatrix.length === 0) return [];
+
+  // 1. Locate Row 1: the first non-empty row containing database column names
+  const headerRowIdx = rawMatrix.findIndex(row => 
+    Array.isArray(row) && row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== '')
+  );
+
+  if (headerRowIdx === -1) return [];
+
+  const row1 = rawMatrix[headerRowIdx];
+
+  // 2. Map every column index to its canonical DB column name using Row 1!
+  // Column checking is done using this 1st row. Column order does NOT matter.
+  const colMap = {};
+  row1.forEach((cell, idx) => {
+    const rawStr = String(cell ?? '').trim();
+    if (!rawStr) return;
+    const lowerKey = normalizeKey(rawStr);
+
+    const standard = Object.entries(FIELD_ALIASES).find(([canonical, aliases]) => 
+      canonical === lowerKey || aliases.some(a => normalizeKey(a) === lowerKey)
+    )?.[0];
+
+    colMap[idx] = standard || lowerKey || rawStr;
+  });
+
+  // 3. Inspect Row 2: Detect whether it's an admin display label row or real data
+  let dataStartIdx = headerRowIdx + 1;
+  if (dataStartIdx < rawMatrix.length) {
+    const row2 = rawMatrix[dataStartIdx];
+    if (Array.isArray(row2)) {
+      let looksLikeAdminHeader = false;
+      const numericCols = ['product_id', 'price', 'quantity', 'category_id', 'm_id', 'actual_cost', 'labour_cost', 'priority', 'sold', 'review', 'discount'];
+
+      for (let i = 0; i < row2.length; i++) {
+        const dbCol = colMap[i];
+        const val = row2[i];
+        if (!dbCol || val === undefined || val === null || String(val).trim() === '') continue;
+
+        const valStr = String(val).trim();
+        // If a numeric database column has text like "Product ID" or "Retail MRP (₹)" or "Stock Units" in row 2:
+        if (numericCols.includes(dbCol) && isNaN(Number(valStr))) {
+          looksLikeAdminHeader = true;
+          break;
+        }
+
+        // If string column matches an admin alias in FIELD_ALIASES or common header keywords:
+        const lowerVal = normalizeKey(valStr);
+        if (FIELD_ALIASES[dbCol] && FIELD_ALIASES[dbCol].some(a => normalizeKey(a) === lowerVal)) {
+          looksLikeAdminHeader = true;
+          break;
+        }
+      }
+
+      if (looksLikeAdminHeader) {
+        dataStartIdx = headerRowIdx + 2; // Row 2 is admin labels; data starts at Row 3
+      }
+    }
+  }
+
+  // 4. Extract data rows using the mapped column keys from Row 1
+  const resultRows = [];
+  for (let r = dataStartIdx; r < rawMatrix.length; r++) {
+    const rowCells = rawMatrix[r];
+    if (!Array.isArray(rowCells) || rowCells.every(c => c === undefined || c === null || String(c).trim() === '')) {
+      continue; // Skip blank rows
+    }
+
+    const rowObj = {};
+    let hasData = false;
+
+    rowCells.forEach((cell, idx) => {
+      const colName = colMap[idx];
+      if (!colName || colName === 'Remark') return;
+
+      let val = cell;
+      if (typeof val === 'string') val = val.trim();
+      if (!isBlank(val)) {
+        hasData = true;
+        rowObj[colName] = (!isNaN(val) && typeof val !== 'boolean') ? Number(val) : val;
+      }
+    });
+
+    if (hasData) {
+      resultRows.push(rowObj);
+    }
+  }
+
+  return resultRows;
+}
+
+/** Reads rows from a CSV, Excel or Word (first table) file using 2-row header parsing. */
 async function parseFile(file) {
   const fileName = file.name.toLowerCase();
   if (/\.(csv|xlsx|xls)$/.test(fileName)) {
     const XLSX = await import('xlsx');
     const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
-    return XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rawMatrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    return parseMatrixToObjects(rawMatrix);
   }
   if (fileName.endsWith('.docx')) {
     const mammoth = (await import('mammoth')).default;
@@ -209,23 +349,42 @@ async function parseFile(file) {
     if (!table) throw new Error('No table found in Word document.');
     const trs = Array.from(table.querySelectorAll('tr'));
     if (trs.length < 2) throw new Error('Word table must have at least 1 header row and 1 data row.');
-    const headers = Array.from(trs[0].querySelectorAll('th, td')).map(c => c.textContent.trim());
-    return trs.slice(1).map(tr => {
-      const cells = Array.from(tr.querySelectorAll('td')).map(c => c.textContent.trim());
-      const obj = {};
-      headers.forEach((h, i) => {
-        if (cells[i] !== undefined && cells[i] !== '') obj[h] = !isNaN(cells[i]) ? Number(cells[i]) : cells[i];
-      });
-      return obj;
-    });
+    const rawMatrix = trs.map(tr => 
+      Array.from(tr.querySelectorAll('th, td')).map(c => c.textContent.trim())
+    );
+    return parseMatrixToObjects(rawMatrix);
   }
   throw new Error('Unsupported file type. Use .csv, .xlsx, .xls or .docx');
 }
 
-/** Writes the annotated rows back to the original file (File System Access API) or downloads a copy. */
+/** Writes the annotated rows back with 2-row header: Row 1 = DB cols, Row 2 = Admin display labels. */
 async function writeResults(file, fileHandle, rows) {
   const XLSX = await import('xlsx');
-  const ws = XLSX.utils.json_to_sheet(rows);
+
+  // Extract all unique column keys across rows, placing 'Remark' at the end
+  const allKeys = [];
+  rows.forEach(r => {
+    Object.keys(r).forEach(k => {
+      if (k !== 'Remark' && !allKeys.includes(k)) allKeys.push(k);
+    });
+  });
+  if (rows.some(r => r.Remark !== undefined)) {
+    allKeys.push('Remark');
+  }
+
+  // Row 1: DB Column Names (for future automated import checking)
+  const row1_dbCols = allKeys;
+  // Row 2: Admin Friendly Display Names
+  const row2_adminLabels = allKeys.map(k => DB_ADMIN_LABELS[k] || k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+  // Row 3+: Data Rows in exact column order
+  const dataRows = rows.map(r => allKeys.map(k => r[k] ?? ''));
+
+  const ws = XLSX.utils.aoa_to_sheet([
+    row1_dbCols,
+    row2_adminLabels,
+    ...dataRows
+  ]);
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
   const isCsv = file.name.toLowerCase().endsWith('.csv');

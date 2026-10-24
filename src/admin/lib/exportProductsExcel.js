@@ -53,9 +53,40 @@ export async function exportProductsToExcel({
   };
 
   // -------------------------------------------------------------
-  // Sheet 1: Detailed Product Inventory
+  // Sheet 1: Detailed Product Inventory (2-Row Header Standard)
+  // Row 1: Database Column Name (matched upon import)
+  // Row 2: Admin Friendly Display Name (human readable)
+  // Row 3+: Product Data
   // -------------------------------------------------------------
-  const inventoryData = products.map((p, idx) => {
+  const PRODUCT_EXCEL_SCHEMA = [
+    { dbCol: 'product_id', adminLabel: 'Product ID', width: 12 },
+    { dbCol: 'title', adminLabel: 'Product Title', width: 34 },
+    { dbCol: 'category_name', adminLabel: 'Category Name', width: 22 },
+    { dbCol: 'category_id', adminLabel: 'Category ID', width: 14 },
+    { dbCol: 'make_type', adminLabel: 'Craft / Make', width: 18 },
+    { dbCol: 'm_id', adminLabel: 'Make ID', width: 12 },
+    { dbCol: 'purity', adminLabel: 'Purity', width: 22 },
+    { dbCol: 'color', adminLabel: 'Finish / Color', width: 16 },
+    { dbCol: 'ideal_for', adminLabel: 'Target Audience', width: 16 },
+    { dbCol: 'weight', adminLabel: 'Weight (Grams)', width: 15 },
+    { dbCol: 'quantity', adminLabel: 'Stock Units', width: 12 },
+    { dbCol: 'stock_status', adminLabel: 'Stock Status', width: 15 },
+    { dbCol: 'price', adminLabel: 'Retail MRP (₹)', width: 15 },
+    { dbCol: 'discount', adminLabel: 'Discount (%)', width: 13 },
+    { dbCol: 'final_price', adminLabel: 'Selling Price (₹)', width: 16 },
+    { dbCol: 'actual_cost', adminLabel: 'Actual Cost (₹)', width: 15 },
+    { dbCol: 'labour_cost', adminLabel: 'Labour Cost (₹)', width: 15 },
+    { dbCol: 'margin', adminLabel: 'Gross Margin (₹)', width: 16 },
+    { dbCol: 'margin_pct', adminLabel: 'Margin (%)', width: 13 },
+    { dbCol: 'total_cost_val', adminLabel: 'Inventory Cost Val (₹)', width: 22 },
+    { dbCol: 'total_retail_val', adminLabel: 'Inventory Retail Val (₹)', width: 22 },
+    { dbCol: 'sold', adminLabel: 'Units Sold', width: 12 },
+    { dbCol: 'priority', adminLabel: 'Catalog Priority', width: 16 },
+    { dbCol: 'packaging', adminLabel: 'Packaging', width: 20 },
+    { dbCol: 'description', adminLabel: 'Description', width: 45 }
+  ];
+
+  const getProductFieldValue = (p, dbCol) => {
     const qty = Number(p.quantity ?? 0);
     const mrp = Number(p.price ?? 0);
     const discount = Number(p.discount ?? 0);
@@ -72,75 +103,58 @@ export async function exportProductsToExcel({
     const totalRetailValue = Math.round(finalPrice * qty);
 
     let stockStatus = 'IN STOCK';
-    let urgency = '✅ Sufficient';
-    if (qty === 0) {
-      stockStatus = 'OUT OF STOCK';
-      urgency = '🚨 Critical - Out of Stock';
-    } else if (qty < 5) {
-      stockStatus = 'LOW STOCK';
-      urgency = '⚠️ Reorder Urgently (<5)';
-    }
+    if (qty === 0) stockStatus = 'OUT OF STOCK';
+    else if (qty < 5) stockStatus = 'LOW STOCK';
 
-    return {
-      'S.No': idx + 1,
-      'Product ID': Number(p.product_id),
-      'Product Title': p.product_name || p.title || p.name || `Product #${p.product_id}`,
-      'Category': resolveCategory(p),
-      'Craft / Make': resolveMake(p),
-      'Purity': p.purity || '92.5 Sterling Silver',
-      'Finish / Color': p.color || 'Silver',
-      'Target Audience': p.ideal_for || 'ALL',
-      'Weight (Grams)': p.weight || '-',
-      'Stock Units': qty,
-      'Stock Status': stockStatus,
-      'Restock Urgency': urgency,
-      'Retail MRP (₹)': mrp,
-      'Discount (%)': discount,
-      'Selling Price (₹)': finalPrice,
-      'Actual Cost (₹)': cost,
-      'Labour Cost (₹)': labour,
-      'Gross Margin (₹)': margin,
-      'Margin (%)': marginPct,
-      'Inventory Cost Val (₹)': totalCostValue,
-      'Inventory Retail Val (₹)': totalRetailValue,
-      'Units Sold': Number(p.sold ?? 0),
-      'Catalog Priority': Number(p.priority ?? 10),
-      'Packaging': p.packaging || 'Standard Packaging',
-      'Description': p.description ? String(p.description).replace(/\r?\n|\r/g, ' ') : ''
-    };
+    switch (dbCol) {
+      case 'product_id': return Number(p.product_id);
+      case 'title': return p.product_name || p.title || p.name || `Product #${p.product_id}`;
+      case 'category_name': return resolveCategory(p);
+      case 'category_id': return (p.category_id !== undefined && p.category_id !== null) ? Number(p.category_id) : '';
+      case 'make_type': return resolveMake(p);
+      case 'm_id': return (p.make_id !== undefined ? p.make_id : p.m_id) ?? '';
+      case 'purity': return p.purity || '92.5 Sterling Silver';
+      case 'color': return p.color || 'Silver';
+      case 'ideal_for': return p.ideal_for || 'ALL';
+      case 'weight': return p.weight || '-';
+      case 'quantity': return qty;
+      case 'stock_status': return stockStatus;
+      case 'price': return mrp;
+      case 'discount': return discount;
+      case 'final_price': return finalPrice;
+      case 'actual_cost': return cost;
+      case 'labour_cost': return labour;
+      case 'margin': return margin;
+      case 'margin_pct': return marginPct;
+      case 'total_cost_val': return totalCostValue;
+      case 'total_retail_val': return totalRetailValue;
+      case 'sold': return Number(p.sold ?? 0);
+      case 'priority': return Number(p.priority ?? 10);
+      case 'packaging': return p.packaging || 'Standard Packaging';
+      case 'description': return p.description ? String(p.description).replace(/\r?\n|\r/g, ' ') : '';
+      default: return p[dbCol] ?? '';
+    }
+  };
+
+  const row1_dbCols = PRODUCT_EXCEL_SCHEMA.map(col => col.dbCol);
+  const row2_adminLabels = PRODUCT_EXCEL_SCHEMA.map(col => col.adminLabel);
+  const inventoryDataRows = products.map(p => {
+    return PRODUCT_EXCEL_SCHEMA.map(col => getProductFieldValue(p, col.dbCol));
   });
 
   const wb = XLSX.utils.book_new();
 
-  // Primary Sheet
-  const wsInventory = XLSX.utils.json_to_sheet(inventoryData);
-  wsInventory['!cols'] = [
-    { wch: 6 },  // S.No
-    { wch: 12 }, // Product ID
-    { wch: 32 }, // Product Title
-    { wch: 20 }, // Category
-    { wch: 18 }, // Craft / Make
-    { wch: 20 }, // Purity
-    { wch: 16 }, // Finish / Color
-    { wch: 16 }, // Target Audience
-    { wch: 15 }, // Weight
-    { wch: 12 }, // Stock Units
-    { wch: 15 }, // Stock Status
-    { wch: 28 }, // Restock Urgency
-    { wch: 15 }, // Retail MRP
-    { wch: 13 }, // Discount %
-    { wch: 16 }, // Selling Price
-    { wch: 15 }, // Actual Cost
-    { wch: 15 }, // Labour Cost
-    { wch: 16 }, // Gross Margin
-    { wch: 13 }, // Margin %
-    { wch: 22 }, // Inventory Cost Val
-    { wch: 22 }, // Inventory Retail Val
-    { wch: 12 }, // Units Sold
-    { wch: 16 }, // Priority
-    { wch: 20 }, // Packaging
-    { wch: 45 }  // Description
-  ];
+  // Primary Sheet with 2-row header:
+  // Row 1: DB Column Names (Exact variables for importing)
+  // Row 2: Admin Default Display Names
+  // Row 3+: Product Data rows
+  const wsInventory = XLSX.utils.aoa_to_sheet([
+    row1_dbCols,
+    row2_adminLabels,
+    ...inventoryDataRows
+  ]);
+
+  wsInventory['!cols'] = PRODUCT_EXCEL_SCHEMA.map(c => ({ wch: c.width }));
   XLSX.utils.book_append_sheet(wb, wsInventory, 'Product Inventory');
 
   // -------------------------------------------------------------
@@ -261,44 +275,50 @@ export async function exportProductsToExcel({
       .sort((a, b) => Number(a.quantity ?? 0) - Number(b.quantity ?? 0));
 
     if (reorderProds.length > 0) {
-      const reorderRows = reorderProds.map((p, idx) => {
+      const REORDER_EXCEL_SCHEMA = [
+        { dbCol: 'product_id', adminLabel: 'Product ID', width: 12 },
+        { dbCol: 'title', adminLabel: 'Product Title', width: 34 },
+        { dbCol: 'category_name', adminLabel: 'Category', width: 20 },
+        { dbCol: 'make_type', adminLabel: 'Craft / Make', width: 18 },
+        { dbCol: 'purity', adminLabel: 'Purity', width: 16 },
+        { dbCol: 'color', adminLabel: 'Color / Finish', width: 16 },
+        { dbCol: 'quantity', adminLabel: 'Current Stock Units', width: 18 },
+        { dbCol: 'stock_status', adminLabel: 'Urgency Status', width: 26 },
+        { dbCol: 'suggested_reorder_qty', adminLabel: 'Suggested Reorder Qty', width: 22 },
+        { dbCol: 'actual_cost', adminLabel: 'Estimated Unit Cost (₹)', width: 22 },
+        { dbCol: 'reorder_budget', adminLabel: 'Est. Reorder Budget (₹)', width: 22 },
+        { dbCol: 'notes', adminLabel: 'Vendor / Artisan Notes', width: 25 }
+      ];
+
+      const reorderDataRows = reorderProds.map(p => {
         const qty = Number(p.quantity ?? 0);
         const cost = Number(p.actual_cost ?? 0);
         const suggestedReorderQty = Math.max(10, 15 - qty);
+        const urgency = qty === 0 ? '🚨 CRITICAL (0 In Stock)' : '⚠️ LOW STOCK (<5 In Stock)';
 
-        return {
-          'Reorder Priority': idx + 1,
-          'Product ID': Number(p.product_id),
-          'Product Title': p.product_name || p.title || p.name || `Product #${p.product_id}`,
-          'Category': resolveCategory(p),
-          'Craft / Make': resolveMake(p),
-          'Purity': p.purity || '92.5',
-          'Color / Finish': p.color || 'Silver',
-          'Current Stock Units': qty,
-          'Urgency Status': qty === 0 ? '🚨 CRITICAL (0 In Stock)' : '⚠️ LOW STOCK (<5 In Stock)',
-          'Suggested Reorder Qty': suggestedReorderQty,
-          'Estimated Unit Cost (₹)': cost,
-          'Est. Reorder Budget (₹)': cost * suggestedReorderQty,
-          'Vendor / Artisan Notes': 'Inward stock urgently'
-        };
+        return [
+          Number(p.product_id),
+          p.product_name || p.title || p.name || `Product #${p.product_id}`,
+          resolveCategory(p),
+          resolveMake(p),
+          p.purity || '92.5',
+          p.color || 'Silver',
+          qty,
+          urgency,
+          suggestedReorderQty,
+          cost,
+          cost * suggestedReorderQty,
+          'Inward stock urgently'
+        ];
       });
 
-      const wsReorder = XLSX.utils.json_to_sheet(reorderRows);
-      wsReorder['!cols'] = [
-        { wch: 16 }, // Reorder Priority
-        { wch: 12 }, // Product ID
-        { wch: 32 }, // Product Title
-        { wch: 20 }, // Category
-        { wch: 18 }, // Craft / Make
-        { wch: 16 }, // Purity
-        { wch: 16 }, // Finish
-        { wch: 18 }, // Current Stock
-        { wch: 26 }, // Urgency Status
-        { wch: 22 }, // Suggested Qty
-        { wch: 22 }, // Unit Cost
-        { wch: 22 }, // Reorder Budget
-        { wch: 25 }  // Notes
-      ];
+      const wsReorder = XLSX.utils.aoa_to_sheet([
+        REORDER_EXCEL_SCHEMA.map(col => col.dbCol),     // Row 1: DB Column Name
+        REORDER_EXCEL_SCHEMA.map(col => col.adminLabel), // Row 2: Admin Display Name
+        ...reorderDataRows
+      ]);
+
+      wsReorder['!cols'] = REORDER_EXCEL_SCHEMA.map(c => ({ wch: c.width }));
       XLSX.utils.book_append_sheet(wb, wsReorder, 'Stock Reorder List');
     }
   }

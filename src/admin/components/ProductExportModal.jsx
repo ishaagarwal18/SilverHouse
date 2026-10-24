@@ -229,7 +229,7 @@ export default function ProductExportModal({
                 className="rounded border-ad-border text-emerald-600"
               />
               <span>
-                <strong>Sheet 1: Product Inventory</strong> — Individual product rows with SKU/ID, Craft, Purity, Finish, Audience, Stock, Pricing, Cost, Margin, and Notes.
+                <strong>Sheet 1: Product Inventory (2-Row Headers)</strong> — Row 1 has DB Column Names (for automated re-importing in any column order); Row 2 has Admin Friendly Display Labels.
               </span>
             </label>
 

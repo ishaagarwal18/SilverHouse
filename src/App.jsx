@@ -492,7 +492,7 @@ export default function App() {
     try {
       await addToCartApi({
         userId: effectiveUserId,
-        guestToken: getGuestToken(),
+        guestToken: effectiveUserId ? null : getGuestToken(),
         productId: prodId,
         quantity: quantity
       });
@@ -520,13 +520,13 @@ export default function App() {
       if (newQty <= 0) {
         await removeCartItemApi({
           userId: effectiveUserId,
-          guestToken: getGuestToken(),
+          guestToken: effectiveUserId ? null : getGuestToken(),
           productId: prodId
         });
       } else {
         await updateCartQtyApi({
           userId: effectiveUserId,
-          guestToken: getGuestToken(),
+          guestToken: effectiveUserId ? null : getGuestToken(),
           productId: prodId,
           quantity: newQty
         });
@@ -549,7 +549,7 @@ export default function App() {
     try {
       await removeCartItemApi({
         userId: effectiveUserId,
-        guestToken: getGuestToken(),
+        guestToken: effectiveUserId ? null : getGuestToken(),
         productId: prodId
       });
     } catch (err) {
