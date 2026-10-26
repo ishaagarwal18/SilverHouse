@@ -54,7 +54,7 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
         </div>
 
         {/* Main Footer Columns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-12 border-b border-white/10 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-12 border-b border-white/10 text-xs text-left">
 
           {/* Col 1: Brand Info */}
           <div className="lg:col-span-2 space-y-4">
@@ -99,38 +99,62 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
           </div>
 
           {/* Col 2: Categories */}
-          <div>
+          <div className="text-left">
             <h4 className="font-serif font-bold text-sm text-[var(--th-accent)] mb-4 uppercase tracking-wider">
-              Sacred Categories
+              Categories
             </h4>
             <ul className="space-y-2.5 text-white/70">
               <li>
-                <button onClick={() => onNavigateCategory && onNavigateCategory('silver-coins-bars')} className="hover:text-white transition-colors cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => onNavigateCategory && onNavigateCategory('silver-coins')}
+                  className="text-left block w-full hover:text-white transition-colors cursor-pointer"
+                >
                   999 Fine Silver Coins & Bars
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigateCategory && onNavigateCategory('silver-idols')} className="hover:text-white transition-colors cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => onNavigateCategory && onNavigateCategory('silver-idols')}
+                  className="text-left block w-full hover:text-white transition-colors cursor-pointer"
+                >
                   Ganesha & Lakshmi Murti
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigateCategory && onNavigateCategory('utensils-silverware')} className="hover:text-white transition-colors cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => onNavigateCategory && onNavigateCategory('silverware')}
+                  className="text-left block w-full hover:text-white transition-colors cursor-pointer"
+                >
                   Silver Thali & Baby Feeding Sets
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigateCategory && onNavigateCategory('kids')} className="hover:text-white transition-colors cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => onNavigateCategory && onNavigateCategory('kids')}
+                  className="text-left block w-full hover:text-white transition-colors cursor-pointer"
+                >
                   Kids' Silver Collection & Nazariya
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigateCategory && onNavigateCategory('sacred-rudraksha')} className="hover:text-white transition-colors cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => onNavigateCategory && onNavigateCategory('spiritual-wear')}
+                  className="text-left block w-full hover:text-white transition-colors cursor-pointer"
+                >
                   1-14 Mukhi Certified Rudraksha
                 </button>
               </li>
               <li>
-                <button onClick={onNavigateYatraCustomizer} className="hover:text-[var(--th-accent)] font-semibold transition-colors cursor-pointer">
+                <button
+                  type="button"
+                  onClick={onNavigateYatraCustomizer}
+                  className="text-left block w-full hover:text-[var(--th-accent)] font-semibold transition-colors cursor-pointer"
+                >
                   Custom Yatra Lockets (Made on Order)
                 </button>
               </li>
@@ -197,11 +221,12 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
               <button
                 type="button"
                 onClick={() => onOpenPdf ? onOpenPdf('purity') : window.open('/purity-guide', '_blank')}
-                className="inline-flex items-center space-x-2 w-full justify-center px-3 py-2 rounded-lg bg-[var(--th-accent)]/20 hover:bg-[var(--th-accent)]/30 border border-[var(--th-accent)]/50 text-[11px] font-bold text-[#F3E5AB] transition-colors cursor-pointer"
+                className="flex items-center justify-center gap-1.5 w-full px-6 py-3 rounded-xl bg-[var(--th-accent)]/20 hover:bg-[var(--th-accent)]/30 border border-[var(--th-accent)]/50 text-xs font-bold text-[#F3E5AB] transition-all cursor-pointer group shadow-xs whitespace-nowrap"
                 title="Open Silver Purity & Hallmarking Consumer Guide"
               >
-                <FileText className="w-3.5 h-3.5 text-[var(--th-accent)]" />
-                <span>Open Silver Purity Guide ↗</span>
+                <FileText className="w-4 h-4 text-[var(--th-accent)] shrink-0 group-hover:scale-110 transition-transform" />
+                <span>Silver Purity Guide</span>
+                <span className="text-[var(--th-accent)] font-bold text-xs shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">↗</span>
               </button>
 
             </div>
