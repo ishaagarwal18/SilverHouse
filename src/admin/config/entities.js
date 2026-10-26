@@ -235,7 +235,7 @@ export const ADMIN_NAV = [
   {
     label: 'Festivals & Collections',
     items: [
-      { to: '/admin/festival-themes', label: 'Festival Theme Manager', icon: Sparkles },
+      { to: '/admin/festival-themes', label: 'Website & Festival Themes', icon: Sparkles },
       ...['festival'].map(entityNavItem)
     ]
   },

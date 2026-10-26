@@ -8,6 +8,7 @@ import {
   setUnauthorizedHandler
 } from '../api/adminApi';
 import { resolveFestivalThemeId, setFestivalTheme } from '../../components/festival/FestivalDecorOverlay';
+import { resolveWebsiteThemeId } from '../../context/ThemeContext';
 
 const AdminAuthContext = createContext(null);
 
@@ -129,9 +130,19 @@ export function AdminAuthProvider({ children }) {
         acceptSession(token, verifiedUser);
         try {
           const { ok, data: paramData } = await adminFetch('/parameters', { skipAuth: true });
-          if (ok && paramData?.parameters?.current_festival) {
-            const resolved = resolveFestivalThemeId(paramData.parameters.current_festival);
-            if (resolved) setFestivalTheme(resolved);
+          if (ok && paramData?.parameters) {
+            if (paramData.parameters.current_festival) {
+              const resolved = resolveFestivalThemeId(paramData.parameters.current_festival);
+              if (resolved) setFestivalTheme(resolved);
+            }
+            if (paramData.parameters.default_theme) {
+              const resolvedWebsite = resolveWebsiteThemeId(paramData.parameters.default_theme);
+              if (resolvedWebsite) {
+                safeSet('silverhouse_theme', resolvedWebsite);
+                document.documentElement.setAttribute('data-theme', resolvedWebsite);
+                window.dispatchEvent(new CustomEvent('silverhouse_website_theme_updated', { detail: { themeId: resolvedWebsite } }));
+              }
+            }
           }
         } catch { /* ignore parameter fetch error */ }
       }
@@ -187,9 +198,19 @@ export function AdminAuthProvider({ children }) {
     acceptSession(token, userObj);
     try {
       const { ok, data: paramData } = await adminFetch('/parameters', { skipAuth: true });
-      if (ok && paramData?.parameters?.current_festival) {
-        const resolved = resolveFestivalThemeId(paramData.parameters.current_festival);
-        if (resolved) setFestivalTheme(resolved);
+      if (ok && paramData?.parameters) {
+        if (paramData.parameters.current_festival) {
+          const resolved = resolveFestivalThemeId(paramData.parameters.current_festival);
+          if (resolved) setFestivalTheme(resolved);
+        }
+        if (paramData.parameters.default_theme) {
+          const resolvedWebsite = resolveWebsiteThemeId(paramData.parameters.default_theme);
+          if (resolvedWebsite) {
+            safeSet('silverhouse_theme', resolvedWebsite);
+            document.documentElement.setAttribute('data-theme', resolvedWebsite);
+            window.dispatchEvent(new CustomEvent('silverhouse_website_theme_updated', { detail: { themeId: resolvedWebsite } }));
+          }
+        }
       }
     } catch { /* ignore parameter fetch error */ }
   }, [acceptSession]);

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { fetchStoreParameters, updateStoreParameters } from '../services/api';
 
 export const THEMES = [
   {
@@ -51,6 +52,29 @@ export const THEMES = [
   }
 ];
 
+export function resolveWebsiteThemeId(input) {
+  if (!input) return 'aegean';
+  const str = String(input).trim().toLowerCase();
+  if (str === 'aegean' || str.includes('aegean') || str.includes('mineral') || str.includes('teal')) return 'aegean';
+  if (str === 'nordic' || str.includes('nordic') || str.includes('denim') || str.includes('slate') || str.includes('ice')) return 'nordic';
+  if (str === 'sage' || str.includes('sage') || str.includes('eucalyptus') || str.includes('jade') || str.includes('celadon')) return 'sage';
+  if (str === 'lavender' || str.includes('lavender') || str.includes('amethyst') || str.includes('lilac') || str.includes('violet')) return 'lavender';
+  const match = THEMES.find(t => t.id === str || t.name.toLowerCase() === str);
+  return match ? match.id : 'aegean';
+}
+
+function isAdminSessionActive() {
+  try {
+    const adminToken = localStorage.getItem('silverhouse_admin_token');
+    if (adminToken) return true;
+    const storeToken = localStorage.getItem('silverhouse_token');
+    const storeUser = JSON.parse(localStorage.getItem('silverhouse_user') || 'null');
+    return Boolean(storeToken && String(storeUser?.role).toUpperCase() === 'ADMIN');
+  } catch {
+    return false;
+  }
+}
+
 const ThemeContext = createContext({
   theme: 'aegean',
   setTheme: () => {},
@@ -61,24 +85,117 @@ const ThemeContext = createContext({
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {
     try {
-      return localStorage.getItem('silverhouse_theme') || 'aegean';
+      const saved = localStorage.getItem('silverhouse_theme');
+      return resolveWebsiteThemeId(saved);
     } catch {
       return 'aegean';
     }
   });
 
-  const setTheme = (newTheme) => {
-    setThemeState(newTheme);
-    try {
-      localStorage.setItem('silverhouse_theme', newTheme);
-    } catch (e) {
-      console.warn('Could not save theme preference:', e);
-    }
-  };
-
+  // Apply data-theme attribute on document root whenever theme state changes
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Sync theme from database store_parameter on initial load
+  useEffect(() => {
+    let cancelled = false;
+    async function syncBackendDefaultTheme() {
+      try {
+        const res = await fetchStoreParameters();
+        if (!cancelled && res?.parameters?.default_theme) {
+          const resolved = resolveWebsiteThemeId(res.parameters.default_theme);
+          if (resolved) {
+            setThemeState(resolved);
+            try {
+              localStorage.setItem('silverhouse_theme', resolved);
+            } catch {
+              // ignore
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[ThemeContext] Could not sync database default_theme:', err);
+      }
+    }
+    syncBackendDefaultTheme();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Sync across tabs & windows via BroadcastChannel and storage events
+  useEffect(() => {
+    const handleStorage = (e) => {
+      if (e.key === 'silverhouse_theme' && e.newValue) {
+        const resolved = resolveWebsiteThemeId(e.newValue);
+        setThemeState(resolved);
+      }
+    };
+
+    const handleCustom = (e) => {
+      if (e.detail?.themeId) {
+        const resolved = resolveWebsiteThemeId(e.detail.themeId);
+        setThemeState(resolved);
+      }
+    };
+
+    let bc = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('silverhouse_website_theme_sync');
+        bc.onmessage = (msg) => {
+          if (msg.data?.themeId) {
+            const resolved = resolveWebsiteThemeId(msg.data.themeId);
+            setThemeState(resolved);
+          }
+        };
+      }
+    } catch {
+      // BroadcastChannel unsupported
+    }
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('silverhouse_website_theme_updated', handleCustom);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('silverhouse_website_theme_updated', handleCustom);
+      if (bc) {
+        try { bc.close(); } catch { }
+      }
+    };
+  }, []);
+
+  const setTheme = useCallback((newTheme) => {
+    const validTheme = resolveWebsiteThemeId(newTheme);
+    setThemeState(validTheme);
+    try {
+      localStorage.setItem('silverhouse_theme', validTheme);
+      document.documentElement.setAttribute('data-theme', validTheme);
+    } catch (e) {
+      console.warn('Could not save theme preference:', e);
+    }
+
+    // Broadcast in current window
+    try {
+      window.dispatchEvent(new CustomEvent('silverhouse_website_theme_updated', { detail: { themeId: validTheme } }));
+    } catch { }
+
+    // Broadcast across other browser tabs
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('silverhouse_website_theme_sync');
+        bc.postMessage({ themeId: validTheme });
+        bc.close();
+      }
+    } catch { }
+
+    // If caller is an Admin, immediately persist to database store_parameter so ALL screens and users adopt it
+    if (isAdminSessionActive()) {
+      updateStoreParameters({ default_theme: validTheme }).catch((err) => {
+        console.warn('[ThemeContext] Could not persist admin default_theme:', err);
+      });
+    }
+  }, []);
 
   const currentThemeObj = THEMES.find((t) => t.id === theme) || THEMES[0];
 

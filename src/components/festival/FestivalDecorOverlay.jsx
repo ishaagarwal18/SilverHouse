@@ -51,18 +51,20 @@ export const resolveFestivalThemeId = (input) => {
   return null;
 };
 
+import { updateStoreParameters } from '../../services/api';
+
 export const getActiveFestivalTheme = (activeFestivalName) => {
   try {
-    // 1. If activeFestivalName from database is passed, it is the primary source of truth
-    const resolvedFromProp = resolveFestivalThemeId(activeFestivalName);
-    if (resolvedFromProp) {
-      return resolvedFromProp;
+    if (activeFestivalName) {
+      const resolvedFromProp = resolveFestivalThemeId(activeFestivalName);
+      if (resolvedFromProp) {
+        return resolvedFromProp;
+      }
     }
 
-    // 2. Otherwise check localStorage (ignore stale legacy 'rakshabandhan')
     const saved = localStorage.getItem('silverhouse_active_festival_theme');
     const validSaved = resolveFestivalThemeId(saved);
-    if (validSaved && validSaved !== 'rakshabandhan') {
+    if (validSaved) {
       return validSaved;
     }
   } catch {
@@ -88,6 +90,22 @@ export const setFestivalTheme = (themeId) => {
       }
     } catch {
       // Ignore broadcast channel errors
+    }
+
+    // 3. If admin session is present, automatically persist to database store_parameter so ALL screens and users see it
+    try {
+      const adminToken = localStorage.getItem('silverhouse_admin_token') || localStorage.getItem('silverhouse_token');
+      const storeUser = JSON.parse(localStorage.getItem('silverhouse_user') || 'null');
+      const isAdmin = Boolean(adminToken && (localStorage.getItem('silverhouse_admin_token') || String(storeUser?.role).toUpperCase() === 'ADMIN'));
+      if (isAdmin) {
+        const themeObj = FESTIVAL_THEMES.find(t => t.id === validId);
+        const festivalName = themeObj ? themeObj.name : validId;
+        updateStoreParameters({ current_festival: festivalName }).catch(err => {
+          console.warn('[FestivalDecorOverlay] Auto-persist error:', err);
+        });
+      }
+    } catch {
+      // ignore
     }
   } catch (e) {
     console.warn(e);

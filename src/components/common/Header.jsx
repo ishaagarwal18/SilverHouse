@@ -765,56 +765,54 @@ export default function Header({
                     )}
                   </div>
 
-                  {/* Color Palette Section — only shown when a festival theme is active */}
-                  {activeFestivalTheme !== 'none' && (
-                    <div className="pt-2.5 border-t border-[var(--th-border)]/80 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-1.5">
-                          <Palette className="w-3.5 h-3.5 text-[var(--th-accent)]" />
-                          <span className="font-serif font-bold text-xs text-[var(--th-text-main)] tracking-wide">
-                            Color Palette
-                          </span>
-                        </div>
-                        <span className="text-[9.5px] font-semibold text-[var(--th-text-muted)]">
-                          {currentThemeObj.name}
+                  {/* Website Color Palette Section */}
+                  <div className="pt-2.5 border-t border-[var(--th-border)]/80 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1.5">
+                        <Palette className="w-3.5 h-3.5 text-[var(--th-accent)]" />
+                        <span className="font-serif font-bold text-xs text-[var(--th-text-main)] tracking-wide">
+                          Website Theme
                         </span>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {themes.map((t) => {
-                          const isSelected = t.id === theme;
-                          return (
-                            <button
-                              key={t.id}
-                              onClick={() => setTheme(t.id)}
-                              className={`p-1.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${isSelected
-                                ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] ring-1 ring-[var(--th-primary)] font-bold'
-                                : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
-                                }`}
-                              title={t.description}
-                            >
-                              <div className="flex items-center space-x-1.5 truncate">
-                                <div className="flex items-center -space-x-1 shrink-0">
-                                  <span
-                                    className="w-3 h-3 rounded-full border border-white"
-                                    style={{ backgroundColor: t.preview.primary }}
-                                  />
-                                  <span
-                                    className="w-3 h-3 rounded-full border border-white"
-                                    style={{ backgroundColor: t.preview.accent }}
-                                  />
-                                </div>
-                                <span className="text-[10.5px] truncate text-[var(--th-text-main)]">
-                                  {t.name.split(' ')[0]}
-                                </span>
-                              </div>
-                              {isSelected && <Check className="w-3 h-3 text-[var(--th-primary)] shrink-0 ml-1" />}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <span className="text-[9.5px] font-semibold text-[var(--th-text-muted)]">
+                        {currentThemeObj.name}
+                      </span>
                     </div>
-                  )}
+
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {themes.map((t) => {
+                        const isSelected = t.id === theme;
+                        return (
+                          <button
+                            key={t.id}
+                            onClick={() => setTheme(t.id)}
+                            className={`p-1.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${isSelected
+                              ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] ring-1 ring-[var(--th-primary)] font-bold'
+                              : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
+                              }`}
+                            title={t.description}
+                          >
+                            <div className="flex items-center space-x-1.5 truncate">
+                              <div className="flex items-center -space-x-1 shrink-0">
+                                <span
+                                  className="w-3 h-3 rounded-full border border-white"
+                                  style={{ backgroundColor: t.preview.primary }}
+                                />
+                                <span
+                                  className="w-3 h-3 rounded-full border border-white"
+                                  style={{ backgroundColor: t.preview.accent }}
+                                />
+                              </div>
+                              <span className="text-[10.5px] truncate text-[var(--th-text-main)]">
+                                {t.name.split(' ')[0]}
+                              </span>
+                            </div>
+                            {isSelected && <Check className="w-3 h-3 text-[var(--th-primary)] shrink-0 ml-1" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
 
                   {/* Log Out (Authenticated Only) */}

@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, Crown, LogOut, Menu, Moon, Sun } from 'lucide-react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { ChevronDown, Crown, ExternalLink, LogOut, Menu, Moon, Palette, Sparkles, Sun } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { getEntityConfig } from '../../config/entities';
+import { useTheme } from '../../../context/ThemeContext';
+import { getActiveFestivalTheme, FESTIVAL_THEMES } from '../../../components/festival/FestivalDecorOverlay';
 
 /** Maps the current admin path to a short section label for the top bar. */
 function sectionLabel(pathname) {
@@ -11,6 +13,7 @@ function sectionLabel(pathname) {
   if (parts[0] === 'catalog') return ['Product Catalog'];
   if (parts[0] === 'custom-orders') return ['Custom Orders'];
   if (parts[0] === 'analytics') return ['Analytics & P&L'];
+  if (parts[0] === 'festival-themes') return ['Website & Festival Themes'];
   if (parts[0] === 'data' && parts[1]) {
     const crumbs = ['Database', getEntityConfig(parts[1]).plural];
     if (parts[2] === 'new') crumbs.push('Add');
@@ -26,11 +29,21 @@ export default function AdminHeader({ onOpenSidebar }) {
   const navigate = useNavigate();
   const { user, logout } = useAdminAuth();
   const { theme, toggleTheme } = useAdminUI();
+  const { currentThemeObj } = useTheme();
+  const [activeFestival, setActiveFestival] = useState(() => getActiveFestivalTheme());
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const crumbs = sectionLabel(pathname);
   const name = user?.fullName || user?.full_name || 'Admin';
   const initials = name.split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase();
+
+  useEffect(() => {
+    const handleFestUpdate = (e) => {
+      if (e.detail?.themeId) setActiveFestival(e.detail.themeId);
+    };
+    window.addEventListener('silverhouse_festival_theme_updated', handleFestUpdate);
+    return () => window.removeEventListener('silverhouse_festival_theme_updated', handleFestUpdate);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -39,8 +52,10 @@ export default function AdminHeader({ onOpenSidebar }) {
     return () => document.removeEventListener('mousedown', onDown);
   }, [menuOpen]);
 
+  const festObj = FESTIVAL_THEMES.find(t => t.id === activeFestival);
+
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-ad-border bg-ad-surface/85 px-4 backdrop-blur-md sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-2.5 border-b border-ad-border bg-ad-surface/85 px-4 backdrop-blur-md sm:px-6">
       <button type="button" onClick={onOpenSidebar} className="-ml-1 rounded-lg p-2 text-ad-text hover:bg-ad-card lg:hidden cursor-pointer" aria-label="Open navigation">
         <Menu className="w-5 h-5" />
       </button>
@@ -54,6 +69,38 @@ export default function AdminHeader({ onOpenSidebar }) {
         ))}
       </nav>
 
+      {/* Active Theme Indicator Pill — navigates to Theme Manager */}
+      <Link
+        to="/admin/festival-themes"
+        className="hidden md:flex items-center gap-2 rounded-lg border border-ad-border bg-ad-card px-2.5 py-1.5 text-xs hover:border-ad-primary hover:bg-ad-hover transition-colors"
+        title="Manage Website Theme & Festival Decor"
+      >
+        <div className="flex items-center -space-x-1">
+          <span className="w-3 h-3 rounded-full border border-white" style={{ backgroundColor: currentThemeObj?.preview?.primary || '#1F4E5B' }} />
+          <span className="w-3 h-3 rounded-full border border-white" style={{ backgroundColor: currentThemeObj?.preview?.accent || '#B89340' }} />
+        </div>
+        <span className="font-semibold text-ad-text truncate max-w-28">{currentThemeObj?.name?.split(' ')[0] || 'Theme'}</span>
+        {festObj && festObj.id !== 'none' && (
+          <span className="text-ad-muted flex items-center gap-1 border-l border-ad-border pl-2">
+            <span>{festObj.icon}</span>
+            <span className="hidden lg:inline truncate max-w-24">{festObj.name.split(' ')[0]}</span>
+          </span>
+        )}
+      </Link>
+
+      {/* Preview Live Storefront Link */}
+      <a
+        href="/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hidden sm:inline-flex items-center gap-1 rounded-lg border border-ad-border bg-ad-card px-2.5 py-1.5 text-xs font-semibold text-ad-text hover:bg-ad-hover transition-colors"
+        title="Open live storefront in new tab"
+      >
+        <span>Storefront</span>
+        <ExternalLink className="w-3 h-3 text-ad-muted" />
+      </a>
+
+      {/* Admin UI Light/Dark mode */}
       <button
         type="button"
         onClick={toggleTheme}
@@ -64,6 +111,7 @@ export default function AdminHeader({ onOpenSidebar }) {
         {theme === 'dark' ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
       </button>
 
+      {/* Admin User Menu */}
       <div className="relative" ref={menuRef}>
         <button
           type="button"
@@ -77,11 +125,36 @@ export default function AdminHeader({ onOpenSidebar }) {
           <ChevronDown className="w-4 h-4 text-ad-muted" />
         </button>
         {menuOpen && (
-          <div role="menu" className="absolute right-0 mt-2 w-60 overflow-hidden rounded-xl border border-ad-border bg-ad-surface shadow-xl">
+          <div role="menu" className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-ad-border bg-ad-surface shadow-xl z-50">
             <div className="border-b border-ad-border px-4 py-3">
               <div className="flex items-center gap-1.5 text-[13px] font-bold text-ad-text"><Crown className="w-4 h-4 text-ad-warning" /> {name}</div>
               <div className="mt-0.5 text-xs text-ad-muted">{user?.phone ? `${user.phone} · ` : ''}Administrator</div>
             </div>
+
+            <div className="p-2 border-b border-ad-border">
+              <Link
+                to="/admin/festival-themes"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-ad-text hover:bg-ad-card transition-colors"
+              >
+                <Palette className="w-4 h-4 text-ad-primary" />
+                <span>Theme & Festival Manager</span>
+              </Link>
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-between rounded-lg px-2.5 py-2 text-xs font-semibold text-ad-text hover:bg-ad-card transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-ad-accent" />
+                  <span>View Live Storefront</span>
+                </span>
+                <ExternalLink className="w-3 h-3 text-ad-muted" />
+              </a>
+            </div>
+
             <button
               type="button"
               role="menuitem"

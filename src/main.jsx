@@ -12,26 +12,26 @@ const AdminApp = lazy(() => import('./admin/AdminApp.jsx'))
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route
-          path="/admin/*"
-          element={
-            <Suspense fallback={null}>
-              <AdminApp />
-            </Suspense>
-          }
-        />
-        <Route
-          path="*"
-          element={
-            <AuthProvider>
-              <ThemeProvider>
+      <ThemeProvider>
+        <Routes>
+          <Route
+            path="/admin/*"
+            element={
+              <Suspense fallback={null}>
+                <AdminApp />
+              </Suspense>
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <AuthProvider>
                 <App />
-              </ThemeProvider>
-            </AuthProvider>
-          }
-        />
-      </Routes>
+              </AuthProvider>
+            }
+          />
+        </Routes>
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>,
 )

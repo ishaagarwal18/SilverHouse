@@ -55,7 +55,7 @@ export default function App() {
 
   // Active Festival Theme Tracker (e.g. 'diwali', 'navratri', or 'none')
   const [activeFestivalTheme, setActiveFestivalTheme] = useState(() =>
-    getActiveFestivalTheme(storeParams?.current_festival || 'diwali')
+    getActiveFestivalTheme(storeParams?.current_festival)
   );
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function App() {
       if (e.detail?.themeId) {
         setActiveFestivalTheme(e.detail.themeId);
       } else {
-        setActiveFestivalTheme(getActiveFestivalTheme(storeParams?.current_festival || 'diwali'));
+        setActiveFestivalTheme(getActiveFestivalTheme(storeParams?.current_festival));
       }
     };
     const handleStorage = (e) => {

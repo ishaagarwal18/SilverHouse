@@ -116,51 +116,49 @@ export default function MobileMenu({
             )}
           </div>
 
-          {/* Color Palette — only shown when a festival theme is active */}
-          {activeFestivalTheme !== 'none' && (
-            <div className="p-3 bg-white border-b border-silver-200 space-y-2">
-              <div className="flex items-center space-x-1.5">
-                <Palette className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span className="font-serif font-bold text-xs text-[#1A1A1A]">
-                  Color Palette
-                </span>
-                <span className="ml-auto text-[9px] font-semibold text-silver-500">{currentThemeObj.name}</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-1.5">
-                {themes.map((t) => {
-                  const isSelected = t.id === theme;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => setTheme(t.id)}
-                      className={`p-1.5 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${isSelected
-                        ? 'border-[#D4AF37] bg-amber-50/50 ring-1 ring-[#D4AF37] font-bold'
-                        : 'border-silver-200 bg-white hover:border-[#D4AF37]/50'
-                        }`}
-                    >
-                      <div className="flex items-center space-x-1.5 truncate">
-                        <div className="flex items-center -space-x-1 shrink-0">
-                          <span
-                            className="w-3 h-3 rounded-full border border-white"
-                            style={{ backgroundColor: t.preview.primary }}
-                          />
-                          <span
-                            className="w-3 h-3 rounded-full border border-white"
-                            style={{ backgroundColor: t.preview.accent }}
-                          />
-                        </div>
-                        <span className="text-[10.5px] truncate text-[#1A1A1A]">
-                          {t.name.split(' ')[0]}
-                        </span>
-                      </div>
-                      {isSelected && <Check className="w-3 h-3 text-[#D4AF37] shrink-0 ml-1" />}
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Website Theme Palette */}
+          <div className="p-3 bg-white border-b border-silver-200 space-y-2">
+            <div className="flex items-center space-x-1.5">
+              <Palette className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span className="font-serif font-bold text-xs text-[#1A1A1A]">
+                Website Theme
+              </span>
+              <span className="ml-auto text-[9px] font-semibold text-silver-500">{currentThemeObj.name}</span>
             </div>
-          )}
+
+            <div className="grid grid-cols-2 gap-1.5">
+              {themes.map((t) => {
+                const isSelected = t.id === theme;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTheme(t.id)}
+                    className={`p-1.5 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${isSelected
+                      ? 'border-[#D4AF37] bg-amber-50/50 ring-1 ring-[#D4AF37] font-bold'
+                      : 'border-silver-200 bg-white hover:border-[#D4AF37]/50'
+                      }`}
+                  >
+                    <div className="flex items-center space-x-1.5 truncate">
+                      <div className="flex items-center -space-x-1 shrink-0">
+                        <span
+                          className="w-3 h-3 rounded-full border border-white"
+                          style={{ backgroundColor: t.preview.primary }}
+                        />
+                        <span
+                          className="w-3 h-3 rounded-full border border-white"
+                          style={{ backgroundColor: t.preview.accent }}
+                        />
+                      </div>
+                      <span className="text-[10.5px] truncate text-[#1A1A1A]">
+                        {t.name.split(' ')[0]}
+                      </span>
+                    </div>
+                    {isSelected && <Check className="w-3 h-3 text-[#D4AF37] shrink-0 ml-1" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Quick Highlight Banner */}
           <div className="p-4 bg-linear-to-r from-[#1A1A1A] to-[#333333] text-white">
