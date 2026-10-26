@@ -289,7 +289,7 @@ export default function PolicyPage({ company }) {
                   <Clock className="w-5 h-5" />
                 </div>
                 <span className="text-xs font-bold uppercase tracking-wider block text-[var(--th-text-main)]">Custom Orders</span>
-                <span className="text-[11px] text-[var(--th-text-muted)] block">Cancel custom lockets within 6 hrs</span>
+                <span className="text-[11px] text-[var(--th-text-muted)] block">Cancel custom orders within 6 hrs</span>
               </div>
             </div>
 
@@ -318,7 +318,7 @@ export default function PolicyPage({ company }) {
                   <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">Custom & Artisanal Order Cancellations</h3>
                 </div>
                 <p className="text-sm text-[var(--th-text-sub)] leading-relaxed">
-                  Custom Artisanal orders (such as custom Yatra lockets or personalized engraved coins) involve bespoke silver casting and laser engraving. These orders can be cancelled within <strong>6 hours</strong> of order placement.
+                  Custom Artisanal orders (such as custom Yatra shrines, Temple items, or personalized engraved coins) involve bespoke silver casting and laser engraving. These orders can be cancelled within <strong>6 hours</strong> of order placement.
                 </p>
                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-1">
                   <span className="font-bold text-[var(--th-text-main)] uppercase tracking-wider block">Important Note on Crafting:</span>

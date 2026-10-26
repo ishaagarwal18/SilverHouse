@@ -135,8 +135,8 @@ export default function MobileMenu({
                       key={t.id}
                       onClick={() => setTheme(t.id)}
                       className={`p-1.5 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${isSelected
-                          ? 'border-[#D4AF37] bg-amber-50/50 ring-1 ring-[#D4AF37] font-bold'
-                          : 'border-silver-200 bg-white hover:border-[#D4AF37]/50'
+                        ? 'border-[#D4AF37] bg-amber-50/50 ring-1 ring-[#D4AF37] font-bold'
+                        : 'border-silver-200 bg-white hover:border-[#D4AF37]/50'
                         }`}
                     >
                       <div className="flex items-center space-x-1.5 truncate">
