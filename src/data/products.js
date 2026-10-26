@@ -13,11 +13,11 @@ export const CATEGORIES = [
     idealFor: "Women"
   },
   {
-    id: "baby-silver",
+    id: "kids",
     category_id: 2,
-    name: "Baby Silver",
-    shortName: "Baby Silver",
-    description: "Pure silver utensils and feeding accessories for babies",
+    name: "Kids' Collection",
+    shortName: "Kids Collection",
+    description: "Pure silver utensils, nazariya, and accessories for babies and kids",
     image: "/images/baby_feeding_set.png",
     image_url: "/images/baby_feeding_set.png",
     heroBanner: "/images/baby_feeding_set.png",

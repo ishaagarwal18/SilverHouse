@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MegaMenu from './MegaMenu';
 import { useAuth } from '../../context/AuthContext';
@@ -19,6 +19,7 @@ export default function Header({
   wishlistCount = 0,
   categories = [],
   festivals = [],
+  products = [],
   onOpenCart,
   onOpenWishlist,
   onOpenSearch,
@@ -167,6 +168,59 @@ export default function Header({
 
   const hasDbCategories = Array.isArray(categories) && categories.length > 0;
 
+  const menCategoryItems = useMemo(() => {
+    const menCatKeys = new Set();
+    const rawProds = Array.isArray(products) && products.length > 0 ? products : [];
+
+    rawProds.forEach(p => {
+      const target = String(p.recipient || p.ideal_for || p.idealFor || '').toLowerCase().trim();
+      const words = target.split(/[\s,]+/);
+      // Strictly matches 'men' or "men's", never 'women'
+      if (!target.includes('women') && (words.includes('men') || words.includes("men's") || target === 'men')) {
+        if (p.category_id !== null && p.category_id !== undefined) menCatKeys.add(String(p.category_id));
+        if (p.categoryId !== null && p.categoryId !== undefined) menCatKeys.add(String(p.categoryId));
+        if (p.category) menCatKeys.add(String(p.category).toLowerCase().trim());
+        if (p.category_slug) menCatKeys.add(String(p.category_slug).toLowerCase().trim());
+      }
+    });
+
+    if (hasDbCategories && menCatKeys.size > 0) {
+      const matched = categories.filter(c => {
+        const cName = (c.name || '').toLowerCase();
+        if (cName === 'abc' || cName === 'test') return false;
+        return (
+          menCatKeys.has(String(c.category_id)) ||
+          menCatKeys.has(String(c.id).toLowerCase()) ||
+          menCatKeys.has(String(c.slug).toLowerCase())
+        );
+      });
+      if (matched.length > 0) {
+        return matched.map(c => ({
+          label: (c.name || c.title || '').toUpperCase(),
+          action: () => onNavigateCategory(`${c.id || c.slug}?recipient=men`)
+        }));
+      }
+    }
+
+    const fallbackSlugs = ['rings', 'silverware', 'bangles-bracelets', 'pendants'];
+    if (hasDbCategories) {
+      const matched = categories.filter(c => fallbackSlugs.includes(c.id || c.slug));
+      if (matched.length > 0) {
+        return matched.map(c => ({
+          label: (c.name || c.title || '').toUpperCase(),
+          action: () => onNavigateCategory(`${c.id || c.slug}?recipient=men`)
+        }));
+      }
+    }
+
+    return [
+      { label: "SILVER RINGS", action: () => onNavigateCategory("rings?recipient=men") },
+      { label: "SILVERWARE", action: () => onNavigateCategory("silverware?recipient=men") },
+      { label: "BANGLES & BRACELETS", action: () => onNavigateCategory("bangles-bracelets?recipient=men") },
+      { label: "PENDANTS", action: () => onNavigateCategory("pendants?recipient=men") }
+    ];
+  }, [products, categories, hasDbCategories, onNavigateCategory]);
+
   const DROPDOWNS = {
     shopAll: [
       { label: "VIEW ALL PRODUCTS", action: () => onNavigateCategory("all") },
@@ -177,7 +231,7 @@ export default function Header({
         }))
         : [
           { label: "ANKLETS & PAYAL", action: () => onNavigateCategory("anklets-payal") },
-          { label: "BABY SILVER", action: () => onNavigateCategory("baby-silver") },
+          { label: "KIDS' COLLECTION", action: () => onNavigateCategory("kids") },
           { label: "SILVER IDOLS", action: () => onNavigateCategory("silver-idols") },
           { label: "CAR ACCESSORIES", action: () => onNavigateCategory("car-accessories") },
           { label: "SILVER RINGS", action: () => onNavigateCategory("rings") },
@@ -235,25 +289,15 @@ export default function Header({
     ],
     mens: [
       { label: "VIEW ALL MEN COLLECTION", action: () => onNavigateCategory("mens") },
-      ...(hasDbCategories
-        ? categories
-          .filter(c => ['rings', 'spiritual-wear'].includes(c.id || c.slug) || (c.idealFor || c.ideal_for || '').toLowerCase().includes('men'))
-          .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
-        : [
-          { label: "ROYAL SOLID SILVER KADA", action: () => onNavigateCategory("bangles-bracelets") },
-          { label: "SACRED RUDRAKSHA PENDANT", action: () => onNavigateCategory("spiritual-wear") },
-          { label: "MEN'S SIGNET RINGS", action: () => onNavigateCategory("rings") }
-        ])
+      ...menCategoryItems
     ],
     kids: [
       { label: "VIEW ALL KIDS COLLECTION", action: () => onNavigateCategory("kids") },
       ...(hasDbCategories
         ? categories
-          .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'kids' || (c.id || c.slug) === 'baby-silver')
+          .filter(c => ((c.idealFor || c.ideal_for || '').toLowerCase() === 'kids' || (c.id || c.slug) === 'kids') && c.id !== 'baby-silver' && c.slug !== 'baby-silver' && c.id !== 'kids' && c.slug !== 'kids' && (c.name || '').toLowerCase() !== 'baby silver' && (c.name || '').toLowerCase() !== 'kids collection' && (c.name || '').toLowerCase() !== "kids' collection")
           .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
-        : [
-          { label: "BABY SILVER UTENSILS", action: () => onNavigateCategory("baby-silver") }
-        ])
+        : [])
     ],
     puja: [
       { label: "ALL DIVINE ARTIFACTS", action: () => onNavigateCategory("silver-idols") },

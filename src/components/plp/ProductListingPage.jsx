@@ -26,6 +26,7 @@ export default function ProductListingPage({
   const navigate = useNavigate();
 
   const colorQueryParam = searchParams.get('color');
+  const recipientQueryParam = searchParams.get('recipient') || searchParams.get('ideal_for') || searchParams.get('audience');
   const minPriceQuery = searchParams.get('minPrice');
   const maxPriceQuery = searchParams.get('maxPrice');
   const minWeightQuery = searchParams.get('minWeight');
@@ -34,11 +35,12 @@ export default function ProductListingPage({
 
   const categoryList = (categories && categories.length > 0) ? categories : CATEGORIES;
 
+  const initialCategory = categoryId === 'baby-silver' ? 'kids' : (categoryId || 'all');
   const [searchQuery, setSearchQuery] = useState(() => searchQueryParam);
-  const [selectedCategory, setSelectedCategory] = useState(categoryId || 'all');
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedSubcategory, setSelectedSubcategory] = useState(subcategoryId || 'all');
   const [selectedPurity, setSelectedPurity] = useState('all');
-  const [selectedRecipient, setSelectedRecipient] = useState('all');
+  const [selectedRecipient, setSelectedRecipient] = useState(() => recipientQueryParam || 'all');
   const [selectedColor, setSelectedColor] = useState(colorQueryParam || 'all');
   const [minPrice, setMinPrice] = useState(() => (minPriceQuery !== null && !isNaN(Number(minPriceQuery)) ? Number(minPriceQuery) : 0));
   const [maxPrice, setMaxPrice] = useState(() => (maxPriceQuery !== null && !isNaN(Number(maxPriceQuery)) ? Number(maxPriceQuery) : 100000));
@@ -87,7 +89,8 @@ export default function ProductListingPage({
 
   // Sync state if categoryId / subcategoryId route params change
   useEffect(() => {
-    setSelectedCategory(categoryId || 'all');
+    const resolved = categoryId === 'baby-silver' ? 'kids' : (categoryId || 'all');
+    setSelectedCategory(resolved);
     setSelectedSubcategory(subcategoryId || 'all');
   }, [categoryId, subcategoryId]);
 
@@ -97,6 +100,15 @@ export default function ProductListingPage({
       setSelectedColor(colorQueryParam);
     }
   }, [colorQueryParam]);
+
+  // Sync recipient/audience filter with URL search param if present
+  useEffect(() => {
+    if (recipientQueryParam) {
+      setSelectedRecipient(recipientQueryParam);
+    } else {
+      setSelectedRecipient('all');
+    }
+  }, [recipientQueryParam]);
 
   // Sync budget/price filters with URL search params or active catalog dynamic max
   useEffect(() => {
@@ -209,6 +221,12 @@ export default function ProductListingPage({
       heroBanner: "/images/categories/cat_men_in_silver.jpg"
     },
     kids: {
+      id: "kids",
+      name: "Kids' Silver Collection",
+      description: "Protective silver nazariya beads, baby feeding silver sets, and baby bracelets.",
+      heroBanner: "/images/hero_baby_nazariya.png"
+    },
+    'baby-silver': {
       id: "kids",
       name: "Kids' Silver Collection",
       description: "Protective silver nazariya beads, baby feeding silver sets, and baby bracelets.",
@@ -430,6 +448,12 @@ export default function ProductListingPage({
     return target.includes('women');
   };
 
+  const isKidsProduct = (p) => {
+    const target = String(p.ideal_for || p.recipient || p.idealFor || '').toLowerCase().trim();
+    const words = target.split(/[\s,]+/);
+    return words.includes('kids') || words.includes('kid') || words.includes('children');
+  };
+
   const matchesOccasionOrAudience = (p, filter) => {
     if (!filter || filter === 'all') return true;
     const f = filter.toLowerCase().trim();
@@ -461,16 +485,7 @@ export default function ProductListingPage({
     }
 
     if (f === 'baby' || f === 'kids') {
-      const occs = Array.isArray(p.occasions) ? p.occasions.map(o => o.toLowerCase()) : [];
-      const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
-      const cat = (p.category || '').toLowerCase();
-      const name = (p.name || '').toLowerCase();
-      return (
-        cat === 'kids-nazariya-bracelets' ||
-        occs.some(o => o.includes('baby') || o.includes('kids') || o.includes('birth')) ||
-        recipient.includes('baby') || recipient.includes('kids') || recipient.includes('child') ||
-        name.includes('nazariya') || name.includes('baby')
-      );
+      return isKidsProduct(p);
     }
 
     if (f === 'unisex') {
@@ -566,16 +581,8 @@ export default function ProductListingPage({
         result = result.filter(isWomenProduct);
       } else if (selectedCategory === 'mens' || selectedCategory === 'men' || selectedCategory === 'men-silver-collection' || selectedCategory === 'men-in-silver') {
         result = result.filter(isMenProduct);
-      } else if (selectedCategory === 'kids' || selectedCategory === 'kids-baby' || selectedCategory === 'kids-nazariya-bracelets' || selectedCategory === 'nazariya' || selectedCategory === 'baby-silver') {
-        result = result.filter(p =>
-          p.category === 'nazariya' ||
-          p.category === 'baby-silver' ||
-          p.category === 'kids-nazariya-bracelets' ||
-          p.category_slug === 'nazariya' ||
-          p.category_slug === 'baby-silver' ||
-          (p.name || '').toLowerCase().includes('nazariya') ||
-          ((p.name || '').toLowerCase().includes('baby') && (p.name || '').toLowerCase().includes('kada'))
-        );
+      } else if (selectedCategory === 'kids' || selectedCategory === 'kids-baby' || selectedCategory === 'kids-nazariya-bracelets' || selectedCategory === 'baby-silver') {
+        result = result.filter(isKidsProduct);
       } else if (selectedCategory === 'jewellery') {
         result = result.filter(p =>
           ['rings', 'pendants', 'bangles-bracelets', 'anklets-payal', 'silver-chains', 'nazariya', 'spiritual-wear', 'silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets', 'men-silver-collection', 'kids-nazariya-bracelets'].includes(p.category)
@@ -690,13 +697,6 @@ export default function ProductListingPage({
           (p.name || '').toLowerCase().includes('coin') ||
           (p.name || '').toLowerCase().includes('bar')
         );
-      } else if (selectedCategory === 'baby-silver') {
-        result = result.filter(p =>
-          p.category === 'baby-silver' ||
-          p.category_slug === 'baby-silver' ||
-          (p.name || '').toLowerCase().includes('baby') ||
-          (p.recipient || '').toLowerCase().includes('kids')
-        );
       } else {
         const selLow = String(selectedCategory || '').toLowerCase().trim();
         result = result.filter(p =>
@@ -787,7 +787,7 @@ export default function ProductListingPage({
     counts['women'] = rawList.filter(isWomenProduct).length;
     counts['mens'] = rawList.filter(isMenProduct).length;
     counts['men-silver-collection'] = counts['mens'];
-    counts['kids'] = rawList.filter(p => p.category === 'nazariya' || p.category === 'baby-silver' || p.category === 'kids-nazariya-bracelets' || (p.recipient || '').toLowerCase().includes('kids')).length;
+    counts['kids'] = rawList.filter(isKidsProduct).length;
     counts['jewellery'] = rawList.filter(p => ['rings', 'pendants', 'bangles-bracelets', 'anklets-payal', 'silver-chains', 'nazariya', 'spiritual-wear', 'silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets'].includes(p.category)).length;
 
     // Database Categories Dynamic Matching
@@ -806,12 +806,13 @@ export default function ProductListingPage({
   }, [products, backendItems, categoryList]);
 
   const handleCategorySelect = (catId) => {
-    setSelectedCategory(catId);
+    const target = catId === 'baby-silver' ? 'kids' : catId;
+    setSelectedCategory(target);
     setSelectedSubcategory('all');
-    if (catId === 'all') {
+    if (target === 'all') {
       navigate('/catalog');
     } else {
-      navigate(`/category/${catId}`);
+      navigate(`/category/${target}`);
     }
   };
 
@@ -1165,7 +1166,21 @@ export default function ProductListingPage({
                 ))}
 
                 {/* Standard Categories List */}
-                {categoryList.map((cat) => (
+                {categoryList
+                  .filter(cat => {
+                    const slug = String(cat.slug || cat.id || '').toLowerCase().trim();
+                    const name = String(cat.name || '').toLowerCase().trim();
+                    return (
+                      slug !== 'baby-silver' &&
+                      slug !== 'kids' &&
+                      slug !== 'kids-collection' &&
+                      String(cat.category_id) !== '2' &&
+                      name !== 'baby silver' &&
+                      name !== 'kids collection' &&
+                      name !== "kids' collection"
+                    );
+                  })
+                  .map((cat) => (
                   <label
                     key={cat.id}
                     onClick={() => handleCategorySelect(cat.id)}

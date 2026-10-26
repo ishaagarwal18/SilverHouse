@@ -667,6 +667,7 @@ export default function App() {
             wishlistCount={wishlistIds.length}
             categories={categories}
             festivals={festivals}
+            products={products}
             onOpenCart={() => setIsCartOpen(true)}
             onOpenWishlist={() => setIsWishlistOpen(true)}
             onOpenSearch={() => setIsSearchOpen(true)}

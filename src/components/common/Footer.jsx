@@ -120,8 +120,8 @@ export default function Footer({ onNavigateCategory, onNavigateYatraCustomizer, 
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigateCategory && onNavigateCategory('kids-baby')} className="hover:text-white transition-colors cursor-pointer">
-                  Baby Silver Nazariya & Bangles
+                <button onClick={() => onNavigateCategory && onNavigateCategory('kids')} className="hover:text-white transition-colors cursor-pointer">
+                  Kids' Silver Collection & Nazariya
                 </button>
               </li>
               <li>

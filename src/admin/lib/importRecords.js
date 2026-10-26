@@ -175,7 +175,8 @@ const CATEGORY_ALIASES = {
   murti: 'Silver Idols',
   coins: 'Silver Coins',
   coin: 'Silver Coins',
-  baby: 'Baby Silver',
+  baby: 'Kids Collection',
+  kids: 'Kids Collection',
   puja: 'Pooja Articles',
   pooja: 'Pooja Articles',
   spiritual: 'Spiritual Wear'
