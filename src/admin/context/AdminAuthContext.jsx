@@ -7,6 +7,7 @@ import {
   cleanErrorMessage,
   setUnauthorizedHandler
 } from '../api/adminApi';
+import { resolveFestivalThemeId, setFestivalTheme } from '../../components/festival/FestivalDecorOverlay';
 
 const AdminAuthContext = createContext(null);
 
@@ -124,7 +125,16 @@ export function AdminAuthProvider({ children }) {
       if (!verifiedUser) verifiedUser = decodeAdminToken(token);
       if (cancelled) return;
 
-      if (verifiedUser) acceptSession(token, verifiedUser);
+      if (verifiedUser) {
+        acceptSession(token, verifiedUser);
+        try {
+          const { ok, data: paramData } = await adminFetch('/parameters', { skipAuth: true });
+          if (ok && paramData?.parameters?.current_festival) {
+            const resolved = resolveFestivalThemeId(paramData.parameters.current_festival);
+            if (resolved) setFestivalTheme(resolved);
+          }
+        } catch { /* ignore parameter fetch error */ }
+      }
       else clearSession();
     })();
 
@@ -175,6 +185,13 @@ export function AdminAuthProvider({ children }) {
     }
 
     acceptSession(token, userObj);
+    try {
+      const { ok, data: paramData } = await adminFetch('/parameters', { skipAuth: true });
+      if (ok && paramData?.parameters?.current_festival) {
+        const resolved = resolveFestivalThemeId(paramData.parameters.current_festival);
+        if (resolved) setFestivalTheme(resolved);
+      }
+    } catch { /* ignore parameter fetch error */ }
   }, [acceptSession]);
 
   const logout = useCallback(() => clearSession(), [clearSession]);

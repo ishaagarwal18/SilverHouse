@@ -59,10 +59,10 @@ export const getActiveFestivalTheme = (activeFestivalName) => {
       return resolvedFromProp;
     }
 
-    // 2. Otherwise check localStorage
+    // 2. Otherwise check localStorage (ignore stale legacy 'rakshabandhan')
     const saved = localStorage.getItem('silverhouse_active_festival_theme');
     const validSaved = resolveFestivalThemeId(saved);
-    if (validSaved) {
+    if (validSaved && validSaved !== 'rakshabandhan') {
       return validSaved;
     }
   } catch {

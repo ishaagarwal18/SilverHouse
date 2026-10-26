@@ -6,7 +6,7 @@ import {
   setFestivalTheme,
   resolveFestivalThemeId,
 } from '../../components/festival/FestivalDecorOverlay';
-import { fetchStoreParameters, updateStoreParameters } from '../../services/api';
+import { adminFetch } from '../api/adminApi';
 
 /** Badge colours per theme id */
 const THEME_ACCENTS = {
@@ -75,7 +75,10 @@ function ThemeCard({ theme, isActive, onActivate }) {
 }
 
 export default function FestivalThemeManagerPage() {
-  const [activeTheme, setActive] = useState(() => getActiveFestivalTheme());
+  const [activeTheme, setActive] = useState(() => {
+    const initial = getActiveFestivalTheme();
+    return initial && initial !== 'rakshabandhan' ? initial : 'diwali';
+  });
   const [toastId, setToastId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -84,12 +87,13 @@ export default function FestivalThemeManagerPage() {
     let isMounted = true;
     async function syncBackendTheme() {
       try {
-        const res = await fetchStoreParameters();
-        if (res?.parameters?.current_festival && isMounted) {
-          const resolved = resolveFestivalThemeId(res.parameters.current_festival);
+        const { ok, data } = await adminFetch('/parameters', { skipAuth: true });
+        if (ok && data?.parameters?.current_festival && isMounted) {
+          const resolved = resolveFestivalThemeId(data.parameters.current_festival);
           if (resolved) {
             setActive(resolved);
             setFestivalTheme(resolved);
+            return;
           }
         }
       } catch (err) {
@@ -132,7 +136,10 @@ export default function FestivalThemeManagerPage() {
     try {
       const themeObj = FESTIVAL_THEMES.find((t) => t.id === themeId);
       const festivalName = themeObj ? themeObj.name : themeId;
-      await updateStoreParameters({ current_festival: festivalName });
+      await adminFetch('/admin/parameters', {
+        method: 'POST',
+        body: { current_festival: festivalName }
+      });
     } catch (err) {
       console.error('Failed to update store parameters in database:', err);
     } finally {
