@@ -3,32 +3,31 @@ import {
   Church, CircleCheck, CircleX, Clock, Compass, Crown, Gem, HandHeart, Images, List, Mail, MessageCircle,
   Paintbrush, Phone, Receipt, RefreshCw, Search, Send, Sparkles, User
 } from 'lucide-react';
-import { adminFetch, adminImageUrl, formatAdminDateOrTime, PLACEHOLDER_IMG } from '../api/adminApi';
+import { adminFetch, adminImageUrl, fetchRows, formatAdminDateOrTime, PLACEHOLDER_IMG } from '../api/adminApi';
 import { ORDER_DECISIONS } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
 import { Button, Card, DecisionBadge, EmptyState, ImageLightbox, LoadingBlock, PageHeader, PillGroup, Spinner } from '../components/ui';
-
-const CATEGORY_FILTERS = [
-  { value: '', label: 'All Categories', icon: Gem },
-  { value: 'Yatra Lockets', label: 'Yatra Lockets & Shrines', icon: Compass },
-  { value: 'Mukhut', label: 'Mukhut', icon: Crown },
-  { value: 'Jhalar', label: 'Jhalar', icon: Sparkles },
-  { value: 'Thakurji ka saman', label: 'Thakurji ka saman', icon: HandHeart },
-  { value: 'Temple things', label: 'Temple Things', icon: Church }
-];
 
 const DECISION_LABELS = { processing: '⏳ Processing', accepted: '✅ Approved', rejected: '❌ Rejected' };
 
 function categoryIcon(category) {
   const c = String(category || '').toLowerCase();
-  if (c.includes('yatra')) return Compass;
-  return CATEGORY_FILTERS.find(f => f.value && f.value.toLowerCase() === c)?.icon || Gem;
+  if (c.includes('yatra') || c.includes('locket')) return Compass;
+  if (c.includes('mukhut') || c.includes('crown')) return Crown;
+  if (c.includes('jhalar') || c.includes('border')) return Sparkles;
+  if (c.includes('thakurji') || c.includes('seva') || c.includes('saman')) return HandHeart;
+  if (c.includes('temple') || c.includes('mandir')) return Church;
+  if (c.includes('coin') || c.includes('bar')) return Sparkles;
+  if (c.includes('anklet') || c.includes('payal')) return Sparkles;
+  if (c.includes('spiritual') || c.includes('rudraksha')) return HandHeart;
+  return Gem;
 }
 
 /** Route: /admin/custom-orders — review bespoke requests, set quotations and notify customers. */
 export default function CustomOrdersPage() {
   const { showToast, refreshPendingCustomOrders } = useAdminUI();
   const [orders, setOrders] = useState([]);
+  const [dbCategories, setDbCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('all');
   const [category, setCategory] = useState('');
@@ -38,9 +37,18 @@ export default function CustomOrdersPage() {
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await adminFetch('/admin/custom-orders');
-      if (data.success && Array.isArray(data.orders)) setOrders(data.orders);
-      else showToast(data.error || 'Failed to fetch custom orders', true);
+      const [ordersRes, cats] = await Promise.all([
+        adminFetch('/admin/custom-orders'),
+        fetchRows('category')
+      ]);
+      if (ordersRes.data?.success && Array.isArray(ordersRes.data.orders)) {
+        setOrders(ordersRes.data.orders);
+      } else {
+        showToast(ordersRes.data?.error || 'Failed to fetch custom orders', true);
+      }
+      if (Array.isArray(cats)) {
+        setDbCategories(cats);
+      }
     } catch (err) {
       console.error('Error fetching custom orders:', err);
       showToast('Network error while fetching custom orders', true);
@@ -56,11 +64,73 @@ export default function CustomOrdersPage() {
     ...Object.fromEntries(ORDER_DECISIONS.map(s => [s, orders.filter(o => o.confirm === s).length]))
   }), [orders]);
 
+  const categoryFilters = useMemo(() => {
+    const list = [{ value: '', label: 'All Categories', icon: Gem }];
+    const added = new Set(['']);
+
+    // 1. All active Custom Order categories from database (custom === true / 1)
+    const customDbCats = (dbCategories || []).filter(c => Boolean(c.custom));
+    customDbCats.forEach(cat => {
+      const name = (cat.name || '').trim();
+      if (name && !added.has(name.toLowerCase())) {
+        added.add(name.toLowerCase());
+        list.push({
+          value: name,
+          label: name,
+          icon: categoryIcon(name)
+        });
+      }
+    });
+
+    // 2. Default bespoke categories
+    const defaultCategories = [
+      { value: 'Yatra Lockets', label: 'Yatra Lockets & Shrines', icon: Compass },
+      { value: 'Mukhut', label: 'Mukhut', icon: Crown },
+      { value: 'Jhalar', label: 'Jhalar', icon: Sparkles },
+      { value: 'Thakurji ka saman', label: 'Thakurji ka saman', icon: HandHeart },
+      { value: 'Temple things', label: 'Temple Things', icon: Church }
+    ];
+
+    defaultCategories.forEach(def => {
+      if (!added.has(def.value.toLowerCase())) {
+        added.add(def.value.toLowerCase());
+        list.push(def);
+      }
+    });
+
+    // 3. Any category that actually exists on received orders
+    orders.forEach(o => {
+      const catName = (o.custom_category || '').trim();
+      if (catName && !added.has(catName.toLowerCase())) {
+        added.add(catName.toLowerCase());
+        list.push({
+          value: catName,
+          label: catName,
+          icon: categoryIcon(catName)
+        });
+      }
+    });
+
+    return list;
+  }, [dbCategories, orders]);
+
+  const categoryCounts = useMemo(() => {
+    const countsMap = { '': orders.length };
+    orders.forEach(o => {
+      const key = String(o.custom_category || '').toLowerCase().trim();
+      if (key) {
+        countsMap[key] = (countsMap[key] || 0) + 1;
+      }
+    });
+    return countsMap;
+  }, [orders]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const catLow = String(category || '').toLowerCase().trim();
     return orders.filter(o => {
       if (status !== 'all' && o.confirm !== status) return false;
-      if (category && o.custom_category !== category) return false;
+      if (catLow && String(o.custom_category || '').toLowerCase().trim() !== catLow) return false;
       if (!q) return true;
       return [o.customer_name, o.customer_phone, o.order_number, o.custom_category, o.description]
         .some(v => String(v || '').toLowerCase().includes(q));
@@ -77,7 +147,7 @@ export default function CustomOrdersPage() {
       <PageHeader
         title="Custom & Bespoke Orders"
         icon={Paintbrush}
-        description="Unified management for Yatra Lockets, Mukhut, Jhalar, Thakurji ka Saman & Temple Things"
+        description="Unified management for bespoke commissions across your custom-enabled categories"
         actions={<Button onClick={fetchOrders} disabled={loading}><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh</Button>}
       />
 
@@ -101,16 +171,26 @@ export default function CustomOrdersPage() {
         </div>
         <div className="-mx-4 overflow-x-auto px-4 pb-1">
           <div className="flex w-max gap-1.5">
-            {CATEGORY_FILTERS.map(c => (
-              <button
-                key={c.value || 'all'}
-                type="button"
-                onClick={() => setCategory(c.value)}
-                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold cursor-pointer ${category === c.value ? 'border-ad-accent bg-ad-accent/12 text-ad-accent' : 'border-ad-border text-ad-muted hover:text-ad-text'}`}
-              >
-                <c.icon className="w-3.5 h-3.5" /> {c.label}
-              </button>
-            ))}
+            {categoryFilters.map(c => {
+              const count = c.value === '' ? orders.length : (categoryCounts[c.value.toLowerCase()] || 0);
+              const isActive = (category || '') === (c.value || '');
+              return (
+                <button
+                  key={c.value || 'all'}
+                  type="button"
+                  onClick={() => setCategory(c.value)}
+                  className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors ${isActive ? 'border-ad-accent bg-ad-accent/12 text-ad-accent' : 'border-ad-border text-ad-muted hover:text-ad-text'}`}
+                >
+                  <c.icon className="w-3.5 h-3.5" />
+                  <span>{c.label}</span>
+                  {count > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${isActive ? 'bg-ad-accent text-white' : 'bg-ad-surface text-ad-muted border border-ad-border'}`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </Card>

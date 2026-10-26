@@ -41,7 +41,11 @@ export default function MobileMenu({
 
   if (!isOpen) return null;
 
-  const categoryList = (categories && categories.length > 0) ? categories : CATEGORIES;
+  const categoryList = ((categories && categories.length > 0) ? categories : CATEGORIES)
+    .filter(c => {
+      const name = (c.name || '').toLowerCase().trim();
+      return name !== 'abc' && name !== 'test';
+    });
 
   return (
     <div className="fixed inset-0 z-50 flex lg:hidden">

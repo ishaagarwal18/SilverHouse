@@ -3,7 +3,11 @@ import { CATEGORIES } from '../../data/products';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
 export default function CategoryGrid({ categories, onSelectCategory }) {
-  const categoryList = (categories && categories.length > 0) ? categories : CATEGORIES;
+  const categoryList = ((categories && categories.length > 0) ? categories : CATEGORIES)
+    .filter(c => {
+      const name = (c.name || '').toLowerCase().trim();
+      return name !== 'abc' && name !== 'test';
+    });
 
   return (
     <section className="py-16 bg-[#FAFAFA]">

@@ -13,7 +13,12 @@ export default function CategoryShowcaseStrip({ categories = [], products = [], 
       return [];
     }
 
-    return categories.map(c => {
+    return categories
+      .filter(c => {
+        const name = (c.name || '').toLowerCase().trim();
+        return name !== 'abc' && name !== 'test';
+      })
+      .map(c => {
       const catSlug = (c.slug || c.id || c.name || String(c.category_id || ''))
         .toLowerCase()
         .replace(/&/g, '')

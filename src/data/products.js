@@ -157,6 +157,35 @@ export const CATEGORIES = [
   },
 ];
 
+// Slugs and names for categories that are strictly custom-order / bespoke only
+export const CUSTOM_ONLY_CATEGORY_SLUGS = [
+  'yatra-lockets',
+  'yatra-lockets-shrines',
+  'mukhut',
+  'jhalar',
+  'thakurji-ka-saman',
+  'temple-things'
+];
+
+/**
+ * Checks whether a category is strictly a custom-order / bespoke only category.
+ * These categories must not appear in the standard catalog browsing sections (Header, PLP filters, Category Strips, etc.)
+ */
+export function isCustomOnlyCategory(cat) {
+  if (!cat) return false;
+  const slug = String(cat.slug || cat.id || '').toLowerCase().trim();
+  const name = String(cat.name || '').toLowerCase().trim();
+  return (
+    CUSTOM_ONLY_CATEGORY_SLUGS.includes(slug) ||
+    name === 'yatra lockets & shrines' ||
+    name === 'yatra lockets' ||
+    name === 'mukhut' ||
+    name === 'jhalar' ||
+    name === 'thakurji ka saman' ||
+    name === 'temple things'
+  );
+}
+
 // Products are loaded dynamically from MS SQL backend database (SP_GETDATA / dbo.product)
 export const PRODUCTS = [];
 

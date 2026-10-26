@@ -225,10 +225,12 @@ export default function Header({
     shopAll: [
       { label: "VIEW ALL PRODUCTS", action: () => onNavigateCategory("all") },
       ...(hasDbCategories
-        ? categories.map(c => ({
-          label: (c.name || c.title || '').toUpperCase(),
-          action: () => onNavigateCategory(c.id || c.slug)
-        }))
+        ? categories
+          .filter(c => (c.name || '').toLowerCase() !== 'abc' && (c.name || '').toLowerCase() !== 'test')
+          .map(c => ({
+            label: (c.name || c.title || '').toUpperCase(),
+            action: () => onNavigateCategory(c.id || c.slug)
+          }))
         : [
           { label: "ANKLETS & PAYAL", action: () => onNavigateCategory("anklets-payal") },
           { label: "KIDS' COLLECTION", action: () => onNavigateCategory("kids") },

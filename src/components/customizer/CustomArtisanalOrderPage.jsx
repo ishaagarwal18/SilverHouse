@@ -63,7 +63,7 @@ const DEFAULT_CUSTOM_CATEGORIES = [
   },
   {
     id: 'Temple things',
-    name: 'Temple things',
+    name: 'Temple Things',
     hindi: 'मंदिर सामग्री',
     icon: Church,
     tagline: 'Sanctified Altar Vessels & Artifacts',
@@ -100,30 +100,39 @@ export default function CustomArtisanalOrderPage({ onTriggerToast }) {
         if (cancelled || !Array.isArray(cats) || cats.length === 0) return;
         const activeCustomDbCats = cats.filter(c => c.custom);
         if (activeCustomDbCats.length > 0) {
-          const merged = activeCustomDbCats.map(dbCat => {
-            const predefined = DEFAULT_CUSTOM_CATEGORIES.find(
-              dc => dc.id.toLowerCase() === dbCat.name.toLowerCase() ||
-                    dc.name.toLowerCase() === dbCat.name.toLowerCase() ||
-                    dc.id.toLowerCase() === (dbCat.slug || '').toLowerCase()
+          const matchedIds = new Set();
+          const merged = DEFAULT_CUSTOM_CATEGORIES.map(dc => {
+            const dbMatch = activeCustomDbCats.find(
+              c => c.name.toLowerCase() === dc.name.toLowerCase() ||
+                   c.name.toLowerCase() === dc.id.toLowerCase() ||
+                   (c.slug && c.slug.toLowerCase() === dc.id.toLowerCase())
             );
-            if (predefined) {
+            if (dbMatch) {
+              matchedIds.add(dbMatch.category_id);
               return {
-                ...predefined,
-                name: dbCat.name,
-                description: dbCat.description || predefined.description
+                ...dc,
+                name: dbMatch.name,
+                description: dbMatch.description || dc.description
               };
             }
-            return {
-              id: dbCat.name,
-              name: dbCat.name,
-              hindi: dbCat.idealFor || 'विशेष',
-              icon: Crown,
-              tagline: `Custom ${dbCat.name} Commissions`,
-              description: dbCat.description || `Handcrafted pure 925 hallmarked silver ${dbCat.name} made to your exact measurements and design specifications.`,
-              popularMotifs: ['Artisan Handcrafted', 'Hallmarked 925 Silver', 'Custom Dimensions', 'Hand-Engraved Details'],
-              presetSpecs: `Bespoke ${dbCat.name}: Hand-forged in 92.5 Sterling Silver according to customer specifications.`,
-              isYatra: (dbCat.slug || '').includes('yatra') || dbCat.name.toLowerCase().includes('yatra')
-            };
+            return dc;
+          });
+
+          // Append any custom DB categories not already covered in DEFAULT_CUSTOM_CATEGORIES
+          activeCustomDbCats.forEach(dbCat => {
+            if (!matchedIds.has(dbCat.category_id)) {
+              merged.push({
+                id: dbCat.name,
+                name: dbCat.name,
+                hindi: dbCat.idealFor || 'विशेष',
+                icon: Crown,
+                tagline: `Custom ${dbCat.name} Commissions`,
+                description: dbCat.description || `Handcrafted pure 925 hallmarked silver ${dbCat.name} made to your exact measurements and design specifications.`,
+                popularMotifs: ['Artisan Handcrafted', 'Hallmarked 925 Silver', 'Custom Dimensions', 'Hand-Engraved Details'],
+                presetSpecs: `Bespoke ${dbCat.name}: Hand-forged in 92.5 Sterling Silver according to customer specifications.`,
+                isYatra: (dbCat.slug || '').includes('yatra') || dbCat.name.toLowerCase().includes('yatra')
+              });
+            }
           });
 
           setCustomCategories(merged);

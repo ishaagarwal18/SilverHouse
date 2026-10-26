@@ -84,7 +84,7 @@ export function getEntityConfig(entity) {
   return ENTITY_CONFIG[entity] || { singular: label, plural: label, icon: Package };
 }
 
-export const CUSTOM_CATEGORIES = ['Mukhut', 'Jhalar', 'Thakurji ka saman', 'Temple things'];
+export const CUSTOM_CATEGORIES = ['Yatra Lockets & Shrines', 'Mukhut', 'Jhalar', 'Thakurji ka saman', 'Temple Things'];
 export const ORDER_DECISIONS = ['processing', 'accepted', 'rejected'];
 export const PAYMENT_STATUSES = ['PENDING', 'PAID', 'CANCELLED', 'FAILED'];
 export const ORDER_STATUSES = ['PENDING', 'COMPLETED'];

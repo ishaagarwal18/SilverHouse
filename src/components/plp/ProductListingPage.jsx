@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { CATEGORIES, PRODUCTS } from '../../data/products';
+import { CATEGORIES, PRODUCTS, isCustomOnlyCategory } from '../../data/products';
 import { fetchProducts, fetchTargetAudiences } from '../../services/api';
 import { getActiveCategoryIds } from '../../utils/festivalUtils';
 import {
@@ -1108,13 +1108,17 @@ export default function ProductListingPage({
                       slug !== 'pooja-articles' &&
                       slug !== 'puja-articles' &&
                       slug !== 'puja' &&
+                      slug !== 'abc' &&
+                      slug !== 'test' &&
                       String(cat.category_id) !== '2' &&
                       String(cat.category_id) !== '8' &&
                       name !== 'baby silver' &&
                       name !== 'kids collection' &&
                       name !== "kids' collection" &&
                       name !== 'pooja articles' &&
-                      name !== 'puja articles'
+                      name !== 'puja articles' &&
+                      name !== 'abc' &&
+                      name !== 'test'
                     );
                   })
                   .map((cat) => (
@@ -1421,34 +1425,65 @@ export default function ProductListingPage({
             )}
 
             {filteredProducts.length === 0 ? (
-              <div className="bg-[var(--th-card)] p-12 rounded-2xl border border-[var(--th-border)] text-center shadow-xs">
-                <div className="w-14 h-14 rounded-full bg-[var(--th-primary-light)] text-[var(--th-accent)] flex items-center justify-center mx-auto mb-4 border border-[var(--th-accent)]/30">
-                  <Search className="w-7 h-7" />
-                </div>
-                <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">
-                  {searchQuery ? `No Silver Pieces Match "${searchQuery}"` : "No Silver Artifacts Match Filters"}
-                </h3>
-                <p className="text-xs text-[var(--th-text-muted)] mt-1.5 max-w-md mx-auto leading-relaxed">
-                  {searchQuery
-                    ? "We couldn't find an exact match. Try checking for spelling errors, broader keywords (like 'ring', 'payal', 'coin'), or clear your search to explore all items."
-                    : "Try adjusting your price range, weight, or purity filter options to see available products."}
-                </p>
-                <div className="flex items-center justify-center gap-3 mt-5">
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="px-5 py-2.5 bg-[var(--th-surface-alt)] hover:bg-[var(--th-border)] text-[var(--th-text-main)] text-xs font-bold rounded-lg transition-colors border border-[var(--th-border)] cursor-pointer"
-                    >
-                      Clear Search Keyword
-                    </button>
-                  )}
-                  <button
-                    onClick={resetFilters}
-                    className="px-6 py-2.5 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white text-xs font-bold rounded-lg transition-colors shadow-sm cursor-pointer"
-                  >
-                    Reset All Filters
-                  </button>
-                </div>
+              <div className="bg-[var(--th-card)] p-10 sm:p-12 rounded-2xl border border-[var(--th-border)] text-center shadow-xs">
+                {isCustomOnlyCategory(categoryList.find(c => String(c.id).toLowerCase() === String(selectedCategory).toLowerCase() || String(c.slug).toLowerCase() === String(selectedCategory).toLowerCase())) ? (
+                  <div className="space-y-4 max-w-lg mx-auto">
+                    <div className="w-14 h-14 rounded-full bg-[var(--th-primary-light)] text-[var(--th-accent)] flex items-center justify-center mx-auto border border-[var(--th-accent)]/30">
+                      <Sparkles className="w-7 h-7" />
+                    </div>
+                    <h3 className="font-serif text-2xl font-bold text-[var(--th-text-main)]">
+                      Bespoke & Handcrafted Creation
+                    </h3>
+                    <p className="text-xs sm:text-sm text-[var(--th-text-muted)] leading-relaxed">
+                      Pure 925 sterling silver {currentCategory.name} are handcrafted to your custom deity dimensions, motifs, and consecration preferences.
+                    </p>
+                    <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                      <button
+                        onClick={() => navigate('/customize')}
+                        className="w-full sm:w-auto px-6 py-3 bg-[var(--th-accent)] hover:brightness-110 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer flex items-center justify-center space-x-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>Commission Bespoke Order →</span>
+                      </button>
+                      <button
+                        onClick={resetFilters}
+                        className="w-full sm:w-auto px-5 py-3 bg-[var(--th-surface-alt)] hover:bg-[var(--th-border)] text-[var(--th-text-main)] text-xs font-bold rounded-xl transition-colors border border-[var(--th-border)] cursor-pointer"
+                      >
+                        Browse All Products
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-14 h-14 rounded-full bg-[var(--th-primary-light)] text-[var(--th-accent)] flex items-center justify-center mx-auto mb-4 border border-[var(--th-accent)]/30">
+                      <Search className="w-7 h-7" />
+                    </div>
+                    <h3 className="font-serif text-xl font-bold text-[var(--th-text-main)]">
+                      {searchQuery ? `No Silver Pieces Match "${searchQuery}"` : "No Silver Artifacts Match Filters"}
+                    </h3>
+                    <p className="text-xs text-[var(--th-text-muted)] mt-1.5 max-w-md mx-auto leading-relaxed">
+                      {searchQuery
+                        ? "We couldn't find an exact match. Try checking for spelling errors, broader keywords (like 'ring', 'payal', 'coin'), or clear your search to explore all items."
+                        : "Try adjusting your price range, weight, or purity filter options to see available products."}
+                    </p>
+                    <div className="flex items-center justify-center gap-3 mt-5">
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery('')}
+                          className="px-5 py-2.5 bg-[var(--th-surface-alt)] hover:bg-[var(--th-border)] text-[var(--th-text-main)] text-xs font-bold rounded-lg transition-colors border border-[var(--th-border)] cursor-pointer"
+                        >
+                          Clear Search Keyword
+                        </button>
+                      )}
+                      <button
+                        onClick={resetFilters}
+                        className="px-6 py-2.5 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white text-xs font-bold rounded-lg transition-colors shadow-sm cursor-pointer"
+                      >
+                        Reset All Filters
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <div className={`grid gap-2.5 sm:gap-6 ${gridCols === 2 ? 'grid-cols-2' :
