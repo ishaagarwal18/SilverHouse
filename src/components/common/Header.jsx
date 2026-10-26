@@ -279,12 +279,19 @@ export default function Header({
       { label: "VIEW ALL WOMEN", action: () => onNavigateCategory("women") },
       ...(hasDbCategories
         ? categories
-          .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'women' || ['rings', 'anklets-payal', 'bangles-bracelets'].includes(c.id || c.slug))
-          .map(c => ({ label: c.name.toUpperCase(), action: () => onNavigateCategory(c.id || c.slug) }))
+          .filter(c => {
+            const cName = (c.name || '').toLowerCase().trim();
+            if (cName === 'abc' || cName === 'test') return false;
+            return (c.idealFor || c.ideal_for || '').toLowerCase() === 'women' || ['rings', 'anklets-payal', 'bangles-bracelets'].includes(c.id || c.slug);
+          })
+          .map(c => ({
+            label: (c.name || c.title || '').toUpperCase(),
+            action: () => onNavigateCategory(`${c.id || c.slug}?recipient=women`)
+          }))
         : [
-          { label: "SILVER RINGS", action: () => onNavigateCategory("rings") },
-          { label: "TRADITIONAL GHUNGROO PAYAL", action: () => onNavigateCategory("anklets-payal") },
-          { label: "TEMPLE WORK BANGLES", action: () => onNavigateCategory("bangles-bracelets") }
+          { label: "ANKLETS & PAYAL", action: () => onNavigateCategory("anklets-payal?recipient=women") },
+          { label: "SILVER RINGS", action: () => onNavigateCategory("rings?recipient=women") },
+          { label: "BANGLES & BRACELETS", action: () => onNavigateCategory("bangles-bracelets?recipient=women") }
         ])
     ],
     mens: [
@@ -300,7 +307,7 @@ export default function Header({
         : [])
     ],
     puja: [
-      { label: "ALL DIVINE ARTIFACTS", action: () => onNavigateCategory("silver-idols") },
+      { label: "ALL DIVINE ARTIFACTS", action: () => onNavigateCategory("puja") },
       ...(hasDbCategories
         ? categories
           .filter(c => (c.idealFor || c.ideal_for || '').toLowerCase() === 'puja' || ['silver-idols', 'pooja-articles', 'car-accessories', 'silverware'].includes(c.id || c.slug))
@@ -1142,7 +1149,7 @@ export default function Header({
             onMouseLeave={() => setActiveDropdown(null)}
           >
             <button
-              onClick={() => onNavigateCategory("silver-religious-idols")}
+              onClick={() => onNavigateCategory("puja")}
               className="px-3 py-1.5 text-xs xl:text-[13px] font-bold tracking-wider text-[var(--th-text-main)] hover:text-[var(--th-primary)] transition-colors flex items-center space-x-1 uppercase focus:outline-hidden cursor-pointer"
             >
               <span>DIVINE PUJA</span>

@@ -35,7 +35,7 @@ export default function ProductListingPage({
 
   const categoryList = (categories && categories.length > 0) ? categories : CATEGORIES;
 
-  const initialCategory = categoryId === 'baby-silver' ? 'kids' : (categoryId || 'all');
+  const initialCategory = (categoryId === 'baby-silver') ? 'kids' : ((categoryId === 'pooja-articles' || categoryId === 'puja-articles' || categoryId === 'divine-puja' || categoryId === 'all-divine-artifacts') ? 'puja' : (categoryId || 'all'));
   const [searchQuery, setSearchQuery] = useState(() => searchQueryParam);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedSubcategory, setSelectedSubcategory] = useState(subcategoryId || 'all');
@@ -89,7 +89,7 @@ export default function ProductListingPage({
 
   // Sync state if categoryId / subcategoryId route params change
   useEffect(() => {
-    const resolved = categoryId === 'baby-silver' ? 'kids' : (categoryId || 'all');
+    const resolved = (categoryId === 'baby-silver') ? 'kids' : ((categoryId === 'pooja-articles' || categoryId === 'puja-articles' || categoryId === 'divine-puja' || categoryId === 'all-divine-artifacts') ? 'puja' : (categoryId || 'all'));
     setSelectedCategory(resolved);
     setSelectedSubcategory(subcategoryId || 'all');
   }, [categoryId, subcategoryId]);
@@ -231,6 +231,36 @@ export default function ProductListingPage({
       name: "Kids' Silver Collection",
       description: "Protective silver nazariya beads, baby feeding silver sets, and baby bracelets.",
       heroBanner: "/images/hero_baby_nazariya.png"
+    },
+    puja: {
+      id: "puja",
+      name: "Divine Puja Articles",
+      description: "Sacred pure 999 and 925 silver idols, pooja thalis, diyas, and divine devotional creations.",
+      heroBanner: "/images/hero_silver_coins.png"
+    },
+    'puja-articles': {
+      id: "puja",
+      name: "Divine Puja Articles",
+      description: "Sacred pure 999 and 925 silver idols, pooja thalis, diyas, and divine devotional creations.",
+      heroBanner: "/images/hero_silver_coins.png"
+    },
+    'pooja-articles': {
+      id: "puja",
+      name: "Divine Puja Articles",
+      description: "Sacred pure 999 and 925 silver idols, pooja thalis, diyas, and divine devotional creations.",
+      heroBanner: "/images/hero_silver_coins.png"
+    },
+    'divine-puja': {
+      id: "puja",
+      name: "Divine Puja Articles",
+      description: "Sacred pure 999 and 925 silver idols, pooja thalis, diyas, and divine devotional creations.",
+      heroBanner: "/images/hero_silver_coins.png"
+    },
+    'all-divine-artifacts': {
+      id: "puja",
+      name: "Divine Puja Articles",
+      description: "Sacred pure 999 and 925 silver idols, pooja thalis, diyas, and divine devotional creations.",
+      heroBanner: "/images/hero_silver_coins.png"
     },
     jewellery: {
       id: "jewellery",
@@ -443,8 +473,9 @@ export default function ProductListingPage({
   };
 
   const isWomenProduct = (p) => {
-    if (['silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets'].includes(p.category)) return true;
     const target = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
+    // Critical: NEVER match products meant solely for men!
+    if (!target.includes('women') && (target.includes('men') || target.includes("men's"))) return false;
     return target.includes('women');
   };
 
@@ -454,73 +485,37 @@ export default function ProductListingPage({
     return words.includes('kids') || words.includes('kid') || words.includes('children');
   };
 
+  const isPujaProduct = (p) => {
+    const target = String(p.ideal_for || p.recipient || p.idealFor || '').toLowerCase().trim();
+    if (target.includes('puja') || target.includes('pooja')) return true;
+    const cat = String(p.category || p.category_slug || p.category_name || '').toLowerCase().trim();
+    if (cat.includes('puja') || cat.includes('pooja')) return true;
+    if (Number(p.category_id) === 8) return true;
+    return false;
+  };
+
   const matchesOccasionOrAudience = (p, filter) => {
     if (!filter || filter === 'all') return true;
     const f = filter.toLowerCase().trim();
-
-    // Direct match against p.ideal_for or recipient from database
     const pAudience = String(p.ideal_for || p.recipient || p.idealFor || '').toLowerCase().trim();
-    if (pAudience === 'all') return true;
-    if (pAudience === f) return true;
-
-    if (f === 'puja' || f === 'pooja') {
-      const occs = Array.isArray(p.occasions) ? p.occasions.map(o => o.toLowerCase()) : [];
-      const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
-      const cat = (p.category || p.category_slug || '').toLowerCase();
-      const name = (p.name || '').toLowerCase();
-      return (
-        occs.some(o => o.includes('puja') || o.includes('pooja') || o.includes('worship') || o.includes('temple') || o.includes('diwali') || o.includes('navratri')) ||
-        recipient.includes('puja') || recipient.includes('pooja') || recipient.includes('worship') || recipient.includes('devot') || recipient.includes('temple') ||
-        cat === 'silver-religious-idols' || cat === 'silver-pooja-utensils-diya' ||
-        name.includes('idol') || name.includes('murti') || name.includes('diya') || name.includes('thali') || name.includes('kalash') || name.includes('ganesha') || name.includes('laxmi') || name.includes('radha') || name.includes('krishna') || name.includes('hanuman') || name.includes('bell') || name.includes('panchpatra')
-      );
-    }
 
     if (f === 'men' || f === 'mens') {
       return isMenProduct(p);
     }
-
     if (f === 'women') {
       return isWomenProduct(p);
     }
-
-    if (f === 'baby' || f === 'kids') {
+    if (f === 'kids' || f === 'baby') {
       return isKidsProduct(p);
     }
-
+    if (f === 'puja' || f === 'pooja') {
+      return isPujaProduct(p);
+    }
     if (f === 'unisex') {
-      const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
-      return recipient.includes('unisex') || recipient.includes('all');
+      return pAudience.includes('unisex') || pAudience.includes('all');
     }
 
-    if (f === 'gifting' || f === 'gift') {
-      const occs = Array.isArray(p.occasions) ? p.occasions.map(o => o.toLowerCase()) : [];
-      const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
-      return (
-        p.isCustomizable ||
-        p.category === 'custom-gifting' ||
-        p.category === 'silver-coins-bars' ||
-        recipient.includes('gift') ||
-        occs.some(o => o.includes('gift') || o.includes('wedding') || o.includes('anniversary'))
-      );
-    }
-
-    if (f === 'investment') {
-      const occs = Array.isArray(p.occasions) ? p.occasions.map(o => o.toLowerCase()) : [];
-      const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
-      const name = (p.name || '').toLowerCase();
-      return (
-        p.category === 'silver-coins-bars' ||
-        occs.some(o => o.includes('invest')) ||
-        recipient.includes('invest') ||
-        name.includes('coin') ||
-        name.includes('bar')
-      );
-    }
-
-    const occs = Array.isArray(p.occasions) ? p.occasions.map(o => o.toLowerCase()) : [];
-    const recipient = (p.recipient || p.ideal_for || p.idealFor || '').toLowerCase();
-    return occs.some(o => o.includes(f)) || recipient.includes(f);
+    return pAudience === f || pAudience.includes(f);
   };
 
   // Normalized Filtered List from Live Database
@@ -583,129 +578,56 @@ export default function ProductListingPage({
         result = result.filter(isMenProduct);
       } else if (selectedCategory === 'kids' || selectedCategory === 'kids-baby' || selectedCategory === 'kids-nazariya-bracelets' || selectedCategory === 'baby-silver') {
         result = result.filter(isKidsProduct);
+      } else if (selectedCategory === 'puja' || selectedCategory === 'pooja' || selectedCategory === 'pooja-articles' || selectedCategory === 'puja-articles' || selectedCategory === 'divine-puja' || selectedCategory === 'all-divine-artifacts') {
+        result = result.filter(isPujaProduct);
       } else if (selectedCategory === 'jewellery') {
         result = result.filter(p =>
-          ['rings', 'pendants', 'bangles-bracelets', 'anklets-payal', 'silver-chains', 'nazariya', 'spiritual-wear', 'silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets', 'men-silver-collection', 'kids-nazariya-bracelets'].includes(p.category)
-        );
-      } else if (selectedCategory === 'idols' || selectedCategory === 'silver-idols' || selectedCategory === 'silver-religious-idols') {
-        result = result.filter(p =>
-          p.category === 'silver-idols' ||
-          p.category === 'silver-religious-idols' ||
-          p.category_slug === 'silver-idols' ||
-          p.category_slug === 'silver-religious-idols' ||
-          p.category_slug === 'idols' ||
-          (p.name || '').toLowerCase().includes('idol') ||
-          (p.name || '').toLowerCase().includes('murti') ||
-          (p.name || '').toLowerCase().includes('statue')
-        );
-      } else if (selectedCategory === 'utensils' || selectedCategory === 'silverware' || selectedCategory === 'pooja-articles' || selectedCategory === 'silver-utensils-pooja' || selectedCategory === 'silver-pooja-utensils-diya') {
-        result = result.filter(p =>
-          p.category === 'silverware' ||
-          p.category === 'pooja-articles' ||
-          p.category === 'silver-utensils-pooja' ||
-          p.category === 'silver-pooja-utensils-diya' ||
-          p.category_slug === 'silverware' ||
-          p.category_slug === 'pooja-articles' ||
-          p.category_slug === 'utensils' ||
-          (p.name || '').toLowerCase().includes('kalash') ||
-          (p.name || '').toLowerCase().includes('diya') ||
-          (p.name || '').toLowerCase().includes('utensil') ||
-          (p.name || '').toLowerCase().includes('panchpatra') ||
-          (p.name || '').toLowerCase().includes('thali') ||
-          (p.name || '').toLowerCase().includes('glass')
-        );
-      } else if (selectedCategory === 'spiritual-wear' || selectedCategory === 'yantra' || selectedCategory === 'custom-yatra-lockets' || selectedCategory === 'custom-gifting' || selectedCategory === 'yatra') {
-        result = result.filter(p =>
-          p.category === 'spiritual-wear' ||
-          p.category === 'custom-yatra-lockets' ||
-          p.category === 'yantra' ||
-          p.category_slug === 'spiritual-wear' ||
-          p.category_slug === 'yantra' ||
-          (p.name || '').toLowerCase().includes('yantra') ||
-          (p.name || '').toLowerCase().includes('yatra') ||
-          (p.name || '').toLowerCase().includes('kavach') ||
-          (p.name || '').toLowerCase().includes('trishul') ||
-          (p.name || '').toLowerCase().includes('damru') ||
-          (p.subcategory || '').includes('locket') ||
-          p.isCustomizable
-        );
-      } else if (selectedCategory === 'rings' || selectedCategory === 'silver-rings') {
-        result = result.filter(p =>
-          (p.category === 'rings' || p.category === 'silver-rings' || p.category_slug === 'silver-rings' || p.category_slug === 'rings' || (p.name || '').toLowerCase().includes('ring')) &&
-          !(p.name || '').toLowerCase().includes('earring')
-        );
-      } else if (selectedCategory === 'bracelet' || selectedCategory === 'bracelets' || selectedCategory === 'bangles-bracelets') {
-        result = result.filter(p =>
-          (p.category === 'bangles-bracelets' ||
-            p.category === 'silver-bangles-kadas' ||
-            p.category_slug === 'bracelets' ||
-            p.category_slug === 'bangles-bracelets' ||
-            p.category_slug === 'silver-bangles-kadas' ||
-            (p.name || '').toLowerCase().includes('bracelet') ||
-            (p.name || '').toLowerCase().includes('kada') ||
-            (p.name || '').toLowerCase().includes('bangle')) &&
-          !(p.recipient || '').toLowerCase().includes('kids') &&
-          !(p.name || '').toLowerCase().includes('baby')
-        );
-      } else if (selectedCategory === 'pendants') {
-        result = result.filter(p =>
-          (p.category === 'pendants' ||
-            p.category === 'silver-pendants-chains' ||
-            p.category_slug === 'pendants' ||
-            (p.name || '').toLowerCase().includes('pendant')) &&
-          !(p.name || '').toLowerCase().includes('cuban link chain')
-        );
-      } else if (selectedCategory === 'silver-earrings' || selectedCategory === 'earrings' || selectedCategory === 'earings') {
-        result = result.filter(p =>
-          p.category === 'silver-earrings' ||
-          p.category_slug === 'silver-earrings' ||
-          p.category_slug === 'earrings' ||
-          (p.name || '').toLowerCase().includes('earring') ||
-          (p.name || '').toLowerCase().includes('stud') ||
-          (p.name || '').toLowerCase().includes('jhumka')
-        );
-      } else if (selectedCategory === 'silver-chains' || selectedCategory === 'chains' || selectedCategory === 'chain') {
-        result = result.filter(p =>
-          p.category === 'silver-chains' ||
-          p.category_slug === 'silver-chains' ||
-          p.category_slug === 'chains' ||
-          (p.name || '').toLowerCase().includes('chain') ||
-          (p.description || '').toLowerCase().includes('chain')
-        );
-      } else if (selectedCategory === 'silver-sets' || selectedCategory === 'sets') {
-        result = result.filter(p =>
-          p.category === 'silver-sets' ||
-          (p.name || '').toLowerCase().includes('set') ||
-          (p.name || '').toLowerCase().includes('pair') ||
-          (p.description || '').toLowerCase().includes('set')
-        );
-      } else if (selectedCategory === 'anklets' || selectedCategory === 'silver-payal-anklets' || selectedCategory === 'payal' || selectedCategory === 'anklets-payal') {
-        result = result.filter(p =>
-          p.category === 'anklets-payal' ||
-          p.category === 'silver-payal-anklets' ||
-          p.category_slug === 'silver-payal-anklets' ||
-          p.category_slug === 'anklets-payal' ||
-          p.category_slug === 'anklets' ||
-          (p.name || '').toLowerCase().includes('payal') ||
-          (p.name || '').toLowerCase().includes('anklet')
-        );
-      } else if (selectedCategory === 'coins' || selectedCategory === 'silver-coins' || selectedCategory === 'silver-coins-bars') {
-        result = result.filter(p =>
-          p.category === 'silver-coins' ||
-          p.category === 'silver-coins-bars' ||
-          p.category_slug === 'silver-coins' ||
-          (p.name || '').toLowerCase().includes('coin') ||
-          (p.name || '').toLowerCase().includes('bar')
+          ['rings', 'pendants', 'bangles-bracelets', 'anklets-payal', 'silver-chains', 'nazariya', 'spiritual-wear', 'silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets'].includes(p.category) ||
+          [1, 5, 10, 11, 12, 13].includes(Number(p.category_id))
         );
       } else {
+        // Pure Dynamic Database Category Matcher (strictly no hardcoded keyword guessing)
         const selLow = String(selectedCategory || '').toLowerCase().trim();
-        result = result.filter(p =>
-          (p.category && p.category.toLowerCase() === selLow) ||
-          (p.category_slug && p.category_slug.toLowerCase() === selLow) ||
-          (p.category_id && String(p.category_id) === String(selectedCategory)) ||
-          (p.id && String(p.id) === String(selectedCategory)) ||
-          (p.category_name && p.category_name.toLowerCase() === selLow)
+        const activeCategories = (categories && categories.length > 0) ? categories : categoryList;
+        const matchedCat = activeCategories.find(c =>
+          String(c.id).toLowerCase() === selLow ||
+          String(c.slug).toLowerCase() === selLow ||
+          String(c.category_id) === selLow ||
+          String(c.name).toLowerCase() === selLow
         );
+
+        if (matchedCat) {
+          result = result.filter(p => {
+            // 1. Direct Category ID match from database
+            if (matchedCat.category_id !== null && matchedCat.category_id !== undefined) {
+              const pCatId = p.category_id ?? p.categoryId;
+              if (pCatId !== null && pCatId !== undefined && Number(pCatId) === Number(matchedCat.category_id)) {
+                return true;
+              }
+            }
+            // 2. Direct Slug / Identifier match from database
+            const catSlug = String(matchedCat.slug || matchedCat.id || '').toLowerCase().trim();
+            const pCat = String(p.category || p.category_slug || '').toLowerCase().trim();
+            if (catSlug && (pCat === catSlug || pCat.replace(/-/g, '') === catSlug.replace(/-/g, ''))) {
+              return true;
+            }
+            // 3. Name match from database
+            const catName = String(matchedCat.name || '').toLowerCase().trim();
+            const pCatName = String(p.category_name || '').toLowerCase().trim();
+            if (catName && pCatName === catName) {
+              return true;
+            }
+            return false;
+          });
+        } else {
+          result = result.filter(p => {
+            const pCatId = String(p.category_id ?? p.categoryId ?? '');
+            const pCat = String(p.category || '').toLowerCase().trim();
+            const pSlug = String(p.category_slug || '').toLowerCase().trim();
+            const pName = String(p.category_name || '').toLowerCase().trim();
+            return pCatId === selLow || pCat === selLow || pSlug === selLow || pName === selLow;
+          });
+        }
       }
     }
 
@@ -788,6 +710,11 @@ export default function ProductListingPage({
     counts['mens'] = rawList.filter(isMenProduct).length;
     counts['men-silver-collection'] = counts['mens'];
     counts['kids'] = rawList.filter(isKidsProduct).length;
+    counts['puja'] = rawList.filter(isPujaProduct).length;
+    counts['puja-articles'] = counts['puja'];
+    counts['pooja-articles'] = counts['puja'];
+    counts['divine-puja'] = counts['puja'];
+    counts['all-divine-artifacts'] = counts['puja'];
     counts['jewellery'] = rawList.filter(p => ['rings', 'pendants', 'bangles-bracelets', 'anklets-payal', 'silver-chains', 'nazariya', 'spiritual-wear', 'silver-rings', 'silver-pendants-chains', 'silver-bangles-kadas', 'silver-payal-anklets'].includes(p.category)).length;
 
     // Database Categories Dynamic Matching
@@ -806,7 +733,10 @@ export default function ProductListingPage({
   }, [products, backendItems, categoryList]);
 
   const handleCategorySelect = (catId) => {
-    const target = catId === 'baby-silver' ? 'kids' : catId;
+    let target = catId === 'baby-silver' ? 'kids' : catId;
+    if (target === 'pooja-articles' || target === 'puja-articles' || target === 'divine-puja' || target === 'all-divine-artifacts') {
+      target = 'puja';
+    }
     setSelectedCategory(target);
     setSelectedSubcategory('all');
     if (target === 'all') {
@@ -1138,6 +1068,7 @@ export default function ProductListingPage({
                   { id: 'women', label: "Women's Collection" },
                   { id: 'mens', label: "Men's Collection" },
                   { id: 'kids', label: "Kids' Collection" },
+                  { id: 'puja', label: "Puja Articles" },
                   { id: 'jewellery', label: "All Silver Jewellery" }
                 ].map((item) => (
                   <label
@@ -1174,10 +1105,16 @@ export default function ProductListingPage({
                       slug !== 'baby-silver' &&
                       slug !== 'kids' &&
                       slug !== 'kids-collection' &&
+                      slug !== 'pooja-articles' &&
+                      slug !== 'puja-articles' &&
+                      slug !== 'puja' &&
                       String(cat.category_id) !== '2' &&
+                      String(cat.category_id) !== '8' &&
                       name !== 'baby silver' &&
                       name !== 'kids collection' &&
-                      name !== "kids' collection"
+                      name !== "kids' collection" &&
+                      name !== 'pooja articles' &&
+                      name !== 'puja articles'
                     );
                   })
                   .map((cat) => (
