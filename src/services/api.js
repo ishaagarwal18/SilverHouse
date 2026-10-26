@@ -815,7 +815,7 @@ export async function updateStoreParameters(params) {
   try {
     const url = `${API_BASE_URL}/admin/parameters`;
     const headers = { 'Content-Type': 'application/json' };
-    const token = getAuthToken();
+    const token = localStorage.getItem('silverhouse_admin_token') || localStorage.getItem('silverhouse_token');
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const res = await fetch(url, {

@@ -68,12 +68,27 @@ export default function CustomOrdersPage() {
     const list = [{ value: '', label: 'All Categories', icon: Gem }];
     const added = new Set(['']);
 
+    const normalizeKey = (str) => String(str || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, ' ').trim();
+
     // 1. All active Custom Order categories from database (custom === true / 1)
     const customDbCats = (dbCategories || []).filter(c => Boolean(c.custom));
     customDbCats.forEach(cat => {
       const name = (cat.name || '').trim();
-      if (name && !added.has(name.toLowerCase())) {
-        added.add(name.toLowerCase());
+      const slug = (cat.slug || '').trim();
+      const normName = normalizeKey(name);
+      const normSlug = normalizeKey(slug);
+
+      if (name && !added.has(normName) && !added.has(normSlug)) {
+        added.add(normName);
+        if (normSlug) added.add(normSlug);
+        // Also add aliases
+        if (normName.includes('yatra')) {
+          added.add('yatra lockets');
+          added.add('yatra lockets and shrines');
+        }
+        if (normName.includes('temple')) {
+          added.add('temple things');
+        }
         list.push({
           value: name,
           label: name,
@@ -82,27 +97,38 @@ export default function CustomOrdersPage() {
       }
     });
 
-    // 2. Default bespoke categories
+    // 2. Default bespoke fallback categories (only added if not already covered)
     const defaultCategories = [
-      { value: 'Yatra Lockets', label: 'Yatra Lockets & Shrines', icon: Compass },
-      { value: 'Mukhut', label: 'Mukhut', icon: Crown },
-      { value: 'Jhalar', label: 'Jhalar', icon: Sparkles },
-      { value: 'Thakurji ka saman', label: 'Thakurji ka saman', icon: HandHeart },
-      { value: 'Temple things', label: 'Temple Things', icon: Church }
+      { value: 'Yatra Lockets & Shrines', label: 'Yatra Lockets & Shrines', icon: Compass, checkKeys: ['yatra lockets', 'yatra lockets and shrines'] },
+      { value: 'Mukhut', label: 'Mukhut', icon: Crown, checkKeys: ['mukhut'] },
+      { value: 'Jhalar', label: 'Jhalar', icon: Sparkles, checkKeys: ['jhalar'] },
+      { value: 'Thakurji ka saman', label: 'Thakurji ka saman', icon: HandHeart, checkKeys: ['thakurji ka saman'] },
+      { value: 'Temple Things', label: 'Temple Things', icon: Church, checkKeys: ['temple things'] }
     ];
 
     defaultCategories.forEach(def => {
-      if (!added.has(def.value.toLowerCase())) {
-        added.add(def.value.toLowerCase());
-        list.push(def);
+      const normVal = normalizeKey(def.value);
+      const normLbl = normalizeKey(def.label);
+      const alreadyAdded = added.has(normVal) || added.has(normLbl) || (def.checkKeys && def.checkKeys.some(k => added.has(normalizeKey(k))));
+
+      if (!alreadyAdded) {
+        added.add(normVal);
+        added.add(normLbl);
+        (def.checkKeys || []).forEach(k => added.add(normalizeKey(k)));
+        list.push({
+          value: def.value,
+          label: def.label,
+          icon: def.icon
+        });
       }
     });
 
     // 3. Any category that actually exists on received orders
     orders.forEach(o => {
       const catName = (o.custom_category || '').trim();
-      if (catName && !added.has(catName.toLowerCase())) {
-        added.add(catName.toLowerCase());
+      const normCat = normalizeKey(catName);
+      if (catName && !added.has(normCat)) {
+        added.add(normCat);
         list.push({
           value: catName,
           label: catName,
@@ -117,9 +143,17 @@ export default function CustomOrdersPage() {
   const categoryCounts = useMemo(() => {
     const countsMap = { '': orders.length };
     orders.forEach(o => {
-      const key = String(o.custom_category || '').toLowerCase().trim();
-      if (key) {
-        countsMap[key] = (countsMap[key] || 0) + 1;
+      const raw = String(o.custom_category || '').trim();
+      if (!raw) return;
+      const key = raw.toLowerCase();
+      countsMap[key] = (countsMap[key] || 0) + 1;
+      // Also map friendly aliases so both 'Yatra Lockets' and 'Yatra Lockets & Shrines' counts resolve
+      if (key.includes('yatra')) {
+        countsMap['yatra lockets'] = (countsMap['yatra lockets'] || 0) + 1;
+        countsMap['yatra lockets & shrines'] = (countsMap['yatra lockets & shrines'] || 0) + 1;
+      }
+      if (key.includes('temple')) {
+        countsMap['temple things'] = (countsMap['temple things'] || 0) + 1;
       }
     });
     return countsMap;
@@ -130,7 +164,15 @@ export default function CustomOrdersPage() {
     const catLow = String(category || '').toLowerCase().trim();
     return orders.filter(o => {
       if (status !== 'all' && o.confirm !== status) return false;
-      if (catLow && String(o.custom_category || '').toLowerCase().trim() !== catLow) return false;
+      if (catLow) {
+        const oCat = String(o.custom_category || '').toLowerCase().trim();
+        const matchesCat = (
+          oCat === catLow ||
+          (catLow.includes('yatra') && oCat.includes('yatra')) ||
+          (catLow.includes('temple') && oCat.includes('temple'))
+        );
+        if (!matchesCat) return false;
+      }
       if (!q) return true;
       return [o.customer_name, o.customer_phone, o.order_number, o.custom_category, o.description]
         .some(v => String(v || '').toLowerCase().includes(q));

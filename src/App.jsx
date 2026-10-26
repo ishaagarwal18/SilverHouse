@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AnnouncementBar from './components/common/AnnouncementBar';
 import Header from './components/common/Header';
-import FestivalDecorOverlay, { getActiveFestivalTheme } from './components/festival/FestivalDecorOverlay';
+import FestivalDecorOverlay, { getActiveFestivalTheme, resolveFestivalThemeId } from './components/festival/FestivalDecorOverlay';
 import MobileMenu from './components/common/MobileMenu';
 import SearchModal from './components/common/SearchModal';
 import QuickViewModal from './components/common/QuickViewModal';
@@ -55,7 +55,7 @@ export default function App() {
 
   // Active Festival Theme Tracker (e.g. 'diwali', 'navratri', or 'none')
   const [activeFestivalTheme, setActiveFestivalTheme] = useState(() =>
-    getActiveFestivalTheme(festivals?.find(f => f.is_active)?.name || 'diwali')
+    getActiveFestivalTheme(storeParams?.current_festival || 'diwali')
   );
 
   useEffect(() => {
@@ -63,12 +63,22 @@ export default function App() {
       if (e.detail?.themeId) {
         setActiveFestivalTheme(e.detail.themeId);
       } else {
-        setActiveFestivalTheme(getActiveFestivalTheme(festivals?.find(f => f.is_active)?.name || 'diwali'));
+        setActiveFestivalTheme(getActiveFestivalTheme(storeParams?.current_festival || 'diwali'));
+      }
+    };
+    const handleStorage = (e) => {
+      if (e.key === 'silverhouse_active_festival_theme' && e.newValue) {
+        const resolved = resolveFestivalThemeId(e.newValue);
+        if (resolved) setActiveFestivalTheme(resolved);
       }
     };
     window.addEventListener('silverhouse_festival_theme_updated', handleFestivalThemeUpdate);
-    return () => window.removeEventListener('silverhouse_festival_theme_updated', handleFestivalThemeUpdate);
-  }, [festivals]);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('silverhouse_festival_theme_updated', handleFestivalThemeUpdate);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [storeParams]);
 
   const handleOpenPdf = (type) => {
     let path = '/purity-guide';
@@ -295,6 +305,19 @@ export default function App() {
         }
         if (paramsRes?.parameters) {
           setStoreParams(paramsRes.parameters);
+          // Sync festival theme from store_parameter
+          if (paramsRes.parameters.current_festival) {
+            const resolvedTheme = resolveFestivalThemeId(paramsRes.parameters.current_festival);
+            if (resolvedTheme) {
+              setActiveFestivalTheme(resolvedTheme);
+              try {
+                localStorage.setItem('silverhouse_active_festival_theme', resolvedTheme);
+                window.dispatchEvent(new CustomEvent('silverhouse_festival_theme_updated', { detail: { themeId: resolvedTheme } }));
+              } catch {
+                // ignore
+              }
+            }
+          }
           // Apply default_theme fetched directly from database table store_parameter
           if (paramsRes.parameters.default_theme) {
             const dbThemeRaw = paramsRes.parameters.default_theme.trim().toLowerCase();
@@ -644,7 +667,7 @@ export default function App() {
         {/* Active Festival Decor Theme Suite (Navratri, Diwali, etc.) */}
         {!isDocumentPage && (
           <FestivalDecorOverlay
-            activeFestivalName={festivals?.find(f => f.is_active)?.name || 'diwali'}
+            activeFestivalName={storeParams?.current_festival || festivals?.find(f => f.is_active)?.name || 'diwali'}
             onNavigateToFestival={() => {
               const diwaliCat = categories.find(c =>
                 c.name?.toLowerCase().includes('diwali') ||

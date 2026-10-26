@@ -4,7 +4,9 @@ import {
   FESTIVAL_THEMES,
   getActiveFestivalTheme,
   setFestivalTheme,
+  resolveFestivalThemeId,
 } from '../../components/festival/FestivalDecorOverlay';
+import { fetchStoreParameters, updateStoreParameters } from '../../services/api';
 
 /** Badge colours per theme id */
 const THEME_ACCENTS = {
@@ -75,23 +77,67 @@ function ThemeCard({ theme, isActive, onActivate }) {
 export default function FestivalThemeManagerPage() {
   const [activeTheme, setActive] = useState(() => getActiveFestivalTheme());
   const [toastId, setToastId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Sync with backend on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function syncBackendTheme() {
+      try {
+        const res = await fetchStoreParameters();
+        if (res?.parameters?.current_festival && isMounted) {
+          const resolved = resolveFestivalThemeId(res.parameters.current_festival);
+          if (resolved) {
+            setActive(resolved);
+            setFestivalTheme(resolved);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch store parameters in festival manager:', err);
+      }
+    }
+    syncBackendTheme();
+    return () => { isMounted = false; };
+  }, []);
 
   // Stay in sync if another tab changes the theme
   useEffect(() => {
     const handler = (e) => {
       if (e.detail?.themeId) setActive(e.detail.themeId);
     };
+    const storageHandler = (e) => {
+      if (e.key === 'silverhouse_active_festival_theme' && e.newValue) {
+        const resolved = resolveFestivalThemeId(e.newValue);
+        if (resolved) setActive(resolved);
+      }
+    };
     window.addEventListener('silverhouse_festival_theme_updated', handler);
-    return () => window.removeEventListener('silverhouse_festival_theme_updated', handler);
+    window.addEventListener('storage', storageHandler);
+    return () => {
+      window.removeEventListener('silverhouse_festival_theme_updated', handler);
+      window.removeEventListener('storage', storageHandler);
+    };
   }, []);
 
-  const handleActivate = (themeId) => {
-    if (themeId === activeTheme) return;
+  const handleActivate = async (themeId) => {
+    if (themeId === activeTheme && !isSaving) return;
     setFestivalTheme(themeId);
     setActive(themeId);
     const id = Date.now();
     setToastId(id);
-    setTimeout(() => setToastId((cur) => (cur === id ? null : cur)), 3000);
+    setTimeout(() => setToastId((cur) => (cur === id ? null : cur)), 3500);
+
+    // Persist to database store_parameter table so all storefront visitors see it immediately
+    setIsSaving(true);
+    try {
+      const themeObj = FESTIVAL_THEMES.find((t) => t.id === themeId);
+      const festivalName = themeObj ? themeObj.name : themeId;
+      await updateStoreParameters({ current_festival: festivalName });
+    } catch (err) {
+      console.error('Failed to update store parameters in database:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const activeMeta = FESTIVAL_THEMES.find((t) => t.id === activeTheme);
