@@ -735,8 +735,8 @@ export default function Header({
                               key={t.id}
                               onClick={() => setTheme(t.id)}
                               className={`p-1.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${isSelected
-                                  ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] ring-1 ring-[var(--th-primary)] font-bold'
-                                  : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
+                                ? 'border-[var(--th-primary)] bg-[var(--th-surface-alt)] ring-1 ring-[var(--th-primary)] font-bold'
+                                : 'border-[var(--th-border)] bg-[var(--th-card)] hover:border-[var(--th-accent)] hover:bg-[var(--th-surface-alt)]/60'
                                 }`}
                               title={t.description}
                             >
@@ -873,7 +873,7 @@ export default function Header({
               className="px-3 py-1.5 text-xs xl:text-[13px] font-bold tracking-wider text-amber-600 hover:text-amber-700 transition-colors flex items-center space-x-1 uppercase focus:outline-hidden cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>FESTIVE EDITS</span>
+              <span>SHOP BY FESTIVAL</span>
               <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === 'festive' ? 'rotate-180' : ''}`} />
             </button>
 

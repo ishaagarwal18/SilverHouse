@@ -46,21 +46,10 @@ export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal,
   return (
     <div className="py-2 px-4 select-none border-b border-[var(--th-accent)]/30 shadow-xs relative z-50 text-[var(--th-card)] transition-colors duration-300" style={{ background: 'var(--th-nav-gradient)' }}>
       <div className="max-w-[1480px] mx-auto flex items-center justify-between text-[11px] sm:text-xs">
-        
-        {/* Left Side: Live Silver Bullion Ticker */}
-        <div className="hidden lg:flex items-center space-x-2.5 text-[var(--th-card)]">
-          <span className="inline-flex items-center space-x-1.5 bg-[var(--th-primary)] px-2.5 py-0.5 rounded-full border border-[var(--th-accent)]/40 text-[10px] font-bold tracking-wider uppercase text-white shadow-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Live Silver Rate</span>
-          </span>
-          <span className="font-semibold text-[11px] text-[var(--th-card)]/90">
-            925: <strong className="text-white">₹{rate925}/g</strong> | 999: <strong className="text-white">₹{rate999}/g</strong>
-          </span>
-        </div>
 
         {/* Center: Rotating Core Value Announcement */}
         <div className="flex-1 flex items-center justify-center space-x-3 sm:space-x-4">
-          <button 
+          <button
             onClick={handlePrev}
             className="text-[#D4AF37] hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
             aria-label="Previous announcement"
@@ -68,7 +57,7 @@ export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal,
             <ChevronLeft className="w-3.5 h-3.5" />
           </button>
 
-          <div 
+          <div
             onClick={() => onNavigateCategory && onNavigateCategory("all")}
             className="flex items-center space-x-2 cursor-pointer group"
           >
@@ -78,7 +67,7 @@ export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal,
             </span>
           </div>
 
-          <button 
+          <button
             onClick={handleNext}
             className="text-[#D4AF37] hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
             aria-label="Next announcement"
