@@ -1,28 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Sparkles, Palette, Radio, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Sparkles, ExternalLink, ShieldCheck } from 'lucide-react';
 import {
   FESTIVAL_THEMES,
   getActiveFestivalTheme,
   setFestivalTheme,
   resolveFestivalThemeId,
 } from '../../components/festival/FestivalDecorOverlay';
-import { useTheme } from '../../context/ThemeContext';
 import { adminFetch } from '../api/adminApi';
 
 /** Badge colours per festival theme id */
 const THEME_ACCENTS = {
+  none: { bg: 'from-slate-600/20 via-zinc-600/15 to-slate-700/15', ring: 'ring-slate-400', dot: 'bg-slate-300', text: 'text-slate-200' },
+  diwali: { bg: 'from-yellow-500/25 via-amber-500/15 to-orange-500/20', ring: 'ring-yellow-400', dot: 'bg-yellow-400', text: 'text-yellow-300' },
+  ganeshchaturthi: { bg: 'from-orange-500/25 via-amber-500/15 to-red-500/20', ring: 'ring-orange-400', dot: 'bg-orange-400', text: 'text-orange-300' },
   rakshabandhan: { bg: 'from-rose-600/25 via-red-600/15 to-amber-500/20', ring: 'ring-rose-400', dot: 'bg-rose-400', text: 'text-rose-300' },
-  holi: { bg: 'from-pink-500/20 via-yellow-500/10 to-cyan-500/20', ring: 'ring-pink-400', dot: 'bg-pink-400', text: 'text-pink-300' },
-  patriotic: { bg: 'from-orange-500/20 via-sky-500/10 to-emerald-500/20', ring: 'ring-orange-400', dot: 'bg-orange-400', text: 'text-orange-300' },
-  uttarayan: { bg: 'from-sky-500/20 to-cyan-500/10', ring: 'ring-sky-400', dot: 'bg-sky-400', text: 'text-sky-300' },
-  valentines: { bg: 'from-rose-500/20 to-pink-500/10', ring: 'ring-rose-400', dot: 'bg-rose-400', text: 'text-rose-300' },
-  newyear: { bg: 'from-violet-500/20 to-purple-500/10', ring: 'ring-violet-400', dot: 'bg-violet-400', text: 'text-violet-300' },
-  ganeshchaturthi: { bg: 'from-orange-500/20 to-amber-500/10', ring: 'ring-orange-400', dot: 'bg-orange-400', text: 'text-orange-300' },
-  karwachauth: { bg: 'from-red-500/20 to-rose-500/10', ring: 'ring-red-400', dot: 'bg-red-400', text: 'text-red-300' },
-  diwali: { bg: 'from-yellow-500/20 to-amber-500/10', ring: 'ring-yellow-400', dot: 'bg-yellow-400', text: 'text-yellow-300' },
-  christmas: { bg: 'from-green-500/20 to-emerald-500/10', ring: 'ring-green-400', dot: 'bg-green-400', text: 'text-green-300' },
-  navratri: { bg: 'from-fuchsia-500/20 to-pink-500/10', ring: 'ring-fuchsia-400', dot: 'bg-fuchsia-400', text: 'text-fuchsia-300' },
-  none: { bg: 'from-slate-500/20 to-slate-600/10', ring: 'ring-slate-400', dot: 'bg-slate-400', text: 'text-slate-300' },
+  valentines: { bg: 'from-rose-500/25 via-pink-500/15 to-red-400/20', ring: 'ring-rose-400', dot: 'bg-rose-400', text: 'text-rose-300' },
+  navratri: { bg: 'from-fuchsia-500/25 via-pink-500/15 to-purple-500/20', ring: 'ring-fuchsia-400', dot: 'bg-fuchsia-400', text: 'text-fuchsia-300' },
+  patriotic: { bg: 'from-orange-500/25 via-sky-500/15 to-emerald-500/20', ring: 'ring-orange-400', dot: 'bg-orange-400', text: 'text-orange-300' },
+  uttarayan: { bg: 'from-sky-500/25 via-cyan-500/15 to-blue-500/20', ring: 'ring-sky-400', dot: 'bg-sky-400', text: 'text-sky-300' },
+  karwachauth: { bg: 'from-red-500/25 via-rose-500/15 to-amber-500/20', ring: 'ring-red-400', dot: 'bg-red-400', text: 'text-red-300' },
+  holi: { bg: 'from-pink-500/25 via-yellow-500/15 to-cyan-500/20', ring: 'ring-pink-400', dot: 'bg-pink-400', text: 'text-pink-300' },
+  christmas: { bg: 'from-green-500/25 via-emerald-500/15 to-red-500/15', ring: 'ring-green-400', dot: 'bg-green-400', text: 'text-green-300' },
+  newyear: { bg: 'from-violet-500/25 via-purple-500/15 to-indigo-500/20', ring: 'ring-violet-400', dot: 'bg-violet-400', text: 'text-violet-300' },
 };
 
 function FestivalThemeCard({ theme, isActive, onActivate }) {
@@ -67,7 +66,7 @@ function FestivalThemeCard({ theme, isActive, onActivate }) {
             {isActive && <span className={`h-2 w-2 rounded-full ${accent.dot}`} />}
           </span>
           <span className={`text-[12px] font-semibold ${isActive ? accent.text : 'text-ad-muted'}`}>
-            {isActive ? 'Currently displayed across all screens' : 'Click to activate everywhere'}
+            {isActive ? 'Currently displayed across all screens' : 'Click to activate on website'}
           </span>
         </div>
       </div>
@@ -75,65 +74,7 @@ function FestivalThemeCard({ theme, isActive, onActivate }) {
   );
 }
 
-function WebsiteColorCard({ theme, isActive, onActivate }) {
-  return (
-    <div
-      onClick={() => onActivate(theme.id)}
-      className={`
-        relative cursor-pointer rounded-2xl border transition-all duration-300 select-none p-5
-        ${isActive
-          ? 'border-transparent bg-ad-card ring-2 ring-ad-primary shadow-lg shadow-black/20'
-          : 'border-ad-border bg-ad-surface hover:border-ad-muted hover:shadow-md'}
-      `}
-      role="radio"
-      aria-checked={isActive}
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(theme.id); } }}
-    >
-      {isActive && (
-        <span className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400 ring-1 ring-emerald-500/40">
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          Active Palette
-        </span>
-      )}
-
-      <div className="flex items-center gap-2.5 mb-2">
-        <div className="flex items-center -space-x-1.5">
-          <span className="w-5 h-5 rounded-full border border-white shadow-xs" style={{ backgroundColor: theme.preview.primary }} />
-          <span className="w-5 h-5 rounded-full border border-white shadow-xs" style={{ backgroundColor: theme.preview.accent }} />
-          <span className="w-5 h-5 rounded-full border border-white shadow-xs" style={{ backgroundColor: theme.preview.bg }} />
-        </div>
-        <div>
-          <h3 className="text-[15px] font-extrabold text-ad-text">{theme.name}</h3>
-          <span className="text-[11px] font-medium text-ad-muted">{theme.vibe}</span>
-        </div>
-      </div>
-
-      <p className="mt-2 text-[12px] text-ad-muted leading-relaxed">{theme.description}</p>
-
-      {/* Swatches strip */}
-      <div className="mt-4 flex items-center gap-1.5 rounded-lg p-1.5 bg-ad-bg/70 border border-ad-border">
-        <span className="text-[10px] font-mono text-ad-muted mr-1">Preview:</span>
-        <span className="h-4 flex-1 rounded-sm" style={{ backgroundColor: theme.preview.primary }} title="Primary" />
-        <span className="h-4 flex-1 rounded-sm" style={{ backgroundColor: theme.preview.accent }} title="Accent Gold" />
-        <span className="h-4 flex-1 rounded-sm border border-ad-border" style={{ backgroundColor: theme.preview.bg }} title="Page BG" />
-        <span className="h-4 flex-1 rounded-sm border border-ad-border" style={{ backgroundColor: theme.preview.card }} title="Card Surface" />
-      </div>
-
-      <div className="mt-3 flex items-center gap-2">
-        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ring-2 ${isActive ? 'ring-ad-primary' : 'ring-ad-border'}`}>
-          {isActive && <span className="h-2 w-2 rounded-full bg-ad-primary" />}
-        </span>
-        <span className={`text-[12px] font-semibold ${isActive ? 'text-ad-primary' : 'text-ad-muted'}`}>
-          {isActive ? 'Applied globally across all screens' : 'Click to apply website theme'}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export default function FestivalThemeManagerPage() {
-  const { theme: websiteTheme, setTheme: setWebsiteTheme, themes: websiteThemes, currentThemeObj } = useTheme();
   const [activeTheme, setActive] = useState(() => getActiveFestivalTheme());
   const [toastMessage, setToastMessage] = useState('');
   const [toastId, setToastId] = useState(null);
@@ -152,16 +93,11 @@ export default function FestivalThemeManagerPage() {
     async function syncBackendTheme() {
       try {
         const { ok, data } = await adminFetch('/parameters', { skipAuth: true });
-        if (ok && data?.parameters && isMounted) {
-          if (data.parameters.current_festival) {
-            const resolved = resolveFestivalThemeId(data.parameters.current_festival);
-            if (resolved) {
-              setActive(resolved);
-              setFestivalTheme(resolved);
-            }
-          }
-          if (data.parameters.default_theme) {
-            setWebsiteTheme(data.parameters.default_theme);
+        if (ok && data?.parameters?.current_festival && isMounted) {
+          const resolved = resolveFestivalThemeId(data.parameters.current_festival);
+          if (resolved) {
+            setActive(resolved);
+            setFestivalTheme(resolved);
           }
         }
       } catch (err) {
@@ -170,9 +106,9 @@ export default function FestivalThemeManagerPage() {
     }
     syncBackendTheme();
     return () => { isMounted = false; };
-  }, [setWebsiteTheme]);
+  }, []);
 
-  // Stay in sync if another tab changes either theme
+  // Stay in sync if another tab changes the theme
   useEffect(() => {
     const festHandler = (e) => {
       if (e.detail?.themeId) setActive(e.detail.themeId);
@@ -191,19 +127,13 @@ export default function FestivalThemeManagerPage() {
     };
   }, []);
 
-  const handleActivateWebsiteTheme = async (themeId) => {
-    if (themeId === websiteTheme && !isSaving) return;
-    setWebsiteTheme(themeId);
-    triggerToast(`Website theme updated to "${websiteThemes.find(t => t.id === themeId)?.name || themeId}" across all screens!`);
-  };
-
-  const handleActivateFestivalTheme = async (themeId) => {
+  const handleActivateTheme = async (themeId) => {
     if (themeId === activeTheme && !isSaving) return;
     setFestivalTheme(themeId);
     setActive(themeId);
     const themeObj = FESTIVAL_THEMES.find((t) => t.id === themeId);
     const festivalName = themeObj ? themeObj.name : themeId;
-    triggerToast(`Festival decor updated to "${festivalName}" across all screens!`);
+    triggerToast(`Website theme updated to "${festivalName}" across all screens!`);
 
     // Persist to database store_parameter table so all storefront visitors see it immediately
     setIsSaving(true);
@@ -221,18 +151,23 @@ export default function FestivalThemeManagerPage() {
 
   const activeMeta = FESTIVAL_THEMES.find((t) => t.id === activeTheme);
 
+  // Reorder themes: Standard Store Theme first, followed by seasonal festivals
+  const standardTheme = FESTIVAL_THEMES.find(t => t.id === 'none');
+  const festiveThemes = FESTIVAL_THEMES.filter(t => t.id !== 'none');
+  const orderedThemes = standardTheme ? [standardTheme, ...festiveThemes] : FESTIVAL_THEMES;
+
   return (
     <div className="flex flex-col gap-8 px-4 py-6 md:px-8">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-ad-primary to-ad-accent text-white shadow-md shadow-ad-primary/30">
-            <Palette className="w-6 h-6" />
+            <Sparkles className="w-6 h-6" />
           </span>
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-ad-text">Website & Festival Theme Manager</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-ad-text">Festival Theme Manager</h1>
             <p className="text-[13px] text-ad-muted">
-              Select any website theme or festive decor below — changes are persisted to the database and applied instantly on every screen.
+              Choose the active website theme or festival celebration. Selected theme updates across all visitor screens and sessions.
             </p>
           </div>
         </div>
@@ -256,60 +191,44 @@ export default function FestivalThemeManagerPage() {
         </div>
       )}
 
-      {/* SECTION 1: WEBSITE COLOR PALETTE */}
+      {/* Active Theme Status Card */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-ad-border bg-ad-card p-5">
+        <div className="flex items-center gap-3.5">
+          <span className="text-3xl">{activeMeta?.icon || '💎'}</span>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-ad-muted">Currently Active Website Theme</p>
+            <h2 className="text-lg font-extrabold text-ad-text">{activeMeta?.name || 'Standard Store Theme'}</h2>
+            <p className="text-xs text-ad-muted mt-0.5">{activeMeta?.description}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto rounded-full bg-emerald-500/15 px-3 py-1 ring-1 ring-emerald-500/30 text-emerald-400 text-xs font-bold">
+          <ShieldCheck className="w-3.5 h-3.5" />
+          Live on Storefront
+        </div>
+      </div>
+
+      {/* Grid of All Store & Festival Themes */}
       <section className="space-y-4">
         <div className="flex items-center justify-between border-b border-ad-border pb-3">
-          <div className="flex items-center gap-2">
-            <Palette className="w-5 h-5 text-ad-primary" />
-            <h2 className="text-lg font-bold text-ad-text">Website Color Palette Theme</h2>
-          </div>
-          <span className="text-xs font-semibold text-ad-muted">
-            Currently: <strong className="text-ad-text">{currentThemeObj?.name || websiteTheme}</strong>
+          <h2 className="text-base font-bold text-ad-text">Select Website Theme</h2>
+          <span className="text-xs text-ad-muted">
+            1-Click Activation • Saved to Database
           </span>
         </div>
-        <p className="text-xs text-ad-muted">
-          Controls the primary colors, button gradients, card accents, borders, and brand aesthetic of SilverHouse for all customers and screens.
-        </p>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" role="radiogroup" aria-label="Website color theme selection">
-          {websiteThemes.map((theme) => (
-            <WebsiteColorCard
-              key={theme.id}
-              theme={theme}
-              isActive={websiteTheme === theme.id}
-              onActivate={handleActivateWebsiteTheme}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* SECTION 2: FESTIVAL THEME SUITE */}
-      <section className="space-y-4 pt-4 border-t border-ad-border">
-        <div className="flex items-center justify-between border-b border-ad-border pb-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-ad-primary" />
-            <h2 className="text-lg font-bold text-ad-text">Seasonal Festival Decor Themes</h2>
-          </div>
-          <span className="text-xs font-semibold text-ad-muted">
-            Currently: <strong className="text-ad-text">{activeMeta ? `${activeMeta.icon} ${activeMeta.name}` : '—'}</strong>
-          </span>
-        </div>
-        <p className="text-xs text-ad-muted">
-          Decorates the storefront with animated festive elements, torans, diyas, lamps, sparkles, and seasonal banners for Indian festivals and holidays.
-        </p>
 
         <div
           className="grid gap-4"
           style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
           role="radiogroup"
-          aria-label="Festival theme selection"
+          aria-label="Website theme selection"
         >
-          {FESTIVAL_THEMES.map((theme) => (
+          {orderedThemes.map((theme) => (
             <FestivalThemeCard
               key={theme.id}
               theme={theme}
               isActive={activeTheme === theme.id}
-              onActivate={handleActivateFestivalTheme}
+              onActivate={handleActivateTheme}
             />
           ))}
         </div>
@@ -317,7 +236,7 @@ export default function FestivalThemeManagerPage() {
 
       {/* Footer note */}
       <p className="text-center text-[12px] text-ad-muted pb-4">
-        Every theme selection is automatically synchronized with the database. Whenever an administrator changes any theme, all open screens, tabs, and visitor sessions update immediately.
+        Only <strong className="text-ad-text">one theme</strong> is active at a time. Selecting any theme saves it to the database table <code className="font-mono text-[11px] bg-ad-card px-1 py-0.5 rounded">store_parameter.current_festival</code> and propagates immediately to all patrons across every screen.
       </p>
     </div>
   );

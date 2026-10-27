@@ -664,20 +664,23 @@ export default function App() {
           />
         )}
 
-        {/* Active Festival Decor Theme Suite (Navratri, Diwali, etc.) */}
+        {/* Active Festival Decor Theme Suite (Navratri, Diwali, Valentines, etc.) */}
         {!isDocumentPage && (
           <FestivalDecorOverlay
-            activeFestivalName={storeParams?.current_festival || festivals?.find(f => f.is_active)?.name || 'diwali'}
+            activeFestivalName={activeFestivalTheme}
             onNavigateToFestival={() => {
-              const diwaliCat = categories.find(c =>
-                c.name?.toLowerCase().includes('diwali') ||
-                c.slug?.includes('diwali') ||
+              const festSlug = (activeFestivalTheme || '').toLowerCase();
+              const matchingCat = categories.find(c => {
+                const name = (c.name || '').toLowerCase();
+                const slug = (c.slug || '').toLowerCase();
+                return (festSlug && festSlug !== 'none') && (name.includes(festSlug) || slug.includes(festSlug));
+              }) || categories.find(c =>
                 c.name?.toLowerCase().includes('festive') ||
                 c.slug?.includes('festive') ||
                 c.id === 'silver-coins' ||
                 c.slug === 'silver-coins'
               );
-              if (diwaliCat) handleNavigateCategory(diwaliCat);
+              if (matchingCat) handleNavigateCategory(matchingCat);
               else handleNavigateHome();
             }}
           />

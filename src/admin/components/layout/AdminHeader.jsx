@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { ChevronDown, Crown, ExternalLink, LogOut, Menu, Moon, Palette, Sparkles, Sun } from 'lucide-react';
+import { ChevronDown, Crown, ExternalLink, LogOut, Menu, Moon, Sparkles, Sun } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useAdminUI } from '../../context/AdminUIContext';
 import { getEntityConfig } from '../../config/entities';
-import { useTheme } from '../../../context/ThemeContext';
 import { getActiveFestivalTheme, FESTIVAL_THEMES } from '../../../components/festival/FestivalDecorOverlay';
 
 /** Maps the current admin path to a short section label for the top bar. */
@@ -13,7 +12,7 @@ function sectionLabel(pathname) {
   if (parts[0] === 'catalog') return ['Product Catalog'];
   if (parts[0] === 'custom-orders') return ['Custom Orders'];
   if (parts[0] === 'analytics') return ['Analytics & P&L'];
-  if (parts[0] === 'festival-themes') return ['Website & Festival Themes'];
+  if (parts[0] === 'festival-themes') return ['Festival Theme Manager'];
   if (parts[0] === 'data' && parts[1]) {
     const crumbs = ['Database', getEntityConfig(parts[1]).plural];
     if (parts[2] === 'new') crumbs.push('Add');
@@ -29,7 +28,6 @@ export default function AdminHeader({ onOpenSidebar }) {
   const navigate = useNavigate();
   const { user, logout } = useAdminAuth();
   const { theme, toggleTheme } = useAdminUI();
-  const { currentThemeObj } = useTheme();
   const [activeFestival, setActiveFestival] = useState(() => getActiveFestivalTheme());
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -52,7 +50,7 @@ export default function AdminHeader({ onOpenSidebar }) {
     return () => document.removeEventListener('mousedown', onDown);
   }, [menuOpen]);
 
-  const festObj = FESTIVAL_THEMES.find(t => t.id === activeFestival);
+  const festObj = FESTIVAL_THEMES.find(t => t.id === activeFestival) || FESTIVAL_THEMES.find(t => t.id === 'none');
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2.5 border-b border-ad-border bg-ad-surface/85 px-4 backdrop-blur-md sm:px-6">
@@ -69,23 +67,14 @@ export default function AdminHeader({ onOpenSidebar }) {
         ))}
       </nav>
 
-      {/* Active Theme Indicator Pill — navigates to Theme Manager */}
+      {/* Active Festival/Store Theme Indicator Pill — navigates to Festival Theme Manager */}
       <Link
         to="/admin/festival-themes"
         className="hidden md:flex items-center gap-2 rounded-lg border border-ad-border bg-ad-card px-2.5 py-1.5 text-xs hover:border-ad-primary hover:bg-ad-hover transition-colors"
-        title="Manage Website Theme & Festival Decor"
+        title="Manage Website Festival Themes"
       >
-        <div className="flex items-center -space-x-1">
-          <span className="w-3 h-3 rounded-full border border-white" style={{ backgroundColor: currentThemeObj?.preview?.primary || '#1F4E5B' }} />
-          <span className="w-3 h-3 rounded-full border border-white" style={{ backgroundColor: currentThemeObj?.preview?.accent || '#B89340' }} />
-        </div>
-        <span className="font-semibold text-ad-text truncate max-w-28">{currentThemeObj?.name?.split(' ')[0] || 'Theme'}</span>
-        {festObj && festObj.id !== 'none' && (
-          <span className="text-ad-muted flex items-center gap-1 border-l border-ad-border pl-2">
-            <span>{festObj.icon}</span>
-            <span className="hidden lg:inline truncate max-w-24">{festObj.name.split(' ')[0]}</span>
-          </span>
-        )}
+        <span className="text-sm">{festObj?.icon || '💎'}</span>
+        <span className="font-semibold text-ad-text truncate max-w-40">{festObj?.name || 'Standard Store Theme'}</span>
       </Link>
 
       {/* Preview Live Storefront Link */}
@@ -137,8 +126,8 @@ export default function AdminHeader({ onOpenSidebar }) {
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-ad-text hover:bg-ad-card transition-colors"
               >
-                <Palette className="w-4 h-4 text-ad-primary" />
-                <span>Theme & Festival Manager</span>
+                <Sparkles className="w-4 h-4 text-ad-primary" />
+                <span>Festival Theme Manager</span>
               </Link>
               <a
                 href="/"

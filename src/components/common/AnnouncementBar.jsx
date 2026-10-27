@@ -8,13 +8,20 @@ const ANNOUNCEMENTS = [
   { text: "CUSTOM ENGRAVED YATRA LOCKETS & BULLION BARS MADE ON ORDER", icon: Sparkles }
 ];
 
+import { resolveFestivalThemeId } from '../festival/FestivalDecorOverlay';
+
 export default function AnnouncementBar({ onNavigateCategory, onOpenStoresModal, storeParams, onOpenPdf }) {
   const [index, setIndex] = useState(0);
 
   const rate925 = 81.86;
   const rate999 = 88.50;
-  // Dynamic celebration message fetched directly from store_parameter.current_festival
-  const customAnnouncement = storeParams?.current_festival
+  // Dynamic celebration message fetched directly from store_parameter.current_festival (only when a festival is active, not standard store theme)
+  const isFestive = Boolean(
+    storeParams?.current_festival &&
+    resolveFestivalThemeId(storeParams.current_festival) &&
+    resolveFestivalThemeId(storeParams.current_festival) !== 'none'
+  );
+  const customAnnouncement = isFestive
     ? `✨ ${storeParams.current_festival} Festive Special: Celebrate with Pure 925 Sterling & 999 Bullion Silver Collections`
     : null;
 
