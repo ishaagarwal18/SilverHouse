@@ -278,30 +278,47 @@ async function getAuthenticatedCaller(req) {
 
 // In-Memory Rate Limiting for OTP generation
 const otpRateLimitMap = new Map();
+
+/**
+ * Checks whether the phone number is currently in an OTP cooldown period.
+ * NOTE: This is a read-only check and DOES NOT mutate rate limit state.
+ */
 function checkOtpRateLimit(phone) {
     if (!phone) return { allowed: true };
     if (phone.includes('9999999999')) return { allowed: true };
     const now = Date.now();
-    const record = otpRateLimitMap.get(phone) || { count: 0, lastRequested: 0, firstRequested: now };
+    const record = otpRateLimitMap.get(phone);
+    if (!record) return { allowed: true };
 
-    if (now - record.lastRequested < 45 * 1000) {
+    if (record.lastRequested && (now - record.lastRequested < 45 * 1000)) {
         const waitSec = Math.ceil((45 * 1000 - (now - record.lastRequested)) / 1000);
         return { allowed: false, error: `Please wait ${waitSec} seconds before requesting another verification code.` };
     }
+
+    if (record.firstRequested && (now - record.firstRequested <= 10 * 60 * 1000) && record.count >= 5) {
+        return { allowed: false, error: 'Too many OTP requests for this number. Please try again after 10 minutes.' };
+    }
+
+    return { allowed: true };
+}
+
+/**
+ * Records that an OTP was ACTUALLY dispatched to WhatsApp.
+ * MUST only be called after user existence checks and gateway dispatch succeed.
+ */
+function recordOtpSent(phone) {
+    if (!phone || phone.includes('9999999999')) return;
+    const now = Date.now();
+    const record = otpRateLimitMap.get(phone) || { count: 0, lastRequested: 0, firstRequested: now };
 
     if (now - record.firstRequested > 10 * 60 * 1000) {
         record.count = 0;
         record.firstRequested = now;
     }
 
-    if (record.count >= 5) {
-        return { allowed: false, error: 'Too many OTP requests for this number. Please try again after 10 minutes.' };
-    }
-
     record.count += 1;
     record.lastRequested = now;
     otpRateLimitMap.set(phone, record);
-    return { allowed: true };
 }
 
 // Clean up stale rate limits every 5 minutes
@@ -1522,15 +1539,6 @@ app.post('/api/auth/send-otp', async (req, res) => {
             });
         }
 
-        // Rate limiting check to prevent SMS/WhatsApp gateway flood attacks
-        const rateCheck = checkOtpRateLimit(cleanedPhone);
-        if (!rateCheck.allowed) {
-            return res.status(429).json({
-                success: false,
-                error: rateCheck.error
-            });
-        }
-
         const pool = await poolPromise;
         if (!pool) {
             return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
@@ -1554,17 +1562,33 @@ app.post('/api/auth/send-otp', async (req, res) => {
             console.warn('[Send OTP Account Check Warning]:', dbErr.message);
         }
 
+        // If in SIGNUP mode but user already exists: DO NOT send OTP, DO NOT consume rate limit, ask to login
         if (mode === 'SIGNUP' && userExists) {
             return res.status(400).json({
                 success: false,
-                error: 'Already have an account. Please click "Log In" below.'
+                code: 'ACCOUNT_EXISTS',
+                suggestMode: 'LOGIN',
+                error: 'An account is already linked to this mobile number. Please log in instead.'
             });
         }
 
+        // If in LOGIN mode but user does not exist: DO NOT send OTP, DO NOT consume rate limit, ask to sign up
         if (mode === 'LOGIN' && !userExists) {
             return res.status(404).json({
                 success: false,
+                code: 'ACCOUNT_NOT_FOUND',
+                suggestMode: 'SIGNUP',
                 error: 'No account found with this phone number. Please click "Sign Up" below to create an account.'
+            });
+        }
+
+        // Rate limiting check: ONLY blocks if an OTP was actually dispatched within the last 45 seconds
+        const rateCheck = checkOtpRateLimit(cleanedPhone);
+        if (!rateCheck.allowed) {
+            return res.status(429).json({
+                success: false,
+                code: 'RATE_LIMITED',
+                error: rateCheck.error
             });
         }
 
@@ -1618,6 +1642,9 @@ app.post('/api/auth/send-otp', async (req, res) => {
             });
         }
 
+        // Record rate limit timestamp ONLY after successful dispatch to WhatsApp
+        recordOtpSent(cleanedPhone);
+
         return res.status(200).json({
             success: true,
             message: `Verification code sent to WhatsApp (${cleanedPhone})`,
@@ -1626,6 +1653,44 @@ app.post('/api/auth/send-otp', async (req, res) => {
         });
     } catch (err) {
         console.error('[Send OTP Error]:', err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+
+// 1b. POST /api/auth/check-phone: Check whether a phone number is registered without sending OTP
+app.post('/api/auth/check-phone', async (req, res) => {
+    try {
+        const { phone } = req.body;
+        const cleanedPhone = cleanPhoneNumber(phone);
+        if (!cleanedPhone || cleanedPhone.replace(/\D/g, '').length < 10) {
+            return res.status(400).json({ success: false, error: 'Please enter a valid 10-digit mobile number.' });
+        }
+
+        const pool = await poolPromise;
+        if (!pool) {
+            return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
+        }
+
+        const digitsOnly = cleanedPhone.replace(/\D/g, '');
+        const last10Digits = digitsOnly.slice(-10);
+        let userExists = false;
+
+        const checkResult = await pool.request()
+            .input('phone', sql.NVarChar(20), cleanedPhone)
+            .input('last10', sql.NVarChar(20), last10Digits)
+            .query("SELECT TOP 1 user_id, full_name FROM dbo.[user] WHERE phone = @phone OR RIGHT(REPLACE(REPLACE(REPLACE(phone, '+', ''), ' ', ''), '-', ''), 10) = @last10");
+
+        if (checkResult.recordset && checkResult.recordset.length > 0) {
+            userExists = true;
+        }
+
+        return res.status(200).json({
+            success: true,
+            exists: userExists,
+            phone: cleanedPhone
+        });
+    } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
     }
 });

@@ -58,6 +58,23 @@ export async function registerUser({ fullName, email, phone, password }) {
 }
 
 /**
+ * Check if a phone number is already registered
+ */
+export async function checkPhoneExists(phone) {
+  try {
+    const res = await fetch(`${API_BASE}/check-phone`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    return { success: false, exists: false, error: err.message };
+  }
+}
+
+/**
  * Send WhatsApp OTP to phone number
  */
 export async function sendPhoneOtp(phone, mode, extraData = {}) {
@@ -76,7 +93,11 @@ export async function sendPhoneOtp(phone, mode, extraData = {}) {
     }
 
     if (!res.ok || !data.success) {
-      throw new Error(data?.error || 'Failed to send OTP to WhatsApp.');
+      const err = new Error(data?.error || 'Failed to send OTP to WhatsApp.');
+      err.code = data?.code;
+      err.suggestMode = data?.suggestMode;
+      err.data = data;
+      throw err;
     }
     return data;
   } catch (err) {

@@ -8,6 +8,7 @@ import {
   MessageCircle, RotateCcw, CheckCircle2, Edit2, User, Calendar, Gift, FileText
 } from 'lucide-react';
 import { getAdminUrl } from '../../utils/adminUrl';
+import { checkPhoneExists } from '../../services/auth';
 
 export default function AuthPage({ onTriggerToast }) {
   const [searchParams] = useSearchParams();
@@ -42,6 +43,19 @@ export default function AuthPage({ onTriggerToast }) {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorObj, setErrorObj] = useState(null);
+
+  const switchToLogin = () => {
+    setAuthMode('LOGIN');
+    setError('');
+    setErrorObj(null);
+  };
+
+  const switchToSignup = () => {
+    setAuthMode('SIGNUP');
+    setError('');
+    setErrorObj(null);
+  };
 
   // Profile Edit State
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -146,6 +160,7 @@ export default function AuthPage({ onTriggerToast }) {
   const handleSendOtp = async (e) => {
     if (e) e.preventDefault();
     setError('');
+    setErrorObj(null);
 
     if (authMode === 'SIGNUP') {
       if (!userName.trim()) {
@@ -183,10 +198,14 @@ export default function AuthPage({ onTriggerToast }) {
           );
         }
       } else {
-        setError(res.error || 'Failed to send OTP. Please try again.');
+        const msg = res.error || 'Failed to send OTP. Please try again.';
+        setError(msg);
+        setErrorObj({ message: msg, code: res.code, suggestMode: res.suggestMode });
       }
     } catch (err) {
-      setError(err.message || 'Unable to send OTP. Please verify your phone number.');
+      const msg = err.message || 'Unable to send OTP. Please verify your phone number.';
+      setError(msg);
+      setErrorObj({ message: msg, code: err.code, suggestMode: err.suggestMode });
     } finally {
       setLoading(false);
     }
@@ -196,6 +215,7 @@ export default function AuthPage({ onTriggerToast }) {
   const handleResendOtp = async () => {
     if (!canResend || loading) return;
     setError('');
+    setErrorObj(null);
     setLoading(true);
     try {
       const clean = phone.replace(/[^0-9]/g, '');
@@ -210,10 +230,14 @@ export default function AuthPage({ onTriggerToast }) {
           onTriggerToast('info', 'OTP Resent', '💬 A fresh code was sent to your WhatsApp.');
         }
       } else {
-        setError(res.error || 'Failed to resend OTP.');
+        const msg = res.error || 'Failed to resend OTP.';
+        setError(msg);
+        setErrorObj({ message: msg, code: res.code, suggestMode: res.suggestMode });
       }
     } catch (err) {
-      setError(err.message || 'Failed to resend code.');
+      const msg = err.message || 'Failed to resend code.';
+      setError(msg);
+      setErrorObj({ message: msg, code: err.code, suggestMode: err.suggestMode });
     } finally {
       setLoading(false);
     }
@@ -707,12 +731,62 @@ export default function AuthPage({ onTriggerToast }) {
               <span>Fast & Secure WhatsApp Login</span>
             </div>
 
-            {/* Error Message Alert */}
+            {/* Error Message Alert & Smart Account Guidance */}
             {error && (
-              <div className="mb-3 p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center space-x-1.5 animate-in fade-in duration-200">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
-                <span className="leading-tight">{error}</span>
-              </div>
+              (errorObj?.code === 'ACCOUNT_EXISTS' || (typeof error === 'string' && (error.toLowerCase().includes('already have an account') || error.toLowerCase().includes('already linked')))) ? (
+                <div className="mb-3.5 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 rounded-xl text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200 shadow-xs">
+                  <div className="flex items-start space-x-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-xs tracking-tight">Account Already Linked</p>
+                      <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5 leading-snug">
+                        An account is already linked to this mobile number. Please log in to continue.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={switchToLogin}
+                    style={{
+                      background: 'linear-gradient(135deg, var(--th-primary, #1F4E5B) 0%, var(--th-primary-hover, #286677) 100%)',
+                      color: '#FFFFFF'
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg text-white font-bold text-xs tracking-wider flex items-center justify-center space-x-1.5 shadow-sm hover:brightness-110 cursor-pointer shrink-0 self-stretch sm:self-auto"
+                  >
+                    <span>Log In Now</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </div>
+              ) : (errorObj?.code === 'ACCOUNT_NOT_FOUND' || (typeof error === 'string' && error.toLowerCase().includes('no account found'))) ? (
+                <div className="mb-3.5 p-3.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 rounded-xl text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200 shadow-xs">
+                  <div className="flex items-start space-x-2.5">
+                    <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-xs tracking-tight">New Mobile Number</p>
+                      <p className="text-[11px] text-blue-800 dark:text-blue-300 mt-0.5 leading-snug">
+                        No account found with this phone number. Please sign up to create your account.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={switchToSignup}
+                    style={{
+                      background: 'linear-gradient(135deg, var(--th-primary, #1F4E5B) 0%, var(--th-primary-hover, #286677) 100%)',
+                      color: '#FFFFFF'
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg text-white font-bold text-xs tracking-wider flex items-center justify-center space-x-1.5 shadow-sm hover:brightness-110 cursor-pointer shrink-0 self-stretch sm:self-auto"
+                  >
+                    <span>Sign Up Now</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="mb-3 p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center space-x-1.5 animate-in fade-in duration-200">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
+                  <span className="leading-tight">{error}</span>
+                </div>
+              )
             )}
 
             {/* STEP 1: PHONE NUMBER & USER DETAILS INPUT */}
@@ -874,7 +948,7 @@ export default function AuthPage({ onTriggerToast }) {
                       Already have an account?{' '}
                       <button
                         type="button"
-                        onClick={() => { setAuthMode('LOGIN'); setError(''); }}
+                        onClick={switchToLogin}
                         className="font-bold text-[var(--th-primary)] hover:text-[var(--th-accent)] hover:underline cursor-pointer transition-colors"
                       >
                         Log In
@@ -885,7 +959,7 @@ export default function AuthPage({ onTriggerToast }) {
                       Don't have an account?{' '}
                       <button
                         type="button"
-                        onClick={() => { setAuthMode('SIGNUP'); setError(''); }}
+                        onClick={switchToSignup}
                         className="font-bold text-[var(--th-primary)] hover:text-[var(--th-accent)] hover:underline cursor-pointer transition-colors"
                       >
                         Sign Up
