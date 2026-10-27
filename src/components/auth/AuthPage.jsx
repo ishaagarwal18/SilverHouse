@@ -57,6 +57,48 @@ export default function AuthPage({ onTriggerToast }) {
     setErrorObj(null);
   };
 
+  const handleSwitchToLoginAndSendOtp = async () => {
+    setError('');
+    setErrorObj(null);
+    setAuthMode('LOGIN');
+
+    const clean = phone.replace(/[^0-9]/g, '');
+    if (clean.length < 10) {
+      setError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await requestOtp(clean, 'LOGIN');
+      if (res.success) {
+        setFormattedPhone(res.formattedPhone || clean);
+        setStep('OTP');
+        setTimer(60);
+        setCanResend(false);
+        setOtpDigits(['', '', '', '', '', '']);
+
+        if (onTriggerToast) {
+          onTriggerToast(
+            'success',
+            'OTP Sent on WhatsApp',
+            `💬 A 6-digit verification code was sent to ${res.formattedPhone || clean} via WhatsApp.`
+          );
+        }
+      } else {
+        const msg = res.error || 'Failed to send OTP. Please try again.';
+        setError(msg);
+        setErrorObj({ message: msg, code: res.code, suggestMode: res.suggestMode });
+      }
+    } catch (err) {
+      const msg = err.message || 'Unable to send OTP. Please verify your phone number.';
+      setError(msg);
+      setErrorObj({ message: msg, code: err.code, suggestMode: err.suggestMode });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Profile Edit State
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editFullName, setEditFullName] = useState('');
@@ -734,28 +776,38 @@ export default function AuthPage({ onTriggerToast }) {
             {/* Error Message Alert & Smart Account Guidance */}
             {error && (
               (errorObj?.code === 'ACCOUNT_EXISTS' || (typeof error === 'string' && (error.toLowerCase().includes('already have an account') || error.toLowerCase().includes('already linked')))) ? (
-                <div className="mb-3.5 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 rounded-xl text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200 shadow-xs">
-                  <div className="flex items-start space-x-2.5">
-                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex items-center justify-between gap-4 rounded-2xl border border-amber-500 bg-amber-50 p-4">
+                  <div className="flex items-start gap-3">
+                    {/* Warning icon */}
+                    <AlertCircle className="h-5 w-5 shrink-0 text-amber-600" />
                     <div>
-                      <p className="font-bold text-xs tracking-tight">Account Already Linked</p>
-                      <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5 leading-snug">
-                        An account is already linked to this mobile number. Please log in to continue.
+                      <p className="text-sm font-bold tracking-tight text-amber-950">
+                        Account Already Linked
+                      </p>
+
+                      <p className="mt-0.5 text-xs leading-snug text-amber-950">
+                        An account is already linked to this mobile number.
+                        Please log in to continue.
                       </p>
                     </div>
                   </div>
+
                   <button
                     type="button"
-                    onClick={switchToLogin}
-                    style={{
-                      background: 'linear-gradient(135deg, var(--th-primary, #1F4E5B) 0%, var(--th-primary-hover, #286677) 100%)',
-                      color: '#FFFFFF'
-                    }}
-                    className="px-3.5 py-1.5 rounded-lg text-white font-bold text-xs tracking-wider flex items-center justify-center space-x-1.5 shadow-sm hover:brightness-110 cursor-pointer shrink-0 self-stretch sm:self-auto"
+                    disabled={loading}
+                    onClick={handleSwitchToLoginAndSendOtp}
+                    className="shrink-0 rounded-xl bg-[#4C3B5C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3D2E4B] cursor-pointer disabled:opacity-50 flex items-center justify-center space-x-1.5 shadow-sm active:scale-98"
                   >
-                    <span>Log In Now</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-white" />
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>Log In Now</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-white" />
+                      </>
+                    )}
                   </button>
+
                 </div>
               ) : (errorObj?.code === 'ACCOUNT_NOT_FOUND' || (typeof error === 'string' && error.toLowerCase().includes('no account found'))) ? (
                 <div className="mb-3.5 p-3.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 rounded-xl text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200 shadow-xs">
