@@ -647,10 +647,14 @@ export default function AuthPage({ onTriggerToast }) {
 
               <button
                 onClick={() => navigate('/')}
-                className="flex-1 py-2.5 px-3 rounded-xl bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-1.5 transition-all cursor-pointer shadow-md"
+                style={{
+                  background: 'linear-gradient(135deg, var(--th-primary, #1F4E5B) 0%, var(--th-primary-hover, #286677) 100%)',
+                  color: '#FFFFFF'
+                }}
+                className="flex-1 py-2.5 px-3 rounded-xl text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-1.5 transition-all cursor-pointer shadow-md hover:shadow-lg"
               >
-                <span>Shop</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span className="text-white font-bold">Shop</span>
+                <ArrowRight className="w-3.5 h-3.5 text-white" />
               </button>
             </div>
 
@@ -844,15 +848,21 @@ export default function AuthPage({ onTriggerToast }) {
                 <button
                   type="submit"
                   disabled={loading || !phone.trim() || (authMode === 'SIGNUP' && !userName.trim())}
-                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 transform active:scale-98 disabled:opacity-50 cursor-pointer"
+                  style={{
+                    backgroundColor: (!phone.trim() || (authMode === 'SIGNUP' && !userName.trim()))
+                      ? '#10B981'
+                      : '#059669',
+                    color: '#FFFFFF'
+                  }}
+                  className="w-full py-3.5 px-4 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 transform active:scale-98 disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {loading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
-                      <MessageCircle className="w-4 h-4 fill-white/20" />
-                      <span>Send WhatsApp OTP</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <MessageCircle className="w-4 h-4 fill-white/20 text-white" />
+                      <span className="text-white font-extrabold tracking-wider">Send WhatsApp OTP</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-white" />
                     </>
                   )}
                 </button>
@@ -969,14 +979,20 @@ export default function AuthPage({ onTriggerToast }) {
                 <button
                   type="submit"
                   disabled={loading || otpDigits.join('').length !== 6}
-                  className="w-full py-3 px-4 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 transform active:scale-98 disabled:opacity-50 cursor-pointer"
+                  style={{
+                    background: (otpDigits.join('').length !== 6)
+                      ? 'var(--th-primary, #1F4E5B)'
+                      : 'linear-gradient(135deg, var(--th-primary, #1F4E5B) 0%, var(--th-primary-hover, #286677) 100%)',
+                    color: '#FFFFFF'
+                  }}
+                  className="w-full py-3.5 px-4 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 transform active:scale-98 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {loading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
-                      <span>Verify & Continue</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <span className="text-white font-extrabold tracking-wider">Verify & Continue</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-white" />
                     </>
                   )}
                 </button>

@@ -474,7 +474,11 @@ export default function YatraCustomizerPage({
                   type="button"
                   onClick={handleAddCustomToCart}
                   disabled={isSubmitting}
-                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-widest shadow-lg hover:shadow-xl transition-all flex items-center justify-between cursor-pointer group hover:scale-[1.01]"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--th-primary, #1F4E5B) 0%, var(--th-primary-hover, #286677) 100%)',
+                    color: '#FFFFFF'
+                  }}
+                  className="w-full py-4 px-6 rounded-2xl text-white font-bold text-xs uppercase tracking-widest shadow-lg hover:shadow-xl transition-all flex items-center justify-between cursor-pointer group hover:scale-[1.01]"
                 >
                   <div className="text-left">
                     <span className="block font-sans text-xs font-extrabold tracking-wider">

@@ -75,7 +75,24 @@
 }
 
 /* Admin Studio palette — values live in src/admin/admin.css (scoped to .admin-root, light + dark) */
+/* Storefront palette & Admin Studio palette for Tailwind v4 */
 @theme inline {
+  --color-th-bg: var(--th-bg);
+  --color-th-surface: var(--th-surface);
+  --color-th-surface-alt: var(--th-surface-alt);
+  --color-th-card: var(--th-card);
+  --color-th-pedestal: var(--th-pedestal);
+  --color-th-border: var(--th-border);
+  --color-th-border-subtle: var(--th-border-subtle);
+  --color-th-primary: var(--th-primary);
+  --color-th-primary-hover: var(--th-primary-hover);
+  --color-th-accent: var(--th-accent);
+  --color-th-text-main: var(--th-text-main);
+  --color-th-text-muted: var(--th-text-muted);
+  --color-th-badge-bg: var(--th-badge-bg);
+  --color-th-badge-text: var(--th-badge-text);
+  --color-th-btn-text: var(--th-btn-text);
+
   --color-ad-bg: var(--ad-bg);
   --color-ad-surface: var(--ad-surface);
   --color-ad-card: var(--ad-card);
@@ -91,6 +108,7 @@
   --color-ad-text: var(--ad-text);
   --color-ad-muted: var(--ad-muted);
 }
+
 
 @layer base {
   html {

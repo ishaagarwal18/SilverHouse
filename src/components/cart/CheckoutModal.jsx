@@ -975,10 +975,14 @@ export default function CheckoutModal({
 
                 <button
                   type="submit"
-                  className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center space-x-2 shadow-md hover:shadow-lg cursor-pointer group"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--th-primary, #1F4E5B) 0%, var(--th-primary-hover, #286677) 100%)',
+                    color: '#FFFFFF'
+                  }}
+                  className="w-full sm:w-auto px-7 py-3.5 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center space-x-2 shadow-md hover:shadow-lg cursor-pointer group hover:scale-[1.01]"
                 >
-                  <span>Continue to Payment</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <span className="text-white font-bold">Continue to Payment</span>
+                  <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </form>
@@ -1188,19 +1192,23 @@ export default function CheckoutModal({
                 <button
                   onClick={handleCompleteOrder}
                   disabled={isPlacingOrder || isProcessingRazorpay}
-                  className={`px-8 py-3.5 bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center space-x-2.5 cursor-pointer group ${
+                  style={{
+                    background: 'linear-gradient(135deg, var(--th-primary, #1F4E5B) 0%, var(--th-primary-hover, #286677) 100%)',
+                    color: '#FFFFFF'
+                  }}
+                  className={`px-8 py-3.5 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center space-x-2.5 cursor-pointer group hover:scale-[1.01] ${
                     (isPlacingOrder || isProcessingRazorpay) ? 'opacity-70 cursor-not-allowed' : ''
                   }`}
                 >
-                  <Lock className="w-4 h-4" />
-                  <span>
+                  <Lock className="w-4 h-4 text-white" />
+                  <span className="text-white font-bold">
                     {isProcessingRazorpay
                       ? 'Launching Razorpay Gateway...'
                       : isPlacingOrder
                       ? 'Securing & Placing Order...'
                       : paymentMethod === 'razorpay'
-                      ? <>Pay via Razorpay • <strong className="font-outfit text-sm">₹{totalAmount.toLocaleString('en-IN')}</strong></>
-                      : <>Place COD Order • <strong className="font-outfit text-sm">₹{totalAmount.toLocaleString('en-IN')}</strong></>
+                      ? <>Pay via Razorpay • <strong className="font-outfit text-sm text-white">₹{totalAmount.toLocaleString('en-IN')}</strong></>
+                      : <>Place COD Order • <strong className="font-outfit text-sm text-white">₹{totalAmount.toLocaleString('en-IN')}</strong></>
                     }
                   </span>
                 </button>

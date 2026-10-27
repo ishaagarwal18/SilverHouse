@@ -1645,19 +1645,29 @@ export default function ProductListingPage({
                           {product.isYatraLocket ? (
                             <button
                               onClick={onNavigateYatraCustomizer}
-                              className="w-full py-2 sm:py-2.5 bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] hover:from-[var(--th-accent)] hover:to-[#9A650C] text-white hover:text-white font-semibold text-[11px] sm:text-xs rounded-lg transition-all flex items-center justify-center space-x-1 sm:space-x-1.5"
+                              style={{
+                                background: 'linear-gradient(135deg, var(--th-primary, #1F4E5B) 0%, var(--th-primary-hover, #286677) 100%)',
+                                color: '#FFFFFF'
+                              }}
+                              className="w-full py-2 sm:py-2.5 hover:from-[var(--th-accent)] hover:to-[#9A650C] text-white font-semibold text-[11px] sm:text-xs rounded-lg transition-all flex items-center justify-center space-x-1 sm:space-x-1.5 cursor-pointer shadow-xs hover:shadow-md"
                             >
-                              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--th-accent)] shrink-0" />
-                              <span>Customize</span>
+                              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-300 shrink-0" />
+                              <span className="text-white font-bold">Customize</span>
                             </button>
                           ) : (
                             <button
                               disabled={product.quantity !== undefined && product.quantity !== null && product.quantity <= 0}
                               onClick={() => onAddToCart(product, 1)}
-                              className={`w-full py-2 sm:py-2.5 bg-[var(--th-primary)] hover:bg-[var(--th-primary-hover)] text-white font-semibold text-[11px] sm:text-xs rounded-lg transition-colors flex items-center justify-center space-x-1 sm:space-x-1.5 cursor-pointer shadow-xs hover:shadow-md ${product.quantity !== undefined && product.quantity !== null && product.quantity <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+                              style={{
+                                background: (product.quantity !== undefined && product.quantity !== null && product.quantity <= 0)
+                                  ? '#9CA3AF'
+                                  : 'var(--th-primary, #1F4E5B)',
+                                color: '#FFFFFF'
+                              }}
+                              className={`w-full py-2 sm:py-2.5 text-white font-semibold text-[11px] sm:text-xs rounded-lg transition-colors flex items-center justify-center space-x-1 sm:space-x-1.5 cursor-pointer shadow-xs hover:shadow-md ${product.quantity !== undefined && product.quantity !== null && product.quantity <= 0 ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110'
                                 }`}
                             >
-                              <ShoppingBag className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                              <ShoppingBag className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-white" />
                               <span>{product.quantity !== undefined && product.quantity !== null && product.quantity <= 0 ? 'Sold Out' : 'Add to Cart'}</span>
                             </button>
                           )}

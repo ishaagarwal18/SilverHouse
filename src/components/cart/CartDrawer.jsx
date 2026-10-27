@@ -549,25 +549,31 @@ export default function CartDrawer({
                 onClose();
                 onProceedCheckout(finalTotal, discountAmount, appliedCoupon);
               }}
-              className={`w-full py-3 px-4 sm:py-3.5 sm:px-5 rounded-xl text-white font-bold text-xs uppercase tracking-widest shadow-md transition-all flex items-center justify-between group ${
+              style={{
+                background: hasStockError
+                  ? '#9CA3AF'
+                  : 'linear-gradient(135deg, var(--th-primary, #1F4E5B) 0%, var(--th-primary-hover, #286677) 100%)',
+                color: '#FFFFFF'
+              }}
+              className={`w-full py-3.5 px-4 sm:py-4 sm:px-5 rounded-xl text-white font-bold text-xs uppercase tracking-widest shadow-md transition-all flex items-center justify-between group ${
                 hasStockError
-                  ? 'bg-neutral-400 cursor-not-allowed opacity-60'
-                  : 'bg-gradient-to-r from-[var(--th-primary)] to-[var(--th-primary-hover)] hover:shadow-lg cursor-pointer hover:scale-[1.005]'
+                  ? 'cursor-not-allowed opacity-60'
+                  : 'hover:shadow-lg cursor-pointer hover:scale-[1.005]'
               }`}
             >
               <div className="text-left flex items-center space-x-2">
-                <span className="font-sans text-xs font-extrabold tracking-wider">
+                <span className="font-sans text-xs font-extrabold tracking-wider text-white">
                   {hasStockError ? 'Adjust Stock to Checkout' : 'Proceed to Checkout'}
                 </span>
                 {!hasStockError && (
-                  <span className="hidden sm:inline-block text-[10px] text-white/80 font-normal border-l border-white/30 pl-2">
+                  <span className="hidden sm:inline-block text-[10px] text-white/90 font-medium border-l border-white/40 pl-2">
                     100% Insured
                   </span>
                 )}
               </div>
-              <div className="flex items-center space-x-2 bg-white/20 px-3 py-1 rounded-lg backdrop-blur-xs">
-                <span className="font-outfit font-black text-sm">₹{finalTotal.toLocaleString('en-IN')}</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              <div className="flex items-center space-x-2 bg-white/20 px-3 py-1 rounded-lg backdrop-blur-xs text-white">
+                <span className="font-outfit font-black text-sm text-white">₹{finalTotal.toLocaleString('en-IN')}</span>
+                <ArrowRight className="w-3.5 h-3.5 text-white group-hover:translate-x-0.5 transition-transform" />
               </div>
             </button>
           </div>
