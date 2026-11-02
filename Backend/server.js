@@ -1124,7 +1124,7 @@ app.post('/api/payment/razorpay/verify', requireCustomerAuth, async (req, res) =
         // Construct verified order payload
         const orderValues = (orderPayload && orderPayload.table_values) ? { ...orderPayload.table_values } : { ...(orderPayload || {}) };
         orderValues.payment_status = 'PAID';
-        orderValues.payment_method = 'razorpay';
+        orderValues.payment_method = 'Online';
         orderValues.user_id = req.user.user_id || orderValues.user_id;
 
         const effectiveJson = JSON.stringify({ table_values: orderValues });
@@ -1161,7 +1161,9 @@ app.post('/api/payment/razorpay/verify', requireCustomerAuth, async (req, res) =
                 descReq.input('rz_info', sql.NVarChar(255), `Razorpay Payment ID: ${razorpay_payment_id} (Order: ${razorpay_order_id})`);
                 await descReq.query(`
                     UPDATE dbo.orders
-                    SET description = ISNULL(description + ' | ', '') + @rz_info
+                    SET description = ISNULL(description + ' | ', '') + @rz_info,
+                        payment_method = 'Online',
+                        payment_status = 'PAID'
                     WHERE order_id = @order_id;
                 `);
             } catch (descErr) {
@@ -3208,7 +3210,13 @@ app.get(['/api/orders/invoice/:orderIdentifier', '/api/orders/:orderId/invoice']
             due_date: row.due_date,
             payment_status: row.payment_status,
             order_status: row.order_status,
-            payment_method: row.payment_method,
+            payment_method: (function() {
+                const rawMethod = String(row.payment_method || '').trim().toLowerCase();
+                if (rawMethod.includes('online') || rawMethod.includes('razorpay') || rawMethod.includes('upi') || row.payment_status === 'PAID') {
+                    return 'Online';
+                }
+                return 'COD';
+            })(),
             place_of_supply: row.place_of_supply || 'Gujarat',
             reverse_charge: row.reverse_charge || 'No',
 

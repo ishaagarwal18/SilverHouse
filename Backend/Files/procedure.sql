@@ -1967,6 +1967,7 @@ BEGIN
     DECLARE @UserId         INT;
     DECLARE @AddressId      INT;
     DECLARE @PaymentStatus  NVARCHAR(20);
+    DECLARE @PaymentMethod  NVARCHAR(50);
     DECLARE @OrderStatus    NVARCHAR(50);
     DECLARE @OrderNumber    NVARCHAR(50);
     DECLARE @CartId         INT;
@@ -1986,6 +1987,7 @@ BEGIN
             @UserId          = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.user_id') AS INT),
             @AddressId       = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.address_id') AS INT),
             @PaymentStatus   = COALESCE(LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.payment_status'))), 'PENDING'),
+            @PaymentMethod   = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.payment_method'))),
             @OrderStatus     = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.order_status'))),
             @OrderNumber     = LTRIM(RTRIM(JSON_VALUE(@JSONstr, '$.table_values.order_number'))),
             @CartId          = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.cart_id') AS INT),
@@ -1997,6 +1999,16 @@ BEGIN
             @TotalAmount     = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.total_amount') AS DECIMAL(18,2)),
             @DiscountAmount  = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.discount_amount') AS DECIMAL(18,2)),
             @FinalPayable    = TRY_CAST(JSON_VALUE(@JSONstr, '$.table_values.final_payable') AS DECIMAL(18,2));
+
+        -- Normalize payment method
+        IF UPPER(@PaymentMethod) IN ('ONLINE', 'RAZORPAY', 'UPI')
+            SET @PaymentMethod = 'Online';
+        ELSE IF UPPER(@PaymentMethod) IN ('COD', 'CASH ON DELIVERY')
+            SET @PaymentMethod = 'COD';
+        ELSE IF @PaymentStatus = 'PAID'
+            SET @PaymentMethod = 'Online';
+        ELSE
+            SET @PaymentMethod = 'COD';
 
         IF @OrderStatus IS NOT NULL
         BEGIN
@@ -2019,7 +2031,7 @@ BEGIN
             SELECT 
                 o.order_id, o.order_number, o.user_id, u.full_name AS customer_name, u.phone,
                 o.address_id, a.recipient_name, a.Block, a.street, a.area, a.city, a.[state], a.pincode, a.country,
-                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.order_status, o.created_at,
+                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.payment_method, o.order_status, o.created_at,
                 o.[confirm], o.is_custom, o.custom_category, o.[description], o.[image],
                 (
                     SELECT 
@@ -2040,7 +2052,7 @@ BEGIN
             SELECT 
                 o.order_id, o.order_number, o.user_id, u.full_name AS customer_name, u.phone,
                 o.address_id, a.recipient_name, a.Block, a.street, a.area, a.city, a.[state], a.pincode, a.country,
-                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.order_status, o.created_at,
+                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.payment_method, o.order_status, o.created_at,
                 o.[confirm], o.is_custom, o.custom_category, o.[description], o.[image],
                 (
                     SELECT 
@@ -2061,7 +2073,7 @@ BEGIN
         BEGIN
             SELECT 
                 o.order_id, o.order_number, o.user_id, u.full_name AS customer_name, u.phone,
-                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.order_status, o.created_at,
+                o.total_amount, o.discount_amount, o.final_payable, o.payment_status, o.payment_method, o.order_status, o.created_at,
                 o.[confirm], o.is_custom, o.custom_category, o.[description], o.[image]
             FROM dbo.orders o
             LEFT JOIN dbo.[user] u ON o.user_id = u.user_id
@@ -2252,8 +2264,8 @@ BEGIN
         BEGIN TRANSACTION;
         BEGIN TRY
             -- 1. Insert into orders
-            INSERT INTO dbo.orders (order_number, user_id, address_id, total_amount, discount_amount, final_payable, payment_status, order_status, created_at)
-            VALUES (@OrderNumber, @UserId, @AddressId, @TotalAmount, @DiscountAmount, @FinalPayable, @PaymentStatus, COALESCE(@OrderStatus, 'PENDING'), DATEADD(minute, 330, SYSUTCDATETIME()));
+            INSERT INTO dbo.orders (order_number, user_id, address_id, total_amount, discount_amount, final_payable, payment_status, payment_method, order_status, created_at)
+            VALUES (@OrderNumber, @UserId, @AddressId, @TotalAmount, @DiscountAmount, @FinalPayable, @PaymentStatus, @PaymentMethod, COALESCE(@OrderStatus, 'PENDING'), DATEADD(minute, 330, SYSUTCDATETIME()));
 
             DECLARE @NewOrderId INT = SCOPE_IDENTITY();
 
@@ -3357,8 +3369,10 @@ BEGIN
         ISNULL(o.payment_status, 'PAID') AS payment_status,
         ISNULL(o.order_status, 'CONFIRMED') AS order_status,
         CASE 
-            WHEN o.payment_status = 'PAID' THEN 'Online (Razorpay / Instant Verification)'
-            ELSE 'Cash on Delivery (Due on Delivery)'
+            WHEN UPPER(ISNULL(o.payment_method, '')) IN ('ONLINE', 'RAZORPAY', 'UPI') OR UPPER(ISNULL(o.payment_status, '')) = 'PAID' THEN 'Online'
+            WHEN UPPER(ISNULL(o.payment_method, '')) IN ('COD', 'CASH ON DELIVERY') THEN 'COD'
+            WHEN UPPER(ISNULL(o.payment_status, '')) = 'PAID' THEN 'Online'
+            ELSE 'COD'
         END AS payment_method,
         o.total_amount,
         ISNULL(o.discount_amount, 0.00) AS discount_amount,
@@ -3368,7 +3382,7 @@ BEGIN
         ISNULL(NULLIF(a.[state], ''), ISNULL(c.[state], 'Gujarat')) AS place_of_supply,
         'No' AS reverse_charge,
 
-        -- Company Details (from dbo.company)
+        -- Company Details (from dbo.company - strictly from table, NULL if empty, NO fake fallback)
         ISNULL(c.[name], 'Silver House') AS company_name,
         ISNULL(c.[address], '217, Kanak Chamber, Gandhi Road') AS company_address,
         ISNULL(c.city, 'Ahmedabad') AS company_city,
@@ -3376,7 +3390,7 @@ BEGIN
         ISNULL(c.pincode, '380058') AS company_pincode,
         ISNULL(c.contact_number, '9537178477') AS company_phone,
         ISNULL(c.email, 'sunilag28017@gmail.com') AS company_email,
-        ISNULL(c.gst_no, '24ADDPA8283B1Z1') AS company_gstin,
+        c.gst_no AS company_gstin,
         ISNULL(c.pan_card, 'ADDPA8283B') AS company_pan,
         '9537178477@upi' AS upi_id,
 

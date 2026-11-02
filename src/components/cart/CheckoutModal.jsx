@@ -437,7 +437,7 @@ export default function CheckoutModal({
         discount_amount: discountAmount,
         final_payable: finalAmount,
         payment_status: 'PENDING',
-        payment_method: paymentMethod,
+        payment_method: paymentMethod === 'razorpay' ? 'Online' : 'COD',
         order_status: 'PENDING',
         items: formattedItems
       }
@@ -517,7 +517,7 @@ export default function CheckoutModal({
               discount_amount: discountAmount,
               final_payable: finalAmount,
               payment_status: 'PENDING',
-              payment_method: 'razorpay',
+              payment_method: 'Online',
               order_status: 'PENDING',
               razorpay_payment_id: paymentResult.response.razorpay_payment_id,
               created_at: new Date().toISOString(),
@@ -568,7 +568,7 @@ export default function CheckoutModal({
             discount_amount: discountAmount,
             final_payable: finalAmount,
             payment_status: 'PENDING',
-            payment_method: 'cod',
+            payment_method: 'COD',
             order_status: 'PENDING',
             created_at: new Date().toISOString(),
             items: formattedItems
@@ -1311,9 +1311,7 @@ export default function CheckoutModal({
                   <div className="flex justify-between">
                     <span>Payment Mode:</span>
                     <span className="font-bold uppercase text-[var(--th-text-main)]">
-                      {paymentMethod === 'razorpay'
-                        ? 'Razorpay Online (Verified & Paid)'
-                        : 'Cash on Delivery (Due on Delivery)'}
+                      {paymentMethod === 'razorpay' ? 'Online' : 'COD'}
                     </span>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  X, Printer, Download, CheckCircle2, ShieldCheck, 
-  AlertCircle, RefreshCw, QrCode, FileText, Check 
+import {
+  X, Printer, Download, CheckCircle2, ShieldCheck,
+  AlertCircle, RefreshCw, QrCode, FileText, Check
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import html2pdf from 'html2pdf.js';
@@ -74,6 +74,10 @@ export default function OrderInvoiceModal({
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const printRef = useRef(null);
 
+  const paymentMethodLower = String(invoice?.payment_method || '').toLowerCase();
+  const isOnlinePayment = paymentMethodLower.includes('online') || paymentMethodLower.includes('razorpay') || paymentMethodLower.includes('upi') || invoice?.payment_status === 'PAID';
+  const displayPaymentMode = isOnlinePayment ? 'Online' : 'COD';
+
   // Load Invoice data dynamically from DB API whenever modal opens
   useEffect(() => {
     if (!isOpen) {
@@ -137,7 +141,7 @@ export default function OrderInvoiceModal({
       const orders = JSON.parse(raw);
       if (!Array.isArray(orders)) return null;
 
-      const matched = orders.find(o => 
+      const matched = orders.find(o =>
         String(o.order_number || '').replace(/^#/, '').toLowerCase() === idStr.toLowerCase() ||
         String(o.order_id || '') === idStr
       );
@@ -173,7 +177,7 @@ export default function OrderInvoiceModal({
         due_date: new Date(Date.now() + 14 * 86400000).toISOString(),
         payment_status: matched.payment_status || 'PENDING',
         order_status: matched.order_status || 'CONFIRMED',
-        payment_method: matched.payment_method === 'razorpay' ? 'Online (Razorpay / Instant Verification)' : 'Cash on Delivery (Due on Delivery)',
+        payment_method: (matched.payment_method === 'razorpay' || matched.payment_method === 'Online' || matched.payment_status === 'PAID') ? 'Online' : 'COD',
         place_of_supply: 'Gujarat',
         reverse_charge: 'No',
         company: {
@@ -184,7 +188,7 @@ export default function OrderInvoiceModal({
           pincode: '380058',
           phone: '9537178477',
           email: 'sunilag28017@gmail.com',
-          gstin: '24ADDPA8283B1Z1',
+          gstin: null,
           pan: 'ADDPA8283B',
           upi_id: '9537178477@upi'
         },
@@ -331,7 +335,7 @@ export default function OrderInvoiceModal({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-4 print:p-0 print:bg-white print:static print:overflow-visible">
-      
+
       {/* Print-specific style rules */}
       <style>{`
         @media print {
@@ -371,7 +375,7 @@ export default function OrderInvoiceModal({
 
       {/* Outer Modal Container */}
       <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden print:w-full print:max-w-none print:shadow-none print:rounded-none">
-        
+
         {/* Top Control Header Bar (Hidden in Print) */}
         <div className="no-print bg-slate-900 text-white px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
           <div className="flex items-center space-x-2.5">
@@ -427,7 +431,7 @@ export default function OrderInvoiceModal({
 
         {/* Modal Body / Loading / Error */}
         <div className="max-h-[85vh] overflow-y-auto p-3 sm:p-6 bg-slate-100/60 print:bg-white print:p-0 print:max-h-none print:overflow-visible">
-          
+
           {loading && (
             <div className="py-20 text-center space-y-3 bg-white rounded-xl shadow-xs border border-slate-200">
               <RefreshCw className="w-8 h-8 text-amber-600 animate-spin mx-auto" />
@@ -458,12 +462,12 @@ export default function OrderInvoiceModal({
           {/* Matches media_1793607431612_1dc81c81.jpg strictly         */}
           {/* ========================================================= */}
           {!loading && !error && invoice && (
-            <div 
-              id="silverhouse-printable-invoice" 
+            <div
+              id="silverhouse-printable-invoice"
               ref={printRef}
               className="bg-white text-black p-4 sm:p-7 shadow-md rounded-xl print:rounded-none print:shadow-none print:p-0 text-[11px] leading-tight font-sans border border-slate-300 print:border-none mx-auto max-w-[850px]"
             >
-              
+
               {/* TOP HEADER: Page No & Title */}
               <div className="flex items-center justify-between pb-1">
                 <span className="text-[10px] text-slate-600 font-mono">Page No. 1 of 1</span>
@@ -475,7 +479,7 @@ export default function OrderInvoiceModal({
 
               {/* COMPANY DETAILS & INVOICE METADATA CONTAINER */}
               <div className="border border-black flex flex-col md:flex-row print:flex-row">
-                
+
                 {/* Left Side: Company Name & Contact Info */}
                 <div className="p-2 sm:p-2.5 flex-1 border-b md:border-b-0 md:border-r print:border-b-0 print:border-r border-black space-y-1">
                   <h1 className="font-serif font-black text-base sm:text-lg text-black uppercase tracking-tight">
@@ -491,15 +495,15 @@ export default function OrderInvoiceModal({
                     <strong className="font-semibold">Email:</strong> {invoice.company?.email || 'sunilag28017@gmail.com'}
                   </p>
                   <div className="text-[10px] sm:text-[11px] text-slate-900 pt-0.5 flex flex-wrap gap-x-2">
-                    <span><strong>GSTIN:</strong> {invoice.company?.gstin || '24ADDPA8283B1Z1'}</span>
+                    <span><strong>GSTIN:</strong> {invoice.company?.gstin || ''}</span>
                     <span>|</span>
-                    <span><strong>PAN:</strong> {invoice.company?.pan || 'ADDPA8283B'}</span>
+                    <span><strong>PAN:</strong> {invoice.company?.pan || ''}</span>
                   </div>
                 </div>
 
                 {/* Right Side: Invoice Number, Place of Supply, Date, Due Date */}
                 <div className="w-full md:w-[320px] print:w-[320px] divide-y divide-black text-[10px] sm:text-[11px]">
-                  
+
                   {/* Row 1: Invoice Number & Date */}
                   <div className="grid grid-cols-2 divide-x divide-black">
                     <div className="p-1.5 sm:p-2 bg-slate-50/50">
@@ -520,7 +524,7 @@ export default function OrderInvoiceModal({
                     </div>
                     <div className="p-1.5 sm:p-2">
                       <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Due Date</span>
-                      <span className="font-mono font-medium text-black">{invoice.payment_status === 'PAID' ? 'Immediate / Paid' : formatDate(invoice.due_date)}</span>
+                      <span className="font-mono font-medium text-black">{isOnlinePayment ? 'Immediate / Paid' : formatDate(invoice.due_date)}</span>
                     </div>
                   </div>
 
@@ -532,7 +536,7 @@ export default function OrderInvoiceModal({
                     </div>
                     <div className="pl-2">
                       <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Payment Mode</span>
-                      <span className="font-bold text-[10px] uppercase text-emerald-800">{invoice.payment_status === 'PAID' ? 'PREPAID' : 'COD'}</span>
+                      <span className={`font-bold text-[10px] uppercase ${isOnlinePayment ? 'text-emerald-800' : 'text-slate-900'}`}>{displayPaymentMode}</span>
                     </div>
                   </div>
 
@@ -542,7 +546,7 @@ export default function OrderInvoiceModal({
 
               {/* BILLING & SHIPPING DETAILS (2 BOXES) */}
               <div className="border-x border-b border-black grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 divide-y md:divide-y-0 md:divide-x print:divide-y-0 print:divide-x divide-black text-[10px] sm:text-[11px]">
-                
+
                 {/* Billing Details */}
                 <div className="p-2 sm:p-2.5 space-y-1">
                   <h3 className="font-bold uppercase tracking-wider text-xs border-b border-slate-200 pb-0.5">Billing Details</h3>
@@ -552,9 +556,7 @@ export default function OrderInvoiceModal({
                     <strong className="font-semibold">Mobile:</strong> {invoice.billing?.phone || '-'}
                     {invoice.billing?.email && <span> | <strong className="font-semibold">Email:</strong> {invoice.billing.email}</span>}
                   </p>
-                  {invoice.billing?.gstin && (
-                    <p><strong className="font-semibold">GSTIN:</strong> {invoice.billing.gstin}</p>
-                  )}
+                  <p><strong className="font-semibold">GSTIN:</strong> {invoice.billing?.gstin || ''}</p>
                 </div>
 
                 {/* Shipping Details */}
@@ -623,7 +625,7 @@ export default function OrderInvoiceModal({
 
               {/* TOTALS & ROUNDED OFF SUMMARY */}
               <div className="border-x border-b border-black text-[10px] sm:text-[11px]">
-                
+
                 {/* Rounded Off Row */}
                 <div className="flex justify-between items-center px-3 py-1 border-b border-slate-200">
                   <span className="font-semibold text-slate-700">Rounded Off (+/-)</span>
@@ -650,7 +652,7 @@ export default function OrderInvoiceModal({
 
               {/* BOTTOM 3-COLUMN SECTION: Terms | QR Code | Signatory */}
               <div className="border-x border-b border-black grid grid-cols-1 md:grid-cols-12 print:grid-cols-12 divide-y md:divide-y-0 md:divide-x print:divide-y-0 print:divide-x divide-black text-[9px] sm:text-[9.5px]">
-                
+
                 {/* Col 1: Terms & Conditions (5 columns wide) */}
                 <div className="md:col-span-5 print:col-span-5 p-2 sm:p-2.5 space-y-1">
                   <h4 className="font-bold uppercase tracking-wider text-[10px] text-black">Terms and Conditions</h4>
@@ -674,9 +676,9 @@ export default function OrderInvoiceModal({
                 {/* Col 2: Dynamic UPI QR Code for instant payment/verification (3 columns wide) */}
                 <div className="md:col-span-3 print:col-span-3 p-2 text-center flex flex-col items-center justify-center space-y-1 bg-slate-50/50">
                   {qrCodeUrl ? (
-                    <img 
-                      src={qrCodeUrl} 
-                      alt="UPI QR Code" 
+                    <img
+                      src={qrCodeUrl}
+                      alt="UPI QR Code"
                       className="w-24 h-24 sm:w-28 sm:h-28 border border-black bg-white p-1"
                     />
                   ) : (
@@ -687,7 +689,9 @@ export default function OrderInvoiceModal({
                   <div className="text-[8.5px] sm:text-[9px] font-mono font-bold text-slate-900 break-all">
                     UPI Id - {invoice.company?.upi_id || '9537178477@upi'}
                   </div>
-                  <span className="text-[8px] text-slate-500 uppercase tracking-wider">Scan & Pay / Authenticate</span>
+                  <span className="text-[8px] text-slate-500 uppercase tracking-wider">
+                    {isOnlinePayment ? 'Online Payment Verified' : 'Pay On Delivery'}
+                  </span>
                 </div>
 
                 {/* Col 3: Company Signature & Stamp (4 columns wide) */}
