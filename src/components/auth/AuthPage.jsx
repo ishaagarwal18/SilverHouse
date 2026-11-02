@@ -141,6 +141,16 @@ export default function AuthPage({ onTriggerToast }) {
       return;
     }
 
+    const todayIso = new Date().toLocaleDateString('en-CA');
+    if (editBirthday && editBirthday > todayIso) {
+      setError('Birthday date cannot be in the future.');
+      return;
+    }
+    if (editAnniversary && editAnniversary > todayIso) {
+      setError('Anniversary date cannot be in the future.');
+      return;
+    }
+
     setSavingProfile(true);
     setError('');
     try {
@@ -212,6 +222,15 @@ export default function AuthPage({ onTriggerToast }) {
       const trimmedGst = (gstNumber || '').trim();
       if (trimmedGst && trimmedGst.length !== 15) {
         setError('Validation Error: GST number must be exactly 15 characters.');
+        return;
+      }
+      const todayIso = new Date().toLocaleDateString('en-CA');
+      if (birthdayDate && birthdayDate > todayIso) {
+        setError('Birthday date cannot be in the future.');
+        return;
+      }
+      if (anniversaryDate && anniversaryDate > todayIso) {
+        setError('Anniversary date cannot be in the future.');
         return;
       }
     }
@@ -339,6 +358,19 @@ export default function AuthPage({ onTriggerToast }) {
 
     setLoading(true);
     try {
+      const todayIso = new Date().toLocaleDateString('en-CA');
+      if (authMode === 'SIGNUP') {
+        if (birthdayDate && birthdayDate > todayIso) {
+          setError('Birthday date cannot be in the future.');
+          setLoading(false);
+          return;
+        }
+        if (anniversaryDate && anniversaryDate > todayIso) {
+          setError('Anniversary date cannot be in the future.');
+          setLoading(false);
+          return;
+        }
+      }
       const extraMeta = authMode === 'SIGNUP' ? {
         birthdayDate,
         anniversaryDate,
@@ -479,6 +511,7 @@ export default function AuthPage({ onTriggerToast }) {
                 <ClassyDatePicker
                   label="Birthday Date"
                   optional
+                  disableFuture
                   value={editBirthday}
                   onChange={setEditBirthday}
                   icon={Calendar}
@@ -488,6 +521,7 @@ export default function AuthPage({ onTriggerToast }) {
                 <ClassyDatePicker
                   label="Anniversary Date"
                   optional
+                  disableFuture
                   value={editAnniversary}
                   onChange={setEditAnniversary}
                   icon={Gift}
@@ -903,6 +937,7 @@ export default function AuthPage({ onTriggerToast }) {
                     <ClassyDatePicker
                       label="Birthday Date"
                       optional
+                      disableFuture
                       value={birthdayDate}
                       onChange={setBirthdayDate}
                       icon={Calendar}
@@ -913,6 +948,7 @@ export default function AuthPage({ onTriggerToast }) {
                     <ClassyDatePicker
                       label="Anniversary Date"
                       optional
+                      disableFuture
                       value={anniversaryDate}
                       onChange={setAnniversaryDate}
                       icon={Gift}

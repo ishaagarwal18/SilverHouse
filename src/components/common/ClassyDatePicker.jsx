@@ -20,8 +20,9 @@ export default function ClassyDatePicker({
   icon: IconComponent = CalendarIcon,
   label,
   optional = false,
-  minYear = 1940,
+  minYear = 1920,
   maxYear = 2035,
+  disableFuture = false,
   className = ''
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -46,16 +47,20 @@ export default function ClassyDatePicker({
   })();
 
   const today = new Date();
-  const [viewYear, setViewYear] = useState(() => (parsedDate ? parsedDate.getFullYear() : today.getFullYear()));
+  const effectiveMaxYear = disableFuture ? Math.min(maxYear, today.getFullYear()) : maxYear;
+  const initialYear = parsedDate
+    ? (disableFuture ? Math.min(parsedDate.getFullYear(), effectiveMaxYear) : parsedDate.getFullYear())
+    : (disableFuture ? Math.min(today.getFullYear(), effectiveMaxYear) : today.getFullYear());
+  const [viewYear, setViewYear] = useState(() => initialYear);
   const [viewMonth, setViewMonth] = useState(() => (parsedDate ? parsedDate.getMonth() : today.getMonth()));
 
   // Synchronize view when value changes externally
   useEffect(() => {
     if (parsedDate) {
-      setViewYear(parsedDate.getFullYear());
+      setViewYear(disableFuture ? Math.min(parsedDate.getFullYear(), effectiveMaxYear) : parsedDate.getFullYear());
       setViewMonth(parsedDate.getMonth());
     }
-  }, [value]);
+  }, [value, disableFuture, effectiveMaxYear]);
 
   // Update popup coordinates based on trigger position
   const updateCoords = () => {
@@ -113,6 +118,11 @@ export default function ClassyDatePicker({
     };
   }, [isOpen]);
 
+  const isNextMonthDisabled = disableFuture && (
+    viewYear > today.getFullYear() ||
+    (viewYear === today.getFullYear() && viewMonth >= today.getMonth())
+  );
+
   // Month navigation
   const handlePrevMonth = (e) => {
     e.stopPropagation();
@@ -126,9 +136,12 @@ export default function ClassyDatePicker({
 
   const handleNextMonth = (e) => {
     e.stopPropagation();
+    if (isNextMonthDisabled) return;
     if (viewMonth === 11) {
-      setViewMonth(0);
-      setViewYear(prev => Math.min(maxYear, prev + 1));
+      if (viewYear < effectiveMaxYear) {
+        setViewMonth(0);
+        setViewYear(prev => prev + 1);
+      }
     } else {
       setViewMonth(prev => prev + 1);
     }
@@ -170,7 +183,7 @@ export default function ClassyDatePicker({
 
   // Years array
   const yearsList = [];
-  for (let y = maxYear; y >= minYear; y--) {
+  for (let y = effectiveMaxYear; y >= minYear; y--) {
     yearsList.push(y);
   }
 
@@ -271,9 +284,14 @@ export default function ClassyDatePicker({
                     </button>
                     <button
                       type="button"
+                      disabled={isNextMonthDisabled}
                       onClick={handleNextMonth}
-                      className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-amber-500 hover:text-white hover:border-amber-500 transition-all cursor-pointer shadow-xs active:scale-95"
-                      title="Next Month"
+                      className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all shadow-xs active:scale-95 ${
+                        isNextMonthDisabled
+                          ? 'bg-slate-100 border-slate-200 text-slate-300 opacity-40 cursor-not-allowed'
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-amber-500 hover:text-white hover:border-amber-500 cursor-pointer'
+                      }`}
+                      title={isNextMonthDisabled ? 'Future dates are disabled' : 'Next Month'}
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -326,21 +344,30 @@ export default function ClassyDatePicker({
                       today.getMonth() === viewMonth &&
                       today.getDate() === day;
 
+                    const isFutureDay = disableFuture && (
+                      viewYear > today.getFullYear() ||
+                      (viewYear === today.getFullYear() && viewMonth > today.getMonth()) ||
+                      (viewYear === today.getFullYear() && viewMonth === today.getMonth() && day > today.getDate())
+                    );
+
                     return (
                       <button
                         key={day}
                         type="button"
-                        onClick={() => handleSelectDay(day)}
-                        className={`h-9 w-9 mx-auto rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all duration-200 cursor-pointer relative ${
-                          isSelected
-                            ? 'bg-gradient-to-tr from-amber-600 via-amber-500 to-yellow-500 text-white font-extrabold shadow-md shadow-amber-500/30 scale-105 ring-2 ring-amber-300 z-10'
+                        disabled={isFutureDay}
+                        onClick={() => !isFutureDay && handleSelectDay(day)}
+                        className={`h-9 w-9 mx-auto rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all duration-200 relative ${
+                          isFutureDay
+                            ? 'text-slate-300 opacity-25 cursor-not-allowed bg-slate-50/50'
+                            : isSelected
+                            ? 'bg-gradient-to-tr from-amber-600 via-amber-500 to-yellow-500 text-white font-extrabold shadow-md shadow-amber-500/30 scale-105 ring-2 ring-amber-300 z-10 cursor-pointer'
                             : isToday
-                            ? 'border-2 border-amber-500 text-amber-900 font-bold bg-amber-50 hover:bg-amber-500 hover:text-white'
-                            : 'text-slate-700 hover:bg-amber-100/80 hover:text-amber-900 hover:scale-105'
+                            ? 'border-2 border-amber-500 text-amber-900 font-bold bg-amber-50 hover:bg-amber-500 hover:text-white cursor-pointer'
+                            : 'text-slate-700 hover:bg-amber-100/80 hover:text-amber-900 hover:scale-105 cursor-pointer'
                         }`}
                       >
                         <span>{day}</span>
-                        {isToday && !isSelected && (
+                        {isToday && !isSelected && !isFutureDay && (
                           <span className="w-1 h-1 rounded-full bg-amber-500 absolute bottom-1" />
                         )}
                       </button>
@@ -366,18 +393,26 @@ export default function ClassyDatePicker({
                 <div className="grid grid-cols-3 gap-2 py-1">
                   {MONTH_NAMES.map((mName, idx) => {
                     const isCurrentMonth = viewMonth === idx;
+                    const isFutureMonth = disableFuture && (
+                      viewYear > today.getFullYear() ||
+                      (viewYear === today.getFullYear() && idx > today.getMonth())
+                    );
                     return (
                       <button
                         key={mName}
                         type="button"
+                        disabled={isFutureMonth}
                         onClick={() => {
+                          if (isFutureMonth) return;
                           setViewMonth(idx);
                           setViewMode('DAYS');
                         }}
-                        className={`py-2.5 px-3 rounded-2xl text-xs font-bold transition-all text-center cursor-pointer border ${
-                          isCurrentMonth
-                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white border-amber-400 shadow-md'
-                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-900'
+                        className={`py-2.5 px-3 rounded-2xl text-xs font-bold transition-all text-center border ${
+                          isFutureMonth
+                            ? 'bg-slate-100 border-slate-200 text-slate-300 opacity-40 cursor-not-allowed'
+                            : isCurrentMonth
+                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white border-amber-400 shadow-md cursor-pointer'
+                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-900 cursor-pointer'
                         }`}
                       >
                         {mName}

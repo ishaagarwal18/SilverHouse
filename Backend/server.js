@@ -1357,6 +1357,28 @@ function cleanPhoneNumber(rawPhone) {
     return '+' + digits;
 }
 
+
+/**
+ * Validates that a milestone date (e.g. Birthday, Anniversary) is not in the future and realistic.
+ */
+function validateHistoricalDate(val, fieldName = 'Date') {
+    if (!val) return { valid: true };
+    const dateStr = String(val).trim().slice(0, 10);
+    const parsed = new Date(dateStr);
+    const now = new Date();
+    now.setHours(23, 59, 59, 999);
+    if (isNaN(parsed.getTime())) {
+        return { valid: false, error: `Invalid ${fieldName} format.` };
+    }
+    if (parsed > now) {
+        return { valid: false, error: `${fieldName} cannot be in the future.` };
+    }
+    if (parsed.getFullYear() < 1900) {
+        return { valid: false, error: `Please enter a valid ${fieldName} (year 1900 or later).` };
+    }
+    return { valid: true };
+}
+
 // Format phone specifically for WhatsApp gateway (91XXXXXXXXXX without +)
 function formatWhatsAppPhone(rawPhone) {
     if (!rawPhone) return '';
@@ -1709,6 +1731,19 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 
         if (gstVal && gstVal.length !== 15) {
             return res.status(400).json({ success: false, error: 'Validation Error: GST number must be exactly 15 characters.' });
+        }
+
+        if (bdayVal) {
+            const bdayCheck = validateHistoricalDate(bdayVal, 'Birthday date');
+            if (!bdayCheck.valid) {
+                return res.status(400).json({ success: false, error: bdayCheck.error });
+            }
+        }
+        if (anniVal) {
+            const anniCheck = validateHistoricalDate(anniVal, 'Anniversary date');
+            if (!anniCheck.valid) {
+                return res.status(400).json({ success: false, error: anniCheck.error });
+            }
         }
 
         if (!cleanedPhone || !otp) {
@@ -2077,6 +2112,19 @@ async function handleUpdateProfile(req, res) {
             return res.status(400).json({ success: false, error: 'Validation Error: GST number must be exactly 15 characters.' });
         }
 
+        if (bdayVal) {
+            const bdayCheck = validateHistoricalDate(bdayVal, 'Birthday date');
+            if (!bdayCheck.valid) {
+                return res.status(400).json({ success: false, error: bdayCheck.error });
+            }
+        }
+        if (anniVal) {
+            const anniCheck = validateHistoricalDate(anniVal, 'Anniversary date');
+            if (!anniCheck.valid) {
+                return res.status(400).json({ success: false, error: anniCheck.error });
+            }
+        }
+
         await pool.request()
             .input('userId', sql.Int, userId)
             .input('fullName', sql.NVarChar(100), trimmedName)
@@ -2443,6 +2491,19 @@ app.post('/api/data', async (req, res) => {
         let normalizedProc = (proc_name || '').trim().toLowerCase();
         if (normalizedProc === 'order') normalizedProc = 'orders';
         const operation = (opr || '').trim().toUpperCase();
+
+        // Validate historical milestone dates (e.g. birthday_date, anniversary_date cannot be in the future)
+        if (table_values && typeof table_values === 'object' && ['ADD', 'INSERT', 'EDIT', 'UPDATE'].includes(operation)) {
+            for (const [k, v] of Object.entries(table_values)) {
+                if (['birthday', 'birth', 'dob', 'anniversary'].some(key => k.toLowerCase().includes(key)) && v) {
+                    const label = k.replace(/_/g, ' ');
+                    const check = validateHistoricalDate(v, label.charAt(0).toUpperCase() + label.slice(1));
+                    if (!check.valid) {
+                        return res.status(400).json({ success: false, error: check.error });
+                    }
+                }
+            }
+        }
 
         // RBAC Identity Check
         const caller = await getAuthenticatedCaller(req);

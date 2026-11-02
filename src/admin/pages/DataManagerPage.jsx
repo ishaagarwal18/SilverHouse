@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, Check, CheckCircle2, ChevronRight, Clock, Download, FileSpreadsheet, Filter, Image as ImageIcon, Minus, Package, Pencil, Plus, Receipt, RotateCcw, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, Upload, Users, Zap } from 'lucide-react';
+import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, Calendar, Check, CheckCircle2, ChevronRight, Clock, Download, FileSpreadsheet, Filter, Image as ImageIcon, Minus, Package, Pencil, Plus, Receipt, RotateCcw, Scale, ShieldCheck, ShoppingCart, Sparkles, Tag, Trash2, Truck, Upload, Users, Zap } from 'lucide-react';
 import { adminFetch, adminImageUrl, callProc, fetchRows, formatAdminDate, formatAdminDateOrTime, isDateLikeColumnOrValue, PLACEHOLDER_IMG, productImage } from '../api/adminApi';
 import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISIONS, PK_MAP, PURITY_OPTIONS, FINISH_OPTIONS, AUDIENCE_OPTIONS } from '../config/entities';
 import { useAdminUI } from '../context/AdminUIContext';
@@ -1134,9 +1134,20 @@ function DataManager({ entity }) {
       return lookups.festivals[val] ? `${lookups.festivals[val]} (${val})` : (row.festival_name || val);
     }
     if (isDateLikeColumnOrValue(h, val)) {
+      const isPastDateKey = ['birthday', 'birth', 'dob', 'anniversary'].some(k => h.toLowerCase().includes(k));
+      const todayIso = new Date().toLocaleDateString('en-CA');
+      const valIso = String(val).trim().slice(0, 10);
+      const isFutureInvalid = isPastDateKey && valIso > todayIso;
+
       return (
-        <span className="font-mono text-xs text-ad-text whitespace-nowrap" title={String(val)}>
-          {formatAdminDateOrTime(val, h)}
+        <span
+          className={`font-mono text-xs whitespace-nowrap inline-flex items-center gap-1.5 ${
+            isFutureInvalid ? 'text-rose-500 font-bold bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/30' : 'text-ad-text'
+          }`}
+          title={isFutureInvalid ? `Invalid future date (${val}). Please edit and correct this date.` : String(val)}
+        >
+          {isFutureInvalid && <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />}
+          <span>{formatAdminDateOrTime(val, h)}</span>
         </span>
       );
     }
@@ -2401,6 +2412,27 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
       tableValues[key] = !isNaN(trimmed) && !keepText ? Number(trimmed) : trimmed;
     });
 
+    // Validate historical dates (e.g. birthday_date, anniversary_date cannot be in the future)
+    const todayIso = new Date().toLocaleDateString('en-CA');
+    for (const [key, val] of Object.entries(tableValues)) {
+      const isPastDateKey = ['birthday', 'birth', 'dob', 'anniversary'].some(k => key.toLowerCase().includes(k));
+      if (isPastDateKey && val) {
+        const strVal = String(val).trim().slice(0, 10);
+        if (strVal > todayIso) {
+          const friendlyLabel = key.replace(/_/g, ' ');
+          showToast(`${friendlyLabel.charAt(0).toUpperCase() + friendlyLabel.slice(1)} cannot be in the future (must be today or earlier).`, true);
+          setSaving(false);
+          return;
+        }
+        if (strVal < '1900-01-01') {
+          const friendlyLabel = key.replace(/_/g, ' ');
+          showToast(`Please enter a valid ${friendlyLabel} (year 1900 or later).`, true);
+          setSaving(false);
+          return;
+        }
+      }
+    }
+
     // Strip synthetic non-table field linked_categories before sending to database
     const selectedCatsForFestival = [...selectedCategoryIds];
     delete tableValues.linked_categories;
@@ -2535,6 +2567,11 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
               const isDateType = field.type === 'date'
                 || field.name.endsWith('_date')
                 || (field.name.includes('date') && field.name !== 'created_at' && field.name !== 'updated_at');
+
+              const isPastDateOnlyField = ['birthday', 'birth', 'dob', 'anniversary'].some(k => field.name.toLowerCase().includes(k));
+              const todayLocalIso = new Date().toLocaleDateString('en-CA');
+              const maxDateAttr = field.max === 'today' ? todayLocalIso : (field.max || (isPastDateOnlyField ? todayLocalIso : undefined));
+              const minDateAttr = field.min || (isPastDateOnlyField ? '1900-01-01' : undefined);
 
               let value = rawValue !== undefined && rawValue !== null
                 ? rawValue
@@ -2801,6 +2838,8 @@ function RecordModal({ entity, mode, id, rows, lookups = {}, orderItemsMap = {},
                       name={field.name}
                       type={isDateType ? 'date' : (field.type || 'text')}
                       step={field.step}
+                      max={isDateType ? maxDateAttr : field.max}
+                      min={isDateType ? minDateAttr : field.min}
                       className={`ad-input ${field.name === 'id' && isEdit && entity === 'festival' ? 'opacity-70 bg-ad-card cursor-not-allowed' : ''}`}
                       defaultValue={typeof value === 'object' ? JSON.stringify(value) : value}
                       required={field.required}
