@@ -1,10 +1,65 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Printer, Download, CheckCircle2, ShieldCheck, 
-  AlertCircle, RefreshCw, QrCode, FileText 
+  AlertCircle, RefreshCw, QrCode, FileText, Check 
 } from 'lucide-react';
 import QRCode from 'qrcode';
+import html2pdf from 'html2pdf.js';
 import { fetchOrderInvoiceApi } from '../../services/api';
+
+function convertNumberToIndianWordsClient(amount) {
+  if (isNaN(amount) || amount === null || amount === undefined) return '';
+  const num = Math.floor(Math.abs(Number(amount)));
+  const paise = Math.round((Math.abs(Number(amount)) - num) * 100);
+
+  if (num === 0 && paise === 0) return 'Rs. Zero - Only';
+
+  const singleDigits = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  function twoDigits(n) {
+    if (n < 20) return singleDigits[n];
+    const unit = n % 10;
+    return tens[Math.floor(n / 10)] + (unit ? ' ' + singleDigits[unit] : '');
+  }
+
+  function threeDigits(n) {
+    let str = '';
+    if (n >= 100) {
+      str += singleDigits[Math.floor(n / 100)] + ' Hundred';
+      n = n % 100;
+      if (n > 0) str += ' ';
+    }
+    if (n > 0) {
+      str += twoDigits(n);
+    }
+    return str;
+  }
+
+  let words = '';
+  let remaining = num;
+
+  const crore = Math.floor(remaining / 10000000);
+  remaining %= 10000000;
+  const lakh = Math.floor(remaining / 100000);
+  remaining %= 100000;
+  const thousand = Math.floor(remaining / 1000);
+  remaining %= 1000;
+  const remainder = remaining;
+
+  if (crore > 0) words += threeDigits(crore) + ' Crore ';
+  if (lakh > 0) words += twoDigits(lakh) + ' Lakh ';
+  if (thousand > 0) words += twoDigits(thousand) + ' Thousand ';
+  if (remainder > 0) words += threeDigits(remainder);
+
+  words = words.trim();
+  let result = 'Rs. ' + words;
+  if (paise > 0) {
+    result += ' and ' + twoDigits(paise) + ' Paise';
+  }
+  result += ' - Only';
+  return result;
+}
 
 export default function OrderInvoiceModal({
   isOpen,
@@ -13,6 +68,7 @@ export default function OrderInvoiceModal({
   autoPrint = false
 }) {
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
   const [invoice, setInvoice] = useState(null);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -20,9 +76,17 @@ export default function OrderInvoiceModal({
 
   // Load Invoice data dynamically from DB API whenever modal opens
   useEffect(() => {
-    if (!isOpen || !orderIdentifier) {
+    if (!isOpen) {
       setInvoice(null);
       setError('');
+      setLoading(false);
+      setDownloading(false);
+      return;
+    }
+
+    const cleanId = String(orderIdentifier || '').replace(/^#/, '').trim();
+    if (!cleanId) {
+      setError('No valid order identifier specified.');
       setLoading(false);
       return;
     }
@@ -31,48 +95,30 @@ export default function OrderInvoiceModal({
     setLoading(true);
     setError('');
 
-    fetchOrderInvoiceApi(orderIdentifier)
+    // Step 1: Fetch from live Stored Procedure backend API
+    fetchOrderInvoiceApi(cleanId)
       .then(res => {
         if (!isMounted) return;
         if (res && res.success && res.invoice) {
-          setInvoice(res.invoice);
-
-          // Generate dynamic UPI QR Code
-          const upiId = res.invoice.company?.upi_id || '9537178477@upi';
-          const payeeName = res.invoice.company?.name || 'Silver House';
-          const orderNum = res.invoice.order_number || orderIdentifier;
-          const amount = res.invoice.final_payable || 0;
-
-          const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent('Invoice ' + orderNum)}`;
-
-          QRCode.toDataURL(upiUri, {
-            margin: 1,
-            width: 130,
-            color: {
-              dark: '#000000',
-              light: '#ffffff'
-            }
-          })
-            .then(url => {
-              if (isMounted) setQrCodeUrl(url);
-            })
-            .catch(qrErr => {
-              console.warn('[Invoice] QR code generation error:', qrErr);
-            });
-
-          // Auto-print if requested after small render delay
-          if (autoPrint) {
-            setTimeout(() => {
-              window.print();
-            }, 600);
-          }
+          applyInvoiceData(res.invoice);
         } else {
-          setError(res?.error || `Could not find invoice for order #${orderIdentifier}`);
+          // Step 2: Try local storage backup fallback if available
+          const foundLocal = findLocalOrderFallback(cleanId);
+          if (foundLocal) {
+            applyInvoiceData(foundLocal);
+          } else {
+            setError(res?.error || `Could not retrieve invoice for order #${cleanId}`);
+          }
         }
       })
       .catch(err => {
         if (!isMounted) return;
-        setError(err.message || 'Error connecting to database.');
+        const foundLocal = findLocalOrderFallback(cleanId);
+        if (foundLocal) {
+          applyInvoiceData(foundLocal);
+        } else {
+          setError(err.message || 'Error connecting to database.');
+        }
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -81,12 +127,182 @@ export default function OrderInvoiceModal({
     return () => {
       isMounted = false;
     };
-  }, [isOpen, orderIdentifier, autoPrint]);
+  }, [isOpen, orderIdentifier]);
 
-  if (!isOpen) return null;
+  // Helper to construct invoice from local storage order when DB sync is delayed
+  const findLocalOrderFallback = (idStr) => {
+    try {
+      const raw = localStorage.getItem('silverhouse_orders');
+      if (!raw) return null;
+      const orders = JSON.parse(raw);
+      if (!Array.isArray(orders)) return null;
+
+      const matched = orders.find(o => 
+        String(o.order_number || '').replace(/^#/, '').toLowerCase() === idStr.toLowerCase() ||
+        String(o.order_id || '') === idStr
+      );
+
+      if (!matched) return null;
+
+      const finalAmount = Number(matched.final_payable || matched.total_amount || 0);
+      const totalAmount = Number(matched.total_amount || finalAmount);
+      const discount = Number(matched.discount_amount || 0);
+
+      const items = (matched.items || []).map((it, idx) => ({
+        s_no: idx + 1,
+        item_description: it.product_name || it.title || it.name || 'Silver Jewelry Piece',
+        category_name: it.category_name || '925 Sterling Silver',
+        purity: it.purity || '92.5 Sterling Silver',
+        net_weight_gm: Number(it.weight ? String(it.weight).replace(/[^0-9.]/g, '') : 10) || 10,
+        making_charges: Number(it.making_charges || it.labour_cost || 0),
+        metal_rate_per_gm: Number(it.unit_price || it.price || 0) > 0 ? Math.round((Number(it.unit_price || it.price || 0) * 0.85) / 10) : 378,
+        quantity: it.quantity || it.qty || 1,
+        unit_price: Number(it.unit_price || it.price || 0),
+        discount_percent: Number(it.discount_percent || 0),
+        discount_amount: Number(it.discount_amount || 0),
+        gst_percent: 3.00,
+        gst_amount: Math.round(Number(it.subtotal || it.unit_price || 0) * 3.0 / 103.0),
+        total_price: Number(it.subtotal || (Number(it.quantity || 1) * Number(it.unit_price || it.price || 0)))
+      }));
+
+      return {
+        order_id: matched.order_id,
+        order_number: matched.order_number,
+        invoice_number: matched.order_number,
+        invoice_date: matched.created_at || new Date().toISOString(),
+        due_date: new Date(Date.now() + 14 * 86400000).toISOString(),
+        payment_status: matched.payment_status || 'PENDING',
+        order_status: matched.order_status || 'CONFIRMED',
+        payment_method: matched.payment_method === 'razorpay' ? 'Online (Razorpay / Instant Verification)' : 'Cash on Delivery (Due on Delivery)',
+        place_of_supply: 'Gujarat',
+        reverse_charge: 'No',
+        company: {
+          name: 'Silver House',
+          address: '217, Kanak Chamber, Gandhi Road',
+          city: 'Ahmedabad',
+          state: 'Gujarat',
+          pincode: '380058',
+          phone: '9537178477',
+          email: 'sunilag28017@gmail.com',
+          gstin: '24ADDPA8283B1Z1',
+          pan: 'ADDPA8283B',
+          upi_id: '9537178477@upi'
+        },
+        billing: {
+          name: matched.customer_name || 'Valued Patron',
+          address: matched.delivery_address || 'Registered Delivery Address',
+          phone: matched.customer_phone || '',
+          email: matched.customer_email || '',
+          gstin: null
+        },
+        shipping: {
+          name: matched.customer_name || 'Valued Patron',
+          address: matched.delivery_address || 'Registered Delivery Address',
+          phone: matched.customer_phone || '',
+          email: matched.customer_email || ''
+        },
+        items: items.length > 0 ? items : [{
+          s_no: 1,
+          item_description: 'Artisanal 925 Sterling Silver Creation',
+          category_name: 'Jewelry',
+          purity: '92.5 Sterling Silver',
+          net_weight_gm: 10,
+          making_charges: 210,
+          metal_rate_per_gm: 378,
+          quantity: 1,
+          unit_price: finalAmount,
+          discount_percent: 0,
+          discount_amount: 0,
+          gst_percent: 3,
+          gst_amount: Math.round(finalAmount * 3.0 / 103.0),
+          total_price: finalAmount
+        }],
+        terms: [
+          'Goods once sold will not be returned or exchanged without original cash memo/invoice.',
+          'Precious metal value will be calculated based on pure weight & prevailing silver market rate on transaction date.',
+          'Making charges, wastage, and statutory taxes are non-refundable in exchange or buyback.',
+          'All articles are guaranteed genuine and BIS hallmarked 92.5% Sterling Silver.',
+          'Subject to Ahmedabad jurisdiction only.'
+        ],
+        subtotal: totalAmount,
+        discount_amount: discount,
+        rounded_off: 0,
+        final_payable: finalAmount,
+        amount_in_words: convertNumberToIndianWordsClient(finalAmount)
+      };
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const applyInvoiceData = (invData) => {
+    setInvoice(invData);
+
+    // Generate dynamic UPI QR Code
+    const upiId = invData.company?.upi_id || '9537178477@upi';
+    const payeeName = invData.company?.name || 'Silver House';
+    const orderNum = invData.order_number || orderIdentifier;
+    const amount = invData.final_payable || 0;
+
+    const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent('Invoice ' + orderNum)}`;
+
+    QRCode.toDataURL(upiUri, {
+      margin: 1,
+      width: 140,
+      color: {
+        dark: '#000000',
+        light: '#ffffff'
+      }
+    })
+      .then(url => {
+        setQrCodeUrl(url);
+      })
+      .catch(qrErr => {
+        console.warn('[Invoice] QR code generation error:', qrErr);
+      });
+
+    // Auto-trigger PDF download or print if requested
+    if (autoPrint) {
+      setTimeout(() => {
+        handleDownloadPdf(invData);
+      }, 700);
+    }
+  };
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPdf = (activeInv = invoice) => {
+    const element = document.getElementById('silverhouse-printable-invoice');
+    if (!element) {
+      window.print();
+      return;
+    }
+
+    setDownloading(true);
+    const invoiceNum = activeInv?.invoice_number || activeInv?.order_number || String(orderIdentifier || 'invoice').replace(/^#/, '');
+
+    const opt = {
+      margin: [6, 6, 6, 6],
+      filename: `SilverHouse-Invoice-${invoiceNum}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf()
+      .set(opt)
+      .from(element)
+      .save()
+      .then(() => {
+        setDownloading(false);
+      })
+      .catch(err => {
+        console.warn('[Invoice] html2pdf generation notice, falling back to print dialog:', err);
+        setDownloading(false);
+        window.print();
+      });
   };
 
   const formatDate = (dateStr) => {
@@ -111,15 +327,17 @@ export default function OrderInvoiceModal({
     });
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-4 print:p-0 print:bg-white print:static print:overflow-visible">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-4 print:p-0 print:bg-white print:static print:overflow-visible">
       
       {/* Print-specific style rules */}
       <style>{`
         @media print {
           @page {
             size: A4 portrait;
-            margin: 8mm 8mm 8mm 8mm;
+            margin: 6mm 6mm 6mm 6mm;
           }
           body {
             background: white !important;
@@ -127,7 +345,6 @@ export default function OrderInvoiceModal({
             margin: 0 !important;
             padding: 0 !important;
           }
-          /* Hide all non-printable elements */
           body * {
             visibility: hidden;
           }
@@ -149,13 +366,6 @@ export default function OrderInvoiceModal({
           .no-print {
             display: none !important;
           }
-          table {
-            page-break-inside: auto;
-          }
-          tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
-          }
         }
       `}</style>
 
@@ -168,31 +378,40 @@ export default function OrderInvoiceModal({
             <FileText className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
               <h3 className="font-bold text-sm tracking-wide">Official Tax Invoice / Bill</h3>
-              <p className="text-[11px] text-slate-400">Order #{orderIdentifier} • BIS Hallmarked 92.5 Sterling Silver</p>
+              <p className="text-[11px] text-slate-400">Order #{String(orderIdentifier || '').replace(/^#/, '')} • Pure 925 Hallmarked Silver</p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
             <button
               type="button"
-              onClick={handlePrint}
-              disabled={loading || !!error}
+              onClick={() => handleDownloadPdf()}
+              disabled={loading || !!error || downloading}
               className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer shadow-sm"
-              title="Print Bill or Save as PDF"
+              title="Download official PDF file directly to your device"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print / Save PDF</span>
+              {downloading ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Generating PDF...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Bill (PDF)</span>
+                </>
+              )}
             </button>
 
             <button
               type="button"
               onClick={handlePrint}
               disabled={loading || !!error}
-              className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer shadow-sm"
-              title="Download official bill copy"
+              className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer border border-slate-700"
+              title="Print Bill or Save via Print Dialog"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download Bill</span>
+              <Printer className="w-3.5 h-3.5 text-amber-400" />
+              <span>Print</span>
             </button>
 
             <button
@@ -212,7 +431,7 @@ export default function OrderInvoiceModal({
           {loading && (
             <div className="py-20 text-center space-y-3 bg-white rounded-xl shadow-xs border border-slate-200">
               <RefreshCw className="w-8 h-8 text-amber-600 animate-spin mx-auto" />
-              <p className="text-sm font-semibold text-slate-700">Generating Official Tax Invoice from Database...</p>
+              <p className="text-sm font-semibold text-slate-700">Retrieving Tax Invoice from Database...</p>
               <p className="text-xs text-slate-400">Fetching company metadata, customer address, hallmarking details & items</p>
             </div>
           )}

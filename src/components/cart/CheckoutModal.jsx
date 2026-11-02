@@ -1363,6 +1363,17 @@ export default function CheckoutModal({
         </div>
 
       </div>
+
+      {/* Official Tax Invoice & Order Bill Modal */}
+      <OrderInvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => {
+          setIsInvoiceModalOpen(false);
+          setInvoiceAutoPrint(false);
+        }}
+        orderIdentifier={orderId}
+        autoPrint={invoiceAutoPrint}
+      />
     </div>
   );
 }

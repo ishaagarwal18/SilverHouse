@@ -3153,14 +3153,15 @@ function convertNumberToIndianWords(amount) {
 // GET /api/orders/invoice/:orderIdentifier & GET /api/orders/:orderId/invoice
 app.get(['/api/orders/invoice/:orderIdentifier', '/api/orders/:orderId/invoice'], async (req, res) => {
     try {
-        const orderIdentifier = req.params.orderIdentifier || req.params.orderId;
-        if (!orderIdentifier) {
+        const rawIdentifier = req.params.orderIdentifier || req.params.orderId;
+        if (!rawIdentifier) {
             return res.status(400).json({ success: false, error: 'Order identifier is required' });
         }
+        const orderIdentifier = String(rawIdentifier).trim().replace(/^#/, '');
 
         const pool = await poolPromise;
         const result = await pool.request()
-            .input('OrderIdentifier', sql.NVarChar(100), String(orderIdentifier).trim())
+            .input('OrderIdentifier', sql.NVarChar(100), orderIdentifier)
             .execute('dbo.SP_GetOrderInvoice');
 
         const row = result.recordset && result.recordset[0];

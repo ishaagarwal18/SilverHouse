@@ -822,6 +822,12 @@ export default function OrdersPage({ onTriggerToast }) {
         </div>
       )}
 
+      {/* Official Tax Invoice & Order Bill Modal */}
+      <OrderInvoiceModal
+        isOpen={Boolean(selectedInvoiceOrder)}
+        onClose={() => setSelectedInvoiceOrder(null)}
+        orderIdentifier={selectedInvoiceOrder}
+      />
     </div>
   );
 }
