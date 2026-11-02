@@ -4,10 +4,11 @@ import {
   X, CheckCircle2, ShieldCheck, CreditCard, Smartphone, Building2, 
   Truck, ArrowRight, Lock, Sparkles, MapPin, Plus, Home, Tag,
   Copy, Check, Phone, Mail, User, Scale, Award, Calendar, ChevronRight,
-  Eye, EyeOff, AlertCircle, RefreshCw
+  Eye, EyeOff, AlertCircle, RefreshCw, FileText, Printer, Download
 } from 'lucide-react';
 import { postApiData, fetchUserAddresses, addUserAddress, getGuestToken } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import OrderInvoiceModal from '../invoice/OrderInvoiceModal';
 import { createRazorpayOrder, verifyRazorpayPayment, fetchRazorpayConfig, launchRazorpayCheckout } from '../../services/razorpay';
 
 export default function CheckoutModal({
@@ -31,6 +32,8 @@ export default function CheckoutModal({
   const [copiedOrderId, setCopiedOrderId] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [isGuestCheckout, setIsGuestCheckout] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [invoiceAutoPrint, setInvoiceAutoPrint] = useState(false);
 
   // Razorpay Gateway State
   const [razorpayConfig, setRazorpayConfig] = useState({ isConfigured: false, keyId: '' });
@@ -74,6 +77,8 @@ export default function CheckoutModal({
       setIsProcessingRazorpay(false);
       setErrorMessage('');
       setIsGuestCheckout(false);
+      setIsInvoiceModalOpen(false);
+      setInvoiceAutoPrint(false);
 
       fetchRazorpayConfig().then(cfg => {
         if (cfg && cfg.success) {
@@ -1317,6 +1322,31 @@ export default function CheckoutModal({
               {/* Action Buttons */}
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
+                  type="button"
+                  onClick={() => {
+                    setInvoiceAutoPrint(false);
+                    setIsInvoiceModalOpen(true);
+                  }}
+                  className="w-full sm:w-auto px-5 py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md inline-flex items-center justify-center space-x-2"
+                >
+                  <FileText className="w-4 h-4 text-amber-400" />
+                  <span>View Bill</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInvoiceAutoPrint(true);
+                    setIsInvoiceModalOpen(true);
+                  }}
+                  className="w-full sm:w-auto px-5 py-3.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md inline-flex items-center justify-center space-x-2"
+                >
+                  <Printer className="w-4 h-4 text-white" />
+                  <span>Download Bill (PDF)</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => {
                     handleClose();
                     onNavigateHome();

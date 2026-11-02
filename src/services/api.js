@@ -1059,3 +1059,30 @@ export async function submitProductReview({ productId, userId = null, star = 5, 
   }
 }
 
+
+
+/**
+ * Fetches official order tax invoice/bill data dynamically from the database.
+ * @param {string|number} orderIdentifier - Order ID or Order Number (e.g. 'SH-651606' or 63)
+ * @returns {Promise<{success: boolean, invoice?: object, error?: string}>}
+ */
+export async function fetchOrderInvoiceApi(orderIdentifier) {
+  try {
+    if (!orderIdentifier) {
+      return { success: false, error: 'Order identifier is required' };
+    }
+    const token = getAuthToken();
+    const headers = { 'Accept': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE_URL}/orders/invoice/${encodeURIComponent(orderIdentifier)}`, {
+      method: 'GET',
+      headers
+    });
+    const json = await res.json();
+    return json;
+  } catch (err) {
+    console.error('[API Service] fetchOrderInvoiceApi error:', err.message);
+    return { success: false, error: err.message };
+  }
+}

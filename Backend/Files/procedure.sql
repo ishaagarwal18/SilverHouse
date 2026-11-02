@@ -3317,3 +3317,158 @@ BEGIN
 END;
 GO
 
+
+
+-- =========================================================================
+-- PROCEDURE 20: SP_GetOrderInvoice
+-- Generates dynamic official tax invoice/bill data for an order
+-- Returns company metadata, customer billing/shipping, line items, and terms
+-- =========================================================================
+CREATE OR ALTER PROCEDURE dbo.SP_GetOrderInvoice
+    @OrderIdentifier NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 1. Identify Target Order by integer order_id or string order_number
+    DECLARE @TargetOrderId INT = TRY_CAST(@OrderIdentifier AS INT);
+    IF @TargetOrderId IS NULL OR NOT EXISTS (SELECT 1 FROM dbo.orders WHERE order_id = @TargetOrderId)
+    BEGIN
+        SELECT TOP 1 @TargetOrderId = order_id 
+        FROM dbo.orders 
+        WHERE order_number = @OrderIdentifier;
+    END
+
+    IF @TargetOrderId IS NULL
+    BEGIN
+        SELECT 
+            'ORDER_NOT_FOUND' AS [status],
+            'Order not found for identifier ' + ISNULL(@OrderIdentifier, 'NULL') AS [error];
+        RETURN;
+    END
+
+    -- 2. Return Complete Invoice Payload
+    SELECT
+        -- Order Identifiers & Metadata
+        o.order_id,
+        o.order_number,
+        o.created_at AS invoice_date,
+        DATEADD(day, 14, o.created_at) AS due_date,
+        ISNULL(o.payment_status, 'PAID') AS payment_status,
+        ISNULL(o.order_status, 'CONFIRMED') AS order_status,
+        CASE 
+            WHEN o.payment_status = 'PAID' THEN 'Online (Razorpay / Instant Verification)'
+            ELSE 'Cash on Delivery (Due on Delivery)'
+        END AS payment_method,
+        o.total_amount,
+        ISNULL(o.discount_amount, 0.00) AS discount_amount,
+        o.final_payable,
+        
+        -- Place of Supply (e.g. Gujarat or customer destination state)
+        ISNULL(NULLIF(a.[state], ''), ISNULL(c.[state], 'Gujarat')) AS place_of_supply,
+        'No' AS reverse_charge,
+
+        -- Company Details (from dbo.company)
+        ISNULL(c.[name], 'Silver House') AS company_name,
+        ISNULL(c.[address], '217, Kanak Chamber, Gandhi Road') AS company_address,
+        ISNULL(c.city, 'Ahmedabad') AS company_city,
+        ISNULL(c.[state], 'Gujarat') AS company_state,
+        ISNULL(c.pincode, '380058') AS company_pincode,
+        ISNULL(c.contact_number, '9537178477') AS company_phone,
+        ISNULL(c.email, 'sunilag28017@gmail.com') AS company_email,
+        ISNULL(c.gst_no, '24ADDPA8283B1Z1') AS company_gstin,
+        ISNULL(c.pan_card, 'ADDPA8283B') AS company_pan,
+        '9537178477@upi' AS upi_id,
+
+        -- Terms & Conditions JSON
+        (
+            SELECT [term] FROM (
+                VALUES 
+                    (1, 'Goods once sold will not be returned or exchanged without original cash memo/invoice.'),
+                    (2, 'Precious metal value will be calculated based on pure weight & prevailing silver market rate on transaction date.'),
+                    (3, 'Making charges, wastage, and statutory taxes are non-refundable in exchange or buyback.'),
+                    (4, 'All articles are guaranteed genuine and BIS hallmarked 92.5% Sterling Silver.'),
+                    (5, 'Subject to Ahmedabad jurisdiction only.')
+            ) AS T(seq, [term])
+            ORDER BY seq ASC
+            FOR JSON PATH
+        ) AS terms_json,
+
+        -- Customer / Billing Details (from dbo.orders + dbo.[user] + dbo.address)
+        COALESCE(NULLIF(o.customer_name, ''), NULLIF(u.full_name, ''), NULLIF(a.recipient_name, ''), 'Valued Patron') AS billing_name,
+        CONCAT(
+            COALESCE(a.Block + ', ', ''),
+            COALESCE(a.street + ', ', ''),
+            COALESCE(a.area + ', ', ''),
+            COALESCE(a.city + ', ', ''),
+            COALESCE(a.[state] + ' ', ''),
+            COALESCE(a.pincode, '')
+        ) AS billing_address,
+        COALESCE(NULLIF(o.customer_phone, ''), NULLIF(u.phone, ''), '') AS billing_phone,
+        COALESCE(NULLIF(o.customer_email, ''), '') AS billing_email,
+        u.gst_number AS billing_gstin,
+
+        -- Shipping Details
+        COALESCE(NULLIF(a.recipient_name, ''), NULLIF(o.customer_name, ''), NULLIF(u.full_name, ''), 'Valued Patron') AS shipping_name,
+        CONCAT(
+            COALESCE(a.Block + ', ', ''),
+            COALESCE(a.street + ', ', ''),
+            COALESCE(a.area + ', ', ''),
+            COALESCE(a.city + ', ', ''),
+            COALESCE(a.[state] + ' ', ''),
+            COALESCE(a.pincode, '')
+        ) AS shipping_address,
+        COALESCE(NULLIF(o.customer_phone, ''), NULLIF(u.phone, ''), '') AS shipping_phone,
+        COALESCE(NULLIF(o.customer_email, ''), '') AS shipping_email,
+
+        -- Items Array (with purity, net weight, making charges, metal rate, GST)
+        (
+            SELECT 
+                ROW_NUMBER() OVER(ORDER BY oi.order_item_id ASC) AS s_no,
+                oi.order_item_id,
+                oi.product_id,
+                p.title AS item_description,
+                p.category_id,
+                cat.[name] AS category_name,
+                ISNULL(p.purity, '92.5 Sterling Silver') AS purity,
+                
+                -- Net weight in grams
+                TRY_CAST(REPLACE(REPLACE(LOWER(ISNULL(p.weight, '10')), 'gm', ''), 'g', '') AS DECIMAL(10,2)) AS net_weight_gm,
+                
+                -- Making charges
+                ISNULL(p.labour_cost, 0.00) AS making_charges,
+
+                -- Metal Rate / Gm: (Unit Price - Making Charges) / Weight
+                CASE 
+                    WHEN TRY_CAST(REPLACE(REPLACE(LOWER(ISNULL(p.weight, '10')), 'gm', ''), 'g', '') AS DECIMAL(10,2)) > 0
+                    THEN ROUND((oi.unit_price - ISNULL(p.labour_cost, 0)) / TRY_CAST(REPLACE(REPLACE(LOWER(ISNULL(p.weight, '10')), 'gm', ''), 'g', '') AS DECIMAL(10,2)), 2)
+                    ELSE oi.unit_price
+                END AS metal_rate_per_gm,
+
+                oi.quantity,
+                oi.unit_price,
+                ISNULL(oi.discount_percent, 0.00) AS discount_percent,
+                
+                -- Discount amount in INR
+                ROUND((oi.unit_price * (ISNULL(oi.discount_percent, 0.00) / 100.0)) * oi.quantity, 2) AS discount_amount,
+
+                -- 3% GST (1.5% CGST + 1.5% SGST or 3% IGST for Silver/Jewelry)
+                3.00 AS gst_percent,
+                ROUND((oi.subtotal * 3.0 / 103.0), 2) AS gst_amount,
+
+                oi.subtotal AS total_price
+            FROM dbo.order_item oi
+            INNER JOIN dbo.product p ON oi.product_id = p.product_id
+            LEFT JOIN dbo.category cat ON p.category_id = cat.category_id
+            WHERE oi.order_id = o.order_id
+            FOR JSON PATH
+        ) AS items_json
+    FROM dbo.orders o
+    LEFT JOIN dbo.[user] u ON o.user_id = u.user_id
+    LEFT JOIN dbo.address a ON o.address_id = a.address_id
+    OUTER APPLY (
+        SELECT TOP 1 * FROM dbo.company ORDER BY company_id ASC
+    ) c
+    WHERE o.order_id = @TargetOrderId;
+END;
+GO

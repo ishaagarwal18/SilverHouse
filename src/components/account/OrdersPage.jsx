@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { postApiData, fetchCustomerCustomOrdersApi, payCustomOrderApi } from '../../services/api';
+import OrderInvoiceModal from '../invoice/OrderInvoiceModal';
 import { createCustomOrderRazorpayOrder, launchRazorpayCheckout } from '../../services/razorpay';
 import { 
   Package, ArrowLeft, ArrowRight, Clock, MapPin, CheckCircle2, 
   AlertCircle, ShieldCheck, Sparkles, ExternalLink, RefreshCw, ShoppingBag,
-  Crown, X, Eye, Check, ChevronRight, MessageSquare
+  Crown, X, Eye, Check, ChevronRight, MessageSquare, FileText, Printer
 } from 'lucide-react';
 
 export default function OrdersPage({ onTriggerToast }) {
@@ -21,6 +22,7 @@ export default function OrdersPage({ onTriggerToast }) {
   const [refreshing, setRefreshing] = useState(false);
   const [payingOrderId, setPayingOrderId] = useState(null);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState(null);
 
   const loadAllOrders = async () => {
     setRefreshing(true);
@@ -589,9 +591,20 @@ export default function OrdersPage({ onTriggerToast }) {
                                     )}
                                   </button>
                                 ) : (
-                                  <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-700 dark:text-emerald-300 font-bold text-xs">
-                                    <ShieldCheck className="w-4 h-4" />
-                                    <span>Confirmed & Handcrafting</span>
+                                  <div className="flex items-center space-x-2">
+                                    <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-700 dark:text-emerald-300 font-bold text-xs">
+                                      <ShieldCheck className="w-4 h-4" />
+                                      <span>Confirmed & Handcrafting</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedInvoiceOrder(ord.order_number || ord.order_id)}
+                                      className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center space-x-1"
+                                      title="View Official Invoice / Bill"
+                                    >
+                                      <FileText className="w-3.5 h-3.5 text-amber-400" />
+                                      <span>Invoice</span>
+                                    </button>
                                   </div>
                                 )}
                               </div>
@@ -751,6 +764,15 @@ export default function OrdersPage({ onTriggerToast }) {
                                   ₹{finalAmount.toLocaleString('en-IN')}
                                 </span>
                               </div>
+
+                              <button
+                                onClick={() => setSelectedInvoiceOrder(ord.order_number || ord.order_id)}
+                                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold transition-all cursor-pointer shadow-2xs inline-flex items-center space-x-1.5"
+                                title="View and Download Official Tax Invoice / Bill"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Invoice / Bill</span>
+                              </button>
 
                               <button
                                 onClick={() => {

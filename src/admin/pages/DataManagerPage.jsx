@@ -6,6 +6,7 @@ import { ENTITY_FORM_SCHEMAS, getEntityConfig, IMPORTABLE_ENTITIES, ORDER_DECISI
 import { useAdminUI } from '../context/AdminUIContext';
 import { importRecordsFromFile } from '../lib/importRecords';
 import { exportProductsToExcel } from '../lib/exportProductsExcel';
+import OrderInvoiceModal from '../../components/invoice/OrderInvoiceModal';
 import {
   Button, Card, ConfirmDeleteModal, DecisionBadge, EmptyState, Field, ImageLightbox, LoadingBlock,
   Modal, ModalBody, PageHeader, PaymentBadge, PillGroup, Spinner
@@ -143,6 +144,7 @@ function DataManager({ entity }) {
   const [lightbox, setLightbox] = useState(null); // { images, index }
   const [textPreview, setTextPreview] = useState(null);
   const [categoryPreviewCtx, setCategoryPreviewCtx] = useState(null); // { festivalId, festivalName, categories: [] }
+  const [adminInvoiceOrder, setAdminInvoiceOrder] = useState(null);
   const [importMode, setImportMode] = useState('RESTOCK');
   const [importing, setImporting] = useState(false);
   const [orderStatusFilter, setOrderStatusFilter] = useState(() => (searchParams.get('status') || 'ALL').toUpperCase());
@@ -1619,6 +1621,17 @@ function DataManager({ entity }) {
                         ))}
                         <td className="sticky right-0 whitespace-nowrap bg-ad-surface px-2.5 py-2 text-right">
                           <div className="inline-flex gap-1.5">
+                            {entity === 'orders' && (
+                              <button 
+                                type="button" 
+                                onClick={() => setAdminInvoiceOrder(row.order_number || idVal)} 
+                                className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-850 px-2 py-1 text-xs font-semibold text-amber-400 hover:bg-slate-900 cursor-pointer" 
+                                title="View & Download Official Tax Bill"
+                              >
+                                <Receipt className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Bill</span>
+                              </button>
+                            )}
                             {entity !== 'product_image' && (
                               <button type="button" onClick={() => openEdit(idVal)} className="inline-flex items-center gap-1 rounded-md border border-ad-primary/30 bg-ad-primary/10 px-2 py-1 text-xs font-semibold text-ad-primary hover:bg-ad-primary hover:text-white cursor-pointer" aria-label={`Edit record ${idVal}`}>
                                 <Pencil className="w-3.5 h-3.5" />
@@ -1667,6 +1680,15 @@ function DataManager({ entity }) {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setAdminInvoiceOrder(row.order_number || idVal)}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-bold text-amber-400 hover:bg-black transition-colors cursor-pointer shadow-xs"
+                                    title="View & Download Official Tax Bill"
+                                  >
+                                    <Receipt className="w-3.5 h-3.5" />
+                                    <span>Official Invoice / Bill</span>
+                                  </button>
                                   <button
                                     type="button"
                                     onClick={() => setOrderItemModal({ mode: 'ADD', orderId: idVal })}
@@ -2259,6 +2281,13 @@ function DataManager({ entity }) {
           </div>
         </div>
       </Modal>
+
+      {/* Official Tax Invoice & Order Bill Modal for Admin */}
+      <OrderInvoiceModal
+        isOpen={Boolean(adminInvoiceOrder)}
+        onClose={() => setAdminInvoiceOrder(null)}
+        orderIdentifier={adminInvoiceOrder}
+      />
     </div>
   );
 }

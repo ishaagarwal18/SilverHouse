@@ -3089,6 +3089,177 @@ app.use((err, req, res, next) => {
     next();
 });
 
+
+// =========================================================================
+// OFFICIAL TAX INVOICE & ORDER BILL GENERATION APIS
+// Dynamically fetched strictly from DB via dbo.SP_GetOrderInvoice
+// Zero static data - includes company details, customer, items, taxes & terms
+// =========================================================================
+
+function convertNumberToIndianWords(amount) {
+    if (isNaN(amount) || amount === null || amount === undefined) return '';
+    const num = Math.floor(Math.abs(Number(amount)));
+    const paise = Math.round((Math.abs(Number(amount)) - num) * 100);
+
+    if (num === 0 && paise === 0) return 'Rs. Zero - Only';
+
+    const singleDigits = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+    function twoDigits(n) {
+        if (n < 20) return singleDigits[n];
+        const unit = n % 10;
+        return tens[Math.floor(n / 10)] + (unit ? ' ' + singleDigits[unit] : '');
+    }
+
+    function threeDigits(n) {
+        let str = '';
+        if (n >= 100) {
+            str += singleDigits[Math.floor(n / 100)] + ' Hundred';
+            n = n % 100;
+            if (n > 0) str += ' ';
+        }
+        if (n > 0) {
+            str += twoDigits(n);
+        }
+        return str;
+    }
+
+    let words = '';
+    let remaining = num;
+
+    const crore = Math.floor(remaining / 10000000);
+    remaining %= 10000000;
+    const lakh = Math.floor(remaining / 100000);
+    remaining %= 100000;
+    const thousand = Math.floor(remaining / 1000);
+    remaining %= 1000;
+    const remainder = remaining;
+
+    if (crore > 0) words += threeDigits(crore) + ' Crore ';
+    if (lakh > 0) words += twoDigits(lakh) + ' Lakh ';
+    if (thousand > 0) words += twoDigits(thousand) + ' Thousand ';
+    if (remainder > 0) words += threeDigits(remainder);
+
+    words = words.trim();
+    let result = 'Rs. ' + words;
+    if (paise > 0) {
+        result += ' and ' + twoDigits(paise) + ' Paise';
+    }
+    result += ' - Only';
+    return result;
+}
+
+// GET /api/orders/invoice/:orderIdentifier & GET /api/orders/:orderId/invoice
+app.get(['/api/orders/invoice/:orderIdentifier', '/api/orders/:orderId/invoice'], async (req, res) => {
+    try {
+        const orderIdentifier = req.params.orderIdentifier || req.params.orderId;
+        if (!orderIdentifier) {
+            return res.status(400).json({ success: false, error: 'Order identifier is required' });
+        }
+
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('OrderIdentifier', sql.NVarChar(100), String(orderIdentifier).trim())
+            .execute('dbo.SP_GetOrderInvoice');
+
+        const row = result.recordset && result.recordset[0];
+        if (!row || row.status === 'ORDER_NOT_FOUND') {
+            return res.status(404).json({ success: false, error: `Order '${orderIdentifier}' not found` });
+        }
+
+        // Parse items JSON from Stored Procedure
+        let items = [];
+        try {
+            if (row.items_json) {
+                items = typeof row.items_json === 'string' ? JSON.parse(row.items_json) : row.items_json;
+            }
+        } catch (e) {
+            console.warn('[Invoice] Error parsing items_json:', e.message);
+            items = [];
+        }
+
+        // Parse terms JSON from Stored Procedure
+        let terms = [];
+        try {
+            if (row.terms_json) {
+                const parsedTerms = typeof row.terms_json === 'string' ? JSON.parse(row.terms_json) : row.terms_json;
+                terms = Array.isArray(parsedTerms) ? parsedTerms.map(t => (t && t.term ? t.term : String(t))) : [];
+            }
+        } catch (e) {
+            console.warn('[Invoice] Error parsing terms_json:', e.message);
+            terms = [];
+        }
+
+        const finalPayable = Number(row.final_payable || row.total_amount || 0);
+        const totalAmount = Number(row.total_amount || finalPayable);
+        const discountAmount = Number(row.discount_amount || 0);
+        const roundedOff = Number((finalPayable - (totalAmount - discountAmount)).toFixed(2));
+
+        // Generate Indian numbering currency words
+        const amountInWords = convertNumberToIndianWords(finalPayable);
+
+        const invoice = {
+            order_id: row.order_id,
+            order_number: row.order_number,
+            invoice_number: row.order_number,
+            invoice_date: row.invoice_date,
+            due_date: row.due_date,
+            payment_status: row.payment_status,
+            order_status: row.order_status,
+            payment_method: row.payment_method,
+            place_of_supply: row.place_of_supply || 'Gujarat',
+            reverse_charge: row.reverse_charge || 'No',
+
+            company: {
+                name: row.company_name,
+                address: row.company_address,
+                city: row.company_city,
+                state: row.company_state,
+                pincode: row.company_pincode,
+                phone: row.company_phone,
+                email: row.company_email,
+                gstin: row.company_gstin,
+                pan: row.company_pan,
+                upi_id: row.upi_id || '9537178477@upi'
+            },
+
+            billing: {
+                name: row.billing_name,
+                address: row.billing_address,
+                phone: row.billing_phone,
+                email: row.billing_email,
+                gstin: row.billing_gstin
+            },
+
+            shipping: {
+                name: row.shipping_name,
+                address: row.shipping_address,
+                phone: row.shipping_phone,
+                email: row.shipping_email
+            },
+
+            items,
+            terms,
+
+            subtotal: totalAmount,
+            discount_amount: discountAmount,
+            rounded_off: roundedOff,
+            final_payable: finalPayable,
+            amount_in_words: amountInWords
+        };
+
+        return res.status(200).json({
+            success: true,
+            invoice
+        });
+    } catch (err) {
+        console.error('[Invoice API Error]:', err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
