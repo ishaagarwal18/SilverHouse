@@ -38,7 +38,7 @@ export default function AddressPage({ onTriggerToast }) {
     street: '',
     area: '',
     city: '',
-    state: 'Delhi',
+    state: 'Gujarat',
     pincode: '',
     country: 'India'
   });
@@ -160,7 +160,7 @@ export default function AddressPage({ onTriggerToast }) {
           street: '',
           area: '',
           city: '',
-          state: 'Delhi',
+          state: 'Gujarat',
           pincode: '',
           country: 'India'
         });

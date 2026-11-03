@@ -11,6 +11,15 @@ import { useAuth } from '../../context/AuthContext';
 import OrderInvoiceModal from '../invoice/OrderInvoiceModal';
 import { createRazorpayOrder, verifyRazorpayPayment, fetchRazorpayConfig, launchRazorpayCheckout } from '../../services/razorpay';
 
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Delhi', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh',
+  'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra',
+  'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha',
+  'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana',
+  'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+];
+
 export default function CheckoutModal({
   isOpen,
   onClose,
@@ -93,10 +102,13 @@ export default function CheckoutModal({
     fullName: '',
     phone: '',
     email: '',
-    pincode: '',
-    address: '',
+    Block: '',
+    street: '',
+    area: '',
     city: '',
-    state: 'Delhi',
+    state: 'Gujarat',
+    pincode: '',
+    country: 'India',
     addressType: 'Home'
   });
 
@@ -178,11 +190,12 @@ export default function CheckoutModal({
         };
       }
     }
+    const fullAddr = `${formData.Block ? formData.Block + ', ' : ''}${formData.street ? formData.street + ', ' : ''}${formData.area ? formData.area + ', ' : ''}${formData.city}, ${formData.state} - ${formData.pincode}`;
     return {
       fullName: formData.fullName || user?.fullName || 'Valued Customer',
       phone: formData.phone || user?.phone || '',
       email: formData.email || user?.email || '',
-      fullAddress: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
+      fullAddress: fullAddr,
       addressId: selectedAddressId || null,
       addressType: formData.addressType || 'Home'
     };
@@ -256,14 +269,12 @@ export default function CheckoutModal({
     // If entering a new address or guest checkout, validate fields
     if (isAddingNewAddress || !selectedAddressId || !isAuthenticated) {
       if (isGuestCheckout) {
-        // In guest checkout, credentials (email/phone/name) are NOT required.
-        // Only the physical shipping destination is required so we know where to send the parcel.
-        if (!formData.address.trim() || !formData.city.trim() || !formData.pincode.trim()) {
-          setErrorMessage('Please provide your Street Address, City, and 6-digit PIN code.');
+        if (!formData.Block.trim() || !formData.street.trim() || !formData.area.trim() || !formData.city.trim() || !formData.state.trim() || !formData.pincode.trim()) {
+          setErrorMessage('Please fill in Block/Flat No., Street, Area, City, State, and 6-digit PIN code.');
           return;
         }
       } else {
-        if (!formData.fullName.trim() || !formData.phone.trim() || !formData.address.trim() || !formData.city.trim() || !formData.pincode.trim()) {
+        if (!formData.fullName.trim() || !formData.phone.trim() || !formData.Block.trim() || !formData.street.trim() || !formData.area.trim() || !formData.city.trim() || !formData.state.trim() || !formData.pincode.trim()) {
           setErrorMessage('Please fill out all delivery address fields completely.');
           return;
         }
@@ -277,27 +288,17 @@ export default function CheckoutModal({
       const currentUserId = (isAuthenticated && user) ? (user.userId || user.user_id || user.id) : null;
       if (currentUserId) {
         try {
-          let blockVal = '';
-          let streetVal = formData.address.trim();
-          if (streetVal.includes(',')) {
-            const parts = streetVal.split(',');
-            blockVal = parts[0].trim();
-            streetVal = parts.slice(1).join(',').trim() || blockVal;
-          } else {
-            blockVal = streetVal.slice(0, 50);
-          }
-
           const newAddr = await addUserAddress({
             userId: currentUserId,
             address_name: formData.addressType || 'Home',
             recipient_name: formData.fullName.trim() || user?.fullName || 'Valued Customer',
-            Block: blockVal || 'Unit/House',
-            street: streetVal || 'Street Address',
-            area: formData.city.trim() || 'Locality',
-            city: formData.city.trim() || 'Ahmedabad',
-            state: formData.state || 'Gujarat',
+            Block: formData.Block.trim(),
+            street: formData.street.trim(),
+            area: formData.area.trim(),
+            city: formData.city.trim(),
+            state: formData.state.trim() || 'Gujarat',
             pincode: formData.pincode.trim(),
-            country: 'India'
+            country: formData.country?.trim() || 'India'
           });
           const addrId = newAddr?.address_id || (Array.isArray(newAddr?.data) ? newAddr.data[0]?.address_id : newAddr?.data?.address_id);
           if (addrId) {
@@ -384,27 +385,17 @@ export default function CheckoutModal({
     let finalAddressId = effective.addressId || selectedAddressId;
     if (!finalAddressId && effectiveUserId) {
       try {
-        let blockVal = '';
-        let streetVal = (formData.address?.trim() || effective.fullAddress || '').trim();
-        if (streetVal.includes(',')) {
-          const parts = streetVal.split(',');
-          blockVal = parts[0].trim();
-          streetVal = parts.slice(1).join(',').trim() || blockVal;
-        } else {
-          blockVal = streetVal.slice(0, 50);
-        }
-
         const newAddr = await addUserAddress({
           userId: effectiveUserId,
           address_name: effective.addressType || formData.addressType || 'Home',
           recipient_name: patronName,
-          Block: blockVal || 'Unit/House',
-          street: streetVal || 'Street Address',
-          area: formData.city?.trim() || 'Locality',
+          Block: formData.Block?.trim() || 'Unit/House',
+          street: formData.street?.trim() || 'Street Address',
+          area: formData.area?.trim() || formData.city?.trim() || 'Locality',
           city: formData.city?.trim() || 'Ahmedabad',
-          state: formData.state || 'Gujarat',
+          state: formData.state?.trim() || 'Gujarat',
           pincode: formData.pincode?.trim() || '380001',
-          country: 'India'
+          country: formData.country?.trim() || 'India'
         });
         const addrId = newAddr?.address_id || (Array.isArray(newAddr?.data) ? newAddr.data[0]?.address_id : newAddr?.data?.address_id);
         if (addrId) {
@@ -923,19 +914,55 @@ export default function CheckoutModal({
                       </div>
                     </div>
 
+                    {/* Flat / House / Block */}
                     <div className="sm:col-span-2">
-                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">House / Flat No., Building & Street Address *</label>
+                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">
+                        Flat / House No. / Building / Block *
+                      </label>
                       <input
                         type="text"
-                        name="address"
+                        name="Block"
                         required
-                        value={formData.address}
+                        value={formData.Block}
                         onChange={handleInputChange}
-                        placeholder="e.g. Flat 402, Lotus Residency, MG Road"
+                        placeholder="e.g. Flat 402, Lotus Residency, Block C"
                         className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl px-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
                       />
                     </div>
 
+                    {/* Street Address / Road Name */}
+                    <div>
+                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">
+                        Street Address / Road Name *
+                      </label>
+                      <input
+                        type="text"
+                        name="street"
+                        required
+                        value={formData.street}
+                        onChange={handleInputChange}
+                        placeholder="e.g. MG Road, Near Silver Market"
+                        className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl px-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
+                      />
+                    </div>
+
+                    {/* Area / Locality / Landmark */}
+                    <div>
+                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">
+                        Area / Locality / Landmark *
+                      </label>
+                      <input
+                        type="text"
+                        name="area"
+                        required
+                        value={formData.area}
+                        onChange={handleInputChange}
+                        placeholder="e.g. Sector 15, Near Shiv Mandir"
+                        className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl px-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
+                      />
+                    </div>
+
+                    {/* City */}
                     <div>
                       <label className="font-bold text-[var(--th-text-main)] block mb-1.5">City *</label>
                       <input
@@ -944,11 +971,28 @@ export default function CheckoutModal({
                         required
                         value={formData.city}
                         onChange={handleInputChange}
-                        placeholder="e.g. New Delhi"
+                        placeholder="e.g. Ahmedabad"
                         className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl px-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors"
                       />
                     </div>
 
+                    {/* State */}
+                    <div>
+                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">State *</label>
+                      <select
+                        name="state"
+                        required
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl px-3 py-2.5 text-xs text-[var(--th-text-main)] outline-none transition-colors cursor-pointer"
+                      >
+                        {INDIAN_STATES.map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 6-Digit PIN Code */}
                     <div>
                       <label className="font-bold text-[var(--th-text-main)] block mb-1.5">6-Digit PIN Code *</label>
                       <input
@@ -958,8 +1002,20 @@ export default function CheckoutModal({
                         maxLength={6}
                         value={formData.pincode}
                         onChange={handleInputChange}
-                        placeholder="110001"
+                        placeholder="380001"
                         className="w-full bg-[var(--th-surface-alt)] border border-[var(--th-border)] focus:border-[var(--th-primary)] rounded-xl px-3.5 py-2.5 text-xs text-[var(--th-text-main)] outline-none font-mono transition-colors"
+                      />
+                    </div>
+
+                    {/* Country */}
+                    <div>
+                      <label className="font-bold text-[var(--th-text-main)] block mb-1.5">Country</label>
+                      <input
+                        type="text"
+                        name="country"
+                        disabled
+                        value="India"
+                        className="w-full bg-[var(--th-surface-alt)]/60 border border-[var(--th-border)] rounded-xl px-3.5 py-2.5 text-xs text-[var(--th-text-muted)] font-bold cursor-not-allowed outline-none"
                       />
                     </div>
                   </div>
