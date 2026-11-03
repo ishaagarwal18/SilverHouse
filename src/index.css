@@ -25,6 +25,10 @@
   --th-text-main: #142F37;
   --th-text-muted: #4F6B72;
 
+  /* Aliases used across components (were undefined -> text fell back to inherited/white) */
+  --th-text: var(--th-text-main);
+  --th-text-sub: var(--th-text-muted);
+
   --th-nav: #13343D;
   --th-nav-gradient: linear-gradient(135deg, #0E272E 0%, #13343D 50%, #1F4E5B 100%);
   --th-footer-gradient: linear-gradient(180deg, #13343D 0%, #0E272E 100%);
