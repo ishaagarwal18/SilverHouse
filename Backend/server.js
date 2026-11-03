@@ -142,7 +142,7 @@ function decodeToken(token) {
     try {
         const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
         if (!decoded || !decoded.userId) return null;
-        
+
         // Cryptographic verification if signature is present
         if (decoded.sig && decoded.iat) {
             const dataToSign = `${decoded.userId}:${decoded.role}:${decoded.phone}:${decoded.iat}`;
@@ -396,12 +396,12 @@ app.get('/api/festivals', async (req, res) => {
         if (!pool) {
             return res.status(500).json({ success: false, error: 'Database connection unavailable.' });
         }
-        
+
         const result = await pool.request().query(`
             SELECT id, name, shortName, description, primary_website_category, start_date, end_date
             FROM dbo.festival
         `);
-        
+
         return res.status(200).json({
             success: true,
             festivals: result.recordset
@@ -1171,19 +1171,13 @@ app.post('/api/payment/razorpay/verify', requireCustomerAuth, async (req, res) =
             }
         }
 
-        // Send WhatsApp confirmation notification
-        const customerPhone = orderValues.customer_phone || orderValues.phone;
-        const customerName = orderValues.customer_name || orderValues.name || 'Valued Patron';
-        const finalAmount = orderValues.final_payable || orderValues.total_amount || 0;
-
-        if (customerPhone) {
-            try {
-                const waMessage = `✨ *SilverHouse Artisanal Silver*\n\nNamaste ${customerName},\n\nYour order (*${createdOrderNumber}*) has been confirmed & paid via Razorpay! 🎉\n\n• *Amount Paid:* ₹${Number(finalAmount).toLocaleString('en-IN')}\n• *Payment ID:* ${razorpay_payment_id}\n• *Status:* Confirmed (In Preparation)\n\nThank you for choosing pure 925 & 999 artisanal silver. You will receive delivery updates shortly.\n\n_SilverHouse India_`;
-                await sendWhatsAppMessage(customerPhone, waMessage);
-            } catch (notifyErr) {
-                console.warn('[WhatsApp Notification Warning]:', notifyErr.message);
-            }
-        }
+        // Send WhatsApp confirmation (product details + link to order / bill)
+        await sendOrderConfirmationWhatsApp(createdOrderNumber, pool, {
+            phone: orderValues.customer_phone || orderValues.phone,
+            name: orderValues.customer_name || orderValues.name,
+            finalAmount: orderValues.final_payable || orderValues.total_amount || 0,
+            paymentMethod: 'Online'
+        });
 
         return res.status(200).json({
             success: true,
@@ -1461,7 +1455,7 @@ async function sendWhatsAppOtp(phone, otp, pool = null) {
         const targetUrl = `${urlObj.origin}${urlObj.pathname}?${queryParams.toString().replace(/\+/g, '%20')}`;
 
         console.log(`[WhatsApp Gateway] Calling provider URL for ${waPhone}...`);
-        
+
         // 15-second timeout to prevent requests from hanging indefinitely
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -1484,9 +1478,9 @@ async function sendWhatsAppOtp(phone, otp, pool = null) {
         return { success: true, data };
     } catch (apiErr) {
         console.warn(`[WhatsApp Gateway Warning] OTP dispatch failed:`, apiErr.message);
-        return { 
-            success: false, 
-            error: apiErr.name === 'AbortError' ? 'WhatsApp gateway timed out after 15s' : apiErr.message 
+        return {
+            success: false,
+            error: apiErr.name === 'AbortError' ? 'WhatsApp gateway timed out after 15s' : apiErr.message
         };
     }
 }
@@ -1513,7 +1507,7 @@ async function sendWhatsAppMessage(phone, message, pool = null) {
         const targetUrl = `${urlObj.origin}${urlObj.pathname}?${queryParams.toString().replace(/\+/g, '%20')}`;
 
         console.log(`[WhatsApp Gateway] Dispatching message to ${waPhone}...`);
-        
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -1535,10 +1529,97 @@ async function sendWhatsAppMessage(phone, message, pool = null) {
         return { success: true, data };
     } catch (apiErr) {
         console.warn(`[WhatsApp Gateway Warning] Message dispatch failed:`, apiErr.message);
-        return { 
-            success: false, 
-            error: apiErr.name === 'AbortError' ? 'WhatsApp gateway timed out after 15s' : apiErr.message 
+        return {
+            success: false,
+            error: apiErr.name === 'AbortError' ? 'WhatsApp gateway timed out after 15s' : apiErr.message
         };
+    }
+}
+
+// ----------------------------------------------------------------------------
+// ORDER CONFIRMATION ON WHATSAPP (product details + link to the order / bill)
+// ----------------------------------------------------------------------------
+const SITE_URL = (process.env.SITE_URL || 'https://silverhouseindia.com').replace(/\/+$/, '');
+const FREE_DELIVERY_THRESHOLD = 1999;
+const COD_DELIVERY_CHARGE = 99;
+const orderConfirmationSent = new Set(); // prevents sending the same confirmation twice
+
+const inr = (n) => Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+
+async function sendOrderConfirmationWhatsApp(orderIdentifier, pool, fallback = {}) {
+    try {
+        const orderNumber = String(orderIdentifier || '').trim().replace(/^#/, '');
+        if (!orderNumber || orderConfirmationSent.has(orderNumber)) return;
+
+        // Load the order from the DB (same stored procedure the bill uses)
+        let row = null;
+        try {
+            const result = await pool.request()
+                .input('OrderIdentifier', sql.NVarChar(100), orderNumber)
+                .execute('dbo.SP_GetOrderInvoice');
+            row = result.recordset && result.recordset[0];
+            if (row && row.status === 'ORDER_NOT_FOUND') row = null;
+        } catch (e) {
+            console.warn('[Order WhatsApp] Could not load order:', e.message);
+        }
+
+        const phone = (row && (row.shipping_phone || row.billing_phone)) || fallback.phone;
+        if (!phone) return;
+        const name = (row && (row.shipping_name || row.billing_name)) || fallback.name || 'Valued Patron';
+
+        let items = [];
+        try {
+            const raw = row && row.items_json;
+            items = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+        } catch (e) { items = []; }
+
+        const isOnline = (function () {
+            const m = String((row && row.payment_method) || fallback.paymentMethod || '').toLowerCase();
+            return m.includes('online') || m.includes('razorpay') || m.includes('upi') || (row && row.payment_status === 'PAID');
+        })();
+
+        // Totals (COD adds delivery charges, same rule as the bill)
+        const finalStored = Number((row && (row.final_payable || row.total_amount)) || fallback.finalAmount || 0);
+        const goods = items.length ? items.reduce((a, it) => a + Number(it.total_price || 0), 0) : finalStored;
+        let total = finalStored;
+        let delivery = 0;
+        if (!isOnline) {
+            const gap = finalStored - goods;
+            if (gap >= 1) { delivery = Math.round(gap); total = finalStored; }
+            else { delivery = goods >= FREE_DELIVERY_THRESHOLD ? 0 : COD_DELIVERY_CHARGE; total = Math.round(goods + delivery); }
+        }
+
+        const lines = items.slice(0, 15).map((it) => {
+            const title = it.item_description || it.product_name || it.title || it.name || 'Silver piece';
+            const qty = Number(it.quantity || 1);
+            return `• ${title} (×${qty}) — ₹${inr(it.total_price)}`;
+        });
+        if (items.length > 15) lines.push(`…and ${items.length - 15} more item(s)`);
+
+        const billLink = `${SITE_URL}/orders?bill=${encodeURIComponent(orderNumber)}`;
+        const address = row && row.shipping_address;
+        const firstName = String(name).trim().split(/\s+/)[0] || 'there';
+
+        const message =
+            `🛍️ *Order Confirmed — SilverHouse*\n\n` +
+            `Namaste ${firstName} 🙏\n` +
+            `Thank you for shopping with us! We've received your order and are getting it ready.\n\n` +
+            `*Order No:* ${orderNumber}\n` +
+            `*Payment:* ${isOnline ? 'Paid online ✅' : 'Cash on Delivery'}\n\n` +
+            (lines.length ? `*Your items*\n${lines.join('\n')}\n\n` : '') +
+            `*Delivery:* ${delivery > 0 ? `₹${inr(delivery)}` : 'FREE'}\n` +
+            (isOnline
+                ? `*Amount paid:* ₹${inr(total)}\n`
+                : `*Total to pay on delivery:* ₹${inr(total)}\n`) +
+            (address ? `\n📍 *Delivering to*\n${address}\n` : '') +
+            `\n📄 View your order & download your bill:\n${billLink}\n\n` +
+            `With gratitude,\nTeam SilverHouse ✨`;
+
+        orderConfirmationSent.add(orderNumber);
+        const out = await sendWhatsAppMessage(phone, message, pool);
+        if (!out || !out.success) orderConfirmationSent.delete(orderNumber); // allow a retry if the gateway failed
+    } catch (err) {
+        console.warn('[Order WhatsApp Warning]:', err.message);
     }
 }
 
@@ -1578,7 +1659,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
                 .input('phone', sql.NVarChar(20), cleanedPhone)
                 .input('last10', sql.NVarChar(20), last10Digits)
                 .query("SELECT TOP 1 user_id FROM dbo.[user] WHERE phone = @phone OR RIGHT(REPLACE(REPLACE(REPLACE(phone, '+', ''), ' ', ''), '-', ''), 10) = @last10");
-            
+
             if (existingUserCheck.recordset && existingUserCheck.recordset.length > 0) {
                 userExists = true;
             }
@@ -2899,6 +2980,21 @@ app.post('/api/data', async (req, res) => {
 
         let data = recordsets.length > 1 ? recordsets[0] : (recordsets.length === 1 && !recordsets[0][0]?.Response_Status ? recordsets[0] : null);
 
+        // New ready-made order placed (Cash on Delivery): confirm on WhatsApp with product details + bill link.
+        // Online orders are confirmed from the Razorpay verify endpoint instead.
+        if (mutationProc === 'orders' && !isCustomOrderProc && (operation === 'ADD' || operation === 'INSERT')) {
+            const createdOrderNumber = Array.isArray(data) && data[0] && data[0].order_number;
+            const pm = String((table_values && table_values.payment_method) || '').toLowerCase();
+            if (createdOrderNumber && !pm.includes('online') && !pm.includes('razorpay')) {
+                sendOrderConfirmationWhatsApp(createdOrderNumber, pool, {
+                    phone: table_values && (table_values.customer_phone || table_values.phone),
+                    name: table_values && table_values.customer_name,
+                    finalAmount: table_values && (table_values.final_payable || table_values.total_amount),
+                    paymentMethod: 'COD'
+                }).catch(() => { });
+            }
+        }
+
         return res.status(200).json({
             success: true,
             status: status,
@@ -3210,7 +3306,7 @@ app.get(['/api/orders/invoice/:orderIdentifier', '/api/orders/:orderId/invoice']
             due_date: row.due_date,
             payment_status: row.payment_status,
             order_status: row.order_status,
-            payment_method: (function() {
+            payment_method: (function () {
                 const rawMethod = String(row.payment_method || '').trim().toLowerCase();
                 if (rawMethod.includes('online') || rawMethod.includes('razorpay') || rawMethod.includes('upi') || row.payment_status === 'PAID') {
                     return 'Online';
@@ -3333,7 +3429,7 @@ async function checkAndSendBirthdayAnniversaryWishes() {
             const rawName = u.full_name || '';
             const userName = (rawName.startsWith('Patron ') || !rawName.trim()) ? 'Valued Patron' : rawName.trim();
             const msg = `Namaste ${userName}! 🎉🎂 Happy Birthday from all of us at SilverHouse! May Lord Ganesha & Goddess Lakshmi bless you with health, happiness, and prosperity. Celebrate your special day with our sacred 925 Sterling Silver collections at https://silverhouseindia.com 💎✨`;
-            
+
             console.log(`[Wish Automation] Dispatching Birthday Wish to ${u.phone} (${userName})...`);
             const res = await sendWhatsAppMessage(u.phone, msg, pool);
             if (res && res.success) {
@@ -3395,4 +3491,4 @@ app.post('/api/admin/trigger-wishes', requireAdminAuth, async (req, res) => {
 
 // Schedule Birthday & Anniversary wishes check on startup and recurring every 6 hours
 setTimeout(checkAndSendBirthdayAnniversaryWishes, 10000);
-setInterval(checkAndSendBirthdayAnniversaryWishes, 6 * 60 * 60 * 1000);
+setInterval(checkAndSendBirthdayAnniversaryWishes, 6 * 60 * 60 * 1000);

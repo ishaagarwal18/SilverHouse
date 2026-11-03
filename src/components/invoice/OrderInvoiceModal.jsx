@@ -590,11 +590,8 @@ export default function OrderInvoiceModal({
                     <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Payment Mode</span>
                     <span className={`font-bold text-[10px] uppercase ${isOnlinePayment ? 'text-emerald-800' : 'text-slate-900'}`}>{displayPaymentMode}</span>
                   </div>
-
                 </div>
-
               </div>
-
               {/* BILLING & SHIPPING DETAILS (2 BOXES) */}
               <div className="border-x border-b border-black grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 divide-y md:divide-y-0 md:divide-x print:divide-y-0 print:divide-x divide-black text-[10px] sm:text-[11px]">
 
