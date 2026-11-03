@@ -381,7 +381,7 @@ export default function OrderInvoiceModal({
           <div className="flex items-center space-x-2.5">
             <FileText className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
-              <h3 className="font-bold text-sm tracking-wide">Official Tax Invoice / Bill</h3>
+              <h3 className="font-bold text-sm tracking-wide">Official Order Bill</h3>
               <p className="text-[11px] text-slate-400">Order #{String(orderIdentifier || '').replace(/^#/, '')} • Pure 925 Hallmarked Silver</p>
             </div>
           </div>
@@ -472,7 +472,7 @@ export default function OrderInvoiceModal({
               <div className="flex items-center justify-between pb-1">
                 <span className="text-[10px] text-slate-600 font-mono">Page No. 1 of 1</span>
                 <div className="text-center flex-1 pr-14">
-                  <span className="font-bold text-base tracking-wider uppercase underline underline-offset-2">Invoice</span>
+                  <span className="font-bold text-base tracking-wider uppercase underline underline-offset-2">Order</span>
                   <div className="text-[10px] font-bold text-slate-700 tracking-wide mt-0.5">Original Copy</div>
                 </div>
               </div>
@@ -528,16 +528,10 @@ export default function OrderInvoiceModal({
                     </div>
                   </div>
 
-                  {/* Row 3: Reverse Charge */}
-                  <div className="p-1.5 sm:p-2 grid grid-cols-2 divide-x divide-black">
-                    <div>
-                      <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Reverse Charge</span>
-                      <span className="font-semibold text-black">{invoice.reverse_charge || 'No'}</span>
-                    </div>
-                    <div className="pl-2">
-                      <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Payment Mode</span>
-                      <span className={`font-bold text-[10px] uppercase ${isOnlinePayment ? 'text-emerald-800' : 'text-slate-900'}`}>{displayPaymentMode}</span>
-                    </div>
+                  {/* Row 3: Payment Mode only (Reverse Charge removed) */}
+                  <div className="p-1.5 sm:p-2">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Payment Mode</span>
+                    <span className={`font-bold text-[10px] uppercase ${isOnlinePayment ? 'text-emerald-800' : 'text-slate-900'}`}>{displayPaymentMode}</span>
                   </div>
 
                 </div>
