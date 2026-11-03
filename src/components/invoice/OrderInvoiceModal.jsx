@@ -78,6 +78,25 @@ export default function OrderInvoiceModal({
   const isOnlinePayment = paymentMethodLower.includes('online') || paymentMethodLower.includes('razorpay') || paymentMethodLower.includes('upi') || invoice?.payment_status === 'PAID';
   const displayPaymentMode = isOnlinePayment ? 'Online' : 'COD';
 
+  // Prevent background page from scrolling while modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = 'hidden';
+    if (scrollBarWidth > 0) {
+      document.body.style.paddingRight = `${scrollBarWidth}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [isOpen]);
+
   // Load Invoice data dynamically from DB API whenever modal opens
   useEffect(() => {
     if (!isOpen) {
@@ -334,7 +353,12 @@ export default function OrderInvoiceModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-4 print:p-0 print:bg-white print:static print:overflow-visible">
+    <div 
+      className="fixed inset-0 z-50 overflow-hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overscroll-contain print:p-0 print:bg-white print:static print:overflow-visible"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
 
       {/* Print-specific style rules */}
       <style>{`
@@ -374,10 +398,10 @@ export default function OrderInvoiceModal({
       `}</style>
 
       {/* Outer Modal Container */}
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden print:w-full print:max-w-none print:shadow-none print:rounded-none">
+      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden print:w-full print:max-w-none print:shadow-none print:rounded-none print:max-h-none">
 
         {/* Top Control Header Bar (Hidden in Print) */}
-        <div className="no-print bg-slate-900 text-white px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
+        <div className="shrink-0 no-print bg-slate-900 text-white px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
           <div className="flex items-center space-x-2.5">
             <FileText className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
@@ -430,7 +454,7 @@ export default function OrderInvoiceModal({
         </div>
 
         {/* Modal Body / Loading / Error */}
-        <div className="max-h-[85vh] overflow-y-auto p-3 sm:p-6 bg-slate-100/60 print:bg-white print:p-0 print:max-h-none print:overflow-visible">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 bg-slate-100/60 print:bg-white print:p-0 print:overflow-visible">
 
           {loading && (
             <div className="py-20 text-center space-y-3 bg-white rounded-xl shadow-xs border border-slate-200">
