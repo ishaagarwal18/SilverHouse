@@ -63,6 +63,39 @@ function convertNumberToIndianWordsClient(amount) {
   return result;
 }
 
+// Delivery rules (same defaults the cart uses: free delivery from ₹1999, otherwise ₹99)
+const FREE_DELIVERY_THRESHOLD = 1999;
+const COD_DELIVERY_CHARGE = 99;
+
+// Works out the figures shown at the bottom of the bill.
+// - Online orders: unchanged (uses the stored final_payable).
+// - COD orders: delivery charges are shown as their own line and added to the total.
+//   If the stored total already contains the delivery fee it is split out, not added twice.
+function getInvoiceTotals(inv) {
+  const final = Number(inv?.final_payable || 0);
+  const items = Array.isArray(inv?.items) ? inv.items : [];
+  const goods = items.length
+    ? items.reduce((sum, it) => sum + Number(it.total_price || 0), 0)
+    : Number(inv?.subtotal || final) - Number(inv?.discount_amount || 0);
+
+  if (inv?.payment_method !== 'COD') {
+    return { isCod: false, goods, delivery: 0, roundedOff: Number(inv?.rounded_off || 0), total: final };
+  }
+
+  const gap = final - goods;
+  let delivery;
+  let total;
+  if (gap >= 1) {
+    delivery = Math.round(gap);   // stored total already includes the delivery fee
+    total = final;
+  } else {
+    delivery = goods >= FREE_DELIVERY_THRESHOLD ? 0 : COD_DELIVERY_CHARGE;
+    total = Math.round(goods + delivery);
+  }
+  const roundedOff = Number((total - goods - delivery).toFixed(2));
+  return { isCod: true, goods, delivery, roundedOff, total };
+}
+
 export default function OrderInvoiceModal({
   isOpen,
   onClose,
@@ -261,7 +294,7 @@ export default function OrderInvoiceModal({
     const upiId = invData.company?.upi_id || '9537178477@upi';
     const payeeName = invData.company?.name || 'Silver House';
     const orderNum = invData.order_number || orderIdentifier;
-    const amount = invData.final_payable || 0;
+    const amount = getInvoiceTotals(invData).total || 0;
 
     const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent('Invoice ' + orderNum)}`;
 
@@ -362,6 +395,8 @@ export default function OrderInvoiceModal({
       return String(dateStr);
     }
   };
+
+  const totals = getInvoiceTotals(invoice);
 
   const formatCurrency = (amount) => {
     const num = Number(amount || 0);
@@ -533,7 +568,7 @@ export default function OrderInvoiceModal({
                       <strong className="font-mono text-xs font-black text-black">{invoice.invoice_number || invoice.order_number}</strong>
                     </div>
                     <div className="p-1.5 sm:p-2">
-                      <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Order Date</span>
+                      <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Order date</span>
                       <strong className="font-mono text-xs font-semibold text-black">{formatDate(invoice.invoice_date)}</strong>
                     </div>
                   </div>
@@ -642,18 +677,31 @@ export default function OrderInvoiceModal({
               {/* TOTALS & ROUNDED OFF SUMMARY */}
               <div className="border-x border-b border-black text-[10px] sm:text-[11px]">
 
+                {/* Delivery Charges (COD only) */}
+                {totals.isCod && (
+                  <div className="flex justify-between items-center px-3 py-1 border-b border-slate-200">
+                    <span className="font-semibold text-slate-700">Delivery Charges (COD)</span>
+                    <span className="font-mono text-slate-800">
+                      {totals.delivery > 0 ? `+ ${formatCurrency(totals.delivery)}` : 'FREE'}
+                    </span>
+                  </div>
+                )}
+
+
                 {/* Total Row */}
                 <div className="flex justify-between items-center px-3 py-1.5 bg-slate-50 border-b border-black font-bold">
                   <span className="text-xs uppercase tracking-wider text-black">Total</span>
                   <span className="font-mono text-sm sm:text-base font-black text-black">
-                    ₹ {formatCurrency(invoice.final_payable)}
+                    ₹ {formatCurrency(totals.total)}
                   </span>
                 </div>
 
                 {/* Amount in Words Row */}
                 <div className="px-3 py-1.5 bg-white text-[10px] sm:text-[10.5px]">
                   <strong>Amount in Words: </strong>
-                  <span className="italic font-medium text-slate-900">{invoice.amount_in_words}</span>
+                  <span className="italic font-medium text-slate-900">
+                    {totals.isCod ? convertNumberToIndianWordsClient(totals.total) : invoice.amount_in_words}
+                  </span>
                 </div>
 
               </div>
