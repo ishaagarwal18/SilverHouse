@@ -20,7 +20,9 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "chart.js": "^4.5.1",
+    "html2canvas-pro": "^2.6.0",
     "html2pdf.js": "^0.14.0",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.31.0",
     "mammoth": "^1.13.0",
     "qrcode": "^1.5.4",

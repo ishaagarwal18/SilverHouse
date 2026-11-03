@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X, Printer, Download, CheckCircle2, ShieldCheck,
   AlertCircle, RefreshCw, QrCode, FileText, Check
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import html2pdf from 'html2pdf.js';
+import html2canvas from 'html2canvas-pro';
+import { jsPDF } from 'jspdf';
 import { fetchOrderInvoiceApi } from '../../services/api';
 
 function convertNumberToIndianWordsClient(amount) {
@@ -78,25 +80,6 @@ export default function OrderInvoiceModal({
   const isOnlinePayment = paymentMethodLower.includes('online') || paymentMethodLower.includes('razorpay') || paymentMethodLower.includes('upi') || invoice?.payment_status === 'PAID';
   const displayPaymentMode = isOnlinePayment ? 'Online' : 'COD';
 
-  // Prevent background page from scrolling while modal is open
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const originalOverflow = document.body.style.overflow;
-    const originalPaddingRight = document.body.style.paddingRight;
-    const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-    document.body.style.overflow = 'hidden';
-    if (scrollBarWidth > 0) {
-      document.body.style.paddingRight = `${scrollBarWidth}px`;
-    }
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.paddingRight = originalPaddingRight;
-    };
-  }, [isOpen]);
-
   // Load Invoice data dynamically from DB API whenever modal opens
   useEffect(() => {
     if (!isOpen) {
@@ -151,6 +134,19 @@ export default function OrderInvoiceModal({
       isMounted = false;
     };
   }, [isOpen, orderIdentifier]);
+
+  // Close on Escape + lock background scroll while the bill is open
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen, onClose]);
 
   // Helper to construct invoice from local storage order when DB sync is delayed
   const findLocalOrderFallback = (idStr) => {
@@ -296,36 +292,61 @@ export default function OrderInvoiceModal({
     window.print();
   };
 
-  const handleDownloadPdf = (activeInv = invoice) => {
-    const element = document.getElementById('silverhouse-printable-invoice');
-    if (!element) {
-      window.print();
-      return;
-    }
+  const handleDownloadPdf = async (activeInv = invoice) => {
+    const INVOICE_ID = 'silverhouse-printable-invoice';
+    const element = document.getElementById(INVOICE_ID);
+    if (!element) return;
 
     setDownloading(true);
     const invoiceNum = activeInv?.invoice_number || activeInv?.order_number || String(orderIdentifier || 'invoice').replace(/^#/, '');
 
-    const opt = {
-      margin: [6, 6, 6, 6],
-      filename: `SilverHouse-Invoice-${invoiceNum}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf()
-      .set(opt)
-      .from(element)
-      .save()
-      .then(() => {
-        setDownloading(false);
-      })
-      .catch(err => {
-        console.warn('[Invoice] html2pdf generation notice, falling back to print dialog:', err);
-        setDownloading(false);
-        window.print();
+    try {
+      // html2canvas-pro understands Tailwind v4's oklch()/color-mix() colors
+      // (the old html2canvas throws on them, which broke the download).
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 1100, // render with desktop (md:) layout regardless of screen size
+        onclone: (clonedDoc) => {
+          // Remove clipping/transform from every ancestor so the whole bill is captured
+          let node = clonedDoc.getElementById(INVOICE_ID);
+          while (node && node !== clonedDoc.documentElement) {
+            node.style.overflow = 'visible';
+            node.style.maxHeight = 'none';
+            node.style.transform = 'none';
+            node.style.animation = 'none';
+            node = node.parentElement;
+          }
+        }
       });
+
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 6;
+      const maxW = pageW - margin * 2;
+      const maxH = pageH - margin * 2;
+
+      // Bill is "Page 1 of 1": fit it on a single A4 page, keeping aspect ratio
+      let imgW = maxW;
+      let imgH = (canvas.height * imgW) / canvas.width;
+      if (imgH > maxH) {
+        imgH = maxH;
+        imgW = (canvas.width * imgH) / canvas.height;
+      }
+      const x = (pageW - imgW) / 2;
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', x, margin, imgW, imgH);
+      pdf.save(`SilverHouse-Invoice-${invoiceNum}.pdf`);
+    } catch (err) {
+      console.error('[Invoice] PDF generation failed:', err);
+      alert('Could not generate the PDF. Please use the Print button and choose "Save as PDF".');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const formatDate = (dateStr) => {
@@ -352,56 +373,33 @@ export default function OrderInvoiceModal({
 
   if (!isOpen) return null;
 
-  return (
-    <div 
-      className="fixed inset-0 z-50 overflow-hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overscroll-contain print:p-0 print:bg-white print:static print:overflow-visible"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+  return createPortal(
+    <div
+      className="sh-invoice-portal fixed inset-0 z-[10000] overflow-y-auto bg-black/80 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-4"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
     >
 
       {/* Print-specific style rules */}
       <style>{`
         @media print {
-          @page {
-            size: A4 portrait;
-            margin: 6mm 6mm 6mm 6mm;
-          }
-          body {
-            background: white !important;
-            color: black !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          body * {
-            visibility: hidden;
-          }
-          #silverhouse-printable-invoice, #silverhouse-printable-invoice * {
-            visibility: visible;
-          }
-          #silverhouse-printable-invoice {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-            background: white !important;
-          }
-          .no-print {
-            display: none !important;
-          }
+          @page { size: A4 portrait; margin: 6mm; }
+          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          html, body { background: #fff !important; height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
+          /* hide the whole app; only the bill portal prints */
+          body > *:not(.sh-invoice-portal) { display: none !important; }
+          .sh-invoice-portal, .sh-invoice-portal * { overflow: visible !important; max-height: none !important; }
+          .sh-invoice-portal { position: static !important; display: block !important; padding: 0 !important; background: #fff !important; backdrop-filter: none !important; }
+          .sh-invoice-shell { position: static !important; width: 100% !important; max-width: none !important; box-shadow: none !important; border-radius: 0 !important; background: #fff !important; }
+          #silverhouse-printable-invoice { position: static !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; }
+          .no-print { display: none !important; }
         }
       `}</style>
 
       {/* Outer Modal Container */}
-      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden print:w-full print:max-w-none print:shadow-none print:rounded-none print:max-h-none">
+      <div className="sh-invoice-shell relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden">
 
         {/* Top Control Header Bar (Hidden in Print) */}
-        <div className="shrink-0 no-print bg-slate-900 text-white px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
+        <div className="no-print bg-slate-900 text-white px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
           <div className="flex items-center space-x-2.5">
             <FileText className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
@@ -454,7 +452,7 @@ export default function OrderInvoiceModal({
         </div>
 
         {/* Modal Body / Loading / Error */}
-        <div className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6 bg-slate-100/60 print:bg-white print:p-0 print:overflow-visible">
+        <div className="max-h-[85vh] overflow-y-auto p-3 sm:p-6 bg-slate-100/60 print:bg-white print:p-0 print:max-h-none print:overflow-visible">
 
           {loading && (
             <div className="py-20 text-center space-y-3 bg-white rounded-xl shadow-xs border border-slate-200">
@@ -525,17 +523,17 @@ export default function OrderInvoiceModal({
                   </div>
                 </div>
 
-                {/* Right Side: Invoice Number, Place of Supply, Date, Due Date */}
+                {/* Right Side: Order Number, Place of Supply, Date, Due Date */}
                 <div className="w-full md:w-[320px] print:w-[320px] divide-y divide-black text-[10px] sm:text-[11px]">
 
-                  {/* Row 1: Invoice Number & Date */}
+                  {/* Row 1: Order Number & Date */}
                   <div className="grid grid-cols-2 divide-x divide-black">
                     <div className="p-1.5 sm:p-2 bg-slate-50/50">
-                      <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Invoice Number</span>
+                      <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Order Number</span>
                       <strong className="font-mono text-xs font-black text-black">{invoice.invoice_number || invoice.order_number}</strong>
                     </div>
                     <div className="p-1.5 sm:p-2">
-                      <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Invoice Date</span>
+                      <span className="text-[9px] uppercase tracking-wider text-slate-600 block">Order Date</span>
                       <strong className="font-mono text-xs font-semibold text-black">{formatDate(invoice.invoice_date)}</strong>
                     </div>
                   </div>
@@ -644,14 +642,6 @@ export default function OrderInvoiceModal({
               {/* TOTALS & ROUNDED OFF SUMMARY */}
               <div className="border-x border-b border-black text-[10px] sm:text-[11px]">
 
-                {/* Rounded Off Row */}
-                <div className="flex justify-between items-center px-3 py-1 border-b border-slate-200">
-                  <span className="font-semibold text-slate-700">Rounded Off (+/-)</span>
-                  <span className="font-mono text-slate-800">
-                    {invoice.rounded_off >= 0 ? `+ ${formatCurrency(invoice.rounded_off)}` : formatCurrency(invoice.rounded_off)}
-                  </span>
-                </div>
-
                 {/* Total Row */}
                 <div className="flex justify-between items-center px-3 py-1.5 bg-slate-50 border-b border-black font-bold">
                   <span className="text-xs uppercase tracking-wider text-black">Total</span>
@@ -747,6 +737,7 @@ export default function OrderInvoiceModal({
 
       </div>
 
-    </div>
+    </div>,
+    document.body
   );
 }
